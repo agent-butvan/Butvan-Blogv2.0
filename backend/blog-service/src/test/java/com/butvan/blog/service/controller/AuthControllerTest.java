@@ -1,6 +1,7 @@
 package com.butvan.blog.service.controller;
 
 import com.fasterxml.jackson.databind.ObjectMapper;
+import com.butvan.blog.pojo.dto.auth.LoginDTO;
 import com.butvan.blog.pojo.dto.auth.RegisterDTO;
 import com.butvan.blog.service.repository.UserRepository;
 import org.junit.jupiter.api.BeforeEach;
@@ -122,5 +123,76 @@ public class AuthControllerTest {
                         .contentType(MediaType.APPLICATION_JSON)
                         .content(objectMapper.writeValueAsString(invalidDto)))
                 .andExpect(jsonPath("$.code").value(400)); // 触发 validation 校验拦截
+    }
+
+    /**
+     * 测试用例：账号正常登录，应成功签发 Token
+     */
+    @Test
+    public void testLoginSuccess() throws Exception {
+        String testUser = "login_" + UUID.randomUUID().toString().substring(0, 8);
+        RegisterDTO regDto = RegisterDTO.builder()
+                .username(testUser)
+                .password("testPassword123")
+                .nickname("测试登录账号")
+                .email(testUser + "@butvan.com")
+                .build();
+
+        // 1. 注册账号
+        mockMvc.perform(post("/api/auth/register")
+                        .contentType(MediaType.APPLICATION_JSON)
+                        .content(objectMapper.writeValueAsString(regDto)))
+                .andExpect(status().isOk());
+
+        LoginDTO loginDto = LoginDTO.builder()
+                .username(testUser)
+                .password("testPassword123")
+                .build();
+
+        // 2. 登录并校验 Token 签发
+        mockMvc.perform(post("/api/auth/login")
+                        .contentType(MediaType.APPLICATION_JSON)
+                        .content(objectMapper.writeValueAsString(loginDto)))
+                .andExpect(status().isOk())
+                .andExpect(jsonPath("$.code").value(200))
+                .andExpect(jsonPath("$.data.token").exists())
+                .andExpect(jsonPath("$.data.user.username").value(testUser));
+
+        // 3. 清理测试数据
+        userRepository.findByUsername(testUser).ifPresent(userRepository::delete);
+    }
+
+    /**
+     * 测试用例：使用错误密码登录，应该拦截并报错 400
+     */
+    @Test
+    public void testLoginWrongPassword() throws Exception {
+        String testUser = "wrongpass_" + UUID.randomUUID().toString().substring(0, 8);
+        RegisterDTO regDto = RegisterDTO.builder()
+                .username(testUser)
+                .password("correctPassword")
+                .nickname("昵称")
+                .build();
+
+        // 1. 注册
+        mockMvc.perform(post("/api/auth/register")
+                        .contentType(MediaType.APPLICATION_JSON)
+                        .content(objectMapper.writeValueAsString(regDto)))
+                .andExpect(status().isOk());
+
+        LoginDTO loginDto = LoginDTO.builder()
+                .username(testUser)
+                .password("wrongPassword")
+                .build();
+
+        // 2. 用错误密码登录
+        mockMvc.perform(post("/api/auth/login")
+                        .contentType(MediaType.APPLICATION_JSON)
+                        .content(objectMapper.writeValueAsString(loginDto)))
+                .andExpect(jsonPath("$.code").value(400))
+                .andExpect(jsonPath("$.msg").value("用户名或密码错误"));
+
+        // 3. 清理
+        userRepository.findByUsername(testUser).ifPresent(userRepository::delete);
     }
 }

@@ -1,7 +1,9 @@
 package com.butvan.blog.service.controller;
 
 import com.butvan.blog.common.result.Result;
+import com.butvan.blog.pojo.dto.auth.LoginDTO;
 import com.butvan.blog.pojo.dto.auth.RegisterDTO;
+import com.butvan.blog.pojo.vo.auth.LoginVO;
 import com.butvan.blog.service.service.AuthService;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
@@ -31,5 +33,18 @@ public class AuthController {
         log.info("接收到用户注册 API 请求，用户名: {}", registerDTO.getUsername());
         authService.register(registerDTO);
         return Result.success();
+    }
+
+    /**
+     * 管理后台账号登录接口
+     *
+     * @param loginDTO 登录数据表单，入参接受 JSR303 格式验证
+     * @return 统一格式响应体 Result，携带 LoginVO 载荷
+     */
+    @PostMapping("/login")
+    public Result<LoginVO> login(@Validated @RequestBody LoginDTO loginDTO) {
+        log.info("接收到用户登录 API 请求，用户名: {}", loginDTO.getUsername());
+        LoginVO loginVO = authService.login(loginDTO);
+        return Result.success(loginVO);
     }
 }

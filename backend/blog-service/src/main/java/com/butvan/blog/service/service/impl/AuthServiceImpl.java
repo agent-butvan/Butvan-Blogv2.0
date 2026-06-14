@@ -1,9 +1,12 @@
 package com.butvan.blog.service.service.impl;
 
 import com.butvan.blog.common.exception.BusinessException;
+import com.butvan.blog.pojo.dto.auth.LoginDTO;
 import com.butvan.blog.pojo.dto.auth.RegisterDTO;
 import com.butvan.blog.pojo.entity.User;
+import com.butvan.blog.pojo.vo.auth.LoginVO;
 import com.butvan.blog.service.repository.UserRepository;
+import com.butvan.blog.service.security.JwtUtil;
 import com.butvan.blog.service.service.AuthService;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
@@ -21,6 +24,7 @@ public class AuthServiceImpl implements AuthService {
 
     private final UserRepository userRepository;
     private final PasswordEncoder passwordEncoder;
+    private final JwtUtil jwtUtil;
 
     /**
      * 管理后台账号注册核心业务实现
@@ -69,5 +73,48 @@ public class AuthServiceImpl implements AuthService {
 
         userRepository.save(user);
         log.info("用户 [{}] 成功注册入库，分配角色: {}", user.getUsername(), user.getRole());
+    }
+
+    /**
+     * 管理后台账号登录核心业务实现
+     *
+     * @param loginDTO 登录表单传输对象
+     * @return 登录结果视图对象
+     */
+    @Override
+    public LoginVO login(LoginDTO loginDTO) {
+        log.info("开始处理用户登录请求，用户名: {}", loginDTO.getUsername());
+
+        // 1. 查询用户是否存在
+        User user = userRepository.findByUsername(loginDTO.getUsername())
+                .orElseThrow(() -> new BusinessException(400, "用户名或密码错误"));
+
+        // 2. 校验账号是否已启用 (ACTIVE)
+        if (!"ACTIVE".equalsIgnoreCase(user.getStatus())) {
+            log.warn("用户登录失败，账号被停用: {}", loginDTO.getUsername());
+            throw new BusinessException(400, "该账号已被停用，请联系管理员");
+        }
+
+        // 3. 校验密码是否匹配
+        if (!passwordEncoder.matches(loginDTO.getPassword(), user.getPasswordHash())) {
+            log.warn("用户登录失败，密码不匹配: {}", loginDTO.getUsername());
+            throw new BusinessException(400, "用户名或密码错误");
+        }
+
+        // 4. 签发 JWT
+        String token = jwtUtil.generateToken(user.getUsername());
+        log.info("用户 [{}] 登录成功，JWT 签发完毕", user.getUsername());
+
+        // 5. 组装 LoginVO 响应体
+        return LoginVO.builder()
+                .token(token)
+                .user(LoginVO.UserInfo.builder()
+                        .id(user.getId())
+                        .username(user.getUsername())
+                        .nickname(user.getNickname())
+                        .avatarUrl(user.getAvatarUrl())
+                        .role(user.getRole())
+                        .build())
+                .build();
     }
 }
