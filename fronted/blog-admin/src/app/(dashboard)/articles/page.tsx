@@ -21,6 +21,7 @@ export default function ArticlesPage() {
   const [statusFilter, setStatusFilter] = useState<string>("");
   const [keyword, setKeyword] = useState("");
   const [loading, setLoading] = useState(true);
+  const [deleteError, setDeleteError] = useState<string | null>(null);
 
   const pageSize = 10;
 
@@ -55,12 +56,13 @@ export default function ArticlesPage() {
 
   /** 删除文章 */
   const handleDelete = async (id: number) => {
+    setDeleteError(null);
     if (!confirm("确定要删除这篇文章吗？")) return;
     try {
       await apiClient.delete(`/articles/${id}`);
       fetchArticles();
     } catch {
-      alert("删除失败，请重试");
+      setDeleteError("删除失败，请重试");
     }
   };
 
@@ -101,6 +103,19 @@ export default function ArticlesPage() {
           <Plus size={16} /> 写文章
         </button>
       </div>
+
+      {/* 操作错误提示 */}
+      {deleteError && (
+        <div className="rounded-lg bg-red-50 border border-red-200 p-4 text-sm text-red-700 animate-fade-in flex items-center justify-between">
+          <span>{deleteError}</span>
+          <button
+            onClick={() => setDeleteError(null)}
+            className="text-red-400 hover:text-red-600 text-xs"
+          >
+            关闭
+          </button>
+        </div>
+      )}
 
       {/* 筛选 + 搜索栏 */}
       <div className="flex items-center gap-3">
