@@ -145,7 +145,9 @@ Butvan Blog2.0/                                    # 📦 项目根目录
 │       │   │   │   └── TopBar.tsx                 #         顶栏（面包屑、用户头像、退出）
 │       │   │   ├── editor/                        #       编辑器组件
 │       │   │   │   ├── MarkdownEditor.tsx         #         Markdown 富文本编辑器
-│       │   │   │   └── HotspotEditor.tsx          #         热区可视化编辑器（拖拽/框选/百分比换算）
+│       │   │   │   ├── SceneToolbar.tsx           #         场景编辑器顶部工具栏
+│       │   │   │   ├── SceneCanvas.tsx            #         场景编辑器可视化画布
+│       │   │   │   └── HotspotPropertiesPanel.tsx #         场景热区物品属性编辑面板
 │       │   │   └── forms/                         #       表单组件（文章表单、场景表单等复合表单）
 │       │   ├── hooks/                             #     🪝 自定义 Hooks
 │       │   │   ├── useAuth.ts                     #       认证状态管理
@@ -348,7 +350,9 @@ Butvan Blog2.0/                                    # 📦 项目根目录
 | `fronted/blog-client/src/app/articles/[slug]/page.tsx` | 前台-文章 | 文章详情页（Markdown渲染、评论区、系列导航） |
 | `fronted/blog-admin/src/app/(dashboard)/articles/new/page.tsx` | 后台-文章 | Markdown 编辑器 + 分类/标签/SEO 设置 |
 | `fronted/blog-admin/src/app/(dashboard)/scenes/[id]/page.tsx` | 后台-场景 | 可视化热区编辑器（拖拽框选、百分比换算） |
-| `fronted/blog-admin/src/components/editor/HotspotEditor.tsx` | 后台-组件 | PNG 物品在背景图上拖拽/缩放放置，属性表单 |
+| `fronted/blog-admin/src/components/editor/SceneCanvas.tsx` | 后台-组件 | 可视化场景编辑画布，支持拖拽移动/拉伸缩放/框选裁剪 |
+| `fronted/blog-admin/src/components/editor/HotspotPropertiesPanel.tsx` | 后台-组件 | 选定热区后，展示其物品名称、坐标、跳转路径、悬浮文案等配置表单 |
+| `fronted/blog-admin/src/components/editor/SceneToolbar.tsx` | 后台-组件 | 场景编辑器顶部工具栏，控制模式切换与手动物品上传 |
 | `backend/blog-service/.../BlogApplication.java` | 后端-入口 | Spring Boot 启动类，JPA 多包扫描 |
 | `backend/blog-common/.../GlobalExceptionHandler.java` | 后端-通用 | 全局异常统一拦截，映射为标准 Result 结构 |
 | `backend/blog-common/.../Result.java` | 后端-通用 | 统一 JSON 响应体 `{code, msg, data}` |
