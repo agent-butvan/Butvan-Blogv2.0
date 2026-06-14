@@ -2,9 +2,10 @@
 
 import React, { useState, useEffect, useRef } from 'react'
 import apiClient from '@/lib/api'
-import { Card, Button, Input, Chip, Spinner } from '@heroui/react'
-import { MapPin, Upload, Layers, Plus, Check, Eye } from 'lucide-react'
+import { Spinner } from '@heroui/react'
+import { MapPin, Upload, Layers, Plus, Check, Eye, Trash2, X } from 'lucide-react'
 import Link from 'next/link'
+import ConfirmModal from '@/components/common/ConfirmModal'
 
 interface Scene {
   id: number
@@ -13,18 +14,29 @@ interface Scene {
   isActive: boolean
 }
 
+/**
+ * 场景列表管理页（v0.3 改进）
+ *
+ * - 左侧：上传新场景表单
+ * - 右侧：场景卡片网格，含删除、激活、编辑入口
+ */
 export default function ScenesPage() {
   const [scenes, setScenes] = useState<Scene[]>([])
   const [loading, setLoading] = useState(true)
-  
+
   // 新建场景状态
+  const [showCreateModal, setShowCreateModal] = useState(false)
   const [title, setTitle] = useState('')
   const [imageUrl, setImageUrl] = useState('')
   const [uploading, setUploading] = useState(false)
   const [submitting, setSubmitting] = useState(false)
   const fileInputRef = useRef<HTMLInputElement>(null)
 
-  // 1. 获取全部场景列表
+  // 删除确认
+  const [confirmDeleteId, setConfirmDeleteId] = useState<number | null>(null)
+  const [deleteLoading, setDeleteLoading] = useState(false)
+
+  // 获取全部场景列表
   const fetchScenes = async () => {
     try {
       const res = await apiClient.get('/admin/scenes')
@@ -42,49 +54,43 @@ export default function ScenesPage() {
     fetchScenes()
   }, [])
 
-  // 2. 处理背景大图上传
+  // 上传背景大图
   const handleUploadImage = async (e: React.ChangeEvent<HTMLInputElement>) => {
     const files = e.target.files
     if (!files || files.length === 0) return
-
     const file = files[0]
     const formData = new FormData()
     formData.append('file', file)
-
     setUploading(true)
     try {
       const res = await apiClient.post('/admin/media/upload', formData, {
-        headers: {
-          'Content-Type': 'multipart/form-data',
-        },
+        headers: { 'Content-Type': 'multipart/form-data' },
       })
       if (res.data.code === 200 || res.data.code === 0) {
         setImageUrl(res.data.data.fileUrl)
       } else {
         alert(res.data.msg || '上传图片失败')
       }
-    } catch (err) {
-      console.error(err)
-      alert('上传接口异常，请确认后端已启动并完成迁移')
+    } catch {
+      alert('上传接口异常，请确认后端已启动')
     } finally {
       setUploading(false)
     }
   }
 
-  // 3. 提交保存场景
+  // 提交保存场景
   const handleSubmitScene = async (e: React.FormEvent) => {
     e.preventDefault()
     if (!title.trim() || !imageUrl.trim()) {
       alert('请填写场景名称并上传底图')
       return
     }
-
     setSubmitting(true)
     try {
       const res = await apiClient.post('/admin/scenes', {
         title,
         imageUrl,
-        isActive: false // 新建默认不启用
+        isActive: false,
       })
       if (res.data.code === 200 || res.data.code === 0) {
         setTitle('')
@@ -93,15 +99,14 @@ export default function ScenesPage() {
       } else {
         alert(res.data.msg || '保存场景失败')
       }
-    } catch (err) {
-      console.error(err)
+    } catch {
       alert('保存场景失败，服务器内部错误')
     } finally {
       setSubmitting(false)
     }
   }
 
-  // 4. 激活选中场景 (单启用场景互斥)
+  // 激活场景
   const handleActivateScene = async (id: number) => {
     try {
       const res = await apiClient.put(`/admin/scenes/${id}/active`)
@@ -110,208 +115,345 @@ export default function ScenesPage() {
       } else {
         alert(res.data.msg || '启用场景失败')
       }
-    } catch (err) {
-      console.error(err)
+    } catch {
       alert('启用场景异常')
     }
   }
 
+  // 请求删除
+  const handleDeleteRequest = (id: number) => {
+    setConfirmDeleteId(id)
+  }
+
+  // 确认删除
+  const handleDeleteConfirm = async () => {
+    if (!confirmDeleteId) return
+    setDeleteLoading(true)
+    try {
+      const res = await apiClient.delete(`/admin/scenes/${confirmDeleteId}`)
+      if (res.data.code === 200 || res.data.code === 0) {
+        setConfirmDeleteId(null)
+        fetchScenes()
+      } else {
+        alert(res.data.msg || '删除场景失败')
+      }
+    } catch {
+      alert('删除场景接口异常')
+    } finally {
+      setDeleteLoading(false)
+    }
+  }
+
+  /** 解析预览 URL */
+  const resolveUrl = (url: string) =>
+    url.startsWith('/') ? `http://localhost:8080${url}` : url
+
+  /** 骨架屏卡片 */
+  const SkeletonCard = () => (
+    <div className="bg-white dark:bg-zinc-900/40 border border-zinc-200 dark:border-zinc-800/80 rounded-2xl overflow-hidden animate-skeleton-pulse shadow-sm">
+      <div className="aspect-video w-full bg-zinc-100 dark:bg-zinc-800/40" />
+      <div className="p-4 flex flex-col gap-3">
+        <div className="h-3 w-1/3 bg-zinc-200 dark:bg-zinc-800 rounded" />
+        <div className="h-4 w-2/3 bg-zinc-200 dark:bg-zinc-800 rounded" />
+        <div className="flex gap-2 mt-2 pt-3 border-t border-zinc-100 dark:border-zinc-800/60">
+          <div className="flex-1 h-8 bg-zinc-100 dark:bg-zinc-800/40 rounded-lg" />
+          <div className="flex-1 h-8 bg-zinc-100 dark:bg-zinc-800/40 rounded-lg" />
+        </div>
+      </div>
+    </div>
+  )
+
   return (
-    <div className="flex flex-col gap-6 p-6 max-w-7xl mx-auto min-h-screen text-[#c9d1d9] font-body">
-      
-      {/* Page Header */}
-      <div className="flex items-center justify-between border-b border-white/10 pb-4">
+    <div className="flex flex-col gap-6 p-6 max-w-7xl mx-auto min-h-screen text-zinc-600 dark:text-zinc-400 font-body">
+      {/* 页面标题 */}
+      <div className="flex items-center justify-between border-b border-zinc-200 dark:border-zinc-800 pb-4">
         <div className="flex items-center gap-3">
           <div className="w-10 h-10 rounded-xl bg-primary/10 flex items-center justify-center border border-primary/20 text-primary">
             <Layers className="w-5 h-5" />
           </div>
           <div>
-            <h1 className="text-xl font-bold font-heading text-white">房间场景管理</h1>
-            <p className="text-xs text-neutral-dark/60 dark:text-neutral-light/50 mt-0.5">
-              定义沉浸式博客的首页房间大图，叠加透明抠图物品及路由跳转。
+            <h1 className="text-xl font-bold font-heading text-zinc-900 dark:text-zinc-50">房间场景管理</h1>
+            <p className="text-xs text-zinc-500 dark:text-zinc-400 mt-0.5">
+              上传背景大图，框选标记可交互物品，定义沉浸式博客首页体验
             </p>
           </div>
         </div>
+        <button
+          onClick={() => setShowCreateModal(true)}
+          className="flex items-center gap-1.5 px-4 py-2 bg-primary text-white text-xs font-heading font-medium rounded-lg shadow-sm hover:opacity-90 active:scale-98 transition-all cursor-pointer"
+        >
+          <Plus size={14} />
+          上传新场景
+        </button>
       </div>
 
-      <div className="grid grid-cols-1 lg:grid-cols-3 gap-6 items-start">
-        
-        {/* Left Card: Create Scene Form */}
-        <div className="lg:col-span-1 bg-[#161b22] border border-white/10 p-6 rounded-3xl shadow-xl flex flex-col gap-5">
-          <div className="flex items-center gap-2 border-b border-divider pb-3">
-            <Plus className="w-4 h-4 text-primary" />
-            <h2 className="text-sm font-bold text-white font-heading">上传新房间场景</h2>
+      {/* 主展示区：场景列表 */}
+      <div className="flex flex-col gap-4">
+        <div className="flex items-center justify-between border-b border-zinc-200 dark:border-zinc-800 pb-3">
+          <h2 className="text-sm font-heading text-zinc-900 dark:text-zinc-50 font-bold">
+            全部房间场景 ({scenes.length})
+          </h2>
+          <span className="text-[10px] text-zinc-500 dark:text-zinc-400 font-heading px-2.5 py-1 rounded-full border border-zinc-200 dark:border-zinc-800 bg-zinc-50 dark:bg-zinc-900/50">
+            全局仅能激活一个场景
+          </span>
+        </div>
+
+        {loading ? (
+          /* 骨架屏 */
+          <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-5">
+            <SkeletonCard />
+            <SkeletonCard />
+            <SkeletonCard />
           </div>
-          
-          <form onSubmit={handleSubmitScene} className="flex flex-col gap-4">
-            <div className="flex flex-col gap-1.5 text-left">
-              <label className="text-xs font-bold text-neutral-dark/80 dark:text-neutral-light/80">场景名称</label>
-              <input
-                placeholder="例如：Cozy Workstation"
-                value={title || ''}
-                onChange={(e) => setTitle(e.target.value)}
-                required
-                className="w-full bg-black/20 border border-white/10 rounded-xl px-3 h-8 text-xs text-[#c9d1d9] focus:outline-none focus:ring-1 focus:ring-primary"
-              />
-            </div>
-
-            <div className="flex flex-col gap-1.5 text-left">
-              <label className="text-xs font-bold text-neutral-dark/80 dark:text-neutral-light/80">背景底图 URL</label>
-              <input
-                placeholder="上传图片或直接粘贴外链地址"
-                value={imageUrl || ''}
-                onChange={(e) => setImageUrl(e.target.value)}
-                required
-                className="w-full bg-black/20 border border-white/10 rounded-xl px-3 h-8 text-xs text-[#c9d1d9] focus:outline-none focus:ring-1 focus:ring-primary"
-              />
-            </div>
-
-            {/* 文件上传触发按钮 */}
-            <div className="flex flex-col items-center justify-center p-4 border border-dashed border-divider rounded-2xl hover:border-primary/50 transition-all bg-black/10">
-              <input
-                type="file"
-                accept="image/*"
-                ref={fileInputRef}
-                onChange={handleUploadImage}
-                className="hidden"
-              />
-              
-              {imageUrl ? (
-                <div className="relative w-full aspect-video rounded-xl overflow-hidden border border-divider">
-                  <img
-                    src={imageUrl.startsWith('/') ? `http://localhost:8080${imageUrl}` : imageUrl}
-                    alt="Preview"
-                    className="w-full h-full object-cover"
-                  />
-                  <div className="absolute inset-0 bg-black/50 opacity-0 hover:opacity-100 flex items-center justify-center transition-all">
-                    <Button
-                      size="sm"
-                      variant="secondary"
-                      onClick={() => fileInputRef.current?.click()}
-                      className="font-heading"
+        ) : scenes.length === 0 ? (
+          /* 空状态 */
+          <div className="flex flex-col items-center justify-center border border-dashed border-zinc-200 dark:border-zinc-800 rounded-2xl py-20 bg-white dark:bg-zinc-900/20 gap-3 shadow-sm">
+            <MapPin size={36} className="text-zinc-400 dark:text-zinc-500" />
+            <p className="text-sm font-heading font-semibold text-zinc-900 dark:text-zinc-50">
+              暂无场景配置
+            </p>
+            <p className="text-xs text-zinc-500 dark:text-zinc-400">
+              点击右上角“上传新场景”按钮，创建博客首页房间大图
+            </p>
+          </div>
+        ) : (
+          <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-5">
+            {scenes.map((scene) => {
+              const previewUrl = resolveUrl(scene.imageUrl)
+              return (
+                <div
+                  key={scene.id}
+                  className={`group bg-white dark:bg-zinc-900/40 border rounded-2xl overflow-hidden flex flex-col transition-all duration-300 shadow-sm hover:shadow-md hover:-translate-y-0.5 ${
+                    scene.isActive
+                      ? 'border-primary/50 ring-1 ring-primary/25'
+                      : 'border-zinc-200 dark:border-zinc-800 hover:border-zinc-350 dark:hover:border-zinc-700'
+                  }`}
+                >
+                  {/* 场景预览图 */}
+                  <div className="relative aspect-video w-full overflow-hidden bg-zinc-100 dark:bg-black/20">
+                    <img
+                      src={previewUrl}
+                      alt={scene.title}
+                      className="w-full h-full object-cover transition-transform duration-500 group-hover:scale-103"
+                    />
+                    {/* 状态标签 */}
+                    <div className="absolute top-3 left-3 z-10">
+                      {scene.isActive ? (
+                        <span className="flex items-center gap-1.5 text-[10px] px-2.5 py-0.5 rounded-full bg-emerald-500/10 border border-emerald-500/20 text-emerald-600 dark:text-emerald-400 font-heading font-medium">
+                          <span className="w-1.5 h-1.5 rounded-full bg-emerald-500 animate-pulse" />
+                          当前已启用
+                        </span>
+                      ) : (
+                        <span className="text-[10px] px-2.5 py-0.5 rounded-full bg-zinc-900/60 backdrop-blur-xs border border-white/10 text-white font-heading font-medium">
+                          已停用
+                        </span>
+                      )}
+                    </div>
+                    {/* 删除按钮 */}
+                    <button
+                      onClick={(e) => {
+                        e.preventDefault()
+                        handleDeleteRequest(scene.id)
+                      }}
+                      className="absolute top-3 right-3 z-10 p-1.5 rounded-lg bg-black/45 border border-white/10 text-white hover:text-red-400 hover:border-red-500/30 hover:bg-red-500/10 transition-all opacity-0 group-hover:opacity-100 cursor-pointer"
+                      title="删除场景"
                     >
-                      重新选择
-                    </Button>
+                      <Trash2 size={13} />
+                    </button>
+                  </div>
+
+                  {/* 信息栏 */}
+                  <div className="p-4 flex flex-col gap-3 flex-grow justify-between text-left">
+                    <div className="flex flex-col">
+                      <span className="text-[10px] text-zinc-400 dark:text-zinc-500 font-mono">
+                        ID: {scene.id}
+                      </span>
+                      <h3 className="text-sm font-bold text-zinc-800 dark:text-zinc-100 mt-0.5 font-heading">
+                        {scene.title}
+                      </h3>
+                    </div>
+
+                    {/* 操作按钮 */}
+                    <div className="flex justify-between items-center mt-2 pt-3 border-t border-zinc-100 dark:border-zinc-800/80 gap-2">
+                      {!scene.isActive ? (
+                        <button
+                          onClick={() => handleActivateScene(scene.id)}
+                          className="flex items-center gap-1 px-3 py-2 rounded-lg border border-zinc-200 dark:border-zinc-800 text-zinc-700 dark:text-zinc-300 text-xs font-heading font-medium hover:bg-zinc-50 dark:hover:bg-zinc-800/50 transition-colors flex-1 justify-center cursor-pointer"
+                        >
+                          <Check size={13} /> 设为启用
+                        </button>
+                      ) : (
+                        <span className="flex-1 text-center text-xs text-emerald-600 dark:text-emerald-400 font-heading font-medium flex items-center justify-center gap-1">
+                          <span className="w-1.5 h-1.5 rounded-full bg-emerald-500 animate-pulse" />
+                          正在启用中
+                        </span>
+                      )}
+                      <Link
+                        href={`/scenes/${scene.id}`}
+                        className="flex-1"
+                      >
+                        <button className="flex items-center gap-1 px-3 py-2 rounded-lg bg-zinc-50 dark:bg-zinc-800/50 border border-zinc-200 dark:border-zinc-800 text-zinc-700 dark:text-zinc-300 text-xs font-heading font-medium hover:bg-zinc-100 dark:hover:bg-zinc-800 transition-colors w-full justify-center cursor-pointer">
+                          <Eye size={13} /> 编辑物品
+                        </button>
+                      </Link>
+                    </div>
                   </div>
                 </div>
-              ) : (
-                <Button
-                  size="sm"
-                  variant="secondary"
-                  isDisabled={uploading}
-                  onClick={() => fileInputRef.current?.click()}
-                  className="font-heading gap-1.5"
-                >
-                  {uploading ? <Spinner size="sm" color="accent" /> : <><Upload className="w-4 h-4" /> 选择并上传房间大图</>}
-                </Button>
-              )}
-              <span className="text-[10px] text-neutral-dark/50 dark:text-neutral-light/40 mt-2">推荐尺寸：1920x1080 PNG/JPG 图像</span>
-            </div>
-
-            <Button
-              type="submit"
-              variant="primary"
-              isDisabled={submitting}
-              className="font-heading w-full mt-2 flex items-center justify-center"
-            >
-              {submitting ? <Spinner size="sm" color="accent" /> : '完成场景创建'}
-            </Button>
-          </form>
-        </div>
-
-        {/* Right Cards Grid: Scenes List */}
-        <div className="lg:col-span-2 flex flex-col gap-4">
-          <div className="flex items-center justify-between border-b border-divider pb-3">
-            <h2 className="text-sm font-bold text-white font-heading">当前所有房间场景 ({scenes.length})</h2>
-            <Chip size="sm" variant="secondary">全局有且仅有一个激活场景</Chip>
+              )
+            })}
           </div>
-
-          {loading ? (
-            <div className="flex flex-col justify-center items-center py-16 gap-3">
-              <Spinner color="accent" size="lg" />
-              <span className="text-xs text-neutral-dark/50 dark:text-neutral-light/50">读取房间布局数据中...</span>
-            </div>
-          ) : scenes.length === 0 ? (
-            <div className="flex flex-col items-center justify-center border border-divider rounded-3xl py-20 bg-[#161b22]/30">
-              <MapPin className="w-10 h-10 text-neutral-dark/40 dark:text-neutral-light/30 mb-3" />
-              <span className="text-xs text-neutral-dark/50 dark:text-neutral-light/50 font-heading">暂无场景配置。请从左侧栏新建场景</span>
-            </div>
-          ) : (
-            <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
-              {scenes.map((scene) => {
-                const previewUrl = scene.imageUrl.startsWith('/') 
-                  ? `http://localhost:8080${scene.imageUrl}` 
-                  : scene.imageUrl
-
-                return (
-                  <div 
-                    key={scene.id} 
-                    className={`bg-[#161b22] border rounded-3xl overflow-hidden flex flex-col transition-all duration-300 shadow-lg ${
-                      scene.isActive ? 'border-primary/50 ring-1 ring-primary/25' : 'border-white/10 hover:border-white/25'
-                    }`}
-                  >
-                    {/* Scene Image Frame */}
-                    <div className="relative aspect-video w-full overflow-hidden bg-black/40">
-                      <img 
-                        src={previewUrl}
-                        alt={scene.title}
-                        className="w-full h-full object-cover transition-transform duration-500 hover:scale-105"
-                      />
-                      <div className="absolute top-3 left-3 z-10">
-                        {scene.isActive ? (
-                          <Chip size="sm" color="success" className="font-heading">当前已启用</Chip>
-                        ) : (
-                          <Chip size="sm" color="default" className="font-heading">已停用</Chip>
-                        )}
-                      </div>
-                    </div>
-
-                    {/* Scene Info */}
-                    <div className="p-4 flex flex-col gap-3 flex-grow justify-between text-left">
-                      <div className="flex flex-col">
-                        <span className="text-xs text-neutral-dark/40 dark:text-neutral-light/40 font-mono">ID: {scene.id}</span>
-                        <h3 className="text-sm font-bold text-white mt-0.5 font-heading">{scene.title}</h3>
-                      </div>
-
-                      <div className="flex justify-between items-center mt-2 pt-3 border-t border-divider gap-2">
-                        {!scene.isActive ? (
-                          <Button
-                            size="sm"
-                            variant="outline"
-                            onClick={() => handleActivateScene(scene.id)}
-                            className="border-emerald-500/30 text-emerald-400 hover:bg-emerald-500/10 font-heading flex-grow gap-1"
-                          >
-                            <Check className="w-3.5 h-3.5" /> 设为启用
-                          </Button>
-                        ) : (
-                          <Button
-                            size="sm"
-                            variant="outline"
-                            isDisabled
-                            className="border-emerald-500/20 text-emerald-400/50 font-heading flex-grow opacity-60 cursor-not-allowed"
-                          >
-                            正在启用中
-                          </Button>
-                        )}
-                        
-                        <Link href={`/scenes/${scene.id}`} className="flex-grow flex">
-                          <Button
-                            size="sm"
-                            variant="secondary"
-                            className="font-heading w-full gap-1.5"
-                          >
-                            <Eye className="w-3.5 h-3.5" /> 编辑热区物品
-                          </Button>
-                        </Link>
-                      </div>
-                    </div>
-                  </div>
-                )
-              })}
-            </div>
-          )}
-        </div>
+        )}
       </div>
+
+      {/* 新建场景弹窗 (Modal) */}
+      {showCreateModal && (
+        <div className="fixed inset-0 z-50 flex items-center justify-center">
+          {/* 遮罩 */}
+          <div
+            className="absolute inset-0 bg-black/40 backdrop-blur-xs animate-fade-in"
+            onClick={() => {
+              if (!submitting && !uploading) {
+                setShowCreateModal(false)
+              }
+            }}
+          />
+
+          {/* 弹窗内容 */}
+          <div className="relative z-10 w-full max-w-md mx-4 bg-white dark:bg-zinc-900 border border-zinc-200 dark:border-zinc-800 rounded-2xl shadow-xl animate-slide-up flex flex-col overflow-hidden">
+            <div className="p-6 flex flex-col gap-4">
+              <div className="flex items-center justify-between border-b border-zinc-100 dark:border-zinc-800 pb-3">
+                <div className="flex items-center gap-2">
+                  <Plus className="w-4 h-4 text-primary" />
+                  <h2 className="text-sm font-bold text-zinc-900 dark:text-zinc-50 font-heading">上传新房间场景</h2>
+                </div>
+                <button
+                  onClick={() => setShowCreateModal(false)}
+                  disabled={submitting || uploading}
+                  className="p-1 rounded-md text-zinc-400 hover:text-zinc-500 dark:hover:text-zinc-200 hover:bg-zinc-50 dark:hover:bg-zinc-800 transition-colors disabled:opacity-50 cursor-pointer"
+                >
+                  <X size={16} />
+                </button>
+              </div>
+
+              <form
+                onSubmit={async (e) => {
+                  e.preventDefault()
+                  await handleSubmitScene(e)
+                  setShowCreateModal(false)
+                }}
+                className="flex flex-col gap-4 text-left"
+              >
+                <div className="flex flex-col gap-1.5">
+                  <label className="text-xs font-heading font-medium text-zinc-700 dark:text-zinc-300">
+                    场景名称
+                  </label>
+                  <input
+                    placeholder="例如：Cozy Workstation"
+                    value={title}
+                    onChange={(e) => setTitle(e.target.value)}
+                    required
+                    className="w-full bg-zinc-50 dark:bg-zinc-950 border border-zinc-200 dark:border-zinc-800 rounded-lg px-3 h-9 text-xs text-zinc-900 dark:text-zinc-100 focus:outline-none focus:ring-1 focus:ring-primary focus:border-primary transition-all"
+                  />
+                </div>
+
+                <div className="flex flex-col gap-1.5">
+                  <label className="text-xs font-heading font-medium text-zinc-700 dark:text-zinc-300">
+                    背景底图 URL
+                  </label>
+                  <input
+                    placeholder="上传图片或直接粘贴外链地址"
+                    value={imageUrl}
+                    onChange={(e) => setImageUrl(e.target.value)}
+                    required
+                    className="w-full bg-zinc-50 dark:bg-zinc-950 border border-zinc-200 dark:border-zinc-800 rounded-lg px-3 h-9 text-xs text-zinc-900 dark:text-zinc-100 focus:outline-none focus:ring-1 focus:ring-primary focus:border-primary transition-all"
+                  />
+                </div>
+
+                {/* 文件上传 */}
+                <div className="flex flex-col items-center justify-center p-4 border border-dashed border-zinc-200 dark:border-zinc-800 rounded-xl hover:border-primary/50 transition-all bg-zinc-50/50 dark:bg-zinc-950/20">
+                  <input
+                    type="file"
+                    accept="image/*"
+                    ref={fileInputRef}
+                    onChange={handleUploadImage}
+                    className="hidden"
+                  />
+                  {imageUrl ? (
+                    <div className="relative w-full aspect-video rounded-lg overflow-hidden border border-zinc-200 dark:border-zinc-800">
+                      <img
+                        src={resolveUrl(imageUrl)}
+                        alt="Preview"
+                        className="w-full h-full object-cover"
+                      />
+                      <div className="absolute inset-0 bg-black/40 opacity-0 hover:opacity-100 flex items-center justify-center transition-all">
+                        <button
+                          type="button"
+                          onClick={() => fileInputRef.current?.click()}
+                          className="px-3 py-1.5 rounded-md bg-white text-zinc-900 text-xs font-medium hover:bg-zinc-100 transition-colors cursor-pointer"
+                        >
+                          重新选择
+                        </button>
+                      </div>
+                    </div>
+                  ) : (
+                    <button
+                      type="button"
+                      disabled={uploading}
+                      onClick={() => fileInputRef.current?.click()}
+                      className="flex items-center gap-1.5 px-3 py-2 rounded-lg bg-white dark:bg-zinc-800 border border-zinc-200 dark:border-zinc-700 text-zinc-700 dark:text-zinc-200 text-xs font-heading hover:bg-zinc-50 dark:hover:bg-zinc-800 transition-colors disabled:opacity-50 cursor-pointer shadow-sm"
+                    >
+                      {uploading ? (
+                        <Spinner size="sm" />
+                      ) : (
+                        <Upload size={14} />
+                      )}
+                      选择并上传房间大图
+                    </button>
+                  )}
+                  <span className="text-[10px] text-zinc-400 dark:text-zinc-500 mt-2 font-mono">
+                    推荐尺寸：1920×1080 PNG/JPG
+                  </span>
+                </div>
+
+                <div className="flex items-center gap-3 border-t border-zinc-100 dark:border-zinc-800 pt-4 mt-2">
+                  <button
+                    type="button"
+                    disabled={submitting || uploading}
+                    onClick={() => setShowCreateModal(false)}
+                    className="flex-1 py-2 rounded-lg border border-zinc-200 dark:border-zinc-800 text-zinc-700 dark:text-zinc-300 text-xs font-heading hover:bg-zinc-50 dark:hover:bg-zinc-800 transition-colors disabled:opacity-50 cursor-pointer"
+                  >
+                    取消
+                  </button>
+                  <button
+                    type="submit"
+                    disabled={submitting || uploading || !title.trim() || !imageUrl.trim()}
+                    className="flex-1 py-2 rounded-lg bg-primary text-white text-xs font-heading font-medium hover:opacity-90 active:scale-98 transition-all disabled:opacity-50 cursor-pointer flex items-center justify-center gap-1.5"
+                  >
+                    {submitting ? (
+                      <Spinner size="sm" />
+                    ) : (
+                      '完成创建'
+                    )}
+                  </button>
+                </div>
+              </form>
+            </div>
+          </div>
+        </div>
+      )}
+
+      {/* 删除确认弹窗 */}
+      <ConfirmModal
+        open={confirmDeleteId !== null}
+        variant="danger"
+        title="确认删除场景"
+        description="删除场景将同时清理该场景下的全部热区物品配置。此操作不可撤销。"
+        confirmLabel="删除"
+        cancelLabel="取消"
+        loading={deleteLoading}
+        onConfirm={handleDeleteConfirm}
+        onCancel={() => setConfirmDeleteId(null)}
+      />
     </div>
   )
 }
