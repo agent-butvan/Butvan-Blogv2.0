@@ -35,3 +35,35 @@ h1, h2, h3, h4, h5, h6 {
   font-family: var(--font-heading), sans-serif;
   font-weight: 700;
 }
+
+/* 高级悬浮 3D 动效 */
+@utility animate-float {
+  animation: float 6s ease-in-out infinite;
+}
+
+@utility animate-float-shadow {
+  animation: float-shadow 6s ease-in-out infinite;
+}
+
+@keyframes float {
+  0%, 100% {
+    transform: translateY(0px) rotate(0deg);
+  }
+  50% {
+    transform: translateY(-14px) rotate(1deg);
+  }
+}
+
+@keyframes float-shadow {
+  0%, 100% {
+    transform: scale(1) translateY(0);
+    opacity: 0.35;
+    filter: blur(5px);
+  }
+  50% {
+    transform: scale(0.72) translateY(3px);
+    opacity: 0.12;
+    filter: blur(8px);
+  }
+}
+

@@ -21,6 +21,10 @@ interface SceneToolbarProps {
   onUploadManualSprite: (file: File) => void
   /** 是否正在上传 */
   uploading?: boolean
+  /** 是否启用智能抠图（框选后自动去背景） */
+  smartExtraction?: boolean
+  /** 智能抠图开关回调 */
+  onSmartExtractionChange?: (enabled: boolean) => void
 }
 
 /**
@@ -35,6 +39,8 @@ export default function SceneToolbar({
   onModeChange,
   onUploadManualSprite,
   uploading = false,
+  smartExtraction = true,
+  onSmartExtractionChange,
 }: SceneToolbarProps) {
   const fileInputRef = useRef<HTMLInputElement>(null)
 
@@ -110,6 +116,21 @@ export default function SceneToolbar({
             框选物品
           </button>
         </div>
+
+        {/* 智能抠图开关（仅 draw 模式可见） */}
+        {mode === 'draw' && onSmartExtractionChange && (
+          <button
+            onClick={() => onSmartExtractionChange(!smartExtraction)}
+            className={`${modeBtnBase} border-zinc-200 dark:border-zinc-800 cursor-pointer shadow-sm ${
+              smartExtraction
+                ? 'bg-primary/10 text-primary border-primary/40 font-semibold'
+                : 'bg-white dark:bg-zinc-900 text-zinc-500 dark:text-zinc-400 hover:bg-zinc-50 dark:hover:bg-zinc-800'
+            }`}
+            title={smartExtraction ? '已启用 AI 智能抠图' : '已关闭智能抠图，使用矩形裁剪'}
+          >
+            ✨ {smartExtraction ? '智能抠图' : '矩形裁剪'}
+          </button>
+        )}
 
         {/* 手动上传物品图 */}
         <input

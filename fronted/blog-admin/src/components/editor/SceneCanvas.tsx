@@ -46,6 +46,10 @@ interface SceneCanvasProps {
   isDrawing: boolean
   /** 是否正在裁剪上传中 */
   isCropping: boolean
+  /** 智能抠图进度（0-100），仅 isExtracting 为 true 时有效 */
+  extractionProgress?: number
+  /** 是否正在进行智能抠图 */
+  isExtracting?: boolean
   /** 画布鼠标按下 */
   onMouseDown: (e: React.MouseEvent<HTMLDivElement>) => void
   /** 画布鼠标移动 */
@@ -79,6 +83,8 @@ const SceneCanvas = forwardRef<HTMLDivElement, SceneCanvasProps>(
       drawingRect,
       isDrawing,
       isCropping,
+      extractionProgress = 0,
+      isExtracting = false,
       onMouseDown,
       onMouseMove,
       onMouseUp,
@@ -258,11 +264,23 @@ const SceneCanvas = forwardRef<HTMLDivElement, SceneCanvasProps>(
             <div className="absolute inset-0 z-50 bg-black/60 flex flex-col items-center justify-center gap-3 animate-fade-in">
               <div className="w-8 h-8 border-2 border-primary border-t-transparent rounded-full animate-spin" />
               <span className="text-sm text-white font-heading">
-                正在裁剪并上传物品图...
+                {isExtracting
+                  ? `AI 智能抠图中... ${extractionProgress}%`
+                  : '正在裁剪并上传物品图...'}
               </span>
               <span className="text-xs text-neutral-light/50">
-                从背景中提取选中区域
+                {isExtracting
+                  ? 'AI 模型正在分析图像并移除背景'
+                  : '从背景中提取选中区域'}
               </span>
+              {isExtracting && (
+                <div className="w-48 h-1.5 bg-white/20 rounded-full overflow-hidden mt-1">
+                  <div
+                    className="h-full bg-gradient-to-r from-primary to-accent rounded-full transition-all duration-300 ease-out"
+                    style={{ width: `${extractionProgress}%` }}
+                  />
+                </div>
+              )}
             </div>
           )}
         </div>
