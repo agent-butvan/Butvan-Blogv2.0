@@ -217,3 +217,70 @@ h6 {
 .animate-pulse-glow {
   animation: pulseGlow 3s infinite ease-in-out;
 }
+
+/* ============================================================================
+ * 场景编辑器专用动画
+ * ============================================================================ */
+
+/* 虚线流动（marching ants）—— 框选矩形边框 */
+@keyframes dashMove {
+  0% {
+    stroke-dashoffset: 0;
+  }
+  100% {
+    stroke-dashoffset: 20;
+  }
+}
+
+/* 裁剪完成闪烁 */
+@keyframes cropFlash {
+  0% {
+    opacity: 0;
+    transform: scale(1.08);
+  }
+  40% {
+    opacity: 1;
+    transform: scale(1);
+  }
+  100% {
+    opacity: 0.75;
+  }
+}
+
+/* 框选模式脉冲提示 */
+@keyframes drawPulse {
+  0%,
+  100% {
+    box-shadow: 0 0 0 0 rgba(114, 123, 186, 0.35);
+  }
+  50% {
+    box-shadow: 0 0 0 8px rgba(114, 123, 186, 0);
+  }
+}
+
+/* 骨架屏闪烁 */
+@keyframes skeletonPulse {
+  0%,
+  100% {
+    opacity: 1;
+  }
+  50% {
+    opacity: 0.4;
+  }
+}
+
+.animate-dash-move {
+  animation: dashMove 0.6s linear infinite;
+}
+
+.animate-crop-flash {
+  animation: cropFlash 0.5s ease-out forwards;
+}
+
+.animate-draw-pulse {
+  animation: drawPulse 2s ease-out infinite;
+}
+
+.animate-skeleton-pulse {
+  animation: skeletonPulse 1.5s ease-in-out infinite;
+}

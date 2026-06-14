@@ -71,12 +71,12 @@ export default function Sidebar() {
   return (
     <aside
       className={cn(
-        "flex flex-col bg-white border-r border-zinc-200 h-screen sticky top-0 transition-all duration-200 select-none z-30",
+        "flex flex-col bg-white dark:bg-zinc-900 border-r border-zinc-200 dark:border-zinc-800 h-screen sticky top-0 transition-all duration-200 select-none z-30",
         collapsed ? "w-[68px]" : "w-[240px]"
       )}
     >
       {/* 顶层 Logo 标志区 */}
-      <div className="flex h-16 items-center justify-between px-4 border-b border-zinc-100 shrink-0">
+      <div className="flex h-16 items-center justify-between px-4 border-b border-zinc-100 dark:border-zinc-800 shrink-0">
         {!collapsed && (
           <span className="font-heading font-bold text-lg text-primary whitespace-nowrap tracking-wide animate-[fadeIn_0.2s_ease-out]">
             可梵后台
@@ -84,7 +84,7 @@ export default function Sidebar() {
         )}
         <button
           onClick={() => setCollapsed(!collapsed)}
-          className="p-1.5 rounded-lg hover:bg-zinc-100 text-zinc-400 hover:text-zinc-600 transition-colors ml-auto cursor-pointer"
+          className="p-1.5 rounded-lg hover:bg-zinc-100 dark:hover:bg-zinc-800 text-zinc-400 dark:text-zinc-500 hover:text-zinc-600 dark:hover:text-zinc-300 transition-colors ml-auto cursor-pointer"
           aria-label={collapsed ? "展开侧边栏" : "收起侧边栏"}
         >
           {collapsed ? <ChevronRight size={18} /> : <ChevronLeft size={18} />}
@@ -98,8 +98,8 @@ export default function Sidebar() {
           <div className="space-y-3.5 px-2.5 py-1">
             {[1, 2, 3, 4, 5, 6, 7, 8].map((i) => (
               <div key={i} className="flex items-center gap-3 animate-pulse">
-                <div className="w-5 h-5 rounded-full bg-zinc-200 shrink-0" />
-                {!collapsed && <div className="h-4 bg-zinc-100 rounded w-2/3" />}
+                <div className="w-5 h-5 rounded-full bg-zinc-200 dark:bg-zinc-800 shrink-0" />
+                {!collapsed && <div className="h-4 bg-zinc-100 dark:bg-zinc-800/40 rounded w-2/3" />}
               </div>
             ))}
           </div>
@@ -111,7 +111,7 @@ export default function Sidebar() {
             <AlertCircle size={18} className="text-red-400 shrink-0" />
             {!collapsed && (
               <div className="flex flex-col gap-1.5 animate-[fadeIn_0.2s_ease-out]">
-                <span className="text-xs text-zinc-500">菜单加载失败</span>
+                <span className="text-xs text-zinc-500 dark:text-zinc-400">菜单加载失败</span>
                 <button
                   onClick={loadMenus}
                   className="text-xs text-primary font-bold hover:underline cursor-pointer flex items-center justify-center gap-1 mt-0.5"
@@ -147,7 +147,7 @@ export default function Sidebar() {
                 "w-full flex items-center gap-3 px-3 py-2.5 mb-0.5 rounded-lg text-sm transition-all duration-150 cursor-pointer text-left focus:outline-none",
                 active
                   ? "bg-primary/10 text-primary font-semibold shadow-sm"
-                  : "text-zinc-600 hover:bg-zinc-100 hover:text-zinc-950"
+                  : "text-zinc-600 dark:text-zinc-400 hover:bg-zinc-100 dark:hover:bg-zinc-800 hover:text-zinc-950 dark:hover:text-zinc-100"
               )}
               title={collapsed ? item.title : undefined}
             >
@@ -164,8 +164,8 @@ export default function Sidebar() {
 
       {/* 底部版权栏 */}
       {!collapsed && (
-        <div className="px-4 py-3.5 border-t border-zinc-100 shrink-0 text-left">
-          <p className="text-[10px] text-zinc-400 tracking-wider font-mono">Butvan Blog 2.0</p>
+        <div className="px-4 py-3.5 border-t border-zinc-100 dark:border-zinc-800 shrink-0 text-left">
+          <p className="text-[10px] text-zinc-400 dark:text-zinc-500 tracking-wider font-mono">Butvan Blog 2.0</p>
         </div>
       )}
     </aside>

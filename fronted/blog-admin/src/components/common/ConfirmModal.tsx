@@ -37,9 +37,9 @@ export default function ConfirmModal({
   };
 
   const iconColors: Record<string, string> = {
-    danger: "text-red-500 bg-red-50",
-    warning: "text-amber-500 bg-amber-50",
-    primary: "text-primary bg-primary/10",
+    danger: "text-red-500 bg-red-50 dark:bg-red-950/20",
+    warning: "text-amber-500 bg-amber-50 dark:bg-amber-950/20",
+    primary: "text-primary bg-primary/10 dark:bg-primary/20",
   };
 
   return (
@@ -51,7 +51,7 @@ export default function ConfirmModal({
       />
 
       {/* 弹窗 */}
-      <div className="relative z-10 w-full max-w-sm mx-4 rounded-2xl bg-white shadow-xl animate-slide-up">
+      <div className="relative z-10 w-full max-w-sm mx-4 rounded-2xl bg-white dark:bg-zinc-900 border border-transparent dark:border-zinc-800 shadow-xl animate-slide-up">
         <div className="p-6 text-center">
           {/* 图标 */}
           <div
@@ -61,24 +61,24 @@ export default function ConfirmModal({
           </div>
 
           {/* 标题 */}
-          <h3 className="font-heading text-lg font-semibold text-neutral-dark mb-2">
+          <h3 className="font-heading text-lg font-semibold text-neutral-dark dark:text-zinc-100 mb-2">
             {title}
           </h3>
 
           {/* 描述 */}
-          <p className="text-sm text-zinc-500 leading-relaxed">{description}</p>
+          <p className="text-sm text-zinc-500 dark:text-zinc-400 leading-relaxed">{description}</p>
         </div>
 
         {/* 按钮 */}
-        <div className="flex items-center border-t border-zinc-100">
+        <div className="flex items-center border-t border-zinc-100 dark:border-zinc-800">
           <button
             onClick={onCancel}
             disabled={loading}
-            className="flex-1 px-4 py-3 text-sm text-zinc-600 hover:bg-zinc-50 rounded-bl-2xl transition-colors disabled:opacity-50"
+            className="flex-1 px-4 py-3 text-sm text-zinc-600 dark:text-zinc-400 hover:bg-zinc-50 dark:hover:bg-zinc-800 rounded-bl-2xl transition-colors disabled:opacity-50"
           >
             {cancelLabel}
           </button>
-          <div className="w-px h-10 bg-zinc-100" />
+          <div className="w-px h-10 bg-zinc-100 dark:bg-zinc-800" />
           <button
             onClick={onConfirm}
             disabled={loading}

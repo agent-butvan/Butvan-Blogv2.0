@@ -10,7 +10,7 @@ import TopBar from "./TopBar";
  */
 export default function AdminLayout({ children }: { children: React.ReactNode }) {
   return (
-    <div className="flex h-screen overflow-hidden bg-neutral-light">
+    <div className="flex h-screen overflow-hidden bg-neutral-light dark:bg-zinc-950">
       {/* 侧边栏 */}
       <Sidebar />
 
