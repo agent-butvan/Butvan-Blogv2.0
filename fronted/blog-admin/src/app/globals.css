@@ -1,37 +1,127 @@
-@import url('https://fonts.googleapis.com/css2?family=Archivo:wght@300;400;500;600;700&family=Space+Grotesk:wght@300;400;500;600;700&display=swap');
+/* ============================================================================
+ * Butvan Blog 2.0 — 管理后台全局样式
+ * 配色方案：静谧深海 (Quiet Deep Sea)
+ * 主色 #727BBA / 次要色 #9BADCF / 强调色 #CDBDE8
+ * ============================================================================ */
+
+/* Google 字体：Archivo (标题) + Space Grotesk (正文) */
+@import url("https://fonts.googleapis.com/css2?family=Archivo:wght@300;400;500;600;700&family=Space+Grotesk:wght@300;400;500;600;700&display=swap");
+
+/* Tailwind CSS v4 */
 @import "tailwindcss";
+
+/* HeroUI 主题类扫描 */
 @source "../../node_modules/@heroui/theme/dist/**/*.{js,ts,jsx,tsx}";
 
+/* ============================================================================
+ * 主题变量（静谧深海配色）
+ * ============================================================================ */
 @theme {
-  --font-heading: 'Archivo', sans-serif;
-  --font-body: 'Space Grotesk', sans-serif;
+  /* 字体 */
+  --font-heading: "Archivo", sans-serif;
+  --font-body: "Space Grotesk", sans-serif;
 
-  --color-primary: #727BBA;
-  --color-secondary: #9BADCF;
-  --color-accent: #CDBDE8;
-  --color-neutral-dark: #09090B;
-  --color-neutral-light: #FAFAFA;
+  /* 品牌色 */
+  --color-primary: #727bba; /* 深靛蓝 — 主按钮、选中态、链接 */
+  --color-secondary: #9badcf; /* 天蓝 — 次要元素、标签、辅助图标 */
+  --color-accent: #cdbde8; /* 浅紫罗兰 — 高亮、强调装饰 */
+
+  /* 中性色 */
+  --color-neutral-dark: #09090b; /* 最深 — 标题文字、深色背景 */
+  --color-neutral-light: #fafafa; /* 最浅 — 页面背景、卡片背景 */
 }
 
+/* ============================================================================
+ * 浅色 / 深色模式
+ * ============================================================================ */
 :root {
-  --background: #FAFAFA;
-  --foreground: #09090B;
+  --background: #fafafa;
+  --foreground: #09090b;
 }
 
 @media (prefers-color-scheme: dark) {
   :root {
-    --background: #09090B;
-    --foreground: #FAFAFA;
+    --background: #09090b;
+    --foreground: #fafafa;
   }
 }
 
+/* ============================================================================
+ * 全局基础样式
+ * ============================================================================ */
 body {
-  background: var(--background);
-  color: var(--foreground);
-  font-family: var(--font-body), sans-serif;
+  font-family: var(--font-body);
 }
 
-h1, h2, h3, h4, h5, h6 {
-  font-family: var(--font-heading), sans-serif;
+h1,
+h2,
+h3,
+h4,
+h5,
+h6 {
+  font-family: var(--font-heading);
   font-weight: 700;
+}
+
+/* ============================================================================
+ * Markdown 编辑器（@uiw/react-md-editor）样式覆盖
+ * ============================================================================ */
+.w-md-editor {
+  --md-editor-font-family: var(--font-body);
+  border-radius: 8px;
+  box-shadow: 0 1px 2px rgba(0, 0, 0, 0.05);
+  border: 1px solid #e4e4e7;
+}
+
+.w-md-editor-toolbar {
+  border-bottom: 1px solid #e4e4e7;
+  background: #fafafa;
+}
+
+.w-md-editor-text-pre > code,
+.w-md-editor-text-input {
+  font-family: "JetBrains Mono", "Fira Code", monospace !important;
+  font-size: 14px;
+  line-height: 1.7;
+}
+
+/* Markdown 预览区 */
+.wmde-markdown {
+  font-family: var(--font-body);
+  font-size: 15px;
+  line-height: 1.8;
+}
+
+.wmde-markdown h1,
+.wmde-markdown h2,
+.wmde-markdown h3,
+.wmde-markdown h4,
+.wmde-markdown h5,
+.wmde-markdown h6 {
+  font-family: var(--font-heading);
+  font-weight: 700;
+  border-bottom: none;
+}
+
+/* ============================================================================
+ * 通用工具类
+ * ============================================================================ */
+
+/* 自定义滚动条（侧边栏等） */
+.custom-scrollbar::-webkit-scrollbar {
+  width: 6px;
+  height: 6px;
+}
+
+.custom-scrollbar::-webkit-scrollbar-track {
+  background: transparent;
+}
+
+.custom-scrollbar::-webkit-scrollbar-thumb {
+  background: #d4d4d8;
+  border-radius: 3px;
+}
+
+.custom-scrollbar::-webkit-scrollbar-thumb:hover {
+  background: #a1a1aa;
 }
