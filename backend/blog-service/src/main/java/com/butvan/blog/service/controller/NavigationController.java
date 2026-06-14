@@ -15,7 +15,6 @@ import java.util.List;
 @RequestMapping("/api")
 @RequiredArgsConstructor
 @Slf4j
-@CrossOrigin(origins = "*") // 支持前后端跨域
 public class NavigationController {
 
     private final NavigationService navigationService;
