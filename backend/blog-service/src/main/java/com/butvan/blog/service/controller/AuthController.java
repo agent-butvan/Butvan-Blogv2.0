@@ -1,4 +1,4 @@
-package com.butvan.blog.service.controller;
+    package com.butvan.blog.service.controller;
 
 import com.butvan.blog.common.result.Result;
 import com.butvan.blog.pojo.dto.auth.LoginDTO;
@@ -6,7 +6,7 @@ import com.butvan.blog.pojo.dto.auth.RegisterDTO;
 import com.butvan.blog.pojo.vo.auth.LoginVO;
 import com.butvan.blog.service.service.AuthService;
 import lombok.RequiredArgsConstructor;
-import lombok.extern.slf4j.Slf4j;
+import lombok.extern.slf4j.Slf4j;   
 import org.springframework.validation.annotation.Validated;
 import org.springframework.web.bind.annotation.*;
 
