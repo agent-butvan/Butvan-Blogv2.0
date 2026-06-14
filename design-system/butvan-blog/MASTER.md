@@ -7,8 +7,8 @@
 ---
 
 **Project:** Butvan Blog
-**Generated:** 2026-06-14 09:51:35
-**Category:** Luxury/Premium Brand
+**Generated:** 2026-06-14 14:26:20
+**Category:** Smart Home/IoT Dashboard
 
 ---
 
@@ -18,13 +18,13 @@
 
 | Role | Hex | CSS Variable |
 |------|-----|--------------|
-| Primary | `#18181B` | `--color-primary` |
-| Secondary | `#3F3F46` | `--color-secondary` |
-| CTA/Accent | `#2563EB` | `--color-cta` |
-| Background | `#FAFAFA` | `--color-background` |
-| Text | `#09090B` | `--color-text` |
+| Primary | `#171717` | `--color-primary` |
+| Secondary | `#404040` | `--color-secondary` |
+| CTA/Accent | `#D4AF37` | `--color-cta` |
+| Background | `#FFFFFF` | `--color-background` |
+| Text | `#171717` | `--color-text` |
 
-**Color Notes:** Monochrome + blue accent
+**Color Notes:** Minimal black + accent gold
 
 ### Typography
 
@@ -68,7 +68,7 @@
 ```css
 /* Primary Button */
 .btn-primary {
-  background: #2563EB;
+  background: #D4AF37;
   color: white;
   padding: 12px 24px;
   border-radius: 8px;
@@ -85,8 +85,8 @@
 /* Secondary Button */
 .btn-secondary {
   background: transparent;
-  color: #18181B;
-  border: 2px solid #18181B;
+  color: #171717;
+  border: 2px solid #171717;
   padding: 12px 24px;
   border-radius: 8px;
   font-weight: 600;
@@ -99,7 +99,7 @@
 
 ```css
 .card {
-  background: #FAFAFA;
+  background: #FFFFFF;
   border-radius: 12px;
   padding: 24px;
   box-shadow: var(--shadow-md);
@@ -125,9 +125,9 @@
 }
 
 .input:focus {
-  border-color: #18181B;
+  border-color: #171717;
   outline: none;
-  box-shadow: 0 0 0 3px #18181B20;
+  box-shadow: 0 0 0 3px #17171720;
 }
 ```
 
@@ -153,13 +153,13 @@
 
 ## Style Guidelines
 
-**Style:** Liquid Glass
+**Style:** Glassmorphism
 
-**Keywords:** Flowing glass, morphing, smooth transitions, fluid effects, translucent, animated blur, iridescent, chromatic aberration
+**Keywords:** Frosted glass, transparent, blurred background, layered, vibrant background, light source, depth, multi-layer
 
-**Best For:** Premium SaaS, high-end e-commerce, creative platforms, branding experiences, luxury portfolios
+**Best For:** Modern SaaS, financial dashboards, high-end corporate, lifestyle apps, modal overlays, navigation
 
-**Key Effects:** Morphing elements (SVG/CSS), fluid animations (400-600ms curves), dynamic blur (backdrop-filter), color transitions
+**Key Effects:** Backdrop blur (10-20px), subtle border (1px solid rgba white 0.2), light reflection, Z-depth
 
 ### Page Pattern
 
@@ -173,8 +173,8 @@
 
 ## Anti-Patterns (Do NOT Use)
 
-- ❌ Cheap visuals
-- ❌ Fast animations
+- ❌ Slow updates
+- ❌ No automation
 
 ### Additional Forbidden Patterns
 
