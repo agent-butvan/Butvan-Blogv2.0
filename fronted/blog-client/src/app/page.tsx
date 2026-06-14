@@ -2,16 +2,15 @@
 
 import React, { useState, useEffect } from 'react'
 import { Card, Button, Chip } from '@heroui/react'
-import { BookOpen, Laptop, Coffee, ArrowLeft, Terminal, User, FileText } from 'lucide-react'
+import { BookOpen, Laptop, Coffee, ArrowLeft, Terminal, User, FileText, Sparkles, Wind } from 'lucide-react'
 
-// Define the hotspot type
+// Define the SVG polygon hotspot type
 interface Hotspot {
   id: number
   itemName: string
-  x: number // percentage
-  y: number // percentage
-  w: number // percentage
-  h: number // percentage
+  points: string // SVG polygon points (0-100 percentage based)
+  zoomX: number  // Focus X coordinate (percentage)
+  zoomY: number  // Focus Y coordinate (percentage)
   hoverTips: string
   redirectPath: string
   zoomScale: number
@@ -19,42 +18,39 @@ interface Hotspot {
 }
 
 export default function HomePage() {
-  // Static hotspots list for v0.1 static demo
-  const staticHotspots: Hotspot[] = [
+  // Configured precisely matching the cozy room fWdgJuAOF.jpeg
+  const hotspots: Hotspot[] = [
     {
       id: 1,
-      itemName: '电脑桌/工作台',
-      x: 41.0,
-      y: 33.0,
-      w: 18.0,
-      h: 18.0,
-      hoverTips: '来看看我写的开源项目和代码吗？',
+      itemName: 'iMac 工作台',
+      points: '21.3,58.2 30.7,57.5 30.7,66.8 27.5,66.8 27.5,70.5 24.5,70.5 24.5,66.8 21.3,66.8',
+      zoomX: 26.0,
+      zoomY: 64.0,
+      hoverTips: '要来看看我写的开源项目和代码吗？',
       redirectPath: 'projects',
-      zoomScale: 3.5,
+      zoomScale: 3.8,
       icon: <Laptop className="w-4 h-4 text-primary" />
     },
     {
       id: 2,
-      itemName: '书架',
-      x: 21.0,
-      y: 10.0,
-      w: 14.0,
-      h: 40.0,
-      hoverTips: '翻一翻我的技术博客与读书笔记',
+      itemName: '空调 (Air Conditioner)',
+      points: '17.5,21.5 30.7,21.5 30.7,34.2 17.5,34.2',
+      zoomX: 24.1,
+      zoomY: 27.8,
+      hoverTips: '翻一翻我的技术博客与最新随笔文章',
       redirectPath: 'blog',
-      zoomScale: 3.0,
+      zoomScale: 3.2,
       icon: <BookOpen className="w-4 h-4 text-primary" />
     },
     {
       id: 3,
-      itemName: '咖啡杯',
-      x: 58.0,
-      y: 53.0,
-      w: 5.0,
-      h: 9.0,
-      hoverTips: '聊聊关于我、我的故事和咖啡',
+      itemName: '墙壁相框',
+      points: '93.8,40.5 98.2,40.5 98.2,54.5 93.8,54.5',
+      zoomX: 96.0,
+      zoomY: 47.5,
+      hoverTips: '了解关于我的故事、技术栈和联系方式',
       redirectPath: 'about',
-      zoomScale: 4.2,
+      zoomScale: 3.5,
       icon: <Coffee className="w-4 h-4 text-primary" />
     }
   ]
@@ -70,40 +66,29 @@ export default function HomePage() {
   const [showTargetPage, setShowTargetPage] = useState<string | null>(null)
   const [mousePos, setMousePos] = useState({ x: 0, y: 0 })
 
-  // Track mouse coordinates for tooltip positioning
   const handleMouseMove = (e: React.MouseEvent) => {
     setMousePos({ x: e.clientX, y: e.clientY })
   }
 
-  // Handle click on hotspot
   const handleHotspotClick = (hotspot: Hotspot) => {
     if (zoomState.active) return
     setActiveHotspot(hotspot)
-    
-    // Calculate center coordinates of hotspot for zooming
-    const centerX = hotspot.x + hotspot.w / 2
-    const centerY = hotspot.y + hotspot.h / 2
 
-    // Trigger zoom-in
     setZoomState({
       active: true,
-      x: centerX,
-      y: centerY,
+      x: hotspot.zoomX,
+      y: hotspot.zoomY,
       scale: hotspot.zoomScale
     })
 
-    // After animation, show content
     setTimeout(() => {
       setShowTargetPage(hotspot.redirectPath)
     }, 850)
   }
 
-  // Go back to the room
   const handleBackToRoom = () => {
     setShowTargetPage(null)
     setActiveHotspot(null)
-    
-    // Zoom back out
     setZoomState({
       active: false,
       x: 50,
@@ -115,6 +100,39 @@ export default function HomePage() {
   return (
     <main className="relative w-screen h-screen overflow-hidden bg-neutral-dark flex items-center justify-center font-body selection:bg-primary/30">
       
+      {/* Dynamic CSS Styles for Silicon SVG Glow & Pulse */}
+      <style jsx global>{`
+        @keyframes pulseBorder {
+          0%, 100% {
+            stroke: rgba(255, 255, 255, 0.2);
+            fill: rgba(255, 255, 255, 0.01);
+          }
+          50% {
+            stroke: rgba(114, 123, 186, 0.45);
+            fill: rgba(114, 123, 186, 0.02);
+          }
+        }
+        .polygon-hotspot {
+          transition: all 0.4s cubic-bezier(0.25, 0.8, 0.25, 1);
+          animation: pulseBorder 3s infinite ease-in-out;
+          cursor: pointer;
+        }
+        .polygon-hotspot:hover {
+          animation: none;
+          fill: rgba(114, 123, 186, 0.18) !important;
+          stroke: #727BBA !important;
+          stroke-width: 0.5px !important;
+          filter: drop-shadow(0 0 8px rgba(114, 123, 186, 0.85)) drop-shadow(0 0 2px rgba(114, 123, 186, 0.5));
+        }
+        .polygon-active {
+          animation: none;
+          fill: rgba(114, 123, 186, 0.25) !important;
+          stroke: #727BBA !important;
+          stroke-width: 0.6px !important;
+          filter: drop-shadow(0 0 12px rgba(114, 123, 186, 0.9));
+        }
+      `}</style>
+
       {/* 1. ROOM VIEW CONTAINER */}
       <div 
         className="relative w-full h-full flex items-center justify-center transition-transform duration-[850ms] ease-[cubic-bezier(0.25,1,0.5,1)]"
@@ -130,44 +148,36 @@ export default function HomePage() {
         />
 
         {/* Ambient Dark Overlay to make it premium */}
-        <div className="absolute inset-0 bg-black/15 pointer-events-none" />
+        <div className="absolute inset-0 bg-black/10 pointer-events-none" />
 
-        {/* Responsive Hotspots SVG Overlay */}
+        {/* SVG Polygon Overlay Layer */}
         <svg 
           viewBox="0 0 100 100" 
           preserveAspectRatio="none" 
           className="absolute inset-0 w-full h-full z-10 select-none pointer-events-auto"
         >
-          {staticHotspots.map((hotspot) => {
+          {hotspots.map((hotspot) => {
             const isHovered = hoveredHotspot?.id === hotspot.id
             const isActive = activeHotspot?.id === hotspot.id
             return (
-              <g key={hotspot.id} className="cursor-pointer">
-                {/* Visual Area Highlight */}
-                <rect
-                  x={hotspot.x}
-                  y={hotspot.y}
-                  width={hotspot.w}
-                  height={hotspot.h}
-                  fill={isHovered ? 'rgba(114, 123, 186, 0.15)' : 'rgba(0, 0, 0, 0)'}
-                  stroke={isHovered || isActive ? '#727BBA' : 'rgba(255, 255, 255, 0.1)'}
-                  strokeWidth={isHovered || isActive ? '0.35' : '0.15'}
-                  strokeDasharray={isHovered ? 'none' : '1, 1'}
-                  className="transition-all duration-300"
-                  style={{
-                    filter: isHovered ? 'drop-shadow(0 0 8px rgba(114, 123, 186, 0.8))' : 'none'
-                  }}
-                  onMouseEnter={() => setHoveredHotspot(hotspot)}
-                  onMouseLeave={() => setHoveredHotspot(null)}
-                  onClick={() => handleHotspotClick(hotspot)}
-                />
-              </g>
+              <polygon
+                key={hotspot.id}
+                points={hotspot.points}
+                className={`polygon-hotspot ${isActive ? 'polygon-active' : ''}`}
+                style={{
+                  strokeWidth: isHovered || isActive ? '0.5px' : '0.2px',
+                  strokeDasharray: isHovered || isActive ? 'none' : '0.5, 0.5'
+                }}
+                onMouseEnter={() => setHoveredHotspot(hotspot)}
+                onMouseLeave={() => setHoveredHotspot(null)}
+                onClick={() => handleHotspotClick(hotspot)}
+              />
             )
           })}
         </svg>
       </div>
 
-      {/* 2. PREMIUM GLASSMORPHISM TOOLTIP (Follows mouse cursor when hovering a hotspot) */}
+      {/* 2. PREMIUM GLASSMORPHISM TOOLTIP */}
       {hoveredHotspot && !zoomState.active && (
         <div 
           className="fixed z-50 pointer-events-none transition-all duration-150 ease-out select-none flex flex-col items-center gap-1.5"
@@ -184,23 +194,22 @@ export default function HomePage() {
               <span className="text-[11px] text-neutral-dark/80 dark:text-neutral-light/80 mt-0.5">{hoveredHotspot.hoverTips}</span>
             </div>
           </div>
-          {/* Arrow */}
           <div className="w-2.5 h-2.5 bg-neutral-light/75 dark:bg-neutral-dark/85 backdrop-blur-md border-r border-b border-white/20 rotate-45 -mt-1.5 shadow-md" />
         </div>
       )}
 
-      {/* 3. HEADS-UP DISPLAY (HUD) IN THE ROOM VIEW */}
+      {/* 3. HEADS-UP DISPLAY (HUD) */}
       {!zoomState.active && (
         <div className="absolute inset-x-0 top-0 p-8 flex justify-between items-center z-20 pointer-events-none select-none">
           <div className="pointer-events-auto bg-neutral-light/65 dark:bg-neutral-dark/65 backdrop-blur-lg border border-white/10 px-5 py-3 rounded-2xl shadow-lg flex items-center gap-3">
-            <div className="w-2.5 h-2.5 rounded-full bg-emerald-500 animate-pulse" />
+            <div className="w-2.5 h-2.5 rounded-full bg-primary animate-pulse" />
             <h1 className="text-sm font-bold tracking-wider text-neutral-dark dark:text-neutral-light font-heading">
               BUTVAN ROOM <span className="text-primary font-normal text-xs ml-1">v0.1</span>
             </h1>
           </div>
           <div className="pointer-events-auto flex gap-2">
             <Chip color="accent" variant="soft" size="sm" className="font-heading border border-primary/20 backdrop-blur-md">
-              🎯 探索桌面物品进行跳转
+              ✨ 悬浮探索房间中的物品（电脑、空调、相框）
             </Chip>
           </div>
         </div>
