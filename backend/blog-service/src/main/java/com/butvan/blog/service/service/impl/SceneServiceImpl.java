@@ -146,6 +146,20 @@ public class SceneServiceImpl implements SceneService {
         hotspotRepository.deleteById(hotspotId);
     }
 
+    @Override
+    @Transactional
+    public void deleteScene(Long sceneId) {
+        // 校验场景存在
+        sceneRepository.findById(sceneId)
+                .orElseThrow(() -> new BusinessException("要删除的场景不存在"));
+
+        // 级联删除该场景下的全部热区物品
+        hotspotRepository.deleteBySceneId(sceneId);
+
+        // 删除场景本身
+        sceneRepository.deleteById(sceneId);
+    }
+
     /**
      * 将其他所有场景置为未激活，以维持 uk_scene_active 唯一性约束
      *

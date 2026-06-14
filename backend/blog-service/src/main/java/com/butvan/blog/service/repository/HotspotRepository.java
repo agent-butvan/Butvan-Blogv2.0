@@ -37,4 +37,11 @@ public interface HotspotRepository extends JpaRepository<Hotspot, Long> {
     default List<Hotspot> findVisibleHotspots(Long sceneId) {
         return findBySceneIdAndIsVisibleOrderBySortOrderAsc(sceneId, true);
     }
+
+    /**
+     * 删除指定场景下的全部热区物品 (删除场景时级联清理)
+     *
+     * @param sceneId 所属场景ID
+     */
+    void deleteBySceneId(Long sceneId);
 }

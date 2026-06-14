@@ -111,4 +111,17 @@ public class SceneController {
         sceneService.deleteHotspot(id);
         return Result.success();
     }
+
+    /**
+     * 【管理端】删除指定场景及其关联的全部热区物品
+     *
+     * @param id 场景 ID
+     * @return 统一格式 Result，Void 成功标识
+     */
+    @DeleteMapping("/admin/scenes/{id}")
+    public Result<Void> deleteScene(@PathVariable Long id) {
+        log.info("管理后台删除场景，ID: {}", id);
+        sceneService.deleteScene(id);
+        return Result.success();
+    }
 }

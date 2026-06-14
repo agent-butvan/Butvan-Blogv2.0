@@ -63,4 +63,11 @@ public interface SceneService {
      * @param hotspotId 物品ID
      */
     void deleteHotspot(Long hotspotId);
+
+    /**
+     * 删除指定场景及其关联的全部热区物品 (管理后台使用)
+     *
+     * @param sceneId 场景ID
+     */
+    void deleteScene(Long sceneId);
 }
