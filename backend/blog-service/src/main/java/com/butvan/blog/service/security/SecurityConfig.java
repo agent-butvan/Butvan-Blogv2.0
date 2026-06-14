@@ -91,8 +91,8 @@ public class SecurityConfig {
             .sessionManagement(session -> session.sessionCreationPolicy(SessionCreationPolicy.STATELESS))
             // 设定安全请求过滤匹配规则
             .authorizeHttpRequests(auth -> auth
-                    // 放行认证模块（登录与注册）接口
-                    .requestMatchers("/api/auth/register", "/api/auth/login").permitAll()
+                    // 放行认证模块与导航资源获取接口
+                    .requestMatchers("/api/auth/register", "/api/auth/login", "/api/navigations/**").permitAll()
                     // 其它任何后台 API 均需校验 Bearer Token 权限身份
                     .anyRequest().authenticated()
             )
