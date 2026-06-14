@@ -164,6 +164,9 @@ Butvan Blog2.0/                                    # 📦 项目根目录
 └── backend/                                        # ⚙️【后端】Spring Boot 3.2 + Maven 多模块 + JPA + PostgreSQL
     │
     ├── pom.xml                                     #   Maven 父工程 POM（统一依赖版本管理、模块聚合）
+    ├── migration-v0.2.sql                          #   数据库迁移脚本 (v0.2 版本)
+    ├── uploads/                                    #   📁 静态资源上传映射物理目录（本地测试图片存储）
+    │   └── sprites/                                #     透明 PNG 热区悬浮物品切片存储目录
     │
     ├── blog-common/                                #   📦 通用基础模块（无业务依赖，被所有模块引用）
     │   ├── pom.xml                                 #     Maven 子模块 POM
