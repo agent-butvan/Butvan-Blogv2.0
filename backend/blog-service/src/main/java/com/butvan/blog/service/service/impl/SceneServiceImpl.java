@@ -159,18 +159,18 @@ public class SceneServiceImpl implements SceneService {
         sceneRepository.deleteById(sceneId);
     }
 
-    /**
-     * 将其他所有场景置为未激活，以维持 uk_scene_active 唯一性约束
-     *
-     * @param activeSceneId 应当保持激活的场景 ID
-     */
     private void handleSingleActiveScene(Long activeSceneId) {
         List<Scene> scenes = sceneRepository.findAll();
+        boolean changed = false;
         for (Scene s : scenes) {
             if (!s.getId().equals(activeSceneId) && s.getIsActive()) {
                 s.setIsActive(false);
                 sceneRepository.save(s);
+                changed = true;
             }
+        }
+        if (changed) {
+            sceneRepository.flush();
         }
     }
 
