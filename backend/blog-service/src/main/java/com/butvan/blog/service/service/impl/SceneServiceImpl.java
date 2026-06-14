@@ -61,45 +61,44 @@ public class SceneServiceImpl implements SceneService {
     @Override
     @Transactional
     public Scene saveScene(SceneSaveDTO sceneSaveDTO) {
+        boolean willBeActive = sceneSaveDTO.getIsActive() != null && sceneSaveDTO.getIsActive();
+
+        // 1. 如果新设定为启用场景，先将其他所有激活场景标记为不启用并保存，以防 uk_scene_active 约束报错
+        if (willBeActive) {
+            Long excludeId = sceneSaveDTO.getId() != null ? sceneSaveDTO.getId() : -1L;
+            handleSingleActiveScene(excludeId);
+        }
+
         Scene scene;
         if (sceneSaveDTO.getId() != null) {
             scene = sceneRepository.findById(sceneSaveDTO.getId())
                     .orElseThrow(() -> new BusinessException("要更新的房间场景不存在"));
             scene.setTitle(sceneSaveDTO.getTitle());
             scene.setImageUrl(sceneSaveDTO.getImageUrl());
-            // 如果从非激活改为激活，后续单独统一处理激活互斥逻辑
-            if (sceneSaveDTO.getIsActive() != null && sceneSaveDTO.getIsActive() && !scene.getIsActive()) {
-                scene.setIsActive(true);
-            }
+            scene.setIsActive(willBeActive);
         } else {
             scene = Scene.builder()
                     .title(sceneSaveDTO.getTitle())
                     .imageUrl(sceneSaveDTO.getImageUrl())
-                    .isActive(sceneSaveDTO.getIsActive() != null ? sceneSaveDTO.getIsActive() : false)
+                    .isActive(willBeActive)
                     .build();
         }
 
-        scene = sceneRepository.save(scene);
-
-        // 如果该场景处于激活状态，确保全局只有一个激活
-        if (scene.getIsActive()) {
-            handleSingleActiveScene(scene.getId());
-        }
-
-        return scene;
+        return sceneRepository.save(scene);
     }
 
     @Override
     @Transactional
     public void activateScene(Long sceneId) {
+        // 1. 先将其他激活场景全部标记为不激活并保存，以保证数据库中仅存单激活状态，避开 uk_scene_active 唯一冲突
+        handleSingleActiveScene(sceneId);
+
+        // 2. 再更新当前目标场景为激活状态并保存
         Scene scene = sceneRepository.findById(sceneId)
                 .orElseThrow(() -> new BusinessException("要启用的场景不存在"));
         
         scene.setIsActive(true);
         sceneRepository.save(scene);
-
-        // 执行单场景激活互斥逻辑
-        handleSingleActiveScene(sceneId);
     }
 
     @Override
