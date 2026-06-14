@@ -1,5 +1,6 @@
 package com.butvan.blog.pojo.dto.scene;
 
+import com.fasterxml.jackson.annotation.JsonProperty;
 import lombok.AllArgsConstructor;
 import lombok.Builder;
 import lombok.Data;
@@ -19,7 +20,11 @@ public class HotspotSaveDTO {
     private Long sceneId; // 所属场景 ID (必传)
     private String itemName; // 物品名称，如“电脑工作台”
     private String itemImageUrl; // v0.2: 透明抠图 PNG 文件地址 (可选)
+
+    @JsonProperty("xPercent")
     private BigDecimal xPercent; // v0.2: 左边界 X 百分比 (0.00 ~ 100.00)
+
+    @JsonProperty("yPercent")
     private BigDecimal yPercent; // v0.2: 上边界 Y 百分比 (0.00 ~ 100.00)
     private BigDecimal widthPercent; // v0.2: 百分比宽度
     private BigDecimal heightPercent; // v0.2: 百分比高度 (可选)

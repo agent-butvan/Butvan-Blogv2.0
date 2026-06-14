@@ -1,5 +1,6 @@
 package com.butvan.blog.pojo.vo.home;
 
+import com.fasterxml.jackson.annotation.JsonProperty;
 import lombok.AllArgsConstructor;
 import lombok.Builder;
 import lombok.Data;
@@ -18,7 +19,11 @@ public class HotspotVO {
     private Long id; // 物品唯一ID
     private String itemName; // 物品名称
     private String itemImageUrl; // 透明抠图 PNG 文件地址
+
+    @JsonProperty("xPercent")
     private BigDecimal xPercent; // 左边界 X 坐标百分比
+
+    @JsonProperty("yPercent")
     private BigDecimal yPercent; // 上边界 Y 坐标百分比
     private BigDecimal widthPercent; // 物品百分比宽度
     private BigDecimal heightPercent; // 物品百分比高度
