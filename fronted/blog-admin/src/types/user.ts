@@ -10,6 +10,14 @@ export interface LoginDTO {
   password: string;
 }
 
+/** 注册请求体 */
+export interface RegisterDTO {
+  username: string;
+  password: string;
+  nickname: string;
+  email?: string;
+}
+
 /** 登录响应体 */
 export interface LoginVO {
   token: string;

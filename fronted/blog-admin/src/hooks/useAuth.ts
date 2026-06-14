@@ -5,7 +5,7 @@ import { useRouter } from "next/navigation";
 import apiClient from "@/lib/api";
 import { setToken, setUser, getUser, getToken, logout as clearAuth, type AuthUser } from "@/lib/auth";
 import type { ApiResponse } from "@/types/common";
-import type { LoginDTO, LoginVO } from "@/types/user";
+import type { LoginDTO, LoginVO, RegisterDTO } from "@/types/user";
 
 /**
  * 认证状态 Hook
@@ -50,6 +50,23 @@ export function useAuth() {
   );
 
   /**
+   * 注册
+   */
+  const register = useCallback(
+    async (dto: RegisterDTO): Promise<{ success: boolean; error?: string }> => {
+      try {
+        await apiClient.post<ApiResponse<void>>("/auth/register", dto);
+        return { success: true };
+      } catch (error: unknown) {
+        const axiosError = error as { response?: { data?: { msg?: string } } };
+        const msg = axiosError?.response?.data?.msg || "注册失败，请稍后再试";
+        return { success: false, error: msg };
+      }
+    },
+    []
+  );
+
+  /**
    * 登出
    */
   const logout = useCallback(() => {
@@ -63,6 +80,7 @@ export function useAuth() {
     loading,
     isAuthenticated: !!user,
     login,
+    register,
     logout,
   };
 }
