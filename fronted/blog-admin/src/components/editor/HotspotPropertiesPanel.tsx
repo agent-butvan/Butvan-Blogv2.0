@@ -1,9 +1,11 @@
 'use client'
 
-import React, { useRef } from 'react'
+import React, { useRef, useState, useEffect } from 'react'
 import { Save, Trash2, Upload, HelpCircle, SquareDashed } from 'lucide-react'
 import type { HotspotData } from './SceneCanvas'
 import type { EditorMode } from './SceneToolbar'
+import { fetchClientRoutes, fetchArticlesSimple, fetchCategoriesSimple } from '@/lib/client-route-api'
+import type { ClientRoute, ArticleSimple, CategorySimple } from '@/types/route'
 
 /** 热区属性面板 Props */
 interface HotspotPropertiesPanelProps {
@@ -54,6 +56,43 @@ export default function HotspotPropertiesPanel({
   className = '',
 }: HotspotPropertiesPanelProps) {
   const replaceFileInputRef = useRef<HTMLInputElement>(null)
+
+  // --- 跳转目标下拉框数据 ---
+  const [clientRoutes, setClientRoutes] = useState<ClientRoute[]>([])
+  const [articles, setArticles] = useState<ArticleSimple[]>([])
+  const [categories, setCategories] = useState<CategorySimple[]>([])
+  const [routesLoading, setRoutesLoading] = useState(false)
+  const [articlesLoading, setArticlesLoading] = useState(false)
+  const [categoriesLoading, setCategoriesLoading] = useState(false)
+  const [isCustomPath, setIsCustomPath] = useState(false)
+
+  // --- 加载下拉框数据 ---
+  useEffect(() => {
+    setRoutesLoading(true)
+    fetchClientRoutes()
+      .then(setClientRoutes)
+      .catch(() => setClientRoutes([]))
+      .finally(() => setRoutesLoading(false))
+  }, [])
+
+  useEffect(() => {
+    if (!hotspot) return
+    // 按需懒加载：仅首次切换到对应类型时请求
+    if (hotspot.redirectType === 'ARTICLE' && articles.length === 0 && !articlesLoading) {
+      setArticlesLoading(true)
+      fetchArticlesSimple()
+        .then(setArticles)
+        .catch(() => setArticles([]))
+        .finally(() => setArticlesLoading(false))
+    }
+    if (hotspot.redirectType === 'CATEGORY' && categories.length === 0 && !categoriesLoading) {
+      setCategoriesLoading(true)
+      fetchCategoriesSimple()
+        .then(setCategories)
+        .catch(() => setCategories([]))
+        .finally(() => setCategoriesLoading(false))
+    }
+  }, [hotspot?.redirectType])
 
   /** 解析图片 URL */
   const resolveUrl = (url: string) =>
@@ -160,7 +199,7 @@ export default function HotspotPropertiesPanel({
                 <div className="absolute inset-0 bg-black/40 opacity-0 hover:opacity-100 flex flex-col items-center justify-center gap-2 transition-opacity">
                   <input
                     type="file"
-                    accept="image/png"
+                    accept="image/png,image/jpeg,image/jpg,image/webp"
                     ref={replaceFileInputRef}
                     onChange={handleFileChange}
                     className="hidden"
@@ -239,9 +278,10 @@ export default function HotspotPropertiesPanel({
               </label>
               <select
                 value={hotspot.redirectType}
-                onChange={(e) =>
+                onChange={(e) => {
+                  setIsCustomPath(false)
                   onHotspotChange({ ...hotspot, redirectType: e.target.value })
-                }
+                }}
                 className="text-[11px] bg-zinc-50 dark:bg-zinc-950 border border-zinc-200 dark:border-zinc-800 rounded-lg px-2 py-1 text-zinc-800 dark:text-zinc-200 focus:outline-none focus:ring-1 focus:ring-primary focus:border-primary w-full h-8 cursor-pointer transition-all"
               >
                 <option value="INTERNAL" className="bg-white dark:bg-zinc-900">站内路径</option>
@@ -252,30 +292,123 @@ export default function HotspotPropertiesPanel({
             </div>
             <div className="flex flex-col gap-1">
               <label className="text-[10px] font-heading font-medium text-zinc-500 dark:text-zinc-400">
-                跳转目标
+                {hotspot.redirectType === 'ARTICLE' ? '选择文章' :
+                 hotspot.redirectType === 'CATEGORY' ? '选择分类' :
+                 hotspot.redirectType === 'INTERNAL' ? '选择页面路径' : '输入 URL'}
               </label>
-              {hotspot.redirectType === 'ARTICLE' || hotspot.redirectType === 'CATEGORY' ? (
+              {/* INTERNAL：路径下拉框 + 手动输入兜底 */}
+              {hotspot.redirectType === 'INTERNAL' && !isCustomPath ? (
+                <select
+                  value={hotspot.redirectPath || ''}
+                  onChange={(e) => {
+                    if (e.target.value === '__custom__') {
+                      setIsCustomPath(true)
+                      return
+                    }
+                    onHotspotChange({ ...hotspot, redirectPath: e.target.value })
+                  }}
+                  className="text-[11px] bg-zinc-50 dark:bg-zinc-950 border border-zinc-200 dark:border-zinc-800 rounded-lg px-2 py-1 text-zinc-800 dark:text-zinc-200 focus:outline-none focus:ring-1 focus:ring-primary focus:border-primary w-full h-8 cursor-pointer transition-all"
+                  disabled={routesLoading}
+                >
+                  <option value="">{routesLoading ? '加载中...' : '请选择路径...'}</option>
+                  {['页面', '动态路由'].map(cat => {
+                    const items = clientRoutes.filter(r => r.category === cat)
+                    if (items.length === 0) return null
+                    return (
+                      <optgroup key={cat} label={`── ${cat} ──`}>
+                        {items.map(r => (
+                          <option key={r.path} value={r.path}>
+                            {r.dynamic ? '✱ ' : ''}{r.label} — {r.path}
+                          </option>
+                        ))}
+                      </optgroup>
+                    )
+                  })}
+                  <option value="__custom__">✏️ 手动输入自定义路径...</option>
+                </select>
+              ) : hotspot.redirectType === 'INTERNAL' && isCustomPath ? (
+                <div className="flex gap-1">
+                  <input
+                    placeholder="/guestbook"
+                    value={hotspot.redirectPath || ''}
+                    onChange={(e) =>
+                      onHotspotChange({ ...hotspot, redirectPath: e.target.value })
+                    }
+                    className="flex-1 bg-zinc-50 dark:bg-zinc-950 border border-zinc-200 dark:border-zinc-800 rounded-lg px-3 h-8 text-xs text-zinc-900 dark:text-zinc-100 focus:outline-none focus:ring-1 focus:ring-primary transition-all"
+                  />
+                  <button
+                    type="button"
+                    onClick={() => setIsCustomPath(false)}
+                    className="px-2 h-8 rounded-lg border border-zinc-200 dark:border-zinc-700 text-zinc-500 dark:text-zinc-400 text-[10px] hover:bg-zinc-100 dark:hover:bg-zinc-800 transition-colors cursor-pointer shrink-0"
+                    title="返回列表选择"
+                  >
+                    📋
+                  </button>
+                </div>
+              ) : null}
+              {/* EXTERNAL：外链文本输入 */}
+              {hotspot.redirectType === 'EXTERNAL' ? (
                 <input
-                  placeholder="实体 ID"
-                  value={hotspot.redirectTargetId?.toString() || ''}
-                  onChange={(e) =>
-                    onHotspotChange({
-                      ...hotspot,
-                      redirectTargetId: e.target.value ? Number(e.target.value) : undefined,
-                    })
-                  }
-                  className="w-full bg-zinc-50 dark:bg-zinc-950 border border-zinc-200 dark:border-zinc-800 rounded-lg px-3 h-8 text-xs text-zinc-900 dark:text-zinc-100 font-mono focus:outline-none focus:ring-1 focus:ring-primary transition-all"
-                />
-              ) : (
-                <input
-                  placeholder="/about 或 URL"
+                  placeholder="https://example.com"
                   value={hotspot.redirectPath || ''}
                   onChange={(e) =>
                     onHotspotChange({ ...hotspot, redirectPath: e.target.value })
                   }
                   className="w-full bg-zinc-50 dark:bg-zinc-950 border border-zinc-200 dark:border-zinc-800 rounded-lg px-3 h-8 text-xs text-zinc-900 dark:text-zinc-100 focus:outline-none focus:ring-1 focus:ring-primary transition-all"
                 />
-              )}
+              ) : null}
+              {/* ARTICLE：文章下拉框 */}
+              {hotspot.redirectType === 'ARTICLE' ? (
+                <select
+                  value={hotspot.redirectTargetId ?? ''}
+                  onChange={(e) => {
+                    const id = e.target.value ? Number(e.target.value) : undefined
+                    const article = articles.find(a => a.id === id)
+                    onHotspotChange({
+                      ...hotspot,
+                      redirectTargetId: id,
+                      redirectPath: article ? `/articles/${article.slug}` : hotspot.redirectPath,
+                    })
+                  }}
+                  className="text-[11px] bg-zinc-50 dark:bg-zinc-950 border border-zinc-200 dark:border-zinc-800 rounded-lg px-2 py-1 text-zinc-800 dark:text-zinc-200 focus:outline-none focus:ring-1 focus:ring-primary focus:border-primary w-full h-8 cursor-pointer transition-all"
+                  disabled={articlesLoading}
+                >
+                  <option value="">
+                    {articlesLoading ? '加载中...' : articles.length === 0 ? '暂无已发布文章' : '请选择文章...'}
+                  </option>
+                  {articles.map(a => (
+                    <option key={a.id} value={a.id}>
+                      {a.title} (ID:{a.id})
+                    </option>
+                  ))}
+                </select>
+              ) : null}
+              {/* CATEGORY：分类下拉框 */}
+              {hotspot.redirectType === 'CATEGORY' ? (
+                <select
+                  value={hotspot.redirectTargetId ?? ''}
+                  onChange={(e) => {
+                    const id = e.target.value ? Number(e.target.value) : undefined
+                    const category = categories.find(c => c.id === id)
+                    onHotspotChange({
+                      ...hotspot,
+                      redirectTargetId: id,
+                      redirectPath: category ? `/categories/${category.slug}` : hotspot.redirectPath,
+                    })
+                  }}
+                  className="text-[11px] bg-zinc-50 dark:bg-zinc-950 border border-zinc-200 dark:border-zinc-800 rounded-lg px-2 py-1 text-zinc-800 dark:text-zinc-200 focus:outline-none focus:ring-1 focus:ring-primary focus:border-primary w-full h-8 cursor-pointer transition-all"
+                  disabled={categoriesLoading}
+                >
+                  <option value="">
+                    {categoriesLoading ? '加载中...' : categories.length === 0 ? '暂无可见分类' : '请选择分类...'}
+                  </option>
+                  {categories.map(c => (
+                    <option key={c.id} value={c.id}>
+                      {c.name}
+                    </option>
+                  ))}
+                </select>
+              ) : null}
             </div>
           </div>
 

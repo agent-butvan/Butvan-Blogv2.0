@@ -5,6 +5,7 @@ import { useParams, useRouter } from 'next/navigation'
 import apiClient from '@/lib/api'
 import { toast } from '@/lib/toast'
 import { cropImageFromBackground } from '@/lib/canvas-crop'
+import { removeImageBackground, preloadRemovalModel } from '@/lib/background-removal'
 import SceneToolbar from '@/components/editor/SceneToolbar'
 import type { EditorMode } from '@/components/editor/SceneToolbar'
 import SceneCanvas from '@/components/editor/SceneCanvas'
@@ -50,6 +51,8 @@ export default function SceneEditorPage() {
   const [drawingRect, setDrawingRect] = useState<DrawingRect | null>(null)
   const [drawStart, setDrawStart] = useState<{ x: number; y: number } | null>(null)
   const [isCropping, setIsCropping] = useState(false)
+  const [smartExtraction, setSmartExtraction] = useState(true)
+  const [extractionProgress, setExtractionProgress] = useState(0)
 
   // --- 删除确认 ---
   const [confirmDeleteId, setConfirmDeleteId] = useState<number | null>(null)
@@ -79,6 +82,11 @@ export default function SceneEditorPage() {
   useEffect(() => {
     if (sceneId) fetchSceneDetail()
   }, [sceneId, fetchSceneDetail])
+
+  // 预加载智能抠图 AI 模型（后台静默下载，不阻塞 UI）
+  useEffect(() => {
+    preloadRemovalModel()
+  }, [])
 
   // ==================== 热区操作 ====================
 
@@ -360,11 +368,11 @@ export default function SceneEditorPage() {
   }) => {
     setIsCropping(true)
     try {
-      // 1. 从背景图裁剪
+      // 1. 从背景图裁剪矩形区域
       const bgUrl = scene!.imageUrl.startsWith('/')
         ? `http://localhost:8080${scene!.imageUrl}`
         : scene!.imageUrl
-      const { blob } = await cropImageFromBackground(
+      const { blob: croppedBlob } = await cropImageFromBackground(
         bgUrl,
         rect.xPercent,
         rect.yPercent,
@@ -372,9 +380,26 @@ export default function SceneEditorPage() {
         rect.heightPercent
       )
 
-      // 2. 上传裁剪图
+      // 2. 智能抠图（如果已启用）：从矩形裁剪图中提取主体物品
+      let finalBlob: Blob = croppedBlob
+      if (smartExtraction) {
+        setExtractionProgress(0)
+        try {
+          const removalResult = await removeImageBackground(
+            croppedBlob,
+            (progress) => setExtractionProgress(progress)
+          )
+          finalBlob = removalResult.blob
+        } catch (err) {
+          console.warn('智能抠图失败，回退到矩形裁剪图', err)
+          // 抠图失败时静默回退，使用原裁剪图
+          finalBlob = croppedBlob
+        }
+      }
+
+      // 3. 上传最终的物品图
       const formData = new FormData()
-      formData.append('file', blob, `crop-${Date.now()}.png`)
+      formData.append('file', finalBlob, `crop-${Date.now()}.png`)
       const uploadRes = await apiClient.post('/admin/media/upload', formData, {
         headers: { 'Content-Type': 'multipart/form-data' },
       })
@@ -383,7 +408,7 @@ export default function SceneEditorPage() {
       }
       const croppedImageUrl: string = uploadRes.data.data.fileUrl
 
-      // 3. 创建热区
+      // 4. 创建热区
       const hotspotRes = await apiClient.post('/admin/scenes/hotspots', {
         sceneId: Number(sceneId),
         itemName: '未命名物品',
@@ -478,6 +503,8 @@ export default function SceneEditorPage() {
         onModeChange={setMode}
         onUploadManualSprite={handleUploadManualSprite}
         uploading={uploading}
+        smartExtraction={smartExtraction}
+        onSmartExtractionChange={setSmartExtraction}
       />
 
       {/* 主区域：画布 + 属性面板 */}
@@ -492,6 +519,8 @@ export default function SceneEditorPage() {
           drawingRect={drawingRect}
           isDrawing={isDrawing}
           isCropping={isCropping}
+          extractionProgress={extractionProgress}
+          isExtracting={smartExtraction && isCropping}
           onMouseDown={handleCanvasMouseDown}
           onMouseMove={handleCanvasMouseMove}
           onMouseUp={handleCanvasMouseUp}
@@ -521,7 +550,7 @@ export default function SceneEditorPage() {
       {/* 隐藏的文件上传 input（备用） */}
       <input
         type="file"
-        accept="image/png"
+        accept="image/png,image/jpeg,image/jpg,image/webp"
         ref={spriteFileInputRef}
         className="hidden"
       />
