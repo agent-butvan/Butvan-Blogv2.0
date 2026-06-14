@@ -1,0 +1,23 @@
+package com.butvan.blog.pojo.dto.auth;
+
+import jakarta.validation.constraints.NotBlank;
+import lombok.AllArgsConstructor;
+import lombok.Builder;
+import lombok.Data;
+import lombok.NoArgsConstructor;
+
+/**
+ * 账号登录信息数据传输对象
+ */
+@Data
+@Builder
+@NoArgsConstructor
+@AllArgsConstructor
+public class LoginDTO {
+
+    @NotBlank(message = "登录用户名不能为空")
+    private String username; // 用户名
+
+    @NotBlank(message = "登录密码不能为空")
+    private String password; // 密码
+}
