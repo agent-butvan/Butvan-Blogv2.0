@@ -1,7 +1,7 @@
 'use client'
 
 import React, { useState, useRef, useEffect } from 'react'
-import { Card, CardBody, Button, Input, Select, SelectItem, Table, TableHeader, TableColumn, TableBody, TableRow, TableCell, Chip } from '@heroui/react'
+import { Card, Button, Chip } from '@heroui/react'
 import { Save, Plus, Trash2, Crosshair, HelpCircle, Layers, Eye } from 'lucide-react'
 
 interface Hotspot {
@@ -142,11 +142,11 @@ export default function AdminEditor() {
         </div>
         <div className="flex gap-2">
           <Button 
-            color="primary" 
-            startContent={<Save className="w-4 h-4" />}
+            variant="primary" 
             onClick={() => alert('已输出配置JSON到控制台！\n' + JSON.stringify(hotspots, null, 2))}
-            className="font-heading"
+            className="font-heading flex items-center gap-2"
           >
+            <Save className="w-4 h-4" />
             保存场景配置
           </Button>
         </div>
@@ -158,7 +158,7 @@ export default function AdminEditor() {
         {/* Left and Mid Column: Interactive Drawing Canvas */}
         <div className="lg:col-span-2 flex flex-col gap-4">
           <Card className="border border-divider shadow-md bg-white overflow-hidden">
-            <CardBody className="p-0 relative select-none">
+            <Card.Content className="p-0 relative select-none">
               
               {/* Canvas Container */}
               <div 
@@ -216,73 +216,74 @@ export default function AdminEditor() {
                   />
                 )}
               </div>
-            </CardBody>
+            </Card.Content>
           </Card>
 
           {/* Hotspots List Table */}
           <Card className="border border-divider shadow-sm bg-white">
-            <CardBody className="p-4">
+            <Card.Content className="p-4">
               <h3 className="text-sm font-bold font-heading mb-3 flex items-center gap-1.5">
                 <Layers className="w-4 h-4 text-primary" /> 已配置热区列表
               </h3>
-              <Table aria-label="Hotspots table" size="sm" removeWrapper>
-                <TableHeader>
-                  <TableColumn>物品名称</TableColumn>
-                  <TableColumn>坐标定位 (X, Y, W, H)</TableColumn>
-                  <TableColumn>跳转路径</TableColumn>
-                  <TableColumn>操作</TableColumn>
-                </TableHeader>
-                <TableBody>
+              <table className="w-full text-left text-xs border-collapse">
+                <thead>
+                  <tr className="border-b border-divider text-neutral-dark/60">
+                    <th className="py-2.5 px-3 font-semibold">物品名称</th>
+                    <th className="py-2.5 px-3 font-semibold">坐标定位 (X, Y, W, H)</th>
+                    <th className="py-2.5 px-3 font-semibold">跳转路径</th>
+                    <th className="py-2.5 px-3 font-semibold">操作</th>
+                  </tr>
+                </thead>
+                <tbody>
                   {hotspots.map((hotspot) => (
-                    <TableRow key={hotspot.id} className={selectedHotspot?.id === hotspot.id ? 'bg-primary/5' : ''}>
-                      <TableCell>
-                        <span 
-                          className="font-bold text-xs cursor-pointer hover:underline"
-                          onClick={() => setSelectedHotspot(hotspot)}
-                        >
-                          {hotspot.itemName}
-                        </span>
-                      </TableCell>
-                      <TableCell className="font-mono text-[11px] text-neutral-dark/60">
+                    <tr 
+                      key={hotspot.id} 
+                      className={`border-b border-divider/50 hover:bg-neutral-light/50 transition-colors cursor-pointer ${
+                        selectedHotspot?.id === hotspot.id ? 'bg-primary/5' : ''
+                      }`}
+                      onClick={() => setSelectedHotspot(hotspot)}
+                    >
+                      <td className="py-2.5 px-3 font-bold">{hotspot.itemName}</td>
+                      <td className="py-2.5 px-3 font-mono text-[11px] text-neutral-dark/60">
                         {`${hotspot.x}%, ${hotspot.y}%, ${hotspot.w}%, ${hotspot.h}%`}
-                      </TableCell>
-                      <TableCell>
-                        <Chip size="sm" variant="flat" color="secondary" className="font-mono text-[10px]">
+                      </td>
+                      <td className="py-2.5 px-3">
+                        <Chip size="sm" variant="soft" color="accent" className="font-mono text-[10px]">
                           {hotspot.redirectPath}
                         </Chip>
-                      </TableCell>
-                      <TableCell>
-                        <div className="flex gap-2">
-                          <Button 
-                            isIconOnly 
-                            size="sm" 
-                            variant="light" 
-                            color="danger"
-                            onClick={() => handleDeleteHotspot(hotspot.id)}
-                          >
-                            <Trash2 className="w-3.5 h-3.5" />
-                          </Button>
-                        </div>
-                      </TableCell>
-                    </TableRow>
+                      </td>
+                      <td className="py-2.5 px-3">
+                        <Button 
+                          isIconOnly 
+                          size="sm" 
+                          variant="danger"
+                          onClick={(e) => {
+                            e.stopPropagation()
+                            handleDeleteHotspot(hotspot.id)
+                          }}
+                        >
+                          <Trash2 className="w-3.5 h-3.5" />
+                        </Button>
+                      </td>
+                    </tr>
                   ))}
                   {hotspots.length === 0 && (
-                    <TableRow>
-                      <TableCell colSpan={4} className="text-center py-4 text-xs text-neutral-dark/40">
+                    <tr>
+                      <td colSpan={4} className="text-center py-6 text-neutral-dark/40">
                         暂无交互热区，请在图片上拖拽框选添加。
-                      </TableCell>
-                    </TableRow>
+                      </td>
+                    </tr>
                   )}
-                </TableBody>
-              </Table>
-            </CardBody>
+                </tbody>
+              </table>
+            </Card.Content>
           </Card>
         </div>
 
         {/* Right Column: Properties Configurations Side Panel */}
         <div className="flex flex-col gap-4">
           <Card className="border border-divider shadow-md bg-white h-full">
-            <CardBody className="p-6 flex flex-col gap-5">
+            <Card.Content className="p-6 flex flex-col gap-5">
               <h3 className="text-sm font-bold font-heading border-b border-divider pb-2 flex items-center gap-1.5">
                 <HelpCircle className="w-4 h-4 text-primary" /> 热区属性配置
               </h3>
@@ -290,59 +291,67 @@ export default function AdminEditor() {
               {selectedHotspot ? (
                 <div className="flex flex-col gap-4">
                   {/* Item Name */}
-                  <Input
-                    label="物品名称"
-                    placeholder="例如：电脑、书本"
-                    labelPlacement="outside"
-                    size="sm"
-                    value={selectedHotspot.itemName}
-                    onChange={(e) => handleUpdateField('itemName', e.target.value)}
-                  />
+                  <div className="flex flex-col gap-1.5 text-left">
+                    <label className="text-xs font-bold text-neutral-dark/85">物品名称</label>
+                    <input
+                      type="text"
+                      placeholder="例如：电脑、书本"
+                      value={selectedHotspot.itemName}
+                      onChange={(e) => handleUpdateField('itemName', e.target.value)}
+                      className="w-full bg-white dark:bg-neutral-dark border border-divider rounded-xl px-3 py-2 text-xs outline-none focus:border-primary transition-colors"
+                    />
+                  </div>
 
                   {/* Hover Tips */}
-                  <Input
-                    label="悬浮提示文字"
-                    placeholder="鼠标悬停时展示的趣玩提示文案"
-                    labelPlacement="outside"
-                    size="sm"
-                    value={selectedHotspot.hoverTips}
-                    onChange={(e) => handleUpdateField('hoverTips', e.target.value)}
-                  />
+                  <div className="flex flex-col gap-1.5 text-left">
+                    <label className="text-xs font-bold text-neutral-dark/85">悬浮提示文字</label>
+                    <input
+                      type="text"
+                      placeholder="鼠标悬停时展示的趣玩提示文案"
+                      value={selectedHotspot.hoverTips}
+                      onChange={(e) => handleUpdateField('hoverTips', e.target.value)}
+                      className="w-full bg-white dark:bg-neutral-dark border border-divider rounded-xl px-3 py-2 text-xs outline-none focus:border-primary transition-colors"
+                    />
+                  </div>
 
                   {/* Redirect Type */}
-                  <Select
-                    label="跳转类型"
-                    labelPlacement="outside"
-                    size="sm"
-                    selectedKeys={[selectedHotspot.redirectType]}
-                    onSelectionChange={(keys) => handleUpdateField('redirectType', Array.from(keys)[0] as string)}
-                  >
-                    <SelectItem key="internal" value="internal">内部路由 (Next.js Link)</SelectItem>
-                    <SelectItem key="external" value="external">外部超链接 (URL)</SelectItem>
-                  </Select>
+                  <div className="flex flex-col gap-1.5 text-left">
+                    <label className="text-xs font-bold text-neutral-dark/85">跳转类型</label>
+                    <select
+                      value={selectedHotspot.redirectType}
+                      onChange={(e) => handleUpdateField('redirectType', e.target.value)}
+                      className="w-full bg-white dark:bg-neutral-dark border border-divider rounded-xl px-3 py-2 text-xs outline-none focus:border-primary transition-colors cursor-pointer"
+                    >
+                      <option value="internal">内部路由 (Next.js Link)</option>
+                      <option value="external">外部超链接 (URL)</option>
+                    </select>
+                  </div>
 
                   {/* Redirect Path */}
-                  <Input
-                    label="目标跳转路径"
-                    placeholder="例如：/blog 或 https://github.com"
-                    labelPlacement="outside"
-                    size="sm"
-                    value={selectedHotspot.redirectPath}
-                    onChange={(e) => handleUpdateField('redirectPath', e.target.value)}
-                  />
+                  <div className="flex flex-col gap-1.5 text-left">
+                    <label className="text-xs font-bold text-neutral-dark/85">目标跳转路径</label>
+                    <input
+                      type="text"
+                      placeholder="例如：/blog 或 https://github.com"
+                      value={selectedHotspot.redirectPath}
+                      onChange={(e) => handleUpdateField('redirectPath', e.target.value)}
+                      className="w-full bg-white dark:bg-neutral-dark border border-divider rounded-xl px-3 py-2 text-xs outline-none focus:border-primary transition-colors"
+                    />
+                  </div>
 
                   {/* Zoom Scale */}
-                  <Input
-                    label="镜头拉近倍率"
-                    type="number"
-                    step="0.5"
-                    min="1"
-                    max="10"
-                    labelPlacement="outside"
-                    size="sm"
-                    value={selectedHotspot.zoomScale.toString()}
-                    onChange={(e) => handleUpdateField('zoomScale', parseFloat(e.target.value) || 3.0)}
-                  />
+                  <div className="flex flex-col gap-1.5 text-left">
+                    <label className="text-xs font-bold text-neutral-dark/85">镜头拉近倍率</label>
+                    <input
+                      type="number"
+                      step="0.5"
+                      min="1"
+                      max="10"
+                      value={selectedHotspot.zoomScale}
+                      onChange={(e) => handleUpdateField('zoomScale', parseFloat(e.target.value) || 3.0)}
+                      className="w-full bg-white dark:bg-neutral-dark border border-divider rounded-xl px-3 py-2 text-xs outline-none focus:border-primary transition-colors"
+                    />
+                  </div>
 
                   <div className="flex flex-col gap-1 mt-4">
                     <span className="text-xs font-bold text-neutral-dark/70">几何数据 (只读)</span>
@@ -355,12 +364,11 @@ export default function AdminEditor() {
                   </div>
 
                   <Button 
-                    color="danger" 
-                    variant="flat" 
-                    startContent={<Trash2 className="w-4 h-4" />}
+                    variant="danger" 
                     onClick={() => handleDeleteHotspot(selectedHotspot.id)}
-                    className="mt-6 font-heading"
+                    className="mt-6 font-heading flex items-center gap-2 justify-center w-full"
                   >
+                    <Trash2 className="w-4 h-4" />
                     删除此热区
                   </Button>
                 </div>
@@ -372,7 +380,7 @@ export default function AdminEditor() {
                   <span>在左侧图片上框选，或点击已存在的区域进行配置。</span>
                 </div>
               )}
-            </CardBody>
+            </Card.Content>
           </Card>
         </div>
       </div>

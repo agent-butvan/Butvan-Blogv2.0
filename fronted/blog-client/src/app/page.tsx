@@ -1,7 +1,7 @@
 'use client'
 
 import React, { useState, useEffect } from 'react'
-import { Card, CardBody, Button, Chip } from '@heroui/react'
+import { Card, Button, Chip } from '@heroui/react'
 import { BookOpen, Laptop, Coffee, ArrowLeft, Terminal, User, FileText } from 'lucide-react'
 
 // Define the hotspot type
@@ -199,7 +199,7 @@ export default function HomePage() {
             </h1>
           </div>
           <div className="pointer-events-auto flex gap-2">
-            <Chip color="primary" variant="flat" size="sm" className="font-heading border border-primary/20 backdrop-blur-md">
+            <Chip color="accent" variant="soft" size="sm" className="font-heading border border-primary/20 backdrop-blur-md">
               🎯 探索桌面物品进行跳转
             </Chip>
           </div>
@@ -227,20 +227,19 @@ export default function HomePage() {
                 </h2>
               </div>
               <Button 
-                color="primary" 
-                variant="flat" 
+                variant="secondary" 
                 size="sm"
-                startContent={<ArrowLeft className="w-4 h-4" />}
                 onClick={handleBackToRoom}
-                className="font-heading"
+                className="font-heading flex items-center gap-2"
               >
+                <ArrowLeft className="w-4 h-4" />
                 返回房间
               </Button>
             </div>
 
             {/* Target Page Content Layout */}
             <Card className="border border-white/10 shadow-2xl bg-neutral-light/50 dark:bg-neutral-dark/50 backdrop-blur-lg">
-              <CardBody className="p-8">
+              <Card.Content className="p-8">
                 {showTargetPage === 'projects' && (
                   <div className="flex flex-col gap-6 text-left">
                     <p className="text-sm text-neutral-dark/70 dark:text-neutral-light/70">
@@ -273,7 +272,7 @@ export default function HomePage() {
                             <span className="text-xs text-neutral-dark/50 dark:text-neutral-light/50 mt-1">发布于 2026-06-14</span>
                           </div>
                         </div>
-                        <Chip size="sm" color="secondary" variant="flat">前端技术</Chip>
+                        <Chip size="sm" color="accent" variant="soft">前端技术</Chip>
                       </div>
                       <div className="p-5 rounded-2xl border border-divider hover:border-primary/50 transition-all cursor-pointer bg-white/40 dark:bg-black/20 flex justify-between items-center">
                         <div className="flex items-center gap-3">
@@ -283,7 +282,7 @@ export default function HomePage() {
                             <span className="text-xs text-neutral-dark/50 dark:text-neutral-light/50 mt-1">发布于 2026-06-13</span>
                           </div>
                         </div>
-                        <Chip size="sm" color="secondary" variant="flat">后端开发</Chip>
+                        <Chip size="sm" color="accent" variant="soft">后端开发</Chip>
                       </div>
                     </div>
                   </div>
@@ -305,7 +304,7 @@ export default function HomePage() {
                     </div>
                   </div>
                 )}
-              </CardBody>
+              </Card.Content>
             </Card>
           </div>
         )}

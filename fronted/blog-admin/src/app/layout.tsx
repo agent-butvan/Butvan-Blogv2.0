@@ -1,19 +1,6 @@
 import type { Metadata } from "next";
-import { Archivo, Space_Grotesk } from "next/font/google";
 import "./globals.css";
 import { Providers } from "./providers";
-
-const archivo = Archivo({
-  variable: "--font-archivo",
-  subsets: ["latin"],
-  weight: ["300", "400", "500", "600", "700"],
-});
-
-const spaceGrotesk = Space_Grotesk({
-  variable: "--font-space-grotesk",
-  subsets: ["latin"],
-  weight: ["300", "400", "500", "600", "700"],
-});
 
 export const metadata: Metadata = {
   title: "可梵的个人博客 | 管理后台",
@@ -26,8 +13,8 @@ export default function RootLayout({
   children: React.ReactNode;
 }>) {
   return (
-    <html lang="zh" className={`${archivo.variable} ${spaceGrotesk.variable} h-full`}>
-      <body className="min-h-full font-body bg-background text-foreground antialiased">
+    <html lang="zh" className="h-full">
+      <body className="min-h-full bg-background text-foreground antialiased">
         <Providers>{children}</Providers>
       </body>
     </html>
