@@ -4,6 +4,7 @@ import { useEffect, useState, useCallback } from "react";
 import { useRouter } from "next/navigation";
 import { Plus, Search, Edit, Trash2, Eye, Filter } from "lucide-react";
 import apiClient from "@/lib/api";
+import ConfirmModal from "@/components/common/ConfirmModal";
 import type { ApiResponse, PageResult } from "@/types/common";
 import type { ArticleItem } from "@/types/article";
 
@@ -22,6 +23,8 @@ export default function ArticlesPage() {
   const [keyword, setKeyword] = useState("");
   const [loading, setLoading] = useState(true);
   const [deleteError, setDeleteError] = useState<string | null>(null);
+  const [confirmDeleteId, setConfirmDeleteId] = useState<number | null>(null);
+  const [deleteLoading, setDeleteLoading] = useState(false);
 
   const pageSize = 10;
 
@@ -54,15 +57,24 @@ export default function ArticlesPage() {
     fetchArticles();
   }, [fetchArticles]);
 
-  /** 删除文章 */
-  const handleDelete = async (id: number) => {
+  /** 打开删除确认 */
+  const handleDeleteRequest = (id: number) => {
     setDeleteError(null);
-    if (!confirm("确定要删除这篇文章吗？")) return;
+    setConfirmDeleteId(id);
+  };
+
+  /** 确认删除 */
+  const handleDeleteConfirm = async () => {
+    if (!confirmDeleteId) return;
+    setDeleteLoading(true);
     try {
-      await apiClient.delete(`/articles/${id}`);
+      await apiClient.delete(`/articles/${confirmDeleteId}`);
+      setConfirmDeleteId(null);
       fetchArticles();
     } catch {
       setDeleteError("删除失败，请重试");
+    } finally {
+      setDeleteLoading(false);
     }
   };
 
@@ -202,7 +214,7 @@ export default function ArticlesPage() {
                         <Edit size={15} />
                       </button>
                       <button
-                        onClick={() => handleDelete(article.id)}
+                        onClick={() => handleDeleteRequest(article.id)}
                         className="rounded-lg p-1.5 text-zinc-400 hover:bg-red-50 hover:text-red-500 transition-colors"
                         title="删除"
                       >
@@ -241,6 +253,18 @@ export default function ArticlesPage() {
           </div>
         </div>
       )}
+      {/* 删除确认弹窗 */}
+      <ConfirmModal
+        open={confirmDeleteId !== null}
+        variant="danger"
+        title="确认删除"
+        description="确定要删除这篇文章吗？此操作不可撤销。"
+        confirmLabel="删除"
+        cancelLabel="取消"
+        loading={deleteLoading}
+        onConfirm={handleDeleteConfirm}
+        onCancel={() => setConfirmDeleteId(null)}
+      />
     </div>
   );
 }

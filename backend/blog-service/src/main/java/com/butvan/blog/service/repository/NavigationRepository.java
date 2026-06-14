@@ -21,6 +21,15 @@ public interface NavigationRepository extends JpaRepository<Navigation, Long> {
     List<Navigation> findByPositionAndIsVisibleOrderBySortOrderAsc(String position, Boolean isVisible);
 
     /**
+     * 根据菜单展示位置查询所有菜单记录（含隐藏项），按排序权重升序
+     * 用于管理后台，管理员需要看到全部菜单（包括未启用的）
+     *
+     * @param position 展示位置
+     * @return 全部菜单实体列表（不区分是否可见）
+     */
+    List<Navigation> findByPositionOrderBySortOrderAsc(String position);
+
+    /**
      * 根据菜单展示位置查询所有启用显示的菜单记录并进行升序排序 (默认只查可见)
      *
      * @param position 展示位置

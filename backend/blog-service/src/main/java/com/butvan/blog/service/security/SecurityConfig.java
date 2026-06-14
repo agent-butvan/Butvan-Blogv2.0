@@ -4,6 +4,7 @@ import com.butvan.blog.service.repository.UserRepository;
 import lombok.RequiredArgsConstructor;
 import org.springframework.context.annotation.Bean;
 import org.springframework.context.annotation.Configuration;
+import org.springframework.http.HttpMethod;
 import org.springframework.security.authentication.AuthenticationManager;
 import org.springframework.security.config.Customizer;
 import org.springframework.security.config.annotation.authentication.configuration.AuthenticationConfiguration;
@@ -91,8 +92,14 @@ public class SecurityConfig {
             .sessionManagement(session -> session.sessionCreationPolicy(SessionCreationPolicy.STATELESS))
             // 设定安全请求过滤匹配规则
             .authorizeHttpRequests(auth -> auth
-                    // 放行认证模块与导航资源获取接口
-                    .requestMatchers("/api/auth/register", "/api/auth/login", "/api/navigations/**").permitAll()
+                    // 放行认证模块接口
+                    .requestMatchers("/api/auth/register", "/api/auth/login").permitAll()
+                    // 前台获取导航菜单完全公开（仅限 GET 读取）
+                    .requestMatchers(HttpMethod.GET, "/api/navigations/**").permitAll()
+                    // 放行前台获取首页活跃房间场景 API
+                    .requestMatchers(HttpMethod.GET, "/api/scenes/active").permitAll()
+                    // 放行本地静态图片映射路径
+                    .requestMatchers("/uploads/**").permitAll()
                     // 其它任何后台 API 均需校验 Bearer Token 权限身份
                     .anyRequest().authenticated()
             )

@@ -1,60 +1,40 @@
 'use client'
 
 import React, { useState, useEffect } from 'react'
-import { Card, Button, Chip } from '@heroui/react'
-import { BookOpen, Laptop, Coffee, ArrowLeft, Terminal, User, FileText, Sparkles, Wind } from 'lucide-react'
+import { Card, Button, Chip, Spinner } from '@heroui/react'
+import { BookOpen, Laptop, Coffee, ArrowLeft, Terminal, User, FileText, Settings, Sparkles, RefreshCw } from 'lucide-react'
 
-// Define the SVG polygon hotspot type
+// Define v0.2 Hotspot and Scene types matching backend VO
 interface Hotspot {
   id: number
   itemName: string
-  points: string // SVG polygon points (0-100 percentage based)
-  zoomX: number  // Focus X coordinate (percentage)
-  zoomY: number  // Focus Y coordinate (percentage)
+  itemImageUrl: string // 透明抠图 PNG
+  xPercent: number
+  yPercent: number
+  widthPercent: number
+  heightPercent?: number
   hoverTips: string
+  redirectType: string // INTERNAL | EXTERNAL | ARTICLE | CATEGORY
   redirectPath: string
+  redirectTargetId?: number
   zoomScale: number
-  icon: React.ReactNode
+  sortOrder: number
+  isVisible: boolean
+}
+
+interface Scene {
+  id: number
+  title: string
+  imageUrl: string
+  isActive: boolean
+  hotspots: Hotspot[]
 }
 
 export default function HomePage() {
-  // Configured precisely matching the cozy room fWdgJuAOF.jpeg
-  const hotspots: Hotspot[] = [
-    {
-      id: 1,
-      itemName: 'iMac 工作台',
-      points: '21.3,58.2 30.7,57.5 30.7,66.8 27.5,66.8 27.5,70.5 24.5,70.5 24.5,66.8 21.3,66.8',
-      zoomX: 26.0,
-      zoomY: 64.0,
-      hoverTips: '要来看看我写的开源项目和代码吗？',
-      redirectPath: 'projects',
-      zoomScale: 3.8,
-      icon: <Laptop className="w-4 h-4 text-primary" />
-    },
-    {
-      id: 2,
-      itemName: '空调 (Air Conditioner)',
-      points: '17.5,21.5 30.7,21.5 30.7,34.2 17.5,34.2',
-      zoomX: 24.1,
-      zoomY: 27.8,
-      hoverTips: '翻一翻我的技术博客与最新随笔文章',
-      redirectPath: 'blog',
-      zoomScale: 3.2,
-      icon: <BookOpen className="w-4 h-4 text-primary" />
-    },
-    {
-      id: 3,
-      itemName: '墙壁相框',
-      points: '93.8,40.5 98.2,40.5 98.2,54.5 93.8,54.5',
-      zoomX: 96.0,
-      zoomY: 47.5,
-      hoverTips: '了解关于我的故事、技术栈和联系方式',
-      redirectPath: 'about',
-      zoomScale: 3.5,
-      icon: <Coffee className="w-4 h-4 text-primary" />
-    }
-  ]
-
+  const [scene, setScene] = useState<Scene | null>(null)
+  const [loading, setLoading] = useState(true)
+  const [error, setError] = useState<string | null>(null)
+  
   const [hoveredHotspot, setHoveredHotspot] = useState<Hotspot | null>(null)
   const [activeHotspot, setActiveHotspot] = useState<Hotspot | null>(null)
   const [zoomState, setZoomState] = useState({
@@ -66,6 +46,37 @@ export default function HomePage() {
   const [showTargetPage, setShowTargetPage] = useState<string | null>(null)
   const [mousePos, setMousePos] = useState({ x: 0, y: 0 })
 
+  // 1. Fetch active scene config on load
+  const fetchActiveScene = () => {
+    setLoading(true)
+    setError(null)
+    fetch('http://localhost:8080/api/scenes/active')
+      .then(res => {
+        if (!res.ok) {
+          throw new Error('无法连接到服务端，或目前无激活的房间场景')
+        }
+        return res.json()
+      })
+      .then((resData) => {
+        if (resData.code === 200 || resData.code === 0) {
+          setScene(resData.data)
+        } else {
+          throw new Error(resData.msg || '获取首页场景失败')
+        }
+      })
+      .catch(err => {
+        console.error(err)
+        setError(err.message || '网络连接故障，请检查后端 API 服务是否已启动')
+      })
+      .finally(() => {
+        setLoading(false)
+      })
+  }
+
+  useEffect(() => {
+    fetchActiveScene()
+  }, [])
+
   const handleMouseMove = (e: React.MouseEvent) => {
     setMousePos({ x: e.clientX, y: e.clientY })
   }
@@ -74,15 +85,22 @@ export default function HomePage() {
     if (zoomState.active) return
     setActiveHotspot(hotspot)
 
+    // 计算物品的几何中心作为镜头缩放的焦点
+    const zoomX = hotspot.xPercent + (hotspot.widthPercent / 2)
+    // Y 坐标向偏下移动 15%，获得更平衡的居中视觉
+    const zoomY = Math.min(100, hotspot.yPercent + 15)
+
     setZoomState({
       active: true,
-      x: hotspot.zoomX,
-      y: hotspot.zoomY,
-      scale: hotspot.zoomScale
+      x: zoomX,
+      y: zoomY,
+      scale: hotspot.zoomScale || 3.0
     })
 
+    // 延时展开对应的跳转目标页内容
     setTimeout(() => {
-      setShowTargetPage(hotspot.redirectPath)
+      // 兼容跳转处理，如果在实际系统中有路由机制，可在此跳转
+      setShowTargetPage(hotspot.redirectPath || `target-${hotspot.id}`)
     }, 850)
   }
 
@@ -97,43 +115,58 @@ export default function HomePage() {
     })
   }
 
-  return (
-    <main className="relative w-screen h-screen overflow-hidden bg-neutral-dark flex items-center justify-center font-body selection:bg-primary/30">
-      
-      {/* Dynamic CSS Styles for Silicon SVG Glow & Pulse */}
-      <style jsx global>{`
-        @keyframes pulseBorder {
-          0%, 100% {
-            stroke: rgba(255, 255, 255, 0.2);
-            fill: rgba(255, 255, 255, 0.01);
-          }
-          50% {
-            stroke: rgba(114, 123, 186, 0.45);
-            fill: rgba(114, 123, 186, 0.02);
-          }
-        }
-        .polygon-hotspot {
-          transition: all 0.4s cubic-bezier(0.25, 0.8, 0.25, 1);
-          animation: pulseBorder 3s infinite ease-in-out;
-          cursor: pointer;
-        }
-        .polygon-hotspot:hover {
-          animation: none;
-          fill: rgba(114, 123, 186, 0.18) !important;
-          stroke: #727BBA !important;
-          stroke-width: 0.5px !important;
-          filter: drop-shadow(0 0 8px rgba(114, 123, 186, 0.85)) drop-shadow(0 0 2px rgba(114, 123, 186, 0.5));
-        }
-        .polygon-active {
-          animation: none;
-          fill: rgba(114, 123, 186, 0.25) !important;
-          stroke: #727BBA !important;
-          stroke-width: 0.6px !important;
-          filter: drop-shadow(0 0 12px rgba(114, 123, 186, 0.9));
-        }
-      `}</style>
+  // 渲染 Loading 状态
+  if (loading) {
+    return (
+      <div className="w-screen h-screen flex flex-col items-center justify-center bg-[#0d1117] text-[#c9d1d9] gap-4 font-body">
+        <Spinner size="lg" color="accent" />
+        <p className="text-sm font-heading tracking-wider animate-pulse text-primary">正在载入沉浸式个人书房...</p>
+      </div>
+    )
+  }
 
-      {/* 1. ROOM VIEW CONTAINER */}
+  // 渲染错误/空场景状态
+  if (error || !scene) {
+    return (
+      <div className="w-screen h-screen flex flex-col items-center justify-center bg-[#0d1117] text-[#c9d1d9] p-6 text-center font-body">
+        <div className="bg-[#161b22] border border-white/10 p-8 rounded-3xl max-w-md shadow-2xl flex flex-col items-center gap-5 backdrop-blur-md">
+          <div className="w-12 h-12 rounded-full bg-red-500/10 flex items-center justify-center border border-red-500/20 text-red-400">
+            <Settings className="w-6 h-6" />
+          </div>
+          <h2 className="text-lg font-bold font-heading text-white">房间加载失败</h2>
+          <p className="text-xs text-neutral-dark/80 dark:text-neutral-light/80 leading-relaxed">
+            {error || '没有在系统中检测到处于启用激活状态的房间场景。'}
+          </p>
+          <div className="w-full text-left bg-black/30 p-3.5 rounded-xl border border-divider">
+            <span className="text-[11px] font-bold text-primary block mb-1">🛠 快速排查指引:</span>
+            <ol className="text-[10px] space-y-1 list-decimal list-inside text-neutral-dark/70 dark:text-neutral-light/75">
+              <li>确认本地 PostgreSQL 服务已启动并建有 19 张表</li>
+              <li>确保已执行 <code className="bg-[#21262d] px-1 rounded text-accent">migration-v0.2.sql</code> 脚本载入演示场景</li>
+              <li>确保 Spring Boot 后端项目已在 8080 端口启动</li>
+            </ol>
+          </div>
+          <div className="flex gap-3 mt-2">
+            <Button size="sm" variant="outline" onClick={fetchActiveScene} className="font-heading gap-1.5">
+              <RefreshCw className="w-3.5 h-3.5" /> 重新尝试
+            </Button>
+            <a href="http://localhost:3001" target="_blank" rel="noopener noreferrer">
+              <Button size="sm" variant="outline" className="font-heading">
+                登录管理端后台 ⚙️
+              </Button>
+            </a>
+          </div>
+        </div>
+      </div>
+    )
+  }
+
+  // 拼装完整的背景图片地址
+  const bgImgUrl = scene.imageUrl.startsWith('/') ? `http://localhost:8080${scene.imageUrl}` : scene.imageUrl
+
+  return (
+    <main className="relative w-screen h-screen overflow-hidden bg-[#0d1117] flex items-center justify-center font-body selection:bg-primary/30">
+      
+      {/* 1. ROOM VIEW CONTAINER (PNG Sprite Overlay Mode) */}
       <div 
         className="relative w-full h-full flex items-center justify-center transition-transform duration-[850ms] ease-[cubic-bezier(0.25,1,0.5,1)]"
         style={{
@@ -142,42 +175,67 @@ export default function HomePage() {
         }}
         onMouseMove={handleMouseMove}
       >
-        {/* Background Image */}
-        <div className="absolute inset-0 w-full h-full bg-no-repeat bg-cover bg-center"
-             style={{ backgroundImage: `url('/fWdgJuAOF.jpeg')` }}
+        {/* Background Image (Cleaned room bottom wallpaper) */}
+        <div 
+          className="absolute inset-0 w-full h-full bg-no-repeat bg-cover bg-center transition-all duration-700"
+          style={{ backgroundImage: `url('${bgImgUrl}')` }}
         />
 
-        {/* Ambient Dark Overlay to make it premium */}
+        {/* Ambient Dark Overlay */}
         <div className="absolute inset-0 bg-black/10 pointer-events-none" />
 
-        {/* SVG Polygon Overlay Layer */}
-        <svg 
-          viewBox="0 0 100 100" 
-          preserveAspectRatio="none" 
-          className="absolute inset-0 w-full h-full z-10 select-none pointer-events-auto"
-        >
-          {hotspots.map((hotspot) => {
+        {/* 2. PNG SPRITES OVERLAYS */}
+        <div className="absolute inset-0 w-full h-full z-10 select-none pointer-events-auto">
+          {scene.hotspots.map((hotspot) => {
             const isHovered = hoveredHotspot?.id === hotspot.id
             const isActive = activeHotspot?.id === hotspot.id
+            
+            // 跳过无效或空 PNG 贴图的渲染（兼容纯 SVG polygon）
+            if (!hotspot.itemImageUrl) return null;
+
+            const spriteUrl = hotspot.itemImageUrl.startsWith('/') 
+              ? `http://localhost:8080${hotspot.itemImageUrl}` 
+              : hotspot.itemImageUrl;
+
             return (
-              <polygon
+              <div
                 key={hotspot.id}
-                points={hotspot.points}
-                className={`polygon-hotspot ${isActive ? 'polygon-active' : ''}`}
+                className="absolute cursor-pointer select-none origin-bottom transition-all duration-[450ms]"
                 style={{
-                  strokeWidth: isHovered || isActive ? '0.5px' : '0.2px',
-                  strokeDasharray: isHovered || isActive ? 'none' : '0.5, 0.5'
+                  left: `${hotspot.xPercent}%`,
+                  top: `${hotspot.yPercent}%`,
+                  width: `${hotspot.widthPercent}%`,
+                  // 控制 z-index 渲染层级，被选中的物品或 hover 物品拥有最高的优先级
+                  zIndex: isActive ? 40 : (isHovered ? 35 : (hotspot.sortOrder || 10)),
+                  transform: isHovered 
+                    ? 'translateY(-8px) scale(1.03)' 
+                    : (isActive ? 'scale(1.05) translateY(-2px)' : 'none'),
                 }}
                 onMouseEnter={() => setHoveredHotspot(hotspot)}
                 onMouseLeave={() => setHoveredHotspot(null)}
                 onClick={() => handleHotspotClick(hotspot)}
-              />
+              >
+                {/* 
+                  PNG Sprite Image 
+                  应用 hover 物理避光黑影 filter 以及深海微发光霓虹微光效果
+                */}
+                <img
+                  src={spriteUrl}
+                  alt={hotspot.itemName}
+                  className="w-full h-auto object-contain transition-all duration-[450ms] ease-out pointer-events-auto"
+                  style={{
+                    filter: isHovered 
+                      ? 'drop-shadow(0 15px 22px rgba(0, 0, 0, 0.45)) drop-shadow(0 0 10px rgba(114, 123, 186, 0.65))'
+                      : 'drop-shadow(0 3px 5px rgba(0, 0, 0, 0.25))'
+                  }}
+                />
+              </div>
             )
           })}
-        </svg>
+        </div>
       </div>
 
-      {/* 2. PREMIUM GLASSMORPHISM TOOLTIP */}
+      {/* 3. PREMIUM GLASSMORPHISM TOOLTIP */}
       {hoveredHotspot && !zoomState.active && (
         <div 
           className="fixed z-50 pointer-events-none transition-all duration-150 ease-out select-none flex flex-col items-center gap-1.5"
@@ -188,7 +246,9 @@ export default function HomePage() {
           }}
         >
           <div className="bg-neutral-light/75 dark:bg-neutral-dark/85 backdrop-blur-md px-4 py-2.5 rounded-2xl border border-white/20 shadow-2xl flex items-center gap-2 max-w-[280px]">
-            {hoveredHotspot.icon}
+            <div className="w-5 h-5 rounded-lg bg-primary/20 flex items-center justify-center border border-primary/30">
+              {hoveredHotspot.redirectType === 'ARTICLE' ? <FileText className="w-3.5 h-3.5 text-primary" /> : <Sparkles className="w-3.5 h-3.5 text-primary" />}
+            </div>
             <div className="flex flex-col text-left">
               <span className="text-xs font-bold text-primary font-heading">{hoveredHotspot.itemName}</span>
               <span className="text-[11px] text-neutral-dark/80 dark:text-neutral-light/80 mt-0.5">{hoveredHotspot.hoverTips}</span>
@@ -198,41 +258,37 @@ export default function HomePage() {
         </div>
       )}
 
-      {/* 3. HEADS-UP DISPLAY (HUD) */}
+      {/* 4. HEADS-UP DISPLAY (HUD) */}
       {!zoomState.active && (
         <div className="absolute inset-x-0 top-0 p-8 flex justify-between items-center z-20 pointer-events-none select-none">
           <div className="pointer-events-auto bg-neutral-light/65 dark:bg-neutral-dark/65 backdrop-blur-lg border border-white/10 px-5 py-3 rounded-2xl shadow-lg flex items-center gap-3">
             <div className="w-2.5 h-2.5 rounded-full bg-primary animate-pulse" />
             <h1 className="text-sm font-bold tracking-wider text-neutral-dark dark:text-neutral-light font-heading">
-              BUTVAN ROOM <span className="text-primary font-normal text-xs ml-1">v0.1</span>
+              BUTVAN ROOM <span className="text-primary font-normal text-xs ml-1">v0.2</span>
             </h1>
           </div>
           <div className="pointer-events-auto flex gap-2">
             <Chip color="accent" variant="soft" size="sm" className="font-heading border border-primary/20 backdrop-blur-md">
-              ✨ 悬浮探索房间中的物品（电脑、空调、相框）
+              ✨ {scene.title} — 探索并点击交互切片
             </Chip>
           </div>
         </div>
       )}
 
-      {/* 4. TRANSITION FADE SCREEN AND SUB-PAGES */}
+      {/* 5. TRANSITION FADE SCREEN AND SUB-PAGES */}
       <div 
         className={`absolute inset-0 z-30 transition-all duration-[600ms] flex flex-col items-center justify-center p-8 bg-neutral-light/95 dark:bg-neutral-dark/95 ${
           showTargetPage ? 'opacity-100 pointer-events-auto' : 'opacity-0 pointer-events-none'
         }`}
       >
-        {showTargetPage && (
+        {showTargetPage && activeHotspot && (
           <div className="w-full max-w-4xl flex flex-col gap-6 animate-[fadeIn_0.5s_ease-out]">
             {/* Header with back button */}
             <div className="flex items-center justify-between border-b border-divider pb-4">
               <div className="flex items-center gap-3">
-                {showTargetPage === 'projects' && <Laptop className="w-6 h-6 text-primary" />}
-                {showTargetPage === 'blog' && <BookOpen className="w-6 h-6 text-primary" />}
-                {showTargetPage === 'about' && <Coffee className="w-6 h-6 text-primary" />}
+                <Sparkles className="w-6 h-6 text-primary" />
                 <h2 className="text-xl font-bold font-heading text-neutral-dark dark:text-neutral-light">
-                  {showTargetPage === 'projects' && '💻 开源项目与代码'}
-                  {showTargetPage === 'blog' && '📚 我的技术博客'}
-                  {showTargetPage === 'about' && '☕ 关于我 / 留言板'}
+                  {activeHotspot.itemName} — 内容浏览
                 </h2>
               </div>
               <Button 
@@ -242,77 +298,42 @@ export default function HomePage() {
                 className="font-heading flex items-center gap-2"
               >
                 <ArrowLeft className="w-4 h-4" />
-                返回房间
+                返回场景
               </Button>
             </div>
 
             {/* Target Page Content Layout */}
             <Card className="border border-white/10 shadow-2xl bg-neutral-light/50 dark:bg-neutral-dark/50 backdrop-blur-lg">
               <Card.Content className="p-8">
-                {showTargetPage === 'projects' && (
-                  <div className="flex flex-col gap-6 text-left">
-                    <p className="text-sm text-neutral-dark/70 dark:text-neutral-light/70">
-                      这里是我的工作台。下面是正在维护的项目（静态演示）：
-                    </p>
-                    <div className="grid grid-cols-1 md:grid-cols-2 gap-4 mt-2">
-                      <div className="p-5 rounded-2xl border border-divider hover:border-primary/50 transition-all cursor-pointer bg-white/40 dark:bg-black/20">
-                        <div className="flex items-center gap-2 font-bold text-sm"><Terminal className="w-4 h-4 text-primary" /> Butvan Blog 2.0</div>
-                        <p className="text-xs text-neutral-dark/60 dark:text-neutral-light/60 mt-2">基于 Next.js 15 和 Spring Boot 3.x 开发的沉浸式个人空间系统。</p>
-                      </div>
-                      <div className="p-5 rounded-2xl border border-divider hover:border-primary/50 transition-all cursor-pointer bg-white/40 dark:bg-black/20">
-                        <div className="flex items-center gap-2 font-bold text-sm"><Laptop className="w-4 h-4 text-primary" /> ui-ux-pro-max</div>
-                        <p className="text-xs text-neutral-dark/60 dark:text-neutral-light/60 mt-2">一套面向 AI 程序员的高级 UI 辅助设计与自动搜索体系。</p>
-                      </div>
-                    </div>
+                <div className="flex flex-col gap-6 text-left">
+                  <h3 className="text-base font-bold text-primary">{activeHotspot.itemName}</h3>
+                  <p className="text-sm text-neutral-dark/70 dark:text-neutral-light/70">
+                    您点击了场景中的「{activeHotspot.itemName}」。以下是系统加载的静态预览页面（待后续文章/跳转模块打通）：
+                  </p>
+                  <div className="p-5 rounded-2xl border border-divider bg-white/40 dark:bg-black/20 mt-2">
+                    <span className="text-xs font-bold text-accent block mb-2">交互路由信息：</span>
+                    <ul className="text-xs space-y-1 text-neutral-dark/80 dark:text-neutral-light/80 font-mono">
+                      <li>• 跳转类型: {activeHotspot.redirectType}</li>
+                      <li>• 跳转目标路径: {activeHotspot.redirectPath || '未配置'}</li>
+                      <li>• 跳转关联ID: {activeHotspot.redirectTargetId || '无'}</li>
+                      <li>• 聚焦缩放: {activeHotspot.zoomScale} 倍</li>
+                    </ul>
                   </div>
-                )}
-
-                {showTargetPage === 'blog' && (
-                  <div className="flex flex-col gap-6 text-left">
-                    <p className="text-sm text-neutral-dark/70 dark:text-neutral-light/70">
-                      这里是我的书架。收录了我的学习随笔与思考文章：
-                    </p>
-                    <div className="flex flex-col gap-4 mt-2">
-                      <div className="p-5 rounded-2xl border border-divider hover:border-primary/50 transition-all cursor-pointer bg-white/40 dark:bg-black/20 flex justify-between items-center">
-                        <div className="flex items-center gap-3">
-                          <FileText className="w-5 h-5 text-primary" />
-                          <div className="flex flex-col">
-                            <span className="font-bold text-sm">如何用 SVG 实现精准的多端响应式交互热区</span>
-                            <span className="text-xs text-neutral-dark/50 dark:text-neutral-light/50 mt-1">发布于 2026-06-14</span>
-                          </div>
+                  
+                  {/* 如果跳转的目标是内链页面或文章，后续在此直接拉取该文章正文或进行 Next.js Route 跳转 */}
+                  {activeHotspot.redirectType === 'ARTICLE' && activeHotspot.redirectTargetId && (
+                    <div className="mt-4 p-5 rounded-2xl border border-primary/20 bg-primary/5 flex items-center justify-between">
+                      <div className="flex items-center gap-3">
+                        <FileText className="w-5 h-5 text-primary" />
+                        <div className="flex flex-col">
+                          <span className="font-bold text-sm">已关联博客文章</span>
+                          <span className="text-xs text-neutral-dark/60 dark:text-neutral-light/60 mt-0.5">文章 ID: {activeHotspot.redirectTargetId}</span>
                         </div>
-                        <Chip size="sm" color="accent" variant="soft">前端技术</Chip>
                       </div>
-                      <div className="p-5 rounded-2xl border border-divider hover:border-primary/50 transition-all cursor-pointer bg-white/40 dark:bg-black/20 flex justify-between items-center">
-                        <div className="flex items-center gap-3">
-                          <FileText className="w-5 h-5 text-primary" />
-                          <div className="flex flex-col">
-                            <span className="font-bold text-sm">Spring Boot 3.x + JPA 优雅处理 JSONB 数据映射</span>
-                            <span className="text-xs text-neutral-dark/50 dark:text-neutral-light/50 mt-1">发布于 2026-06-13</span>
-                          </div>
-                        </div>
-                        <Chip size="sm" color="accent" variant="soft">后端开发</Chip>
-                      </div>
+                      <Button size="sm" variant="primary" className="font-heading">立即阅读</Button>
                     </div>
-                  </div>
-                )}
-
-                {showTargetPage === 'about' && (
-                  <div className="flex flex-col gap-6 text-left">
-                    <div className="flex flex-col md:flex-row gap-6 items-center">
-                      <div className="w-24 h-24 rounded-full bg-primary/20 flex items-center justify-center border border-primary/30">
-                        <User className="w-12 h-12 text-primary" />
-                      </div>
-                      <div className="flex flex-col gap-1.5">
-                        <h3 className="text-lg font-bold">可梵 (Butvan)</h3>
-                        <p className="text-xs text-primary font-heading">Full-Stack Developer / UI Geek</p>
-                        <p className="text-sm text-neutral-dark/70 dark:text-neutral-light/70 mt-1">
-                          热爱设计与编程的创造者。喜欢干净的代码、极简的界面、以及醇香的黑咖啡。
-                        </p>
-                      </div>
-                    </div>
-                  </div>
-                )}
+                  )}
+                </div>
               </Card.Content>
             </Card>
           </div>

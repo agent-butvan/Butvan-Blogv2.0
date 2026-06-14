@@ -38,8 +38,7 @@ Butvan Blog2.0/                                    # 📦 项目根目录
 │   │   │   └── fonts/                             #       自定义字体文件
 │   │   ├── src/
 │   │   │   ├── app/                               #     Next.js App Router 路由层
-│   │   │   │   ├── (home)/                        #       🏠 首页 — 房间场景交互入口
-│   │   │   │   │   └── page.tsx                   #         房间场景：SVG 热区、物品悬浮、镜头拉近动效
+│   │   │   │   ├── page.tsx                       #         🏠 首页 — 房间场景：PNG图层切片物理悬浮交互、镜头缩放聚焦
 │   │   │   │   ├── articles/                      #       📝 文章模块
 │   │   │   │   │   ├── page.tsx                   #         文章列表页（分页、筛选）
 │   │   │   │   │   └── [slug]/                    #         文章详情页
@@ -341,7 +340,7 @@ Butvan Blog2.0/                                    # 📦 项目根目录
 | `DATA_MODEL.md` | 根目录 | 数据库模型完整设计（10 模块 19 张表、ER 图、索引） |
 | `design-system/butvan-blog/MASTER.md` | 设计系统 | 静谧深海色彩规范、排版规则、发光/动效参数 |
 | `docx/database/schema.sql` | 数据库 | PostgreSQL 完整 DDL（19 张表，含注释与索引） |
-| `fronted/blog-client/src/app/(home)/page.tsx` | 前台-首页 | 房间场景 SVG 热区、物品悬浮发光、镜头拉近动效 |
+| `fronted/blog-client/src/app/page.tsx` | 前台-首页 | 房间场景：从 API 获取激活场景，PNG 图层叠层绝对百分比渲染、hover 物理悬空、发光避光阴影及缩放过渡 |
 | `fronted/blog-client/src/components/home/RoomScene.tsx` | 前台-组件 | 多图层渲染容器，背景图+PNG物品百分比定位叠加 |
 | `fronted/blog-client/src/app/articles/[slug]/page.tsx` | 前台-文章 | 文章详情页（Markdown渲染、评论区、系列导航） |
 | `fronted/blog-admin/src/app/(dashboard)/articles/new/page.tsx` | 后台-文章 | Markdown 编辑器 + 分类/标签/SEO 设置 |

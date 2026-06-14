@@ -26,6 +26,7 @@ public class NavigationVO implements Serializable {
     private String icon;              // 图标 Key 码
     private String position;          // 位置
     private Integer sortOrder;        // 排序权重
+    private Boolean isVisible;        // 是否在前台显示
     private Boolean isOpenNewTab;     // 是否新开窗口
 
     @Builder.Default
