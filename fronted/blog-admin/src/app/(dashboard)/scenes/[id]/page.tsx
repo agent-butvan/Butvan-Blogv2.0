@@ -400,6 +400,10 @@ export default function SceneEditorPage() {
         isVisible: true,
       })
 
+      if (hotspotRes.data.code !== 200 && hotspotRes.data.code !== 0) {
+        throw new Error(hotspotRes.data.msg || '创建热区物品失败')
+      }
+
       // 4. 刷新场景数据
       toast.success('框选物品裁剪并上传成功')
       await fetchSceneDetail()
