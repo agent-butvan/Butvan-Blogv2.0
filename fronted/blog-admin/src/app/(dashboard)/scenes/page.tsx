@@ -2,6 +2,7 @@
 
 import React, { useState, useEffect, useRef } from 'react'
 import apiClient from '@/lib/api'
+import { toast } from '@/lib/toast'
 import { Spinner } from '@heroui/react'
 import { MapPin, Upload, Layers, Plus, Check, Eye, Trash2, X } from 'lucide-react'
 import Link from 'next/link'
@@ -68,11 +69,12 @@ export default function ScenesPage() {
       })
       if (res.data.code === 200 || res.data.code === 0) {
         setImageUrl(res.data.data.fileUrl)
+        toast.success('背景底图上传成功')
       } else {
-        alert(res.data.msg || '上传图片失败')
+        toast.error(res.data.msg || '上传图片失败')
       }
     } catch {
-      alert('上传接口异常，请确认后端已启动')
+      toast.error('上传接口异常，请确认后端已启动')
     } finally {
       setUploading(false)
     }
@@ -82,7 +84,7 @@ export default function ScenesPage() {
   const handleSubmitScene = async (e: React.FormEvent) => {
     e.preventDefault()
     if (!title.trim() || !imageUrl.trim()) {
-      alert('请填写场景名称并上传底图')
+      toast.warning('请填写场景名称并上传底图')
       return
     }
     setSubmitting(true)
@@ -95,12 +97,13 @@ export default function ScenesPage() {
       if (res.data.code === 200 || res.data.code === 0) {
         setTitle('')
         setImageUrl('')
+        toast.success('场景上传创建成功')
         fetchScenes()
       } else {
-        alert(res.data.msg || '保存场景失败')
+        toast.error(res.data.msg || '保存场景失败')
       }
     } catch {
-      alert('保存场景失败，服务器内部错误')
+      toast.error('保存场景失败，服务器内部错误')
     } finally {
       setSubmitting(false)
     }
@@ -111,12 +114,13 @@ export default function ScenesPage() {
     try {
       const res = await apiClient.put(`/admin/scenes/${id}/active`)
       if (res.data.code === 200 || res.data.code === 0) {
+        toast.success('场景启用成功')
         fetchScenes()
       } else {
-        alert(res.data.msg || '启用场景失败')
+        toast.error(res.data.msg || '启用场景失败')
       }
     } catch {
-      alert('启用场景异常')
+      toast.error('服务器运行异常，请稍后再试')
     }
   }
 
@@ -132,13 +136,14 @@ export default function ScenesPage() {
     try {
       const res = await apiClient.delete(`/admin/scenes/${confirmDeleteId}`)
       if (res.data.code === 200 || res.data.code === 0) {
+        toast.success('场景删除成功')
         setConfirmDeleteId(null)
         fetchScenes()
       } else {
-        alert(res.data.msg || '删除场景失败')
+        toast.error(res.data.msg || '删除场景失败')
       }
     } catch {
-      alert('删除场景接口异常')
+      toast.error('删除场景接口异常')
     } finally {
       setDeleteLoading(false)
     }

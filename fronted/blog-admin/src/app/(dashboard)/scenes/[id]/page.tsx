@@ -3,6 +3,7 @@
 import React, { useState, useEffect, useRef, useCallback } from 'react'
 import { useParams, useRouter } from 'next/navigation'
 import apiClient from '@/lib/api'
+import { toast } from '@/lib/toast'
 import { cropImageFromBackground } from '@/lib/canvas-crop'
 import SceneToolbar from '@/components/editor/SceneToolbar'
 import type { EditorMode } from '@/components/editor/SceneToolbar'
@@ -91,7 +92,7 @@ export default function SceneEditorPage() {
   const handleSaveHotspot = async () => {
     if (!activeHotspot) return
     if (!activeHotspot.itemName.trim()) {
-      alert('请填写物品名称')
+      toast.warning('请填写物品名称')
       return
     }
     setSaving(true)
@@ -101,12 +102,13 @@ export default function SceneEditorPage() {
         sceneId: Number(sceneId),
       })
       if (res.data.code === 200 || res.data.code === 0) {
+        toast.success('物品配置保存成功')
         await fetchSceneDetail()
       } else {
-        alert(res.data.msg || '保存热区失败')
+        toast.error(res.data.msg || '保存热区失败')
       }
     } catch {
-      alert('接口访问故障，无法保存热区')
+      toast.error('接口访问故障，无法保存热区')
     } finally {
       setSaving(false)
     }
@@ -128,14 +130,15 @@ export default function SceneEditorPage() {
     try {
       const res = await apiClient.delete(`/admin/scenes/hotspots/${confirmDeleteId}`)
       if (res.data.code === 200 || res.data.code === 0) {
+        toast.success('物品删除成功')
         setConfirmDeleteId(null)
         setActiveHotspot(null)
         await fetchSceneDetail()
       } else {
-        alert(res.data.msg || '删除失败')
+        toast.error(res.data.msg || '删除失败')
       }
     } catch {
-      alert('删除接口错误')
+      toast.error('删除接口错误')
     } finally {
       setDeleteLoading(false)
     }
@@ -223,12 +226,13 @@ export default function SceneEditorPage() {
           headers: { 'Content-Type': 'multipart/form-data' },
         })
         if (res.data.code === 200 || res.data.code === 0) {
+          toast.success('物品图上传成功')
           setActiveHotspot({ ...activeHotspot, itemImageUrl: res.data.data.fileUrl })
         } else {
-          alert(res.data.msg || '物品图上传失败')
+          toast.error(res.data.msg || '物品图上传失败')
         }
       } catch {
-        alert('上传接口异常')
+        toast.error('上传接口异常')
       } finally {
         setUploading(false)
       }
@@ -257,12 +261,13 @@ export default function SceneEditorPage() {
           headers: { 'Content-Type': 'multipart/form-data' },
         })
         if (res.data.code === 200 || res.data.code === 0) {
+          toast.success('物品图上传成功')
           setActiveHotspot((prev) =>
             prev ? { ...prev, itemImageUrl: res.data.data.fileUrl } : null
           )
         }
       } catch {
-        alert('上传接口异常')
+        toast.error('上传接口异常')
       } finally {
         setUploading(false)
       }
@@ -280,12 +285,13 @@ export default function SceneEditorPage() {
         headers: { 'Content-Type': 'multipart/form-data' },
       })
       if (res.data.code === 200 || res.data.code === 0) {
+        toast.success('物品图替换成功')
         setActiveHotspot({ ...activeHotspot, itemImageUrl: res.data.data.fileUrl })
       } else {
-        alert(res.data.msg || '替换图片失败')
+        toast.error(res.data.msg || '替换图片失败')
       }
     } catch {
-      alert('上传接口异常')
+      toast.error('上传接口异常')
     } finally {
       setUploading(false)
     }
@@ -337,7 +343,7 @@ export default function SceneEditorPage() {
 
     // 校验最小尺寸
     if (widthPercent < 0.5 || heightPercent < 0.5) {
-      alert('框选区域太小，请重新框选一个更大的区域')
+      toast.warning('框选区域太小，请重新框选一个更大的区域')
       setDrawingRect(null)
       return
     }
@@ -395,6 +401,7 @@ export default function SceneEditorPage() {
       })
 
       // 4. 刷新场景数据
+      toast.success('框选物品裁剪并上传成功')
       await fetchSceneDetail()
 
       // 5. 自动选中新创建的热区（通过 ID 匹配）
@@ -416,7 +423,7 @@ export default function SceneEditorPage() {
       }
     } catch (err: any) {
       console.error('框选裁剪流程失败', err)
-      alert(err?.message || '裁剪失败，请重试')
+      toast.error(err?.message || '裁剪失败，请重试')
     } finally {
       setIsCropping(false)
       setMode('select')
