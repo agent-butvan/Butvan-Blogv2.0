@@ -5,6 +5,11 @@ spring:
   application:
     name: blog-service
   
+  servlet:
+    multipart:
+      max-file-size: 10MB
+      max-request-size: 10MB
+  
   datasource:
     url: jdbc:postgresql://localhost:5432/butvan_blog
     username: butvan
@@ -27,3 +32,53 @@ spring:
 jwt:
   secret: butvan_blog_super_safe_secret_key_designed_with_at_least_256_bits_for_security_compliance
   expiration: 604800  # Token 有效期：7天（单位：秒）
+
+# ============================================================================
+# 用户端页面路径配置（供管理端热区跳转下拉框使用）
+# 新增用户端页面后在此处添加对应条目即可，无需改动 Java 代码
+# ============================================================================
+blog:
+  client-routes:
+    routes:
+      # ---------- 静态页面 ----------
+      - path: "/"
+        label: "首页"
+        category: "页面"
+        dynamic: false
+      - path: "/about"
+        label: "关于我"
+        category: "页面"
+        dynamic: false
+      - path: "/archive"
+        label: "文章归档"
+        category: "页面"
+        dynamic: false
+      - path: "/friends"
+        label: "友情链接"
+        category: "页面"
+        dynamic: false
+      - path: "/projects"
+        label: "项目展示"
+        category: "页面"
+        dynamic: false
+      # ---------- 动态路由模式 ----------
+      - path: "/articles/:slug"
+        label: "文章详情"
+        category: "动态路由"
+        dynamic: true
+      - path: "/categories/:slug"
+        label: "分类详情"
+        category: "动态路由"
+        dynamic: true
+      - path: "/tags/:slug"
+        label: "标签详情"
+        category: "动态路由"
+        dynamic: true
+      - path: "/series/:slug"
+        label: "系列详情"
+        category: "动态路由"
+        dynamic: true
+      - path: "/:slug"
+        label: "独立页面"
+        category: "动态路由"
+        dynamic: true
