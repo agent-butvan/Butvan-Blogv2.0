@@ -122,9 +122,9 @@ export default function NavigationFormModal({
       />
 
       {/* 弹窗内容 */}
-      <div className="relative z-10 w-full max-w-lg mx-4 max-h-[90vh] overflow-y-auto rounded-2xl bg-white dark:bg-zinc-950 border border-transparent dark:border-zinc-850 shadow-xl animate-slide-up">
+      <div className="relative z-10 w-full max-w-lg mx-4 max-h-[90vh] overflow-y-auto rounded-2xl bg-white dark:bg-zinc-950 border border-transparent dark:border-zinc-800 shadow-xl animate-slide-up">
         {/* 标题栏 */}
-        <div className="flex items-center justify-between px-6 py-4 border-b border-zinc-100 dark:border-zinc-850">
+        <div className="flex items-center justify-between px-6 py-4 border-b border-zinc-100 dark:border-zinc-800">
           <h2 className="font-heading text-lg font-semibold text-neutral-dark dark:text-zinc-100">
             {isEdit ? "编辑菜单项" : parentId ? "添加子菜单" : "添加根菜单"}
           </h2>
@@ -289,7 +289,7 @@ export default function NavigationFormModal({
           </div>
 
           {/* 按钮 */}
-          <div className="flex items-center justify-end gap-3 pt-3 border-t border-zinc-100 dark:border-zinc-850">
+          <div className="flex items-center justify-end gap-3 pt-3 border-t border-zinc-100 dark:border-zinc-800">
             <button
               type="button"
               onClick={onClose}
