@@ -374,7 +374,7 @@ export default function HotspotPropertiesPanel({
                     onHotspotChange({
                       ...hotspot,
                       redirectTargetId: id,
-                      redirectPath: article ? `/articles/${article.slug}` : hotspot.redirectPath,
+                      redirectPath: article ? `/article/${article.slug}` : hotspot.redirectPath,
                     })
                   }}
                   className="text-[11px] bg-zinc-50 dark:bg-zinc-950 border border-zinc-200 dark:border-zinc-800 rounded-lg px-2 py-1 text-zinc-800 dark:text-zinc-200 focus:outline-none focus:ring-1.5 focus:ring-primary/20 focus:border-primary w-full h-8 cursor-pointer transition-all duration-200"
