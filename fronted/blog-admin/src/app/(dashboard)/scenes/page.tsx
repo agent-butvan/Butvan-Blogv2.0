@@ -153,20 +153,7 @@ export default function ScenesPage() {
   const resolveUrl = (url: string) =>
     url.startsWith('/') ? `http://localhost:8080${url}` : url
 
-  /** 骨架屏卡片 */
-  const SkeletonCard = () => (
-    <div className="bg-white dark:bg-zinc-900/40 border border-zinc-200 dark:border-zinc-800/80 rounded-2xl overflow-hidden animate-skeleton-pulse shadow-sm">
-      <div className="aspect-video w-full bg-zinc-100 dark:bg-zinc-800/40" />
-      <div className="p-4 flex flex-col gap-3">
-        <div className="h-3 w-1/3 bg-zinc-200 dark:bg-zinc-800 rounded" />
-        <div className="h-4 w-2/3 bg-zinc-200 dark:bg-zinc-800 rounded" />
-        <div className="flex gap-2 mt-2 pt-3 border-t border-zinc-100 dark:border-zinc-800/60">
-          <div className="flex-1 h-8 bg-zinc-100 dark:bg-zinc-800/40 rounded-lg" />
-          <div className="flex-1 h-8 bg-zinc-100 dark:bg-zinc-800/40 rounded-lg" />
-        </div>
-      </div>
-    </div>
-  )
+
 
   return (
     <div className="flex flex-col gap-6 p-6 max-w-7xl mx-auto min-h-screen text-zinc-600 dark:text-zinc-400 font-body">
@@ -459,6 +446,23 @@ export default function ScenesPage() {
         onConfirm={handleDeleteConfirm}
         onCancel={() => setConfirmDeleteId(null)}
       />
+    </div>
+  )
+}
+
+/** 骨架屏卡片 */
+function SkeletonCard() {
+  return (
+    <div className="bg-white dark:bg-zinc-900/40 border border-zinc-200 dark:border-zinc-800/80 rounded-2xl overflow-hidden animate-skeleton-pulse shadow-sm">
+      <div className="aspect-video w-full bg-zinc-100 dark:bg-zinc-800/40" />
+      <div className="p-4 flex flex-col gap-3">
+        <div className="h-3 w-1/3 bg-zinc-200 dark:bg-zinc-800 rounded" />
+        <div className="h-4 w-2/3 bg-zinc-200 dark:bg-zinc-800 rounded" />
+        <div className="flex gap-2 mt-2 pt-3 border-t border-zinc-100 dark:border-zinc-800/60">
+          <div className="flex-1 h-8 bg-zinc-100 dark:bg-zinc-800/40 rounded-lg" />
+          <div className="flex-1 h-8 bg-zinc-100 dark:bg-zinc-800/40 rounded-lg" />
+        </div>
+      </div>
     </div>
   )
 }
