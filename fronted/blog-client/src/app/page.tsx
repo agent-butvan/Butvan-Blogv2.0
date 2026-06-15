@@ -1,6 +1,7 @@
 'use client'
 
 import React, { useState, useEffect } from 'react'
+import Link from 'next/link'
 import FluidBackground from '@/components/home/FluidBackground'
 import HeroSection from '@/components/home/HeroSection'
 import FeaturesSection from '@/components/home/FeaturesSection'
@@ -36,6 +37,18 @@ export default function HomePage() {
       {/* Layer 2: 首屏 — 个人信息（左右分栏极简布局） */}
       <section className="relative w-full min-h-screen flex items-center justify-center px-4 md:px-16 lg:px-24">
         <HeroSection profile={profile} loading={loading} />
+        
+        {!loading && (
+          <div className="absolute bottom-10 left-1/2 -translate-x-1/2 z-20 flex flex-col items-center gap-1.5 animate-bounce">
+            <Link 
+              href="/room" 
+              className="text-xs font-heading font-medium tracking-widest text-[#09B38A] hover:text-[#09B38A]/80 transition-colors cursor-pointer flex items-center gap-1 group"
+            >
+              <span>🚪 进入我的房间</span>
+              <span className="group-hover:translate-x-0.5 transition-transform duration-200">&gt;</span>
+            </Link>
+          </div>
+        )}
       </section>
 
       {/* Layer 3: 第二屏 — 技能/兴趣卡片（页脚） */}

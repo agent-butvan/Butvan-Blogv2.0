@@ -181,33 +181,6 @@ export default function HeroSection({ profile, loading }: HeroSectionProps) {
         </motion.div>
       </div>
 
-      {/* ===== 3. 固定悬浮功能小按钮 (垂直排列) ===== */}
-      <motion.div
-        className="fixed right-6 top-1/2 -translate-y-1/2 flex flex-col gap-3.5 z-45"
-        initial={{ opacity: 0, x: 20 }}
-        animate={{ opacity: 1, x: 0 }}
-        transition={{ delay: 0.6, duration: 0.5 }}
-      >
-        {/* 多宫格按钮 → /room */}
-        <Link href="/room" title="进入我的房间">
-          <button className="w-9 h-9 rounded-full bg-rose-100/75 border border-rose-200/50 flex items-center justify-center text-rose-500 hover:bg-rose-200 hover:scale-105 active:scale-95 transition-all shadow-[0_4px_12px_rgba(244,63,94,0.15)] cursor-pointer group">
-            <LayoutGrid className="w-4 h-4 group-hover:rotate-90 transition-transform duration-300" />
-          </button>
-        </Link>
-
-        {/* 魔法棒按钮 → admin */}
-        <a
-          href="http://localhost:3001"
-          target="_blank"
-          rel="noopener noreferrer"
-          title="登录管理后台"
-        >
-          <button className="w-9 h-9 rounded-full bg-rose-100/75 border border-rose-200/50 flex items-center justify-center text-rose-500 hover:bg-rose-200 hover:scale-105 active:scale-95 transition-all shadow-[0_4px_12px_rgba(244,63,94,0.15)] cursor-pointer">
-            <Wand2 className="w-4 h-4" />
-          </button>
-        </a>
-      </motion.div>
-
     </div>
   )
 }
