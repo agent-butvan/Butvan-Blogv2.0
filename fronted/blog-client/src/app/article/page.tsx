@@ -190,9 +190,6 @@ export default function ArticleListPage() {
   const [hoverStyle, setHoverStyle] = useState({ top: 0, height: 0, opacity: 0 })
   const containerRef = useRef<HTMLDivElement>(null)
 
-  // 用以确保页头与筛选栏的 GSAP 动画只在首次进入页面数据就绪时执行一次
-  const isInitialMounted = useRef(false)
-
   const handleMouseEnter = (e: React.MouseEvent<HTMLDivElement>) => {
     if (!containerRef.current) return
     const containerRect = containerRef.current.getBoundingClientRect()
@@ -331,12 +328,8 @@ export default function ArticleListPage() {
     fetchArticlesList()
   }, [selectedCategory, selectedTag, currentPage])
 
-  // 1. 页头与过滤器仅在页面首次加载完毕后执行一次动画
+  // 1. 页头与过滤器仅在页面首次加载挂载时执行一次入场动画，此后状态在过滤/分页时不受影响
   useEffect(() => {
-    if (loading) return
-    if (isInitialMounted.current) return
-    isInitialMounted.current = true
-
     const ctx = gsap.context(() => {
       gsap.fromTo('.animate-header-item', 
         { y: 12, opacity: 0 },
@@ -349,7 +342,7 @@ export default function ArticleListPage() {
     })
 
     return () => ctx.revert()
-  }, [loading])
+  }, [])
 
   // 2. 每次文章列表（数据）变动时，仅让文章列表和分页器播放入场动画
   useEffect(() => {
