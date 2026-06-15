@@ -18,12 +18,14 @@ export function useAuth() {
 
   // 初始化时从 localStorage 恢复用户状态
   useEffect(() => {
-    const storedUser = getUser();
-    const token = getToken();
-    if (storedUser && token) {
-      setUserState(storedUser);
-    }
-    setLoading(false);
+    setTimeout(() => {
+      const storedUser = getUser();
+      const token = getToken();
+      if (storedUser && token) {
+        setUserState(storedUser);
+      }
+      setLoading(false);
+    }, 0);
   }, []);
 
   /**
