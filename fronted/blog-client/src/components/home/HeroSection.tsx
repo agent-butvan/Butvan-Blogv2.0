@@ -70,21 +70,69 @@ export default function HeroSection({ profile, loading }: HeroSectionProps) {
         { x: 0, opacity: 1, duration: 1, ease: "power3.out", delay: 0.1 }
       )
 
-      // 3. 昵称大标题：3D stagger 单字符波浪空降
+      // 3. 昵称大标题：3D stagger 混乱碰撞打架归位，并配有 Hover 乱飞回弹小动效
       const nameEl = document.querySelector(".nickname-title")
       if (nameEl) {
         const text = nameEl.textContent || ''
         nameEl.innerHTML = text.split("").map(char => 
-          `<span class="char-letter inline-block transform origin-bottom opacity-0">${char === " " ? "&nbsp;" : char}</span>`
+          `<span class="char-letter inline-block transform origin-center opacity-0 cursor-pointer select-none">${char === " " ? "&nbsp;" : char}</span>`
         ).join("")
         
         // 移去父容器的 opacity-0 类，防止子元素因父级隐藏而不显示
         nameEl.classList.remove("opacity-0")
 
+        // 乱打互撞归位入场
         gsap.fromTo(".char-letter",
-          { y: 50, opacity: 0, rotationX: -90, transformPerspective: 600 },
-          { y: 0, opacity: 1, rotationX: 0, duration: 1, stagger: 0.05, ease: "back.out(1.8)", delay: 0.15 }
+          { 
+            y: () => gsap.utils.random(-150, 150), 
+            x: () => gsap.utils.random(-120, 120), 
+            rotation: () => gsap.utils.random(-75, 75),
+            scale: () => gsap.utils.random(0.5, 1.6),
+            opacity: 0
+          },
+          { 
+            y: 0, 
+            x: 0, 
+            rotation: 0,
+            scale: 1,
+            opacity: 1,
+            duration: 1.3, 
+            stagger: {
+              amount: 0.45,
+              from: "random" // 随机顺序乱序入场，极具碰撞感
+            },
+            ease: "back.out(2.4)", // 强力回弹
+            delay: 0.15 
+          }
         )
+
+        // 添加 Hover 乱飞打斗微交互
+        const charSpans = nameEl.querySelectorAll(".char-letter")
+        charSpans.forEach(span => {
+          span.addEventListener("mouseenter", () => {
+            gsap.to(span, {
+              x: () => gsap.utils.random(-25, 25),
+              y: () => gsap.utils.random(-25, 25),
+              rotation: () => gsap.utils.random(-35, 35),
+              scale: 1.25,
+              color: "#09B38A",
+              duration: 0.25,
+              ease: "power2.out"
+            })
+          })
+
+          span.addEventListener("mouseleave", () => {
+            gsap.to(span, {
+              x: 0,
+              y: 0,
+              rotation: 0,
+              scale: 1,
+              color: "inherit",
+              duration: 0.6,
+              ease: "elastic.out(1.2, 0.45)" // 弹性回归原点
+            })
+          })
+        })
       }
 
       // 4. Bio 双斜杠签名渐显
