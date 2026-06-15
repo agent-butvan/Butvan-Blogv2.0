@@ -17,6 +17,10 @@ import {
 import Link from 'next/link'
 import Image from 'next/image'
 import { resolveImageUrl } from '@/lib/image-url'
+import Navbar from '@/components/common/Navbar'
+import SidebarWidget from '@/components/common/SidebarWidget'
+import { fetchProfile } from '@/lib/profile'
+import type { ProfileVO } from '@/types/profile'
 
 // ==================== 数据接口定义 ====================
 
@@ -159,6 +163,7 @@ const API_BASE = process.env.NEXT_PUBLIC_API_BASE_URL || 'http://localhost:8080/
  */
 export default function ArticleListPage() {
   // 状态定义
+  const [profile, setProfile] = useState<ProfileVO | null>(null)
   const [articles, setArticles] = useState<Article[]>([])
   const [categories, setCategories] = useState<Category[]>([])
   const [tags, setTags] = useState<Tag[]>([])
@@ -287,9 +292,12 @@ export default function ArticleListPage() {
     }
   }
 
-  // 挂载时载入过滤器数据
+  // 挂载时载入过滤器数据与用户资料
   useEffect(() => {
     loadFilterData()
+    fetchProfile('butvan').then((data) => {
+      setProfile(data)
+    })
   }, [])
 
   // 依赖项变动时拉取文章
@@ -320,31 +328,29 @@ export default function ArticleListPage() {
   }
 
   return (
-    <main className="min-h-screen w-screen bg-[#0d1117] text-[#c9d1d9] font-body selection:bg-primary/30 flex flex-col items-center">
-      {/* 顶部高端大气的渐变打光 Banner */}
-      <section className="w-full max-w-5xl px-6 pt-16 pb-8 border-b border-white/5 relative overflow-hidden flex flex-col gap-4 text-left">
-        <div className="absolute top-[-20%] left-[20%] w-[400px] h-[400px] bg-primary/10 rounded-full blur-[120px] pointer-events-none" />
-        
-        <div className="flex items-center gap-3">
-          <Link href="/room">
-            <Button size="sm" variant="outline" className="bg-white/5 border border-white/10 text-neutral-light hover:bg-white/10 font-heading gap-1.5 rounded-xl">
-              <ArrowLeft className="w-3.5 h-3.5" /> 返回房间
-            </Button>
-          </Link>
-          {isMocked && (
-            <Chip size="sm" variant="soft" color="warning" className="text-warning-300 border-warning-500/30 text-[10px]">
-              演示模式 (已降级)
-            </Chip>
-          )}
-        </div>
+    <main className="relative min-h-screen w-full bg-[#f6f6f6] dark:bg-zinc-950 text-zinc-900 dark:text-zinc-50 font-body selection:bg-[#727BBA]/20 transition-colors duration-200 flex flex-col items-center">
+      {/* 顶部动态主导航栏 */}
+      <Navbar profile={profile} />
 
+      {/* 左侧悬浮侧挂导航 */}
+      <SidebarWidget />
+
+      {/* 顶部高端大气的渐变打光 Banner */}
+      <section className="w-full max-w-5xl px-6 pt-12 pb-8 border-b border-zinc-200/50 dark:border-zinc-900/60 relative overflow-hidden flex flex-col gap-3 text-left">
+        <div className="absolute top-[-20%] left-[20%] w-[350px] h-[350px] bg-[#727BBA]/5 dark:bg-[#727BBA]/10 rounded-full blur-[100px] pointer-events-none" />
+        
         <div className="flex flex-col gap-2 mt-2">
-          <h1 className="text-3xl md:text-4xl font-extrabold font-heading text-white tracking-tight flex items-center gap-2">
-            <FileText className="w-8 h-8 text-primary" />
+          <h1 className="text-3xl md:text-4xl font-extrabold font-heading text-zinc-900 dark:text-zinc-50 tracking-tight flex items-center gap-3">
+            <FileText className="w-8 h-8 text-[#727BBA]" />
             文章归档
-            <span className="text-primary text-sm font-normal tracking-widest hidden md:inline ml-2">/ ARCHIVE</span>
+            <span className="text-[#727BBA] text-sm font-normal tracking-widest hidden md:inline ml-2">/ ARCHIVE</span>
+            {isMocked && (
+              <Chip size="sm" variant="soft" color="warning" className="text-warning-600 dark:text-warning-300 border-warning-500/20 text-[10px] ml-2 font-bold font-heading">
+                演示模式 (已降级)
+              </Chip>
+            )}
           </h1>
-          <p className="text-xs md:text-sm text-neutral-light/60 max-w-2xl leading-relaxed">
+          <p className="text-xs md:text-sm text-zinc-500 dark:text-zinc-400 max-w-2xl leading-relaxed font-semibold">
             在这里，我将沉淀所有的技术积累与思考。包含前端探索、后端高并发架构设计、数据库优化调优及一些零星的个人随笔记录。
           </p>
         </div>
@@ -353,12 +359,12 @@ export default function ArticleListPage() {
       {/* 主体筛选区与文章列表 */}
       <section className="w-full max-w-5xl px-6 py-8 flex flex-col gap-8">
         
-        {/* 1. 高级横向滚动过滤器 (分类 & 标签) */}
-        <div className="flex flex-col gap-4 bg-[#161b22]/55 border border-white/5 p-5 rounded-3xl backdrop-blur-md shadow-xl text-left">
+        {/* 1. 高级过滤器 (分类 & 标签) */}
+        <div className="flex flex-col gap-4 bg-white/75 dark:bg-zinc-900/40 border border-zinc-200/50 dark:border-zinc-800/60 p-6 rounded-2xl backdrop-blur-md shadow-[0_8px_30px_rgba(0,0,0,0.02)] text-left">
           
           {/* 分类筛选 */}
           <div className="flex flex-col gap-2.5">
-            <span className="text-xs font-bold text-primary font-heading flex items-center gap-1.5">
+            <span className="text-xs font-bold text-[#727BBA] font-heading flex items-center gap-1.5">
               <FolderOpen className="w-3.5 h-3.5" /> 文章分类
             </span>
             <div className="flex flex-wrap gap-2">
@@ -366,8 +372,10 @@ export default function ArticleListPage() {
                 size="sm"
                 variant={selectedCategory === null ? 'primary' : 'outline'}
                 onClick={() => { setSelectedCategory(null); setCurrentPage(1); }}
-                className={`font-heading text-xs rounded-xl ${
-                  selectedCategory === null ? 'bg-primary text-white font-bold shadow-lg shadow-primary/30' : 'text-neutral-light/60 hover:text-white bg-white/5'
+                className={`font-heading text-xs rounded-xl transition-all duration-200 ${
+                  selectedCategory === null 
+                    ? 'bg-[#727BBA] text-white font-bold shadow-md shadow-[#727BBA]/25' 
+                    : 'bg-zinc-150/40 hover:bg-zinc-200/80 text-zinc-600 dark:bg-zinc-900/60 dark:hover:bg-zinc-800 dark:text-zinc-400 border border-zinc-200/30 dark:border-zinc-800/40'
                 }`}
               >
                 全部
@@ -378,8 +386,10 @@ export default function ArticleListPage() {
                   size="sm"
                   variant={selectedCategory === cat.id ? 'primary' : 'outline'}
                   onClick={() => { setSelectedCategory(cat.id); setCurrentPage(1); }}
-                  className={`font-heading text-xs rounded-xl ${
-                    selectedCategory === cat.id ? 'bg-primary text-white font-bold shadow-lg shadow-primary/30' : 'text-neutral-light/60 hover:text-white bg-white/5'
+                  className={`font-heading text-xs rounded-xl transition-all duration-200 ${
+                    selectedCategory === cat.id 
+                      ? 'bg-[#727BBA] text-white font-bold shadow-md shadow-[#727BBA]/25' 
+                      : 'bg-zinc-150/40 hover:bg-zinc-200/80 text-zinc-600 dark:bg-zinc-900/60 dark:hover:bg-zinc-800 dark:text-zinc-400 border border-zinc-200/30 dark:border-zinc-800/40'
                   }`}
                 >
                   {cat.name}
@@ -389,11 +399,11 @@ export default function ArticleListPage() {
           </div>
 
           {/* 装饰分割线 */}
-          <div className="w-full h-px bg-white/5 my-1" />
+          <div className="w-full h-px bg-zinc-200/60 dark:bg-zinc-800/60 my-1" />
 
           {/* 标签筛选 */}
           <div className="flex flex-col gap-2.5">
-            <span className="text-xs font-bold text-primary font-heading flex items-center gap-1.5">
+            <span className="text-xs font-bold text-[#727BBA] font-heading flex items-center gap-1.5">
               <TagIcon className="w-3.5 h-3.5" /> 标签筛选
             </span>
             <div className="flex flex-wrap gap-1.5">
@@ -401,8 +411,10 @@ export default function ArticleListPage() {
                 size="md"
                 variant={selectedTag === null ? 'primary' : 'soft'}
                 onClick={() => { setSelectedTag(null); setCurrentPage(1); }}
-                className={`cursor-pointer hover:bg-white/10 transition-all text-xs rounded-lg ${
-                  selectedTag === null ? 'bg-primary text-white font-bold' : 'bg-white/5 text-neutral-light/50'
+                className={`cursor-pointer transition-all duration-200 text-xs rounded-lg ${
+                  selectedTag === null 
+                    ? 'bg-[#727BBA] text-white font-bold' 
+                    : 'bg-zinc-150/40 hover:bg-zinc-200/80 text-zinc-650 dark:bg-zinc-900/60 dark:text-zinc-400 border border-zinc-200/30 dark:border-zinc-800/40'
                 }`}
               >
                 全部标签
@@ -413,8 +425,10 @@ export default function ArticleListPage() {
                   size="md"
                   variant={selectedTag === tag.id ? 'primary' : 'soft'}
                   onClick={() => { setSelectedTag(tag.id); setCurrentPage(1); }}
-                  className={`cursor-pointer hover:bg-white/10 transition-all text-xs rounded-lg ${
-                    selectedTag === tag.id ? 'bg-primary text-white font-bold' : 'bg-white/5 text-neutral-light/70'
+                  className={`cursor-pointer transition-all duration-200 text-xs rounded-lg ${
+                    selectedTag === tag.id 
+                      ? 'bg-[#727BBA] text-white font-bold' 
+                      : 'bg-zinc-150/40 hover:bg-zinc-200/80 text-zinc-650 dark:bg-zinc-900/60 dark:text-zinc-400 border border-zinc-200/30 dark:border-zinc-800/40'
                   }`}
                 >
                   {tag.name}
@@ -429,7 +443,7 @@ export default function ArticleListPage() {
           /* ================= 加载状态 (Spinner + 骨架模拟器) ================= */
           <div className="py-24 flex flex-col items-center justify-center gap-4">
             <Spinner size="lg" color="accent" />
-            <p className="text-xs font-heading text-neutral-light/40 tracking-wider animate-pulse">
+            <p className="text-xs font-heading text-zinc-400 dark:text-zinc-650 tracking-wider animate-pulse">
               正在加载文章列表，请稍候...
             </p>
           </div>
@@ -439,31 +453,31 @@ export default function ArticleListPage() {
             <div className="w-12 h-12 rounded-full bg-red-500/10 border border-red-500/20 flex items-center justify-center text-red-400 mb-4">
               <AlertCircle className="w-6 h-6" />
             </div>
-            <h3 className="text-base font-bold text-white mb-2">文章获取服务异常</h3>
-            <p className="text-xs text-neutral-light/50 max-w-sm leading-relaxed mb-6">
+            <h3 className="text-base font-bold text-zinc-900 dark:text-white mb-2">文章获取服务异常</h3>
+            <p className="text-xs text-zinc-500 dark:text-zinc-500 max-w-sm leading-relaxed mb-6">
               未能连接到后端接口服务。请检查您的网络连接或后端 API 是否已部署并正常运作。
             </p>
-            <Button size="sm" onClick={fetchArticlesList} className="font-heading rounded-xl px-5">
+            <Button size="sm" onClick={fetchArticlesList} className="font-heading rounded-xl px-5 bg-[#727BBA] hover:bg-[#727BBA]/90 text-white shadow-md shadow-[#727BBA]/25">
               重新尝试连接
             </Button>
           </div>
         ) : articles.length === 0 ? (
           /* ================= 空数据状态 ================= */
-          <div className="py-20 flex flex-col items-center justify-center text-center bg-[#161b22]/30 border border-white/5 rounded-3xl p-8">
-            <div className="w-12 h-12 rounded-full bg-white/5 flex items-center justify-center text-neutral-light/30 mb-4">
+          <div className="py-20 flex flex-col items-center justify-center text-center bg-white/40 dark:bg-zinc-900/20 border border-zinc-200/50 dark:border-zinc-800/60 rounded-2xl p-8">
+            <div className="w-12 h-12 rounded-full bg-zinc-200/50 dark:bg-zinc-800/50 flex items-center justify-center text-zinc-400 dark:text-zinc-600 mb-4">
               <Inbox className="w-6 h-6" />
             </div>
-            <h3 className="text-base font-bold text-white mb-2">没有筛选到相关文章</h3>
-            <p className="text-xs text-neutral-light/50 max-w-xs leading-relaxed mb-6">
+            <h3 className="text-base font-bold text-zinc-800 dark:text-white mb-2">没有筛选到相关文章</h3>
+            <p className="text-xs text-zinc-500 dark:text-zinc-500 max-w-xs leading-relaxed mb-6">
               当前分类或标签过滤条件下，暂无已发布的文章数据。
             </p>
-            <Button size="sm" variant="outline" onClick={handleResetFilters} className="font-heading rounded-xl">
+            <Button size="sm" variant="outline" onClick={handleResetFilters} className="font-heading rounded-xl border-zinc-200 dark:border-zinc-800 text-zinc-700 dark:text-zinc-300">
               清除筛选条件
             </Button>
           </div>
         ) : (
           /* ================= 正常渲染文章列表 (网格布局) ================= */
-          <div className="flex flex-col gap-8 text-left">
+          <div className="flex flex-col gap-8 text-left animate-[fadeIn_0.35s_ease-out]">
             <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
               {articles.map((article) => {
                 const coverUrl = article.coverImageUrl ? resolveImageUrl(article.coverImageUrl) : null
@@ -471,33 +485,33 @@ export default function ArticleListPage() {
                 return (
                   <Card
                     key={article.id}
-                    className="border border-white/5 bg-[#161b22]/40 hover:bg-[#161b22]/70 transition-all duration-[400ms] rounded-2xl flex flex-col overflow-hidden h-[410px] hover:scale-[1.015] hover:border-primary/30 group hover:shadow-xl hover:shadow-primary/5"
+                    className="border border-zinc-200/50 dark:border-zinc-800/60 bg-white dark:bg-zinc-900/30 hover:bg-white dark:hover:bg-zinc-900/50 transition-all duration-[400ms] rounded-2xl flex flex-col overflow-hidden h-[410px] hover:scale-[1.015] hover:border-[#727BBA]/40 group hover:shadow-[0_20px_50px_rgba(0,0,0,0.03)] dark:hover:shadow-[0_20px_50px_rgba(114,123,186,0.04)]"
                   >
                     {/* 文章封面图区域 */}
-                    <div className="relative w-full h-44 bg-zinc-900 overflow-hidden shrink-0">
+                    <div className="relative w-full h-44 bg-zinc-100 dark:bg-zinc-900 overflow-hidden shrink-0 border-b border-zinc-200/40 dark:border-zinc-800/40">
                       {coverUrl ? (
                         <Image
                           src={coverUrl}
                           alt={article.title}
                           fill
-                          className="object-cover transition-transform duration-500 group-hover:scale-105"
+                          className="object-cover transition-transform duration-500 group-hover:scale-103"
                           sizes="(max-width: 768px) 100vw, 300px"
                         />
                       ) : (
-                        <div className="w-full h-full flex flex-col items-center justify-center bg-gradient-to-br from-primary/10 to-accent/10 border-b border-white/5 text-primary/30">
+                        <div className="w-full h-full flex flex-col items-center justify-center bg-gradient-to-br from-[#727BBA]/10 to-[#09B38A]/10 text-[#727BBA]/20">
                           <FileText className="w-12 h-12 stroke-[1.2]" />
                         </div>
                       )}
                       
                       {/* 置顶 & 推荐徽章 */}
-                      <div className="absolute top-3 left-3 flex gap-1.5 z-10">
+                      <div className="absolute top-3 left-3 flex gap-1.5 z-10 select-none">
                         {article.isPinned && (
-                          <Chip size="sm" color="accent" className="text-white text-[10px] font-bold h-5 shadow-lg shadow-primary/20">
+                          <Chip size="sm" className="bg-[#727BBA] text-white text-[10px] font-bold h-5 shadow-lg shadow-[#727BBA]/20 border-none">
                             置顶
                           </Chip>
                         )}
                         {article.isFeatured && (
-                          <Chip size="sm" color="warning" className="text-white text-[10px] font-bold h-5 shadow-lg shadow-warning/20">
+                          <Chip size="sm" className="bg-[#09B38A] text-white text-[10px] font-bold h-5 shadow-lg shadow-[#09B38A]/20 border-none">
                             精选
                           </Chip>
                         )}
@@ -505,8 +519,8 @@ export default function ArticleListPage() {
 
                       {/* 分类徽章 */}
                       {article.categoryName && (
-                        <div className="absolute bottom-3 right-3 z-10">
-                          <Chip size="sm" className="bg-[#0d1117]/80 backdrop-blur-sm border border-white/10 text-neutral-light text-[10px] font-medium h-5">
+                        <div className="absolute bottom-3 right-3 z-10 select-none">
+                          <Chip size="sm" className="bg-white/80 dark:bg-zinc-950/80 backdrop-blur-sm border border-zinc-200/50 dark:border-zinc-800/60 text-zinc-700 dark:text-zinc-300 text-[10px] font-medium h-5">
                             {article.categoryName}
                           </Chip>
                         </div>
@@ -515,48 +529,48 @@ export default function ArticleListPage() {
 
                     {/* 卡片主体内容 */}
                     <Card.Content className="p-5 flex-1 flex flex-col justify-between text-left">
-                      <div className="flex flex-col gap-2 text-left">
+                      <div className="flex flex-col gap-2.5 text-left">
                         {/* 发布时间与阅读量 */}
-                        <div className="flex items-center gap-4 text-[10px] text-neutral-light/50 font-mono">
+                        <div className="flex items-center gap-4 text-[10px] text-zinc-400 dark:text-zinc-500 font-mono">
                           <span className="flex items-center gap-1">
-                            <Calendar className="w-3 h-3 text-primary/70" />
+                            <Calendar className="w-3 h-3 text-[#727BBA]/70" />
                             {formatDate(article.publishedAt)}
                           </span>
                           <span className="flex items-center gap-1">
-                            <Eye className="w-3 h-3 text-primary/70" />
+                            <Eye className="w-3 h-3 text-[#727BBA]/70" />
                             {article.viewCount} 次浏览
                           </span>
                         </div>
 
                         {/* 标题 */}
-                        <h3 className="text-sm font-bold text-white leading-snug group-hover:text-primary transition-colors line-clamp-2 min-h-10 text-left">
+                        <h3 className="text-sm font-bold text-zinc-800 dark:text-zinc-50 leading-snug group-hover:text-[#727BBA] transition-colors line-clamp-2 min-h-10 text-left">
                           {article.title}
                         </h3>
 
                         {/* 摘要描述 */}
-                        <p className="text-xs text-neutral-light/60 leading-relaxed line-clamp-3 min-h-[54px] text-left">
+                        <p className="text-xs text-zinc-500 dark:text-zinc-400 leading-relaxed line-clamp-3 min-h-[54px] text-left">
                           {article.summary}
                         </p>
                       </div>
 
                       {/* 卡片底栏跳转与标签 */}
-                      <div className="border-t border-white/5 pt-3.5 mt-3.5 flex items-center justify-between">
+                      <div className="border-t border-zinc-200/50 dark:border-zinc-900/60 pt-3.5 mt-3.5 flex items-center justify-between">
                         {/* 标签列展示 */}
-                        <div className="flex gap-1 overflow-hidden max-w-[60%] shrink-0">
+                        <div className="flex gap-1 overflow-hidden max-w-[65%] shrink-0">
                           {article.tags && article.tags.length > 0 ? (
                             article.tags.slice(0, 2).map((t) => (
-                              <span key={t.id} className="text-[9px] bg-white/5 border border-white/10 text-neutral-light/80 px-1.5 py-0.5 rounded-md truncate font-mono">
+                              <span key={t.id} className="text-[9px] bg-zinc-100 dark:bg-zinc-900/60 border border-zinc-200/60 dark:border-zinc-800/60 text-zinc-500 dark:text-zinc-400 px-1.5 py-0.5 rounded-md truncate font-mono">
                                 #{t.name}
                               </span>
                             ))
                           ) : (
-                            <span className="text-[9px] text-neutral-light/30 italic">无标签</span>
+                            <span className="text-[9px] text-zinc-450 dark:text-zinc-600 italic">无标签</span>
                           )}
                         </div>
 
                         {/* 进入阅读按钮 */}
                         <Link href={`/article/${article.slug}`}>
-                          <Button size="sm" variant="ghost" className="text-[11px] text-primary hover:text-primary-400 group-hover:gap-1.5 font-bold font-heading p-0 bg-transparent min-w-0 h-auto gap-0.5 transition-all duration-200">
+                          <Button size="sm" variant="ghost" className="text-[11px] text-[#727BBA] hover:text-[#727BBA]/80 group-hover:gap-1.5 font-bold font-heading p-0 bg-transparent min-w-0 h-auto gap-0.5 transition-all duration-200">
                             阅读正文 <ChevronRight className="w-3.5 h-3.5" />
                           </Button>
                         </Link>
@@ -569,7 +583,7 @@ export default function ArticleListPage() {
 
             {/* 3. 自定义分页控制器 */}
             {totalPages > 1 && (
-              <div className="flex justify-center items-center gap-1.5 mt-8">
+              <div className="flex justify-center items-center gap-1.5 mt-8 select-none">
                 <Button
                   size="sm"
                   variant="outline"
@@ -580,7 +594,7 @@ export default function ArticleListPage() {
                     }
                   }}
                   isDisabled={currentPage === 1}
-                  className="bg-white/5 border border-white/10 rounded-xl text-xs hover:bg-white/10 font-heading"
+                  className="bg-zinc-150/40 border border-zinc-200/50 dark:bg-zinc-900/60 dark:border-zinc-800/60 hover:bg-zinc-200/80 dark:hover:bg-zinc-800 text-zinc-650 dark:text-zinc-350 rounded-xl text-xs font-heading transition-all"
                 >
                   上一页
                 </Button>
@@ -594,10 +608,10 @@ export default function ArticleListPage() {
                       setCurrentPage(pageNumber)
                       window.scrollTo({ top: 0, behavior: 'smooth' })
                     }}
-                    className={`rounded-xl text-xs min-w-8 h-8 font-heading ${
+                    className={`rounded-xl text-xs min-w-8 h-8 font-heading transition-all ${
                       currentPage === pageNumber 
-                        ? 'bg-primary text-white font-bold shadow-lg shadow-primary/30' 
-                        : 'bg-white/5 border border-white/10 hover:bg-white/10 text-neutral-light'
+                        ? 'bg-[#727BBA] text-white font-bold shadow-lg shadow-[#727BBA]/25' 
+                        : 'bg-zinc-150/40 border border-zinc-200/50 dark:bg-zinc-900/60 dark:border-zinc-800/60 hover:bg-zinc-200/80 dark:hover:bg-zinc-800 text-zinc-650 dark:text-zinc-350'
                     }`}
                   >
                     {pageNumber}
@@ -614,7 +628,7 @@ export default function ArticleListPage() {
                     }
                   }}
                   isDisabled={currentPage === totalPages}
-                  className="bg-white/5 border border-white/10 rounded-xl text-xs hover:bg-white/10 font-heading"
+                  className="bg-zinc-150/40 border border-zinc-200/50 dark:bg-zinc-900/60 dark:border-zinc-800/60 hover:bg-zinc-200/80 dark:hover:bg-zinc-800 text-zinc-650 dark:text-zinc-350 rounded-xl text-xs font-heading transition-all"
                 >
                   下一页
                 </Button>
