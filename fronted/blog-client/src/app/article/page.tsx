@@ -24,6 +24,7 @@ import Navbar from '@/components/common/Navbar'
 import SidebarWidget from '@/components/common/SidebarWidget'
 import { fetchProfile } from '@/lib/profile'
 import type { ProfileVO } from '@/types/profile'
+import gsap from 'gsap'
 
 // ==================== 数据接口定义 ====================
 
@@ -327,6 +328,40 @@ export default function ArticleListPage() {
     fetchArticlesList()
   }, [selectedCategory, selectedTag, currentPage])
 
+  // GSAP 页面入场错落动画
+  useEffect(() => {
+    if (loading) return
+
+    const ctx = gsap.context(() => {
+      // 1. 页头元素错落淡入
+      gsap.fromTo('.animate-header-item', 
+        { y: 12, opacity: 0 },
+        { y: 0, opacity: 1, duration: 0.8, stagger: 0.15, ease: 'power2.out' }
+      )
+
+      // 2. 极简筛选栏错落淡入
+      gsap.fromTo('.animate-filter-item',
+        { x: -10, opacity: 0 },
+        { x: 0, opacity: 1, duration: 0.6, stagger: 0.1, ease: 'power2.out', delay: 0.25 }
+      )
+
+      // 3. 文章列表错落淡入
+      gsap.fromTo('.animate-list-item',
+        { y: 16, opacity: 0 },
+        { y: 0, opacity: 1, duration: 0.7, stagger: 0.08, ease: 'power3.out', delay: 0.45 }
+      )
+
+      // 4. 分页器淡入
+      gsap.fromTo('.animate-pagination',
+        { y: 10, opacity: 0 },
+        { y: 0, opacity: 1, duration: 0.5, ease: 'power2.out', delay: 0.75 }
+      )
+    })
+
+    return () => ctx.revert()
+  }, [loading, articles])
+
+
   /**
    * 重置所有过滤条件为全部状态
    */
@@ -360,11 +395,11 @@ export default function ArticleListPage() {
       {/* 顶部极简居中人文页头 */}
       <header className="relative w-full max-w-5xl px-4 pt-16 pb-8 text-center flex flex-col items-center select-none">
         <div className="relative flex flex-col items-center">
-          <span className="absolute -top-4 -right-10 [writing-mode:vertical-rl] text-[9px] font-serif font-bold text-[#727BBA]/60 dark:text-[#727BBA]/50 tracking-[0.3em] uppercase border-r border-[#727BBA]/20 pr-1 h-10">
+          <span className="animate-header-item opacity-0 absolute -top-4 -right-10 [writing-mode:vertical-rl] text-[9px] font-serif font-bold text-[#727BBA]/60 dark:text-[#727BBA]/50 tracking-[0.3em] uppercase border-r border-[#727BBA]/20 pr-1 h-10">
             ARCHIVE
           </span>
 
-          <h1 className="text-2xl md:text-3xl font-serif font-bold text-zinc-900 dark:text-zinc-50 tracking-[0.1em] flex items-center gap-2">
+          <h1 className="animate-header-item opacity-0 text-2xl md:text-3xl font-serif font-bold text-zinc-900 dark:text-zinc-50 tracking-[0.1em] flex items-center gap-2">
             文章归档
             {isMocked && (
               <Chip size="sm" className="bg-amber-100 text-amber-700 dark:bg-amber-950/40 dark:text-amber-400 border border-amber-200/50 dark:border-amber-900/30 text-[9px] scale-90 origin-left font-bold font-heading">
@@ -374,18 +409,18 @@ export default function ArticleListPage() {
           </h1>
 
           {/* 极简点线修饰 */}
-          <div className="flex items-center gap-2 mt-3">
+          <div className="animate-header-item opacity-0 flex items-center gap-2 mt-3">
             <div className="w-1 h-1 rounded-full bg-[#727BBA]/40"></div>
             <div className="w-12 h-px bg-[#727BBA]/20"></div>
             <div className="w-1 h-1 rounded-full bg-[#727BBA]/40"></div>
           </div>
         </div>
 
-        <p className="mt-5 font-serif italic text-sm md:text-base text-zinc-700 dark:text-zinc-200 opacity-90 tracking-wide">
+        <p className="animate-header-item opacity-0 mt-5 font-serif italic text-sm md:text-base text-[#727BBA] dark:text-[#727BBA]/90 tracking-wide font-medium">
           文字是思考的锚点
         </p>
 
-        <div className="mt-4 flex items-start gap-2 max-w-lg mx-auto">
+        <div className="animate-header-item opacity-0 mt-4 flex items-start gap-2 max-w-lg mx-auto">
           <span className="text-[#727BBA]/40 font-serif text-lg leading-none">“</span>
           <p className="text-[13px] leading-relaxed text-zinc-500 dark:text-zinc-400 font-serif text-center italic">
             按时间顺序排布的思考、笔记与技术沉淀。在这里，你可以找到所有历史文章的快照。
@@ -400,7 +435,7 @@ export default function ArticleListPage() {
         {/* 1. 高级过滤器 (分类 & 标签) - 极简人文字标流设计 */}
         <div className="flex flex-col gap-6 py-6 px-4 border-b border-zinc-200/50 dark:border-zinc-800/40 text-left w-full max-w-3xl mx-auto">
           {/* 分类筛选 */}
-          <div className="flex flex-wrap items-baseline gap-y-3 select-none">
+          <div className="animate-filter-item opacity-0 flex flex-wrap items-baseline gap-y-3 select-none">
             <span className="text-[10px] font-heading font-bold tracking-wider text-zinc-400 dark:text-zinc-500 uppercase mr-6 w-16 shrink-0 flex items-center gap-1">
               <FolderOpen className="w-3 h-3 text-[#727BBA]/60" /> 分类
             </span>
@@ -432,7 +467,7 @@ export default function ArticleListPage() {
           </div>
 
           {/* 标签筛选 */}
-          <div className="flex flex-wrap items-baseline gap-y-3 select-none">
+          <div className="animate-filter-item opacity-0 flex flex-wrap items-baseline gap-y-3 select-none">
             <span className="text-[10px] font-heading font-bold tracking-wider text-zinc-400 dark:text-zinc-500 uppercase mr-6 w-16 shrink-0 flex items-center gap-1">
               <TagIcon className="w-3 h-3 text-[#727BBA]/60" /> 标签
             </span>
@@ -523,8 +558,7 @@ export default function ArticleListPage() {
                 return (
                   <div
                     key={article.id}
-                    className="article-enter rounded-2xl transition-colors duration-300"
-                    style={{ animationDelay: `${index * 80}ms` }}
+                    className="animate-list-item opacity-0 rounded-2xl transition-colors duration-300"
                     onMouseEnter={handleMouseEnter}
                   >
                     <Link
@@ -613,7 +647,7 @@ export default function ArticleListPage() {
 
             {/* 3. 自定义分页控制器 */}
             {totalPages > 1 && (
-              <div className="flex justify-center items-center gap-1.5 mt-8 select-none">
+              <div className="animate-pagination opacity-0 flex justify-center items-center gap-1.5 mt-8 select-none">
                 <Button
                   size="sm"
                   variant="outline"
