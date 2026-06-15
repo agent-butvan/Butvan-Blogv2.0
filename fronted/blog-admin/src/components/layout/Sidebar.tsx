@@ -105,16 +105,16 @@ export default function Sidebar() {
   return (
     <aside
       className={cn(
-        "flex flex-col bg-zinc-50 dark:bg-[#0c0c10] border-r border-zinc-200 dark:border-zinc-850 h-screen sticky top-0 transition-all duration-200 select-none z-30 shrink-0",
+        "flex flex-col bg-zinc-50 dark:bg-[#0c0c10] border-r border-zinc-200 dark:border-zinc-800 h-screen sticky top-0 transition-all duration-200 select-none z-30 shrink-0",
         collapsed ? "w-[56px]" : "w-[220px]"
       )}
     >
       {/* 顶层 Logo 标志区 (高度对齐 TopBar) */}
-      <div className="flex h-[52px] items-center justify-between px-3 border-b border-zinc-200 dark:border-zinc-850 shrink-0 bg-white dark:bg-zinc-900/50">
+      <div className="flex h-[52px] items-center justify-between px-3 border-b border-zinc-200 dark:border-zinc-800 shrink-0 bg-white dark:bg-zinc-900/50">
         {!collapsed && (
           <div className="flex items-center gap-2 animate-[fadeIn_0.15s_ease-out]">
             <span className="font-heading font-extrabold text-[10px] bg-primary text-white w-5 h-5 rounded-md flex items-center justify-center tracking-tighter">VB</span>
-            <span className="font-heading font-bold text-xs text-zinc-850 dark:text-zinc-250 whitespace-nowrap tracking-wider">
+            <span className="font-heading font-bold text-xs text-zinc-800 dark:text-zinc-200 whitespace-nowrap tracking-wider">
               可梵控制台
             </span>
           </div>
@@ -139,7 +139,7 @@ export default function Sidebar() {
             {[1, 2, 3, 4, 5, 6, 7].map((i) => (
               <div key={i} className="flex items-center gap-2.5 animate-pulse">
                 <div className="w-4.5 h-4.5 rounded-md bg-zinc-200 dark:bg-zinc-800 shrink-0" />
-                {!collapsed && <div className="h-3.5 bg-zinc-150 dark:bg-zinc-800/40 rounded w-2/3" />}
+                {!collapsed && <div className="h-3.5 bg-zinc-200 dark:bg-zinc-800/40 rounded w-2/3" />}
               </div>
             ))}
           </div>
@@ -151,7 +151,7 @@ export default function Sidebar() {
             <AlertCircle size={16} className="text-red-400 shrink-0" />
             {!collapsed && (
               <div className="flex flex-col gap-1.5 animate-[fadeIn_0.15s_ease-out]">
-                <span className="text-[10px] text-zinc-450">菜单加载失败</span>
+                <span className="text-[10px] text-zinc-400">菜单加载失败</span>
                 <button
                   onClick={loadMenus}
                   className="text-[10px] text-primary font-bold hover:underline cursor-pointer flex items-center justify-center gap-1 mt-0.5"
@@ -189,7 +189,7 @@ export default function Sidebar() {
                     "w-full flex items-center justify-between px-2.5 py-2.25 rounded-lg text-sm font-semibold transition-all duration-150 cursor-pointer text-left focus:outline-none relative group",
                     isChildActive
                       ? "text-primary dark:text-[#b0a2ff] bg-primary/5 font-bold"
-                      : "text-zinc-650 dark:text-zinc-400 hover:bg-zinc-200/50 dark:hover:bg-zinc-800/40 hover:text-zinc-950 dark:hover:text-zinc-150"
+                      : "text-zinc-650 dark:text-zinc-400 hover:bg-zinc-200/50 dark:hover:bg-zinc-800/40 hover:text-zinc-950 dark:hover:text-zinc-100"
                   )}
                   title={collapsed ? item.title : undefined}
                 >
@@ -242,7 +242,7 @@ export default function Sidebar() {
                             size={12} 
                             className={cn(
                               "shrink-0 transition-colors", 
-                              childActive ? "text-primary" : "text-zinc-450 dark:text-zinc-500"
+                              childActive ? "text-primary" : "text-zinc-500 dark:text-zinc-500"
                             )} 
                           />
                           <span className="whitespace-nowrap truncate tracking-wide">
@@ -271,7 +271,7 @@ export default function Sidebar() {
                 "w-full flex items-center gap-2 px-2.5 py-2.25 rounded-lg text-sm font-semibold transition-all duration-150 cursor-pointer text-left focus:outline-none relative group",
                 active
                   ? "bg-[#f3eeff] dark:bg-[#201c38] text-primary dark:text-[#b0a2ff] font-bold"
-                  : "text-zinc-650 dark:text-zinc-400 hover:bg-zinc-200/50 dark:hover:bg-zinc-800/40 hover:text-zinc-950 dark:hover:text-zinc-150"
+                  : "text-zinc-650 dark:text-zinc-400 hover:bg-zinc-200/50 dark:hover:bg-zinc-800/40 hover:text-zinc-950 dark:hover:text-zinc-100"
               )}
               title={collapsed ? item.title : undefined}
             >
@@ -280,7 +280,7 @@ export default function Sidebar() {
                 <span className="absolute left-0 top-1/2 -translate-y-1/2 w-[3px] h-4.5 bg-primary rounded-r" />
               )}
               
-              <IconComp size={15} className={cn("shrink-0", active ? "text-primary" : "text-zinc-450 dark:text-zinc-500")} />
+              <IconComp size={15} className={cn("shrink-0", active ? "text-primary" : "text-zinc-500 dark:text-zinc-500")} />
               {!collapsed && (
                 <span className="whitespace-nowrap truncate tracking-wide animate-[fadeIn_0.15s_ease-out]">
                   {item.title}
@@ -293,7 +293,7 @@ export default function Sidebar() {
 
       {/* 底部版权信息 (极简) */}
       {!collapsed && (
-        <div className="px-3.5 py-2.5 border-t border-zinc-200 dark:border-zinc-850 shrink-0 text-left bg-white dark:bg-zinc-900/10">
+        <div className="px-3.5 py-2.5 border-t border-zinc-200 dark:border-zinc-800 shrink-0 text-left bg-white dark:bg-zinc-900/10">
           <p className="text-[9px] text-zinc-400 dark:text-zinc-500 tracking-wider font-mono">VB CONSOLE 2.0</p>
         </div>
       )}
