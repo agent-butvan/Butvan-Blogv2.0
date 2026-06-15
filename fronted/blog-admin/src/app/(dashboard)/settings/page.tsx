@@ -338,7 +338,26 @@ export default function SettingsPage() {
                   绑定您的社交及外部渠道，绑定的链接将实时在右侧名片和前台进行点亮。
                 </p>
               </div>
-              <div className="grid grid-cols-1 sm:grid-cols-3 gap-3.5 p                {/* Email */}
+              <div className="grid grid-cols-1 sm:grid-cols-3 gap-3.5 pt-1">
+                {/* GitHub */}
+                <div className="flex flex-col gap-1.5">
+                  <span className="text-xs font-semibold text-zinc-650 dark:text-zinc-400 uppercase tracking-wider">
+                    GitHub 主页
+                  </span>
+                  <div className="relative flex items-center rounded-lg overflow-hidden border border-zinc-200 dark:border-zinc-800 bg-zinc-50/50 focus-within:ring-1.5 focus-within:ring-primary/20 focus-within:border-primary focus-within:bg-white dark:bg-zinc-900/25 dark:focus-within:bg-zinc-950 transition-all duration-200">
+                    <span className="flex items-center gap-1 px-2.5 py-2 bg-zinc-100/60 dark:bg-zinc-800/80 border-r border-zinc-200 dark:border-zinc-800 text-[10px] font-mono text-zinc-500 dark:text-zinc-400 select-none">
+                      <GitFork size={10} /> github.com/
+                    </span>
+                    <input
+                      value={github}
+                      onChange={(e) => setGithub(e.target.value)}
+                      placeholder="username"
+                      className="w-full px-2.5 h-8 text-xs bg-transparent text-zinc-900 dark:text-zinc-100 placeholder-zinc-500 dark:placeholder-zinc-400 focus:outline-none font-mono"
+                    />
+                  </div>
+                </div>
+
+                {/* Email */}
                 <div className="flex flex-col gap-1.5">
                   <span className="text-xs font-semibold text-zinc-650 dark:text-zinc-400 uppercase tracking-wider">
                     公开联系邮箱
