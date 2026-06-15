@@ -501,8 +501,22 @@ export default function ArticleListPage() {
         </div>
 
         {/* 2. 文章列表展示区域 */}
-        {loading ? (
-          /* ================= 骨架屏局部加载状态 (无缝流畅，防止页面硬闪烁) ================= */
+        {error ? (
+          /* ================= 错误状态 ================= */
+          <div className="py-16 flex flex-col items-center justify-center text-center">
+            <div className="w-12 h-12 rounded-full bg-red-500/10 border border-red-500/20 flex items-center justify-center text-red-400 mb-4">
+              <AlertCircle className="w-6 h-6" />
+            </div>
+            <h3 className="text-base font-bold text-zinc-900 dark:text-white mb-2">文章获取服务异常</h3>
+            <p className="text-xs text-zinc-500 dark:text-zinc-500 max-w-sm leading-relaxed mb-6">
+              未能连接到后端接口服务。请检查您的网络连接或后端 API 是否已部署并正常运作。
+            </p>
+            <Button size="sm" onClick={fetchArticlesList} className="font-heading rounded-xl px-5 bg-[#727BBA] hover:bg-[#727BBA]/90 text-white shadow-md shadow-[#727BBA]/25">
+              重新尝试连接
+            </Button>
+          </div>
+        ) : loading && articles.length === 0 ? (
+          /* ================= 骨架屏局部加载状态 (仅在首次无数据加载时展示) ================= */
           <div className="flex flex-col gap-8 text-left w-full max-w-3xl mx-auto animate-pulse">
             {Array.from({ length: 3 }).map((_, i) => (
               <div
@@ -527,41 +541,28 @@ export default function ArticleListPage() {
               </div>
             ))}
           </div>
-        ) : error ? (
-          /* ================= 错误状态 ================= */
-          <div className="py-16 flex flex-col items-center justify-center text-center">
-            <div className="w-12 h-12 rounded-full bg-red-500/10 border border-red-500/20 flex items-center justify-center text-red-400 mb-4">
-              <AlertCircle className="w-6 h-6" />
-            </div>
-            <h3 className="text-base font-bold text-zinc-900 dark:text-white mb-2">文章获取服务异常</h3>
-            <p className="text-xs text-zinc-500 dark:text-zinc-500 max-w-sm leading-relaxed mb-6">
-              未能连接到后端接口服务。请检查您的网络连接或后端 API 是否已部署并正常运作。
+        ) : !loading && articles.length === 0 ? (
+          /* ================= 空数据状态 (极简文字流设计，杜绝卡片式布局) ================= */
+          <div className="py-24 flex flex-col items-center justify-center text-center select-none animate-header-item">
+            <p className="text-sm font-serif italic text-zinc-400 dark:text-zinc-500 tracking-wider">
+              暂无相关文章
             </p>
-            <Button size="sm" onClick={fetchArticlesList} className="font-heading rounded-xl px-5 bg-[#727BBA] hover:bg-[#727BBA]/90 text-white shadow-md shadow-[#727BBA]/25">
-              重新尝试连接
-            </Button>
-          </div>
-        ) : articles.length === 0 ? (
-          /* ================= 空数据状态 ================= */
-          <div className="py-20 flex flex-col items-center justify-center text-center bg-white/40 dark:bg-zinc-900/20 border border-zinc-200/50 dark:border-zinc-800/60 rounded-2xl p-8">
-            <div className="w-12 h-12 rounded-full bg-zinc-200/50 dark:bg-zinc-800/50 flex items-center justify-center text-zinc-400 dark:text-zinc-600 mb-4">
-              <Inbox className="w-6 h-6" />
-            </div>
-            <h3 className="text-base font-bold text-zinc-800 dark:text-white mb-2">没有筛选到相关文章</h3>
-            <p className="text-xs text-zinc-500 dark:text-zinc-500 max-w-xs leading-relaxed mb-6">
-              当前分类或标签过滤条件下，暂无已发布的文章数据。
-            </p>
-            <Button size="sm" variant="outline" onClick={handleResetFilters} className="font-heading rounded-xl border-zinc-200 dark:border-zinc-800 text-zinc-700 dark:text-zinc-300">
+            <button
+              onClick={handleResetFilters}
+              className="mt-4 text-[11px] text-[#727BBA] hover:text-[#727BBA]/85 font-semibold tracking-wider underline underline-offset-4 cursor-pointer transition-colors"
+            >
               清除筛选条件
-            </Button>
+            </button>
           </div>
         ) : (
-          /* ================= 正常渲染文章列表 (极简人文单栏 + Fluid Hover) ================= */
-          <div className="flex flex-col gap-8 text-left animate-[fadeIn_0.35s_ease-out] w-full max-w-3xl mx-auto">
+          /* ================= 正常渲染文章列表 (当有数据时，loading 状态仅作柔和变暗过渡) ================= */
+          <div className="flex flex-col gap-8 text-left w-full max-w-3xl mx-auto">
             <div 
               ref={containerRef}
               onMouseLeave={handleMouseLeave}
-              className="flex flex-col relative isolate w-full"
+              className={`flex flex-col relative isolate w-full transition-all duration-300 ${
+                loading ? 'opacity-35 blur-[0.5px] pointer-events-none' : 'opacity-100'
+              }`}
             >
               {/* Fluid Background 跟随滑块 */}
               <div 
