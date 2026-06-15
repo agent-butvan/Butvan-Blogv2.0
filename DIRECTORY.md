@@ -84,7 +84,8 @@ Butvan Blog2.0/                                    # 📦 项目根目录
 │   │   │   │   └── useScrollPosition.ts           #       滚动位置监听
 │   │   │   ├── lib/                               #     🔧 工具库
 │   │   │   │   ├── api.ts                         #       Axios/fetch 封装（baseURL、拦截器、错误处理）
-│   │   │   │   └── constants.ts                   #       前端常量（站点名、分页大小等）
+│   │   │   │   ├── constants.ts                   #       前端常量（站点名、分页大小等）
+│   │   │   │   └── image-url.ts                   #       图片 URL 解析工具函数（支持相对路径与绝对路径）
 │   │   │   ├── types/                             #     📐 TypeScript 类型定义
 │   │   │   │   ├── scene.ts                       #       场景/热区类型
 │   │   │   │   ├── article.ts                     #       文章/分类/标签类型
