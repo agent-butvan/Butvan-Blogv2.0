@@ -1,6 +1,6 @@
 'use client'
 
-import React, { useState, useEffect } from 'react'
+import React, { useState, useEffect, useRef } from 'react'
 import { useRouter } from 'next/navigation'
 import Link from 'next/link'
 import FluidBackground from '@/components/home/FluidBackground'
@@ -25,6 +25,10 @@ export default function HomePage() {
   const [loading, setLoading] = useState(true)
   const router = useRouter()
 
+  // 滚轮累积量和防抖计时器
+  const wheelAccumulated = useRef(0)
+  const wheelTimer = useRef<NodeJS.Timeout | null>(null)
+
   useEffect(() => {
     fetchProfile('butvan').then((data) => {
       setProfile(data)
@@ -32,7 +36,7 @@ export default function HomePage() {
     })
   }, [])
 
-  // 监听向下滚动动作，触发平滑切入主场景空间
+  // 监听向下滚动动作，触发沉浸式黑洞穿梭转场并切入主场景空间
   useEffect(() => {
     if (loading) return
 
@@ -40,21 +44,65 @@ export default function HomePage() {
     const triggerRedirect = () => {
       if (redirected) return
       redirected = true
-      router.push('/room')
+
+      // 禁用页面所有点击，防止二次触发
+      document.body.style.pointerEvents = 'none'
+
+      const tl = gsap.timeline({
+        onComplete: () => {
+          router.push('/room')
+          // 跳转后 1.2 秒恢复 body 交互
+          setTimeout(() => {
+            document.body.style.pointerEvents = 'auto'
+          }, 1200)
+        }
+      })
+
+      // 1. 首屏各个组件向屏幕中心深处飞逝模糊收缩（穿梭吸入效果）
+      tl.to(".avatar-card", { scale: 0.15, y: -80, rotation: 12, opacity: 0, filter: "blur(10px)", duration: 0.8, ease: "power2.in" }, 0)
+      tl.to(".hi-text", { scale: 0.2, y: -40, opacity: 0, filter: "blur(6px)", duration: 0.7, ease: "power2.in" }, 0.04)
+      tl.to(".nickname-title", { scale: 0.15, y: -60, opacity: 0, filter: "blur(8px)", duration: 0.75, ease: "power2.in" }, 0.06)
+      tl.to(".bio-signature", { scale: 0.2, y: -30, opacity: 0, filter: "blur(6px)", duration: 0.7, ease: "power2.in" }, 0.08)
+      tl.to(".intro-item", { scale: 0.2, y: 80, opacity: 0, filter: "blur(8px)", duration: 0.75, ease: "power2.in" }, 0.1)
+      tl.to(".social-link-item", { scale: 0.2, y: 40, opacity: 0, filter: "blur(6px)", duration: 0.65, ease: "power2.in" }, 0.12)
+      tl.to(".scroll-indicator", { scale: 0.2, opacity: 0, filter: "blur(4px)", duration: 0.4 }, 0)
+
+      // 2. 屏幕中心的转场时空孔洞瞬间膨胀并吞噬全屏
+      tl.to(".transition-portal", {
+        scale: 140,
+        opacity: 1,
+        filter: "blur(0px)",
+        duration: 0.85,
+        ease: "power3.in"
+      }, 0.08)
     }
 
+    // A. 页面实际滚动距离需大于首屏高度的 25%
     const handleScroll = () => {
-      if (window.scrollY > 20) {
+      const threshold = window.innerHeight * 0.25
+      if (window.scrollY > threshold) {
         triggerRedirect()
       }
     }
 
+    // B. 滚轮事件：累积 deltaY，需在短时间内向下猛力滚动超过 300 阈值
     const handleWheel = (e: WheelEvent) => {
-      if (e.deltaY > 5) {
+      if (e.deltaY <= 0) return // 忽略向上滚动
+      
+      wheelAccumulated.current += e.deltaY
+
+      if (wheelAccumulated.current > 300) {
         triggerRedirect()
+        return
       }
+
+      if (wheelTimer.current) clearTimeout(wheelTimer.current)
+      wheelTimer.current = setTimeout(() => {
+        wheelAccumulated.current = 0
+      }, 300)
     }
 
+    // C. 触屏滑动：上滑滑行距离需大于 120px
     let touchStartY = 0
     const handleTouchStart = (e: TouchEvent) => {
       touchStartY = e.touches[0].clientY
@@ -62,7 +110,8 @@ export default function HomePage() {
 
     const handleTouchMove = (e: TouchEvent) => {
       const touchEndY = e.touches[0].clientY
-      if (touchStartY - touchEndY > 20) { // 手势向上滑动
+      const distance = touchStartY - touchEndY
+      if (distance > 120) {
         triggerRedirect()
       }
     }
@@ -85,6 +134,7 @@ export default function HomePage() {
       window.removeEventListener('wheel', handleWheel)
       window.removeEventListener('touchstart', handleTouchStart)
       window.removeEventListener('touchmove', handleTouchMove)
+      if (wheelTimer.current) clearTimeout(wheelTimer.current)
       ctx.revert()
     }
   }, [loading, router])
@@ -107,6 +157,11 @@ export default function HomePage() {
           </div>
         )}
       </section>
+
+      {/* 沉浸式转场时空孔洞遮罩 (用于转场动画，高质感) */}
+      <div className="transition-overlay fixed inset-0 z-50 pointer-events-none flex items-center justify-center bg-transparent">
+        <div className="transition-portal w-12 h-12 rounded-full bg-zinc-950 dark:bg-[#09B38A] scale-0 opacity-0 filter blur-md" />
+      </div>
 
       {/* Layer 3: 第二屏 — 技能/兴趣卡片（页脚） */}
       <FeaturesSection profile={profile} />
