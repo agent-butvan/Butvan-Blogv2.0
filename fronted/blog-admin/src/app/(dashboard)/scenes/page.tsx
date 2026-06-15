@@ -158,7 +158,7 @@ export default function ScenesPage() {
 
 
   return (
-    <div className="flex flex-col gap-6 p-6 max-w-7xl mx-auto min-h-screen text-zinc-600 dark:text-zinc-400 font-body">
+    <div className="flex flex-col gap-6 p-6 max-w-7xl mx-auto min-h-screen text-zinc-700 dark:text-zinc-350 font-body">
       {/* 页面标题 */}
       <div className="flex items-center justify-between border-b border-zinc-200 dark:border-zinc-800 pb-4">
         <div className="flex items-center gap-3">
@@ -167,14 +167,14 @@ export default function ScenesPage() {
           </div>
           <div>
             <h1 className="text-xl font-bold font-heading text-zinc-900 dark:text-zinc-50">房间场景管理</h1>
-            <p className="text-xs text-zinc-500 dark:text-zinc-400 mt-0.5">
+            <p className="text-xs text-zinc-550 dark:text-zinc-450 mt-0.5">
               上传背景大图，框选标记可交互物品，定义沉浸式博客首页体验
             </p>
           </div>
         </div>
         <button
           onClick={() => setShowCreateModal(true)}
-          className="flex items-center gap-1.5 px-4 py-2 bg-primary text-white text-xs font-heading font-medium rounded-lg shadow-sm hover:opacity-90 active:scale-98 transition-all cursor-pointer"
+          className="flex items-center gap-1.5 px-4 py-2 bg-primary text-white text-xs font-heading font-medium rounded-lg shadow-sm hover:opacity-90 active:scale-98 transition-all duration-200 cursor-pointer"
         >
           <Plus size={14} />
           上传新场景
@@ -187,7 +187,7 @@ export default function ScenesPage() {
           <h2 className="text-sm font-heading text-zinc-900 dark:text-zinc-50 font-bold">
             全部房间场景 ({scenes.length})
           </h2>
-          <span className="text-[10px] text-zinc-500 dark:text-zinc-400 font-heading px-2.5 py-1 rounded-full border border-zinc-200 dark:border-zinc-800 bg-zinc-50 dark:bg-zinc-900/50">
+          <span className="text-xs text-zinc-550 dark:text-zinc-450 font-heading px-2.5 py-1 rounded-full border border-zinc-200 dark:border-zinc-800 bg-zinc-50 dark:bg-zinc-900/50">
             全局仅能激活一个场景
           </span>
         </div>
@@ -202,11 +202,11 @@ export default function ScenesPage() {
         ) : scenes.length === 0 ? (
           /* 空状态 */
           <div className="flex flex-col items-center justify-center border border-dashed border-zinc-200 dark:border-zinc-800 rounded-2xl py-20 bg-white dark:bg-zinc-900/20 gap-3 shadow-sm">
-            <MapPin size={36} className="text-zinc-400 dark:text-zinc-500" />
+            <MapPin size={36} className="text-zinc-450 dark:text-zinc-400" />
             <p className="text-sm font-heading font-semibold text-zinc-900 dark:text-zinc-50">
               暂无场景配置
             </p>
-            <p className="text-xs text-zinc-500 dark:text-zinc-400">
+            <p className="text-xs text-zinc-555 dark:text-zinc-400">
               点击右上角“上传新场景”按钮，创建博客首页房间大图
             </p>
           </div>
@@ -217,7 +217,7 @@ export default function ScenesPage() {
               return (
                 <div
                   key={scene.id}
-                  className={`group bg-white dark:bg-zinc-900/40 border rounded-2xl overflow-hidden flex flex-col transition-all duration-300 shadow-sm hover:shadow-md hover:-translate-y-0.5 ${
+                  className={`group bg-white dark:bg-zinc-900/40 border rounded-2xl overflow-hidden flex flex-col transition-all duration-200 shadow-sm hover:shadow-md hover:-translate-y-0.5 ${
                     scene.isActive
                       ? 'border-primary/50 ring-1 ring-primary/25'
                       : 'border-zinc-200 dark:border-zinc-800 hover:border-zinc-350 dark:hover:border-zinc-700'
@@ -228,7 +228,7 @@ export default function ScenesPage() {
                     <img
                       src={previewUrl}
                       alt={scene.title}
-                      className="w-full h-full object-cover transition-transform duration-500 group-hover:scale-103"
+                      className="w-full h-full object-cover transition-transform duration-300 group-hover:scale-[1.01]"
                     />
                     {/* 状态标签 */}
                     <div className="absolute top-3 left-3 z-10">
@@ -259,7 +259,7 @@ export default function ScenesPage() {
                   {/* 信息栏 */}
                   <div className="p-4 flex flex-col gap-3 flex-grow justify-between text-left">
                     <div className="flex flex-col">
-                      <span className="text-[10px] text-zinc-400 dark:text-zinc-500 font-mono">
+                      <span className="text-[11px] text-zinc-550 dark:text-zinc-400 font-mono">
                         ID: {scene.id}
                       </span>
                       <h3 className="text-sm font-bold text-zinc-800 dark:text-zinc-100 mt-0.5 font-heading">
@@ -346,7 +346,7 @@ export default function ScenesPage() {
                     value={title}
                     onChange={(e) => setTitle(e.target.value)}
                     required
-                    className="w-full bg-zinc-50 dark:bg-zinc-950 border border-zinc-200 dark:border-zinc-800 rounded-lg px-3 h-9 text-xs text-zinc-900 dark:text-zinc-100 focus:outline-none focus:ring-1 focus:ring-primary focus:border-primary transition-all"
+                    className="w-full bg-zinc-50 dark:bg-zinc-950 border border-zinc-200 dark:border-zinc-800 rounded-lg px-3 h-9 text-xs text-zinc-900 dark:text-zinc-100 placeholder-zinc-500 dark:placeholder-zinc-400 focus:outline-none focus:ring-1.5 focus:ring-primary/20 focus:border-primary transition-all duration-200"
                   />
                 </div>
 
@@ -359,7 +359,7 @@ export default function ScenesPage() {
                     value={imageUrl}
                     onChange={(e) => setImageUrl(e.target.value)}
                     required
-                    className="w-full bg-zinc-50 dark:bg-zinc-950 border border-zinc-200 dark:border-zinc-800 rounded-lg px-3 h-9 text-xs text-zinc-900 dark:text-zinc-100 focus:outline-none focus:ring-1 focus:ring-primary focus:border-primary transition-all"
+                    className="w-full bg-zinc-50 dark:bg-zinc-950 border border-zinc-200 dark:border-zinc-800 rounded-lg px-3 h-9 text-xs text-zinc-900 dark:text-zinc-100 placeholder-zinc-500 dark:placeholder-zinc-400 focus:outline-none focus:ring-1.5 focus:ring-primary/20 focus:border-primary transition-all duration-200"
                   />
                 </div>
 
@@ -404,7 +404,7 @@ export default function ScenesPage() {
                       选择并上传房间大图
                     </button>
                   )}
-                  <span className="text-[10px] text-zinc-400 dark:text-zinc-500 mt-2 font-mono">
+                  <span className="text-xs text-zinc-550 dark:text-zinc-400 mt-2 font-mono">
                     推荐 3840×2160（4K）PNG/JPG，最低 2560×1440
                   </span>
                 </div>
