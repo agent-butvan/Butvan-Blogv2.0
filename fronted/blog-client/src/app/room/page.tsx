@@ -4,6 +4,7 @@ import React, { useState, useEffect } from 'react'
 import { Card, Button, Chip, Spinner } from '@heroui/react'
 import { ArrowLeft, FileText, Settings, Sparkles, RefreshCw } from 'lucide-react'
 import Link from 'next/link'
+import { useRouter } from 'next/navigation'
 import Image from 'next/image'
 import { resolveImageUrl } from '@/lib/image-url'
 
@@ -40,6 +41,7 @@ interface Scene {
  * 用户通过首页「进入我的房间」CTA 跳转至此。
  */
 export default function RoomPage() {
+  const router = useRouter()
   const [scene, setScene] = useState<Scene | null>(null)
   const [loading, setLoading] = useState(true)
   const [error, setError] = useState<string | null>(null)
@@ -106,9 +108,26 @@ export default function RoomPage() {
       scale: hotspot.zoomScale || 3.0,
     })
 
-    // 延时展开对应的跳转目标页内容
+    // 延时展开对应的跳转目标页内容或执行真实跳转
     setTimeout(() => {
-      setShowTargetPage(hotspot.redirectPath || `target-${hotspot.id}`)
+      if (hotspot.redirectPath) {
+        if (hotspot.redirectType === 'EXTERNAL') {
+          // 外链在新窗口打开，自动补全协议前缀
+          let url = hotspot.redirectPath
+          if (!/^https?:\/\//i.test(url)) {
+            url = 'https://' + url
+          }
+          window.open(url, '_blank')
+          // 外链打开后，立即复位主界面的缩放镜头，避免界面卡在拉近状态
+          handleBackToRoom()
+        } else {
+          // 站内路由跳转（包含 INTERNAL/ARTICLE/CATEGORY 等）
+          router.push(hotspot.redirectPath)
+        }
+      } else {
+        // 若无具体跳转路径，回退到预览卡片浮层
+        setShowTargetPage(`target-${hotspot.id}`)
+      }
     }, 850)
   }
 

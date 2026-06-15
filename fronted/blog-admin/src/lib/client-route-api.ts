@@ -15,7 +15,7 @@ import type { ClientRoute, ArticleSimple, CategorySimple } from '@/types/route'
 
 /** blog-client 的所有公开页面路由 */
 const STATIC_CLIENT_ROUTES: ClientRoute[] = [
-  { path: '/', label: '首页', category: '页面', dynamic: false },
+  { path: '/', label: '用户端首页', category: '页面', dynamic: false },
   { path: '/about', label: '关于', category: '页面', dynamic: false },
   { path: '/guestbook', label: '留言板', category: '页面', dynamic: false },
   { path: '/articles', label: '文章列表', category: '页面', dynamic: false },
