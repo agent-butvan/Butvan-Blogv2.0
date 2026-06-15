@@ -3,7 +3,9 @@
 import React, { useRef, useEffect } from 'react'
 import { GitFork, Mail, Rss } from 'lucide-react'
 import Link from 'next/link'
+import Image from 'next/image'
 import type { ProfileVO } from '@/types/profile'
+import { resolveImageUrl } from '@/lib/image-url'
 import gsap from 'gsap'
 
 /** HeroSection Props */
@@ -23,15 +25,9 @@ interface HeroSectionProps {
 export default function HeroSection({ profile, loading }: HeroSectionProps) {
   const containerRef = useRef<HTMLDivElement>(null)
 
-  // 解析图片 URL
-  const resolveUrl = (url?: string) => {
-    if (!url) return null
-    return url.startsWith('/') ? `http://localhost:8080${url}` : url
-  }
-
   // 默认头像 initials
   const initials = (profile?.nickname || 'B').charAt(0).toUpperCase()
-  const avatarUrl = resolveUrl(profile?.avatarUrl)
+  const avatarUrl = resolveImageUrl(profile?.avatarUrl)
 
   // 社交链接
   const githubUrl = profile?.socialLinks?.github || 'https://github.com'
@@ -196,16 +192,19 @@ export default function HeroSection({ profile, loading }: HeroSectionProps) {
       <div className="flex flex-col md:flex-row items-center md:items-start gap-10 md:gap-16 mb-12 w-full">
         {/* 左侧头像区 (方形微圆角) */}
         <div className="avatar-card relative shrink-0">
-          <div className="w-48 h-48 md:w-56 md:h-56 rounded-2xl border border-black/5 dark:border-white/5 shadow-xs bg-white dark:bg-zinc-900 overflow-hidden p-1.5 flex items-center justify-center transition-all duration-300 hover:scale-[1.01]">
+          <div className="relative w-48 h-48 md:w-56 md:h-56 rounded-2xl border border-black/5 dark:border-white/5 shadow-xs bg-white dark:bg-zinc-900 overflow-hidden p-1.5 flex items-center justify-center transition-all duration-300 hover:scale-[1.01]">
             {avatarUrl ? (
-              <img
+              <Image
                 src={avatarUrl}
                 alt={profile?.nickname || 'Avatar'}
-                className="w-full h-full object-cover rounded-xl"
+                fill
+                className="object-cover rounded-xl"
+                sizes="(max-width: 768px) 192px, 224px"
+                preload
                 draggable={false}
               />
             ) : (
-              <div className="w-full h-full rounded-xl bg-primary/10 flex items-center justify-center">
+              <div className="absolute inset-0 m-1.5 rounded-xl bg-primary/10 flex items-center justify-center">
                 <span className="text-5xl font-bold font-heading text-primary select-none">
                   {initials}
                 </span>
