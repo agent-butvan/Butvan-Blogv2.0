@@ -106,7 +106,7 @@ Butvan Blog2.0/                                    # 📦 项目根目录
 │       │   │   │       └── page.tsx               #           账号密码登录表单
 │       │   │   ├── (dashboard)/                   #       📊 管理后台（带侧边栏布局壳）
 │       │   │   │   ├── layout.tsx                 #         后台布局：侧边栏 + 顶栏 + 内容区
-│       │   │   │   ├── page.tsx                   #         仪表盘首页（统计卡片、最近文章、快捷入口）
+│       │   │   │   ├── page.tsx                   #         仪表盘首页（一体化隔线控制台、SVG趋势图、系统负载、快捷模块）
 │       │   │   │   ├── articles/                  #         文章管理
 │       │   │   │   │   ├── page.tsx               #           文章列表（筛选、搜索、批量操作）
 │       │   │   │   │   ├── new/                   #           新建文章
@@ -141,9 +141,10 @@ Butvan Blog2.0/                                    # 📦 项目根目录
 │       │   ├── components/                        #     🧩 组件层
 │       │   │   ├── common/                        #       通用原子组件（Table、Form、Modal、Upload 等）
 │       │   │   ├── layout/                        #       后台布局组件
-│       │   │   │   ├── AdminLayout.tsx            #         后台整体布局壳（侧边栏+内容区）
+│       │   │   │   ├── AdminLayout.tsx            #         后台整体布局壳（侧边栏+页签栏+内容区）
 │       │   │   │   ├── Sidebar.tsx                #         可折叠侧边栏菜单
-│       │   │   │   └── TopBar.tsx                 #         顶栏（面包屑、用户头像、退出）
+│       │   │   │   ├── TopBar.tsx                 #         顶栏（面包屑、全屏、深色切换、用户登出）
+│       │   │   │   └── TabManager.tsx             #         多标签页签管理器（持久化缓存、页签关闭/切换）
 │       │   │   ├── editor/                        #       编辑器组件
 │       │   │   │   ├── MarkdownEditor.tsx         #         Markdown 富文本编辑器
 │       │   │   │   ├── SceneToolbar.tsx           #         场景编辑器顶部工具栏
@@ -369,4 +370,4 @@ Butvan Blog2.0/                                    # 📦 项目根目录
 
 ---
 
-*最后更新：2026-06-14*
+*最后更新：2026-06-15*

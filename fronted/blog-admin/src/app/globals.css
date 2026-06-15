@@ -16,34 +16,40 @@
 /* ============================================================================
  * 主题变量（静谧深海配色）
  * ============================================================================ */
+@variant dark (&:where(.dark, .dark *));
+
 @theme {
   /* 字体 */
   --font-heading: "Archivo", sans-serif;
   --font-body: "Space Grotesk", sans-serif;
 
   /* 品牌色 */
-  --color-primary: #727bba; /* 深靛蓝 — 主按钮、选中态、链接 */
-  --color-secondary: #9badcf; /* 天蓝 — 次要元素、标签、辅助图标 */
-  --color-accent: #cdbde8; /* 浅紫罗兰 — 高亮、强调装饰 */
+  --color-primary: #9b8afb; /* 品牌主色 — 紫色 */
+  --color-secondary: #4ea3ff; /* 蓝色 — 流量、用户、在线数 */
+  --color-accent: #cdbde8; /* 辅助高亮 — 浅紫 */
+
+  /* 辅助状态色 */
+  --color-success: #52c41a;
+  --color-warning: #ffc93c;
+  --color-danger: #ff4d4f;
+  --color-orange: #ff9f43;
 
   /* 中性色 */
-  --color-neutral-dark: #09090b; /* 最深 — 标题文字、深色背景 */
-  --color-neutral-light: #fafafa; /* 最浅 — 页面背景、卡片背景 */
+  --color-neutral-dark: #09090b; /* 标题文字、极深背景 */
+  --color-neutral-light: #f7f8fa; /* 页面最浅背景 */
 }
 
 /* ============================================================================
- * 浅色 / 深色模式
+ * 浅色 / 深色模式变量
  * ============================================================================ */
 :root {
-  --background: #fafafa;
+  --background: #f7f8fa;
   --foreground: #09090b;
 }
 
-@media (prefers-color-scheme: dark) {
-  :root {
-    --background: #09090b;
-    --foreground: #fafafa;
-  }
+:root.dark {
+  --background: #09090b;
+  --foreground: #fafafa;
 }
 
 /* ============================================================================
@@ -51,6 +57,8 @@
  * ============================================================================ */
 body {
   font-family: var(--font-body);
+  background-color: var(--background);
+  color: var(--foreground);
 }
 
 h1,
