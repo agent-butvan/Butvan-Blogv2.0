@@ -109,7 +109,7 @@ export default function NavigationFormModal({
   if (!open) return null;
 
   const inputClass =
-    "w-full rounded-lg border border-zinc-200 bg-white px-3 py-2 text-sm outline-none focus:border-primary focus:ring-2 focus:ring-primary/10 transition-colors";
+    "w-full rounded-lg border border-zinc-200 dark:border-zinc-800 bg-white dark:bg-zinc-900 px-3 py-2 text-sm text-zinc-900 dark:text-zinc-150 outline-none focus:border-primary focus:ring-2 focus:ring-primary/10 transition-colors";
 
   return (
     <div className="fixed inset-0 z-50 flex items-center justify-center">
@@ -120,15 +120,15 @@ export default function NavigationFormModal({
       />
 
       {/* 弹窗内容 */}
-      <div className="relative z-10 w-full max-w-lg mx-4 max-h-[90vh] overflow-y-auto rounded-2xl bg-white shadow-xl animate-slide-up">
+      <div className="relative z-10 w-full max-w-lg mx-4 max-h-[90vh] overflow-y-auto rounded-2xl bg-white dark:bg-zinc-950 border border-transparent dark:border-zinc-850 shadow-xl animate-slide-up">
         {/* 标题栏 */}
-        <div className="flex items-center justify-between px-6 py-4 border-b border-zinc-100">
-          <h2 className="font-heading text-lg font-semibold text-neutral-dark">
+        <div className="flex items-center justify-between px-6 py-4 border-b border-zinc-100 dark:border-zinc-850">
+          <h2 className="font-heading text-lg font-semibold text-neutral-dark dark:text-zinc-100">
             {isEdit ? "编辑菜单项" : parentId ? "添加子菜单" : "添加根菜单"}
           </h2>
           <button
             onClick={onClose}
-            className="p-1.5 rounded-lg hover:bg-zinc-100 text-zinc-400 transition-colors"
+            className="p-1.5 rounded-lg hover:bg-zinc-100 dark:hover:bg-zinc-800 text-zinc-400 dark:text-zinc-500 transition-colors"
           >
             <X size={18} />
           </button>
@@ -137,42 +137,42 @@ export default function NavigationFormModal({
         {/* 表单 */}
         <form onSubmit={handleSubmit} className="px-6 py-5 space-y-4">
           {error && (
-            <div className="rounded-lg bg-red-50 border border-red-200 px-4 py-3 text-xs text-red-700 animate-fade-in">
+            <div className="rounded-lg bg-red-50 dark:bg-red-950/20 border border-red-200 dark:border-red-900/50 px-4 py-3 text-xs text-red-700 dark:text-red-400 animate-fade-in">
               {error}
             </div>
           )}
 
           {/* 位置（只读展示） */}
           <div>
-            <label className="mb-1 block text-xs font-medium text-zinc-500 uppercase tracking-wide">
+            <label className="mb-1 block text-xs font-medium text-zinc-500 dark:text-zinc-400 uppercase tracking-wide">
               菜单位置
             </label>
             <input
               type="text"
               value={NAV_POSITION_LABELS[position]}
               disabled
-              className={`${inputClass} bg-zinc-50 text-zinc-500 cursor-not-allowed`}
+              className={`${inputClass} bg-zinc-50 dark:bg-zinc-900/50 text-zinc-500 dark:text-zinc-400 cursor-not-allowed`}
             />
           </div>
 
           {/* 父级（若存在则只读展示） */}
           {parentId && (
             <div>
-              <label className="mb-1 block text-xs font-medium text-zinc-500 uppercase tracking-wide">
+              <label className="mb-1 block text-xs font-medium text-zinc-500 dark:text-zinc-400 uppercase tracking-wide">
                 父级菜单 ID
               </label>
               <input
                 type="text"
                 value={parentId}
                 disabled
-                className={`${inputClass} bg-zinc-50 text-zinc-500 cursor-not-allowed font-mono`}
+                className={`${inputClass} bg-zinc-50 dark:bg-zinc-900/50 text-zinc-500 dark:text-zinc-400 cursor-not-allowed font-mono`}
               />
             </div>
           )}
 
           {/* 标题 */}
           <div>
-            <label className="mb-1 block text-xs font-medium text-zinc-500 uppercase tracking-wide">
+            <label className="mb-1 block text-xs font-medium text-zinc-500 dark:text-zinc-400 uppercase tracking-wide">
               菜单标题 <span className="text-red-400">*</span>
             </label>
             <input
@@ -187,7 +187,7 @@ export default function NavigationFormModal({
 
           {/* 链接类型 */}
           <div>
-            <label className="mb-1 block text-xs font-medium text-zinc-500 uppercase tracking-wide">
+            <label className="mb-1 block text-xs font-medium text-zinc-500 dark:text-zinc-400 uppercase tracking-wide">
               链接类型
             </label>
             <select
@@ -197,7 +197,7 @@ export default function NavigationFormModal({
             >
               {(Object.keys(NAV_LINK_TYPE_LABELS) as NavLinkType[]).map(
                 (key) => (
-                  <option key={key} value={key}>
+                  <option key={key} value={key} className="bg-white dark:bg-zinc-900">
                     {NAV_LINK_TYPE_LABELS[key]}
                   </option>
                 )
@@ -208,7 +208,7 @@ export default function NavigationFormModal({
           {/* 外部链接 URL（仅 EXTERNAL 类型时显示） */}
           {linkType === "EXTERNAL" && (
             <div className="animate-fade-in">
-              <label className="mb-1 block text-xs font-medium text-zinc-500 uppercase tracking-wide">
+              <label className="mb-1 block text-xs font-medium text-zinc-500 dark:text-zinc-400 uppercase tracking-wide">
                 链接地址 <span className="text-red-400">*</span>
               </label>
               <input
@@ -224,7 +224,7 @@ export default function NavigationFormModal({
           {/* 关联目标 ID（PAGE/CATEGORY/ARTICLE 类型时显示） */}
           {["PAGE", "CATEGORY", "ARTICLE"].includes(linkType) && (
             <div className="animate-fade-in">
-              <label className="mb-1 block text-xs font-medium text-zinc-500 uppercase tracking-wide">
+              <label className="mb-1 block text-xs font-medium text-zinc-500 dark:text-zinc-400 uppercase tracking-wide">
                 关联目标 ID
               </label>
               <input
@@ -239,7 +239,7 @@ export default function NavigationFormModal({
 
           {/* 图标 */}
           <div>
-            <label className="mb-1 block text-xs font-medium text-zinc-500 uppercase tracking-wide">
+            <label className="mb-1 block text-xs font-medium text-zinc-500 dark:text-zinc-400 uppercase tracking-wide">
               图标名称
             </label>
             <input
@@ -254,7 +254,7 @@ export default function NavigationFormModal({
           {/* 排序 + 可见性 */}
           <div className="grid grid-cols-2 gap-4">
             <div>
-              <label className="mb-1 block text-xs font-medium text-zinc-500 uppercase tracking-wide">
+              <label className="mb-1 block text-xs font-medium text-zinc-500 dark:text-zinc-400 uppercase tracking-wide">
                 排序权重
               </label>
               <input
@@ -270,28 +270,28 @@ export default function NavigationFormModal({
                   type="checkbox"
                   checked={isVisible}
                   onChange={(e) => setIsVisible(e.target.checked)}
-                  className="rounded border-zinc-300 text-primary focus:ring-primary"
+                  className="rounded border-zinc-300 dark:border-zinc-700 bg-white dark:bg-zinc-900 text-primary focus:ring-primary"
                 />
-                <span className="text-sm text-zinc-600">可见</span>
+                <span className="text-sm text-zinc-600 dark:text-zinc-400">可见</span>
               </label>
               <label className="flex items-center gap-2 cursor-pointer">
                 <input
                   type="checkbox"
                   checked={isOpenNewTab}
                   onChange={(e) => setIsOpenNewTab(e.target.checked)}
-                  className="rounded border-zinc-300 text-primary focus:ring-primary"
+                  className="rounded border-zinc-300 dark:border-zinc-700 bg-white dark:bg-zinc-900 text-primary focus:ring-primary"
                 />
-                <span className="text-sm text-zinc-600">新窗口</span>
+                <span className="text-sm text-zinc-600 dark:text-zinc-400">新窗口</span>
               </label>
             </div>
           </div>
 
           {/* 按钮 */}
-          <div className="flex items-center justify-end gap-3 pt-3 border-t border-zinc-100">
+          <div className="flex items-center justify-end gap-3 pt-3 border-t border-zinc-100 dark:border-zinc-850">
             <button
               type="button"
               onClick={onClose}
-              className="rounded-lg border border-zinc-200 px-4 py-2 text-sm text-zinc-600 hover:bg-zinc-50 transition-colors"
+              className="rounded-lg border border-zinc-200 dark:border-zinc-800 px-4 py-2 text-sm text-zinc-600 dark:text-zinc-400 hover:bg-zinc-50 dark:hover:bg-zinc-800 transition-colors"
             >
               取消
             </button>
