@@ -189,7 +189,7 @@ export default function Sidebar() {
                     "w-full flex items-center justify-between px-2.5 py-2.25 rounded-lg text-sm font-semibold transition-all duration-150 cursor-pointer text-left focus:outline-none relative group",
                     isChildActive
                       ? "text-primary dark:text-[#b0a2ff] bg-primary/5 font-bold"
-                      : "text-zinc-650 dark:text-zinc-400 hover:bg-zinc-200/50 dark:hover:bg-zinc-800/40 hover:text-zinc-950 dark:hover:text-zinc-100"
+                      : "text-zinc-600 dark:text-zinc-400 hover:bg-zinc-200/50 dark:hover:bg-zinc-800/40 hover:text-zinc-950 dark:hover:text-zinc-100"
                   )}
                   title={collapsed ? item.title : undefined}
                 >
@@ -271,7 +271,7 @@ export default function Sidebar() {
                 "w-full flex items-center gap-2 px-2.5 py-2.25 rounded-lg text-sm font-semibold transition-all duration-150 cursor-pointer text-left focus:outline-none relative group",
                 active
                   ? "bg-[#f3eeff] dark:bg-[#201c38] text-primary dark:text-[#b0a2ff] font-bold"
-                  : "text-zinc-650 dark:text-zinc-400 hover:bg-zinc-200/50 dark:hover:bg-zinc-800/40 hover:text-zinc-950 dark:hover:text-zinc-100"
+                  : "text-zinc-600 dark:text-zinc-400 hover:bg-zinc-200/50 dark:hover:bg-zinc-800/40 hover:text-zinc-950 dark:hover:text-zinc-100"
               )}
               title={collapsed ? item.title : undefined}
             >

@@ -245,7 +245,7 @@ export default function TopBar() {
             <div className="flex h-6 w-6 items-center justify-center rounded-full bg-primary text-[11px] font-bold text-white shadow-xs">
               {user?.nickname?.[0]?.toUpperCase() || "A"}
             </div>
-            <span className="text-xs font-semibold text-zinc-750 dark:text-zinc-350 hidden sm:inline">
+            <span className="text-xs font-semibold text-zinc-700 dark:text-zinc-400 hidden sm:inline">
               {user?.nickname || "管理员"}
             </span>
             <ChevronDown
@@ -268,7 +268,7 @@ export default function TopBar() {
               {/* 功能操作项 */}
               <button
                 onClick={() => { router.push("/settings"); setMenuOpen(false); }}
-                className="flex w-full items-center gap-2 px-3 py-2 text-xs text-zinc-650 dark:text-zinc-350 hover:bg-zinc-50 dark:hover:bg-zinc-800 transition-colors"
+                className="flex w-full items-center gap-2 px-3 py-2 text-xs text-zinc-600 dark:text-zinc-400 hover:bg-zinc-50 dark:hover:bg-zinc-800 transition-colors"
               >
                 <Settings size={12} /> 个人设置
               </button>
