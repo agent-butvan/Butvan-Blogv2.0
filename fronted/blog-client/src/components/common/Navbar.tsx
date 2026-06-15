@@ -25,7 +25,7 @@ interface NavbarProps {
   * - 内置沉浸空间快捷跳转入口
   */
 export default function Navbar({ profile }: NavbarProps) {
-  const [navItems, setNavItems] = useState<NavigationItem[]>([])
+  const [navItems, setNavItems] = useState<NavigationItem[] | null>(null)
   const [mobileMenuOpen, setMobileMenuOpen] = useState(false)
 
   // 拉取顶部导航菜单
@@ -34,6 +34,9 @@ export default function Navbar({ profile }: NavbarProps) {
       setNavItems(data || [])
     })
   }, [])
+
+  // 若尚未加载完成或后台未配置任何顶部导航，则完全不渲染组件，保持极致极简
+  if (navItems === null || navItems.length === 0) return null
 
   const nickname = profile?.nickname || '可梵'
 
