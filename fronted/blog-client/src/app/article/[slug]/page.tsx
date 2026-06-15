@@ -144,125 +144,140 @@ export default function ArticleDetailPage() {
   useEffect(() => {
     if (loading || !article || !articleContentRef.current) return
 
-    const contentDiv = articleContentRef.current
+    const timer = setTimeout(() => {
+      if (!articleContentRef.current) return
+      const contentDiv = articleContentRef.current
 
-    // 1. 动态生成目录 TOC
-    const headings = contentDiv.querySelectorAll('h2, h3')
-    const tocItems: TocItem[] = []
-    
-    headings.forEach((heading, idx) => {
-      const level = parseInt(heading.tagName.substring(1), 10)
-      let id = heading.id
-      if (!id) {
-        id = `toc-heading-${idx}`
-        heading.id = id
-      }
-      tocItems.push({
-        id,
-        text: (heading as HTMLElement).innerText || '',
-        level
-      })
-    })
-    setToc(tocItems)
-
-    // 2. 动态增强代码块：注入 macOS 控制圆点和复制按钮
-    const preBlocks = contentDiv.querySelectorAll('pre')
-    preBlocks.forEach((pre) => {
-      // 避免重复包裹
-      if (pre.parentElement?.classList.contains('mac-code-wrapper')) return
-
-      const wrapper = document.createElement('div')
-      wrapper.className = 'mac-code-wrapper relative my-6 rounded-xl overflow-hidden border border-zinc-200/40 dark:border-zinc-800/40 bg-zinc-950/90 dark:bg-zinc-900/90 shadow-md font-mono'
+      // 1. 动态生成目录 TOC
+      const headings = contentDiv.querySelectorAll('h2, h3')
+      const tocItems: TocItem[] = []
       
-      const header = document.createElement('div')
-      header.className = 'flex items-center justify-between px-4 py-2 border-b border-zinc-900/60 bg-zinc-950 select-none'
-      
-      // macOS 经典三色圆点
-      header.innerHTML = `
-        <div class="flex items-center gap-1.5 shrink-0">
-          <span class="w-2.5 h-2.5 rounded-full bg-[#ff5f56]"></span>
-          <span class="w-2.5 h-2.5 rounded-full bg-[#ffbd2e]"></span>
-          <span class="w-2.5 h-2.5 rounded-full bg-[#27c93f]"></span>
-        </div>
-      `
-
-      // 动态判断代码语言
-      const code = pre.querySelector('code')
-      let lang = 'CODE'
-      if (code) {
-        const classes = Array.from(code.classList)
-        const langClass = classes.find(c => c.startsWith('language-'))
-        if (langClass) {
-          lang = langClass.replace('language-', '').toUpperCase()
+      headings.forEach((heading, idx) => {
+        const level = parseInt(heading.tagName.substring(1), 10)
+        let id = heading.id
+        if (!id) {
+          id = `toc-heading-${idx}`
+          heading.id = id
         }
-      }
+        tocItems.push({
+          id,
+          text: (heading as HTMLElement).innerText || '',
+          level
+        })
+      })
+      setToc(tocItems)
 
-      const langIndicator = document.createElement('span')
-      langIndicator.className = 'text-[9px] font-bold text-zinc-500 tracking-wider absolute left-16'
-      langIndicator.innerText = lang
-      header.appendChild(langIndicator)
+      // 2. 动态增强代码块：注入 macOS 控制圆点和复制按钮
+      const preBlocks = contentDiv.querySelectorAll('pre')
+      preBlocks.forEach((pre) => {
+        // 避免重复包裹
+        if (pre.parentElement?.classList.contains('mac-code-wrapper')) return
 
-      // 复制按钮
-      const copyBtn = document.createElement('button')
-      copyBtn.className = 'flex items-center gap-1 text-[10px] text-zinc-400 hover:text-white transition-colors cursor-pointer bg-transparent border-0 outline-none p-0.5'
-      copyBtn.innerHTML = `
-        <svg xmlns="http://www.w3.org/2000/svg" width="11" height="11" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><rect width="14" height="14" x="8" y="8" rx="2" ry="2"/><path d="M4 16c-1.1 0-2-.9-2-2V4c0-1.1.9-2 2-2h10c1.1 0 2 .9 2 2"/></svg>
-        <span>复制</span>
-      `
+        const wrapper = document.createElement('div')
+        wrapper.className = 'mac-code-wrapper relative my-6 rounded-xl overflow-hidden border border-zinc-200/40 dark:border-zinc-800/40 bg-zinc-950/90 dark:bg-zinc-900/90 shadow-md font-mono'
+        
+        const header = document.createElement('div')
+        header.className = 'flex items-center justify-between px-4 py-2 border-b border-zinc-900/60 bg-zinc-950 select-none'
+        
+        // macOS 经典三色圆点
+        header.innerHTML = `
+          <div class="flex items-center gap-1.5 shrink-0">
+            <span class="w-2.5 h-2.5 rounded-full bg-[#ff5f56]"></span>
+            <span class="w-2.5 h-2.5 rounded-full bg-[#ffbd2e]"></span>
+            <span class="w-2.5 h-2.5 rounded-full bg-[#27c93f]"></span>
+          </div>
+        `
 
-      copyBtn.addEventListener('click', async () => {
-        const textToCopy = code?.innerText || pre.innerText || ''
-        try {
-          await navigator.clipboard.writeText(textToCopy)
-          copyBtn.innerHTML = `
-            <svg xmlns="http://www.w3.org/2000/svg" width="11" height="11" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" class="text-emerald-400"><path d="M20 6 9 17l-5-5"/></svg>
-            <span class="text-emerald-400 font-bold">已复制</span>
-          `
-          setTimeout(() => {
+        // 动态判断代码语言
+        const code = pre.querySelector('code')
+        let lang = 'CODE'
+        if (code) {
+          const classes = Array.from(code.classList)
+          const langClass = classes.find(c => c.startsWith('language-'))
+          if (langClass) {
+            lang = langClass.replace('language-', '').toUpperCase()
+          }
+        }
+
+        const langIndicator = document.createElement('span')
+        langIndicator.className = 'text-[9px] font-bold text-zinc-500 tracking-wider absolute left-16'
+        langIndicator.innerText = lang
+        header.appendChild(langIndicator)
+
+        // 复制按钮
+        const copyBtn = document.createElement('button')
+        copyBtn.className = 'flex items-center gap-1 text-[10px] text-zinc-400 hover:text-white transition-colors cursor-pointer bg-transparent border-0 outline-none p-0.5'
+        copyBtn.innerHTML = `
+          <svg xmlns="http://www.w3.org/2000/svg" width="11" height="11" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><rect width="14" height="14" x="8" y="8" rx="2" ry="2"/><path d="M4 16c-1.1 0-2-.9-2-2V4c0-1.1.9-2 2-2h10c1.1 0 2 .9 2 2"/></svg>
+          <span>复制</span>
+        `
+
+        copyBtn.addEventListener('click', async () => {
+          const textToCopy = code?.innerText || pre.innerText || ''
+          try {
+            await navigator.clipboard.writeText(textToCopy)
             copyBtn.innerHTML = `
-              <svg xmlns="http://www.w3.org/2000/svg" width="11" height="11" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><rect width="14" height="14" x="8" y="8" rx="2" ry="2"/><path d="M4 16c-1.1 0-2-.9-2-2V4c0-1.1.9-2 2-2h10c1.1 0 2 .9 2 2"/></svg>
-              <span>复制</span>
+              <svg xmlns="http://www.w3.org/2000/svg" width="11" height="11" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" class="text-emerald-400"><path d="M20 6 9 17l-5-5"/></svg>
+              <span class="text-emerald-400 font-bold">已复制</span>
             `
-          }, 2000)
-        } catch (err) {
-          console.error('复制代码失败', err)
-        }
+            setTimeout(() => {
+              copyBtn.innerHTML = `
+                <svg xmlns="http://www.w3.org/2000/svg" width="11" height="11" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><rect width="14" height="14" x="8" y="8" rx="2" ry="2"/><path d="M4 16c-1.1 0-2-.9-2-2V4c0-1.1.9-2 2-2h10c1.1 0 2 .9 2 2"/></svg>
+                <span>复制</span>
+              `
+            }, 2000)
+          } catch (err) {
+            console.error('复制代码失败', err)
+          }
+        })
+
+        header.appendChild(copyBtn)
+
+        // 重构结构
+        pre.parentNode?.insertBefore(wrapper, pre)
+        wrapper.appendChild(header)
+        wrapper.appendChild(pre)
+        
+        // 去除原生 pre/code 的多余外描边与内边距
+        pre.style.margin = '0'
+        pre.style.padding = '1rem 1.25rem'
+        pre.style.overflowX = 'auto'
+        pre.style.background = 'transparent'
       })
 
-      header.appendChild(copyBtn)
+      // 3. Intersection Observer 大纲目录随屏滚动点亮
+      const observerOptions = {
+        root: null,
+        rootMargin: '0px 0px -60% 0px',
+        threshold: 0
+      }
 
-      // 重构结构
-      pre.parentNode?.insertBefore(wrapper, pre)
-      wrapper.appendChild(header)
-      wrapper.appendChild(pre)
-      
-      // 去除原生 pre/code 的多余外描边与内边距
-      pre.style.margin = '0'
-      pre.style.padding = '1rem 1.25rem'
-      pre.style.overflowX = 'auto'
-      pre.style.background = 'transparent'
-    })
+      const observer = new IntersectionObserver((entries) => {
+        entries.forEach((entry) => {
+          if (entry.isIntersecting) {
+            setActiveTocId(entry.target.id)
+          }
+        })
+      }, observerOptions)
 
-    // 3. Intersection Observer 大纲目录随屏滚动点亮
-    const observerOptions = {
-      root: null,
-      rootMargin: '0px 0px -60% 0px',
-      threshold: 0
-    }
+      headings.forEach(h => observer.observe(h))
 
-    const observer = new IntersectionObserver((entries) => {
-      entries.forEach((entry) => {
-        if (entry.isIntersecting) {
-          setActiveTocId(entry.target.id)
-        }
-      })
-    }, observerOptions)
-
-    headings.forEach(h => observer.observe(h))
+      // 临时存储以便清理
+      ;(contentDiv as any)._observer = observer
+      ;(contentDiv as any)._headings = headings
+    }, 50)
 
     return () => {
-      headings.forEach(h => observer.unobserve(h))
-      observer.disconnect()
+      clearTimeout(timer)
+      const contentDiv = articleContentRef.current
+      if (contentDiv) {
+        const observer = (contentDiv as any)._observer
+        const headings = (contentDiv as any)._headings
+        if (observer && headings) {
+          headings.forEach((h: any) => observer.unobserve(h))
+          observer.disconnect()
+        }
+      }
     }
   }, [loading, article])
 
@@ -347,7 +362,7 @@ export default function ArticleDetailPage() {
 
       {/* 沉浸式阅读进度指示条 */}
       <div 
-        className="fixed top-16 left-0 h-[2.5px] bg-[#727BBA] shadow-[0_0_8px_rgba(114,123,186,0.6)] z-50 transition-all duration-75"
+        className="fixed top-0 left-0 h-[2.5px] bg-[#727BBA] shadow-[0_0_8px_rgba(114,123,186,0.6)] z-50 transition-all duration-75"
         style={{ width: `${scrollProgress}%` }}
       />
 
@@ -578,12 +593,12 @@ export default function ArticleDetailPage() {
 
             </article>
 
-            {/* 3. PC端右侧 Sticky 大纲目录树 (TOC) */}
-            {toc.length > 0 && (
-              <aside className="hidden lg:block sticky top-28 w-[210px] pr-2 z-20 animate-detail-item opacity-0 select-none">
-                <div className="flex items-center gap-1.5 text-[10px] font-heading font-extrabold text-zinc-400 dark:text-zinc-500 uppercase tracking-widest border-b border-zinc-200/50 dark:border-zinc-950/60 pb-2 mb-3">
-                  <span>文章目录</span>
-                </div>
+            {/* 3. PC端右侧 Sticky 大纲目录树 (TOC) - 常驻 DOM 从而保证 GSAP 能正常做淡入动效 */}
+            <aside className="hidden lg:block sticky top-28 w-[210px] pr-2 z-20 animate-detail-item opacity-0 select-none">
+              <div className="flex items-center gap-1.5 text-[10px] font-heading font-extrabold text-zinc-400 dark:text-zinc-500 uppercase tracking-widest border-b border-zinc-200/50 dark:border-zinc-950/60 pb-2 mb-3">
+                <span>文章目录</span>
+              </div>
+              {toc.length > 0 ? (
                 <div className="flex flex-col gap-2 max-h-[calc(100vh-180px)] overflow-y-auto pr-1">
                   {toc.map((item) => (
                     <a
@@ -602,8 +617,10 @@ export default function ArticleDetailPage() {
                     </a>
                   ))}
                 </div>
-              </aside>
-            )}
+              ) : (
+                <p className="text-[11px] text-zinc-450 dark:text-zinc-500 italic">暂无目录</p>
+              )}
+            </aside>
 
           </div>
         )}
