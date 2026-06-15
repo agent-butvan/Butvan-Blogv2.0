@@ -98,6 +98,8 @@ public class SecurityConfig {
                     .requestMatchers(HttpMethod.GET, "/api/navigations/**").permitAll()
                     // 放行前台获取首页活跃房间场景 API
                     .requestMatchers(HttpMethod.GET, "/api/scenes/active").permitAll()
+                    // 放行前台获取公开用户资料 API
+                    .requestMatchers(HttpMethod.GET, "/api/profile/public/**").permitAll()
                     // 放行本地静态图片映射路径
                     .requestMatchers("/uploads/**").permitAll()
                     // 其它任何后台 API 均需校验 Bearer Token 权限身份
