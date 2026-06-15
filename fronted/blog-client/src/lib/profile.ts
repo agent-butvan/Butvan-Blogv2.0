@@ -13,7 +13,7 @@ const API_BASE = process.env.NEXT_PUBLIC_API_BASE_URL || 'http://localhost:8080/
  */
 export async function fetchProfile(username = 'butvan'): Promise<ProfileVO | null> {
   try {
-    const res = await fetch(`${API_BASE}/profile/public/${encodeURIComponent(username)}`)
+    const res = await fetch(`${API_BASE}/profile/public/${encodeURIComponent(username)}`, { cache: 'no-store' })
     if (!res.ok) return null
     const json = await res.json()
     // 后端统一返回 { code: number, msg: string, data: T }
@@ -35,7 +35,7 @@ export async function fetchProfile(username = 'butvan'): Promise<ProfileVO | nul
  */
 export async function fetchNavigations(position = 'FOOTER'): Promise<any[]> {
   try {
-    const res = await fetch(`${API_BASE}/navigations?position=${position}`)
+    const res = await fetch(`${API_BASE}/navigations?position=${position}`, { cache: 'no-store' })
     if (!res.ok) return []
     const json = await res.json()
     if (json.code === 200 || json.code === 0) {

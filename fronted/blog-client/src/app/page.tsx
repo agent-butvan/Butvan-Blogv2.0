@@ -7,6 +7,7 @@ import FluidBackground from '@/components/home/FluidBackground'
 import HeroSection from '@/components/home/HeroSection'
 import FeaturesSection from '@/components/home/FeaturesSection'
 import Navbar from '@/components/common/Navbar'
+import SidebarWidget from '@/components/common/SidebarWidget'
 import { fetchProfile } from '@/lib/profile'
 import type { ProfileVO } from '@/types/profile'
 import gsap from 'gsap'
@@ -144,6 +145,9 @@ export default function HomePage() {
     <main className="relative w-full min-h-screen overflow-x-hidden bg-[#f6f6f6] dark:bg-zinc-950 font-body selection:bg-primary/20 text-zinc-900 dark:text-zinc-50 transition-colors">
       {/* 顶部动态主导航栏 */}
       <Navbar profile={profile} />
+
+      {/* 左侧悬浮侧挂导航 */}
+      <SidebarWidget />
 
       {/* 隐藏夜店流体动画背景以匹配图片极简灰白风格 */}
       {/* <FluidBackground /> */}
