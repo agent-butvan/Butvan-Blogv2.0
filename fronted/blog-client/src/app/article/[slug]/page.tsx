@@ -28,6 +28,8 @@ import { fetchProfile } from '@/lib/profile'
 import type { ProfileVO } from '@/types/profile'
 import type { Article } from '@/lib/mock-data'
 import gsap from 'gsap'
+import hljs from 'highlight.js'
+import 'highlight.js/styles/atom-one-dark.css'
 
 const API_BASE = process.env.NEXT_PUBLIC_API_BASE_URL || 'http://localhost:8080/api'
 
@@ -174,7 +176,7 @@ export default function ArticleDetailPage() {
         if (pre.parentElement?.classList.contains('mac-code-wrapper')) return
 
         const wrapper = document.createElement('div')
-        wrapper.className = 'mac-code-wrapper relative my-6 rounded-xl overflow-hidden border border-zinc-200/40 dark:border-zinc-800/40 bg-zinc-950/90 dark:bg-zinc-900/90 shadow-md font-mono'
+        wrapper.className = 'mac-code-wrapper relative my-8 rounded-xl overflow-hidden border border-zinc-200/40 dark:border-zinc-800/40 bg-zinc-950/90 dark:bg-zinc-900/90 shadow-md font-mono'
         
         const header = document.createElement('div')
         header.className = 'flex items-center justify-between px-4 py-2 border-b border-zinc-900/60 bg-zinc-950 select-none'
@@ -188,7 +190,7 @@ export default function ArticleDetailPage() {
           </div>
         `
 
-        // 动态判断代码语言
+        // 动态判断代码语言并应用高亮
         const code = pre.querySelector('code')
         let lang = 'CODE'
         if (code) {
@@ -197,6 +199,8 @@ export default function ArticleDetailPage() {
           if (langClass) {
             lang = langClass.replace('language-', '').toUpperCase()
           }
+          // 调用 highlight.js 高亮
+          hljs.highlightElement(code as HTMLElement)
         }
 
         const langIndicator = document.createElement('span')
@@ -238,11 +242,14 @@ export default function ArticleDetailPage() {
         wrapper.appendChild(header)
         wrapper.appendChild(pre)
         
-        // 去除原生 pre/code 的多余外描边与内边距
+        // 去除原生 pre/code 的多余外描边与内边距，并将 code 背景设为透明，以防语法高亮库覆盖
         pre.style.margin = '0'
         pre.style.padding = '1rem 1.25rem'
         pre.style.overflowX = 'auto'
         pre.style.background = 'transparent'
+        if (code) {
+          code.style.background = 'transparent'
+        }
       })
 
       // 3. Intersection Observer 大纲目录随屏滚动点亮
@@ -370,7 +377,7 @@ export default function ArticleDetailPage() {
       <div className="w-full max-w-5xl px-6 py-10 flex flex-col gap-6">
         
         {/* 面包屑与返回 */}
-        <div className="animate-detail-item opacity-0 flex items-center justify-between w-full max-w-3xl mx-auto mb-2 text-xs text-zinc-400 dark:text-zinc-500 font-mono">
+        <div className="animate-detail-item opacity-0 flex items-center justify-between w-full max-w-2xl mx-auto mb-2 text-xs text-zinc-400 dark:text-zinc-500 font-mono">
           <Link 
             href="/article" 
             className="flex items-center gap-1 hover:text-[#727BBA] transition-colors group cursor-pointer"
@@ -456,7 +463,7 @@ export default function ArticleDetailPage() {
             </aside>
 
             {/* 2. 中央正文阅读区 */}
-            <article className="w-full max-w-3xl mx-auto flex flex-col">
+            <article className="w-full max-w-2xl mx-auto flex flex-col">
               {/* 顶部标题与元数据页头 */}
               <header className="animate-detail-item opacity-0 border-b border-zinc-200/50 dark:border-zinc-900/60 pb-7 select-none">
                 <div className="flex flex-wrap items-center gap-2 mb-3">
@@ -504,7 +511,7 @@ export default function ArticleDetailPage() {
               {/* 核心正文 Markdown/HTML 内容 */}
               <div 
                 ref={articleContentRef}
-                className="animate-detail-item opacity-0 py-8 prose prose-zinc max-w-none dark:prose-invert prose-headings:font-serif prose-headings:font-bold prose-h2:text-xl prose-h2:mt-10 prose-h2:mb-4 prose-h2:pb-1.5 prose-h2:border-b prose-h2:border-zinc-200/40 dark:prose-h2:border-zinc-800/40 prose-h3:text-base prose-h3:mt-7 prose-h3:mb-3 prose-p:text-[14.5px] prose-p:leading-[1.8] prose-p:text-zinc-700 dark:prose-p:text-zinc-300 prose-p:mb-5 prose-blockquote:font-serif prose-blockquote:italic prose-blockquote:border-l-4 prose-blockquote:border-[#727BBA] prose-blockquote:bg-[#727BBA]/5 dark:prose-blockquote:bg-[#727BBA]/10 prose-blockquote:py-1.5 prose-blockquote:px-5 prose-blockquote:my-6 prose-blockquote:rounded-r-lg prose-blockquote:text-zinc-650 dark:prose-blockquote:text-zinc-350 prose-a:text-[#727BBA] prose-a:underline prose-a:underline-offset-4 hover:prose-a:text-[#727BBA]/80 prose-strong:text-zinc-950 dark:prose-strong:text-white prose-strong:font-bold prose-ul:text-[14px] prose-ul:list-disc prose-ul:pl-5 prose-ul:mb-5 prose-li:mb-2 text-justify"
+                className="animate-detail-item opacity-0 py-8 prose prose-zinc max-w-none dark:prose-invert prose-headings:font-serif prose-headings:font-bold prose-h2:text-xl prose-h2:mt-12 prose-h2:mb-5 prose-h2:pb-1.5 prose-h2:border-b prose-h2:border-zinc-200/40 dark:prose-h2:border-zinc-800/40 prose-h3:text-base prose-h3:mt-9 prose-h3:mb-4 prose-p:text-[15.5px] prose-p:leading-[1.88] prose-p:text-zinc-700 dark:prose-p:text-zinc-300 prose-p:mb-6 prose-blockquote:font-serif prose-blockquote:italic prose-blockquote:border-l-4 prose-blockquote:border-[#727BBA] prose-blockquote:bg-[#727BBA]/5 dark:prose-blockquote:bg-[#727BBA]/10 prose-blockquote:py-2.5 prose-blockquote:px-6 prose-blockquote:my-8 prose-blockquote:rounded-r-lg prose-blockquote:text-zinc-650 dark:prose-blockquote:text-zinc-350 prose-a:text-[#727BBA] prose-a:underline prose-a:underline-offset-4 hover:prose-a:text-[#727BBA]/80 prose-strong:text-zinc-950 dark:prose-strong:text-white prose-strong:font-bold prose-ul:text-[15px] prose-ul:list-disc prose-ul:pl-5 prose-ul:mb-6 prose-li:mb-3 text-justify"
                 dangerouslySetInnerHTML={{ __html: article.content }}
               />
 
