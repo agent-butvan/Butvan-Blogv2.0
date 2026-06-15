@@ -75,8 +75,11 @@ export default function HeroSection({ profile, loading }: HeroSectionProps) {
       if (nameEl) {
         const text = nameEl.textContent || ''
         nameEl.innerHTML = text.split("").map(char => 
-          `<span class="char-letter inline-block transform origin-bottom">${char === " " ? "&nbsp;" : char}</span>`
+          `<span class="char-letter inline-block transform origin-bottom opacity-0">${char === " " ? "&nbsp;" : char}</span>`
         ).join("")
+        
+        // 移去父容器的 opacity-0 类，防止子元素因父级隐藏而不显示
+        nameEl.classList.remove("opacity-0")
 
         gsap.fromTo(".char-letter",
           { y: 50, opacity: 0, rotationX: -90, transformPerspective: 600 },
