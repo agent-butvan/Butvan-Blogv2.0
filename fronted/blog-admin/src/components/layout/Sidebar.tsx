@@ -186,7 +186,7 @@ export default function Sidebar() {
                 <button
                   onClick={() => toggleMenu(item.id)}
                   className={cn(
-                    "w-full flex items-center justify-between px-2.5 py-1.5 rounded-lg text-xs font-semibold transition-all duration-150 cursor-pointer text-left focus:outline-none relative group",
+                    "w-full flex items-center justify-between px-2.5 py-2.25 rounded-lg text-sm font-semibold transition-all duration-150 cursor-pointer text-left focus:outline-none relative group",
                     isChildActive
                       ? "text-primary dark:text-[#b0a2ff] bg-primary/5 font-bold"
                       : "text-zinc-650 dark:text-zinc-400 hover:bg-zinc-200/50 dark:hover:bg-zinc-800/40 hover:text-zinc-950 dark:hover:text-zinc-150"
@@ -232,7 +232,7 @@ export default function Sidebar() {
                             }
                           }}
                           className={cn(
-                            "w-full flex items-center gap-2.5 px-2.5 py-1.25 rounded-md text-[11px] font-semibold transition-all duration-150 cursor-pointer text-left focus:outline-none",
+                            "w-full flex items-center gap-2.5 px-2.5 py-1.75 rounded-md text-xs font-semibold transition-all duration-150 cursor-pointer text-left focus:outline-none",
                             childActive
                               ? "text-primary font-bold bg-primary/5"
                               : "text-zinc-500 dark:text-zinc-400 hover:text-zinc-900 dark:hover:text-zinc-200 hover:bg-zinc-100/50 dark:hover:bg-zinc-800/20"
@@ -268,7 +268,7 @@ export default function Sidebar() {
                 }
               }}
               className={cn(
-                "w-full flex items-center gap-2 px-2.5 py-1.5 rounded-lg text-xs font-semibold transition-all duration-150 cursor-pointer text-left focus:outline-none relative group",
+                "w-full flex items-center gap-2 px-2.5 py-2.25 rounded-lg text-sm font-semibold transition-all duration-150 cursor-pointer text-left focus:outline-none relative group",
                 active
                   ? "bg-[#f3eeff] dark:bg-[#201c38] text-primary dark:text-[#b0a2ff] font-bold"
                   : "text-zinc-650 dark:text-zinc-400 hover:bg-zinc-200/50 dark:hover:bg-zinc-800/40 hover:text-zinc-950 dark:hover:text-zinc-150"
