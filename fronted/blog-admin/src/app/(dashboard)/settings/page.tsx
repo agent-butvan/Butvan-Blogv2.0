@@ -8,7 +8,7 @@ import { cn } from "@heroui/react";
 
 /**
  * 个人资料配置页面 (高密度双栏一体化大厂风格)
- * - 左侧：一体化精细配置表单，全局 Dirty-State 统一保存
+ * - 左侧：一体化精细配置表单，全局 Dirty-State 统一保存（支持基本资料、关于我、社交网络及页脚站点信息）
  * - 右侧：头像上传与实景博主名片预览二合一挂件，消弭页面过剩留白
  * - 紧密排版，信息饱满，无零散分离卡片
  */
@@ -25,6 +25,10 @@ export default function SettingsPage() {
     github: string;
     email: string;
     rss: string;
+    footerTitle: string;
+    footerSubtitle: string;
+    footerIcp: string;
+    footerStartDate: string;
   } | null>(null);
 
   // --- 各表单字段当前编辑状态 ---
@@ -36,6 +40,10 @@ export default function SettingsPage() {
   const [github, setGithub] = useState("");
   const [email, setEmail] = useState("");
   const [rss, setRss] = useState("");
+  const [footerTitle, setFooterTitle] = useState("");
+  const [footerSubtitle, setFooterSubtitle] = useState("");
+  const [footerIcp, setFooterIcp] = useState("");
+  const [footerStartDate, setFooterStartDate] = useState("");
 
   // --- 加载及保存中状态 ---
   const [loading, setLoading] = useState(true);
@@ -65,6 +73,10 @@ export default function SettingsPage() {
             github: links.github || "",
             email: links.email || "",
             rss: links.rss || "",
+            footerTitle: links.footerTitle || "",
+            footerSubtitle: links.footerSubtitle || "",
+            footerIcp: links.footerIcp || "",
+            footerStartDate: links.footerStartDate || "",
           };
           setInitialData(profile);
           setNickname(profile.nickname);
@@ -75,6 +87,10 @@ export default function SettingsPage() {
           setGithub(profile.github);
           setEmail(profile.email);
           setRss(profile.rss);
+          setFooterTitle(profile.footerTitle);
+          setFooterSubtitle(profile.footerSubtitle);
+          setFooterIcp(profile.footerIcp);
+          setFooterStartDate(profile.footerStartDate);
         }
       } catch (err) {
         console.error("获取个人资料失败", err);
@@ -131,6 +147,12 @@ export default function SettingsPage() {
       return;
     }
 
+    // 正则简单校正建站起始时间格式
+    if (footerStartDate.trim() && !/^\d{4}-\d{2}-\d{2}$/.test(footerStartDate)) {
+      toast.warning("建站起始日期格式错误，必须为 YYYY-MM-DD 形式");
+      return;
+    }
+
     setSaving(true);
     try {
       const payload = {
@@ -143,6 +165,10 @@ export default function SettingsPage() {
           github,
           email,
           rss,
+          footerTitle,
+          footerSubtitle,
+          footerIcp,
+          footerStartDate,
         },
       };
 
@@ -160,6 +186,10 @@ export default function SettingsPage() {
           github,
           email,
           rss,
+          footerTitle,
+          footerSubtitle,
+          footerIcp,
+          footerStartDate,
         });
       } else {
         toast.error(res.data.msg || "保存公开资料失败");
@@ -190,7 +220,11 @@ export default function SettingsPage() {
     introLine2 !== (initialData?.introLine2 ?? "") ||
     github !== (initialData?.github ?? "") ||
     email !== (initialData?.email ?? "") ||
-    rss !== (initialData?.rss ?? "");
+    rss !== (initialData?.rss ?? "") ||
+    footerTitle !== (initialData?.footerTitle ?? "") ||
+    footerSubtitle !== (initialData?.footerSubtitle ?? "") ||
+    footerIcp !== (initialData?.footerIcp ?? "") ||
+    footerStartDate !== (initialData?.footerStartDate ?? "");
 
   return (
     <div className="max-w-[1200px] mx-auto p-2 md:p-4 flex flex-col gap-5 text-left font-body text-zinc-800 dark:text-zinc-200">
@@ -366,6 +400,74 @@ export default function SettingsPage() {
               </div>
             </div>
 
+            {/* 分割线 */}
+            <div className="border-t border-zinc-100 dark:border-zinc-900 pt-4" />
+
+            {/* 分区 4：页脚站点信息配置 */}
+            <div className="flex flex-col gap-3">
+              <div className="flex flex-col gap-0.5">
+                <h3 className="text-xs font-semibold text-zinc-900 dark:text-zinc-50">
+                  4. 页脚站点信息配置
+                </h3>
+                <p className="text-[11px] text-zinc-400 dark:text-zinc-500">
+                  配置前台首页最下方页脚的动态及静态展示内容，包括建站起点计算天数与备案号。
+                </p>
+              </div>
+              <div className="grid grid-cols-1 md:grid-cols-2 gap-3.5 pt-1">
+                {/* 页脚站点大标题 */}
+                <div className="flex flex-col gap-1.5">
+                  <span className="text-[10px] font-semibold text-zinc-400 dark:text-zinc-500 uppercase tracking-wider">
+                    页脚站点大标题
+                  </span>
+                  <input
+                    value={footerTitle}
+                    onChange={(e) => setFooterTitle(e.target.value)}
+                    placeholder="例如：grtsinry43's Blog."
+                    className="w-full bg-zinc-50/50 hover:bg-zinc-50/80 focus:bg-white dark:bg-zinc-900/25 dark:hover:bg-zinc-900/40 dark:focus:bg-zinc-950 border border-zinc-200/80 dark:border-zinc-800 rounded-lg px-3 h-8.5 text-xs text-zinc-900 dark:text-zinc-100 focus:outline-none focus:ring-1.5 focus:ring-primary/20 focus:border-primary transition-all"
+                  />
+                </div>
+
+                {/* 页脚站点副标题 */}
+                <div className="flex flex-col gap-1.5">
+                  <span className="text-[10px] font-semibold text-zinc-400 dark:text-zinc-500 uppercase tracking-wider">
+                    页脚站点副标语
+                  </span>
+                  <input
+                    value={footerSubtitle}
+                    onChange={(e) => setFooterSubtitle(e.target.value)}
+                    placeholder="例如：总之岁月漫长，然而值得等待"
+                    className="w-full bg-zinc-50/50 hover:bg-zinc-50/80 focus:bg-white dark:bg-zinc-900/25 dark:hover:bg-zinc-900/40 dark:focus:bg-zinc-950 border border-zinc-200/80 dark:border-zinc-800 rounded-lg px-3 h-8.5 text-xs text-zinc-900 dark:text-zinc-100 focus:outline-none focus:ring-1.5 focus:ring-primary/20 focus:border-primary transition-all"
+                  />
+                </div>
+
+                {/* 备案号 */}
+                <div className="flex flex-col gap-1.5">
+                  <span className="text-[10px] font-semibold text-zinc-400 dark:text-zinc-500 uppercase tracking-wider">
+                    站点备案号 (ICP)
+                  </span>
+                  <input
+                    value={footerIcp}
+                    onChange={(e) => setFooterIcp(e.target.value)}
+                    placeholder="例如：湘ICP备2023033970号-1"
+                    className="w-full bg-zinc-50/50 hover:bg-zinc-50/80 focus:bg-white dark:bg-zinc-900/25 dark:hover:bg-zinc-900/40 dark:focus:bg-zinc-950 border border-zinc-200/80 dark:border-zinc-800 rounded-lg px-3 h-8.5 text-xs text-zinc-900 dark:text-zinc-100 focus:outline-none focus:ring-1.5 focus:ring-primary/20 focus:border-primary transition-all"
+                  />
+                </div>
+
+                {/* 建站时间 */}
+                <div className="flex flex-col gap-1.5">
+                  <span className="text-[10px] font-semibold text-zinc-400 dark:text-zinc-500 uppercase tracking-wider">
+                    建站起始日期 (格式：YYYY-MM-DD)
+                  </span>
+                  <input
+                    value={footerStartDate}
+                    onChange={(e) => setFooterStartDate(e.target.value)}
+                    placeholder="例如：2022-06-15"
+                    className="w-full bg-zinc-50/50 hover:bg-zinc-50/80 focus:bg-white dark:bg-zinc-900/25 dark:hover:bg-zinc-900/40 dark:focus:bg-zinc-950 border border-zinc-200/80 dark:border-zinc-800 rounded-lg px-3 h-8.5 text-xs text-zinc-900 dark:text-zinc-100 focus:outline-none focus:ring-1.5 focus:ring-primary/20 focus:border-primary transition-all font-mono"
+                  />
+                </div>
+              </div>
+            </div>
+
           </div>
 
           {/* 表单底部统一操作栏 */}
@@ -462,10 +564,22 @@ export default function SettingsPage() {
                 </div>
               </div>
 
+              {/* 联动页脚及备案信息 */}
+              <div className="border-t border-zinc-100 dark:border-zinc-900 pt-3 flex flex-col gap-1.5 text-[9px] text-zinc-400 dark:text-zinc-500">
+                <div className="flex justify-between">
+                  <span>站点名称:</span>
+                  <span className="font-semibold text-zinc-700 dark:text-zinc-300 truncate max-w-[120px]">{footerTitle || "未设置"}</span>
+                </div>
+                <div className="flex justify-between">
+                  <span>ICP 备案:</span>
+                  <span className="font-semibold text-zinc-700 dark:text-zinc-300 truncate max-w-[120px]">{footerIcp || "未设置"}</span>
+                </div>
+              </div>
+
               {/* 联动社交网络状态指示器 */}
-              <div className="border-t border-zinc-100 dark:border-zinc-900 pt-3.5 flex items-center justify-between">
+              <div className="border-t border-zinc-100 dark:border-zinc-900 pt-3 flex items-center justify-between">
                 <span className="text-[9px] font-semibold text-zinc-400 dark:text-zinc-500 uppercase tracking-widest">
-                  社交与订阅渠道
+                  社交渠道
                 </span>
                 <div className="flex items-center gap-3">
                   {/* GitHub */}
