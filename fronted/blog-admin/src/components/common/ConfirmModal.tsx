@@ -1,6 +1,7 @@
 "use client";
 
 import { AlertTriangle } from "lucide-react";
+import Portal from "./Portal";
 
 /**
  * 通用确认弹窗
@@ -43,51 +44,53 @@ export default function ConfirmModal({
   };
 
   return (
-    <div className="fixed inset-0 z-50 flex items-center justify-center">
-      {/* 遮罩 */}
-      <div
-        className="absolute inset-0 bg-black/30 backdrop-blur-sm animate-fade-in"
-        onClick={onCancel}
-      />
+    <Portal>
+      <div className="fixed inset-0 z-50 flex items-center justify-center">
+        {/* 遮罩 */}
+        <div
+          className="absolute inset-0 bg-black/30 backdrop-blur-sm animate-fade-in"
+          onClick={onCancel}
+        />
 
-      {/* 弹窗 */}
-      <div className="relative z-10 w-full max-w-sm mx-4 rounded-2xl bg-white dark:bg-zinc-900 border border-transparent dark:border-zinc-800 shadow-xl animate-slide-up">
-        <div className="p-6 text-center">
-          {/* 图标 */}
-          <div
-            className={`mx-auto mb-4 flex h-12 w-12 items-center justify-center rounded-full ${iconColors[variant]}`}
-          >
-            <AlertTriangle size={22} />
+        {/* 弹窗 */}
+        <div className="relative z-10 w-full max-w-sm mx-4 rounded-2xl bg-white dark:bg-zinc-900 border border-transparent dark:border-zinc-800 shadow-xl animate-slide-up">
+          <div className="p-6 text-center">
+            {/* 图标 */}
+            <div
+              className={`mx-auto mb-4 flex h-12 w-12 items-center justify-center rounded-full ${iconColors[variant]}`}
+            >
+              <AlertTriangle size={22} />
+            </div>
+
+            {/* 标题 */}
+            <h3 className="font-heading text-lg font-semibold text-neutral-dark dark:text-zinc-100 mb-2">
+              {title}
+            </h3>
+
+            {/* 描述 */}
+            <p className="text-sm text-zinc-500 dark:text-zinc-400 leading-relaxed">{description}</p>
           </div>
 
-          {/* 标题 */}
-          <h3 className="font-heading text-lg font-semibold text-neutral-dark dark:text-zinc-100 mb-2">
-            {title}
-          </h3>
-
-          {/* 描述 */}
-          <p className="text-sm text-zinc-500 dark:text-zinc-400 leading-relaxed">{description}</p>
-        </div>
-
-        {/* 按钮 */}
-        <div className="flex items-center border-t border-zinc-100 dark:border-zinc-800">
-          <button
-            onClick={onCancel}
-            disabled={loading}
-            className="flex-1 px-4 py-3 text-sm text-zinc-600 dark:text-zinc-400 hover:bg-zinc-50 dark:hover:bg-zinc-800 rounded-bl-2xl transition-colors disabled:opacity-50"
-          >
-            {cancelLabel}
-          </button>
-          <div className="w-px h-10 bg-zinc-100 dark:bg-zinc-800" />
-          <button
-            onClick={onConfirm}
-            disabled={loading}
-            className={`flex-1 px-4 py-3 text-sm font-medium text-white rounded-br-2xl transition-colors disabled:opacity-50 focus:outline-none focus:ring-2 ${confirmColors[variant]}`}
-          >
-            {loading ? "处理中..." : confirmLabel}
-          </button>
+          {/* 按钮 */}
+          <div className="flex items-center border-t border-zinc-100 dark:border-zinc-800">
+            <button
+              onClick={onCancel}
+              disabled={loading}
+              className="flex-1 px-4 py-3 text-sm text-zinc-600 dark:text-zinc-400 hover:bg-zinc-50 dark:hover:bg-zinc-800 rounded-bl-2xl transition-colors disabled:opacity-50"
+            >
+              {cancelLabel}
+            </button>
+            <div className="w-px h-10 bg-zinc-100 dark:bg-zinc-800" />
+            <button
+              onClick={onConfirm}
+              disabled={loading}
+              className={`flex-1 px-4 py-3 text-sm font-medium text-white rounded-br-2xl transition-colors disabled:opacity-50 focus:outline-none focus:ring-2 ${confirmColors[variant]}`}
+            >
+              {loading ? "处理中..." : confirmLabel}
+            </button>
+          </div>
         </div>
       </div>
-    </div>
+    </Portal>
   );
 }

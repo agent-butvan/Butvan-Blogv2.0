@@ -139,7 +139,7 @@ Butvan Blog2.0/                                    # 📦 项目根目录
 │       │   │   ├── globals.css                    #         全局样式与自定义配色
 │       │   │   └── providers.tsx                  #         HeroUI v3 兼容包装器
 │       │   ├── components/                        #     🧩 组件层
-│       │   │   ├── common/                        #       通用原子组件（Table、Form、Modal、Upload 等）
+│       │   │   ├── common/                        #       通用原子组件（Table、Form、Modal、Portal、Upload 等）
 │       │   │   ├── layout/                        #       后台布局组件
 │       │   │   │   ├── AdminLayout.tsx            #         后台整体布局壳（侧边栏+页签栏+内容区）
 │       │   │   │   ├── Sidebar.tsx                #         可折叠侧边栏菜单

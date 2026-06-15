@@ -7,6 +7,7 @@ import { Spinner } from '@heroui/react'
 import { MapPin, Upload, Layers, Plus, Check, Eye, Trash2, X } from 'lucide-react'
 import Link from 'next/link'
 import ConfirmModal from '@/components/common/ConfirmModal'
+import Portal from '@/components/common/Portal'
 
 interface Scene {
   id: number
@@ -301,139 +302,141 @@ export default function ScenesPage() {
 
       {/* 新建场景弹窗 (Modal) */}
       {showCreateModal && (
-        <div className="fixed inset-0 z-50 flex items-center justify-center">
-          {/* 遮罩 */}
-          <div
-            className="absolute inset-0 bg-black/40 backdrop-blur-xs animate-fade-in"
-            onClick={() => {
-              if (!submitting && !uploading) {
-                setShowCreateModal(false)
-              }
-            }}
-          />
-
-          {/* 弹窗内容 */}
-          <div className="relative z-10 w-full max-w-md mx-4 bg-white dark:bg-zinc-900 border border-zinc-200 dark:border-zinc-800 rounded-2xl shadow-xl animate-slide-up flex flex-col overflow-hidden">
-            <div className="p-6 flex flex-col gap-4">
-              <div className="flex items-center justify-between border-b border-zinc-100 dark:border-zinc-800 pb-3">
-                <div className="flex items-center gap-2">
-                  <Plus className="w-4 h-4 text-primary" />
-                  <h2 className="text-sm font-bold text-zinc-900 dark:text-zinc-50 font-heading">上传新房间场景</h2>
-                </div>
-                <button
-                  onClick={() => setShowCreateModal(false)}
-                  disabled={submitting || uploading}
-                  className="p-1 rounded-md text-zinc-400 hover:text-zinc-500 dark:hover:text-zinc-200 hover:bg-zinc-50 dark:hover:bg-zinc-800 transition-colors disabled:opacity-50 cursor-pointer"
-                >
-                  <X size={16} />
-                </button>
-              </div>
-
-              <form
-                onSubmit={async (e) => {
-                  e.preventDefault()
-                  await handleSubmitScene(e)
+        <Portal>
+          <div className="fixed inset-0 z-50 flex items-center justify-center">
+            {/* 遮罩 */}
+            <div
+              className="absolute inset-0 bg-black/40 backdrop-blur-xs animate-fade-in"
+              onClick={() => {
+                if (!submitting && !uploading) {
                   setShowCreateModal(false)
-                }}
-                className="flex flex-col gap-4 text-left"
-              >
-                <div className="flex flex-col gap-1.5">
-                  <label className="text-xs font-heading font-medium text-zinc-700 dark:text-zinc-300">
-                    场景名称
-                  </label>
-                  <input
-                    placeholder="例如：Cozy Workstation"
-                    value={title}
-                    onChange={(e) => setTitle(e.target.value)}
-                    required
-                    className="w-full bg-zinc-50 dark:bg-zinc-950 border border-zinc-200 dark:border-zinc-800 rounded-lg px-3 h-9 text-xs text-zinc-900 dark:text-zinc-100 placeholder-zinc-500 dark:placeholder-zinc-400 focus:outline-none focus:ring-1.5 focus:ring-primary/20 focus:border-primary transition-all duration-200"
-                  />
+                }
+              }}
+            />
+
+            {/* 弹窗内容 */}
+            <div className="relative z-10 w-full max-w-md mx-4 bg-white dark:bg-zinc-900 border border-zinc-200 dark:border-zinc-800 rounded-2xl shadow-xl animate-slide-up flex flex-col overflow-hidden">
+              <div className="p-6 flex flex-col gap-4">
+                <div className="flex items-center justify-between border-b border-zinc-100 dark:border-zinc-800 pb-3">
+                  <div className="flex items-center gap-2">
+                    <Plus className="w-4 h-4 text-primary" />
+                    <h2 className="text-sm font-bold text-zinc-900 dark:text-zinc-50 font-heading">上传新房间场景</h2>
+                  </div>
+                  <button
+                    onClick={() => setShowCreateModal(false)}
+                    disabled={submitting || uploading}
+                    className="p-1 rounded-md text-zinc-400 hover:text-zinc-500 dark:hover:text-zinc-200 hover:bg-zinc-50 dark:hover:bg-zinc-800 transition-colors disabled:opacity-50 cursor-pointer"
+                  >
+                    <X size={16} />
+                  </button>
                 </div>
 
-                <div className="flex flex-col gap-1.5">
-                  <label className="text-xs font-heading font-medium text-zinc-700 dark:text-zinc-300">
-                    背景底图 URL
-                  </label>
-                  <input
-                    placeholder="上传图片或直接粘贴外链地址"
-                    value={imageUrl}
-                    onChange={(e) => setImageUrl(e.target.value)}
-                    required
-                    className="w-full bg-zinc-50 dark:bg-zinc-950 border border-zinc-200 dark:border-zinc-800 rounded-lg px-3 h-9 text-xs text-zinc-900 dark:text-zinc-100 placeholder-zinc-500 dark:placeholder-zinc-400 focus:outline-none focus:ring-1.5 focus:ring-primary/20 focus:border-primary transition-all duration-200"
-                  />
-                </div>
+                <form
+                  onSubmit={async (e) => {
+                    e.preventDefault()
+                    await handleSubmitScene(e)
+                    setShowCreateModal(false)
+                  }}
+                  className="flex flex-col gap-4 text-left"
+                >
+                  <div className="flex flex-col gap-1.5">
+                    <label className="text-xs font-heading font-medium text-zinc-700 dark:text-zinc-300">
+                      场景名称
+                    </label>
+                    <input
+                      placeholder="例如：Cozy Workstation"
+                      value={title}
+                      onChange={(e) => setTitle(e.target.value)}
+                      required
+                      className="w-full bg-zinc-50 dark:bg-zinc-950 border border-zinc-200 dark:border-zinc-800 rounded-lg px-3 h-9 text-xs text-zinc-900 dark:text-zinc-100 placeholder-zinc-500 dark:placeholder-zinc-400 focus:outline-none focus:ring-1.5 focus:ring-primary/20 focus:border-primary transition-all duration-200"
+                    />
+                  </div>
 
-                {/* 文件上传 */}
-                <div className="flex flex-col items-center justify-center p-4 border border-dashed border-zinc-200 dark:border-zinc-800 rounded-xl hover:border-primary/50 transition-all bg-zinc-50/50 dark:bg-zinc-950/20">
-                  <input
-                    type="file"
-                    accept="image/*"
-                    ref={fileInputRef}
-                    onChange={handleUploadImage}
-                    className="hidden"
-                  />
-                  {imageUrl ? (
-                    <div className="relative w-full aspect-video rounded-lg overflow-hidden border border-zinc-200 dark:border-zinc-800">
-                      <img
-                        src={resolveUrl(imageUrl)}
-                        alt="Preview"
-                        className="w-full h-full object-cover"
-                      />
-                      <div className="absolute inset-0 bg-black/40 opacity-0 hover:opacity-100 flex items-center justify-center transition-all">
-                        <button
-                          type="button"
-                          onClick={() => fileInputRef.current?.click()}
-                          className="px-3 py-1.5 rounded-md bg-white dark:bg-zinc-800 text-zinc-900 dark:text-zinc-100 text-xs font-medium hover:bg-zinc-100 dark:hover:bg-zinc-700 transition-colors cursor-pointer"
-                        >
-                          重新选择
-                        </button>
+                  <div className="flex flex-col gap-1.5">
+                    <label className="text-xs font-heading font-medium text-zinc-700 dark:text-zinc-300">
+                      背景底图 URL
+                    </label>
+                    <input
+                      placeholder="上传图片或直接粘贴外链地址"
+                      value={imageUrl}
+                      onChange={(e) => setImageUrl(e.target.value)}
+                      required
+                      className="w-full bg-zinc-50 dark:bg-zinc-950 border border-zinc-200 dark:border-zinc-800 rounded-lg px-3 h-9 text-xs text-zinc-900 dark:text-zinc-100 placeholder-zinc-500 dark:placeholder-zinc-400 focus:outline-none focus:ring-1.5 focus:ring-primary/20 focus:border-primary transition-all duration-200"
+                    />
+                  </div>
+
+                  {/* 文件上传 */}
+                  <div className="flex flex-col items-center justify-center p-4 border border-dashed border-zinc-200 dark:border-zinc-800 rounded-xl hover:border-primary/50 transition-all bg-zinc-50/50 dark:bg-zinc-950/20">
+                    <input
+                      type="file"
+                      accept="image/*"
+                      ref={fileInputRef}
+                      onChange={handleUploadImage}
+                      className="hidden"
+                    />
+                    {imageUrl ? (
+                      <div className="relative w-full aspect-video rounded-lg overflow-hidden border border-zinc-200 dark:border-zinc-800">
+                        <img
+                          src={resolveUrl(imageUrl)}
+                          alt="Preview"
+                          className="w-full h-full object-cover"
+                        />
+                        <div className="absolute inset-0 bg-black/40 opacity-0 hover:opacity-100 flex items-center justify-center transition-all">
+                          <button
+                            type="button"
+                            onClick={() => fileInputRef.current?.click()}
+                            className="px-3 py-1.5 rounded-md bg-white dark:bg-zinc-800 text-zinc-900 dark:text-zinc-100 text-xs font-medium hover:bg-zinc-100 dark:hover:bg-zinc-700 transition-colors cursor-pointer"
+                          >
+                            重新选择
+                          </button>
+                        </div>
                       </div>
-                    </div>
-                  ) : (
+                    ) : (
+                      <button
+                        type="button"
+                        disabled={uploading}
+                        onClick={() => fileInputRef.current?.click()}
+                        className="flex items-center gap-1.5 px-3 py-2 rounded-lg bg-white dark:bg-zinc-800 border border-zinc-200 dark:border-zinc-700 text-zinc-700 dark:text-zinc-200 text-xs font-heading hover:bg-zinc-50 dark:hover:bg-zinc-800 transition-colors disabled:opacity-50 cursor-pointer shadow-sm"
+                      >
+                        {uploading ? (
+                          <Spinner size="sm" />
+                        ) : (
+                          <Upload size={14} />
+                        )}
+                        选择并上传房间大图
+                      </button>
+                    )}
+                    <span className="text-xs text-zinc-550 dark:text-zinc-400 mt-2 font-mono">
+                      推荐 3840×2160（4K）PNG/JPG，最低 2560×1440
+                    </span>
+                  </div>
+
+                  <div className="flex items-center gap-3 border-t border-zinc-100 dark:border-zinc-800 pt-4 mt-2">
                     <button
                       type="button"
-                      disabled={uploading}
-                      onClick={() => fileInputRef.current?.click()}
-                      className="flex items-center gap-1.5 px-3 py-2 rounded-lg bg-white dark:bg-zinc-800 border border-zinc-200 dark:border-zinc-700 text-zinc-700 dark:text-zinc-200 text-xs font-heading hover:bg-zinc-50 dark:hover:bg-zinc-800 transition-colors disabled:opacity-50 cursor-pointer shadow-sm"
+                      disabled={submitting || uploading}
+                      onClick={() => setShowCreateModal(false)}
+                      className="flex-1 py-2 rounded-lg border border-zinc-200 dark:border-zinc-800 text-zinc-700 dark:text-zinc-300 text-xs font-heading hover:bg-zinc-50 dark:hover:bg-zinc-800 transition-colors disabled:opacity-50 cursor-pointer"
                     >
-                      {uploading ? (
+                      取消
+                    </button>
+                    <button
+                      type="submit"
+                      disabled={submitting || uploading || !title.trim() || !imageUrl.trim()}
+                      className="flex-1 py-2 rounded-lg bg-primary text-white text-xs font-heading font-medium hover:opacity-90 active:scale-98 transition-all disabled:opacity-50 cursor-pointer flex items-center justify-center gap-1.5"
+                    >
+                      {submitting ? (
                         <Spinner size="sm" />
                       ) : (
-                        <Upload size={14} />
+                        '完成创建'
                       )}
-                      选择并上传房间大图
                     </button>
-                  )}
-                  <span className="text-xs text-zinc-550 dark:text-zinc-400 mt-2 font-mono">
-                    推荐 3840×2160（4K）PNG/JPG，最低 2560×1440
-                  </span>
-                </div>
-
-                <div className="flex items-center gap-3 border-t border-zinc-100 dark:border-zinc-800 pt-4 mt-2">
-                  <button
-                    type="button"
-                    disabled={submitting || uploading}
-                    onClick={() => setShowCreateModal(false)}
-                    className="flex-1 py-2 rounded-lg border border-zinc-200 dark:border-zinc-800 text-zinc-700 dark:text-zinc-300 text-xs font-heading hover:bg-zinc-50 dark:hover:bg-zinc-800 transition-colors disabled:opacity-50 cursor-pointer"
-                  >
-                    取消
-                  </button>
-                  <button
-                    type="submit"
-                    disabled={submitting || uploading || !title.trim() || !imageUrl.trim()}
-                    className="flex-1 py-2 rounded-lg bg-primary text-white text-xs font-heading font-medium hover:opacity-90 active:scale-98 transition-all disabled:opacity-50 cursor-pointer flex items-center justify-center gap-1.5"
-                  >
-                    {submitting ? (
-                      <Spinner size="sm" />
-                    ) : (
-                      '完成创建'
-                    )}
-                  </button>
-                </div>
-              </form>
+                  </div>
+                </form>
+              </div>
             </div>
           </div>
-        </div>
+        </Portal>
       )}
 
       {/* 删除确认弹窗 */}
