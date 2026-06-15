@@ -30,17 +30,19 @@ export default function HomePage() {
   }, [])
 
   return (
-    <main className="relative w-full min-h-screen overflow-x-hidden bg-[#f6f6f6] dark:bg-zinc-950 font-body selection:bg-primary/20 text-zinc-900 dark:text-zinc-50 bg-grid-pattern transition-colors">
+    <main className="relative w-full min-h-screen overflow-x-hidden bg-[#f6f6f6] dark:bg-zinc-950 font-body selection:bg-primary/20 text-zinc-900 dark:text-zinc-50 transition-colors">
       {/* 隐藏夜店流体动画背景以匹配图片极简灰白风格 */}
       {/* <FluidBackground /> */}
 
-      {/* Layer 2: 首屏 — 个人信息（左右分栏极简布局，带有精致网格纹理与柔和渐变晕染） */}
-      <section className="relative w-full min-h-[90vh] flex items-center justify-center px-6 md:px-16 lg:px-24 py-16 md:py-24">
-        {/* 背景微弱渐变光晕，中和留白空旷感 */}
-        <div className="absolute top-1/4 left-1/3 w-[500px] h-[500px] rounded-full bg-[#09B38A]/3 blur-[120px] pointer-events-none -translate-x-1/2 -translate-y-1/2" />
-        <div className="absolute bottom-1/4 right-1/4 w-[600px] h-[600px] rounded-full bg-[#727BBA]/3 blur-[150px] pointer-events-none translate-x-1/2 translate-y-1/2" />
-
+      {/* Layer 2: 首屏 — 个人信息（完美契合参考图的极简左右+上下组合排版） */}
+      <section className="relative w-full min-h-screen flex items-center justify-center px-6 md:px-16 lg:px-24">
         <HeroSection profile={profile} loading={loading} />
+        
+        {!loading && (
+          <div className="absolute bottom-10 left-1/2 -translate-x-1/2 z-20 flex flex-col items-center gap-1.5 animate-bounce text-zinc-400 dark:text-zinc-600">
+            <span className="text-lg font-light select-none">↓</span>
+          </div>
+        )}
       </section>
 
       {/* Layer 3: 第二屏 — 技能/兴趣卡片（页脚） */}

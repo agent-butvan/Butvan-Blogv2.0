@@ -57,7 +57,7 @@ export default function HeroSection({ profile, loading }: HeroSectionProps) {
   }
 
   return (
-    <div className="relative z-10 flex flex-col items-center md:items-start gap-8 max-w-2xl w-full justify-center py-12 md:py-16 text-left font-body">
+    <div className="relative z-10 max-w-4xl w-full py-10 text-left font-body">
       
       {/* 注入招手动画样式 */}
       <style jsx global>{`
@@ -72,104 +72,84 @@ export default function HeroSection({ profile, loading }: HeroSectionProps) {
         }
       `}</style>
 
-      {/* ===== 1. 左侧头像区 ===== */}
-      <motion.div
-        className="relative shrink-0"
-        initial={{ scale: 0.9, opacity: 0 }}
-        animate={{ scale: 1, opacity: 1 }}
-        transition={{ duration: 0.5 }}
-      >
-        <div className="w-40 h-40 md:w-56 md:h-56 lg:w-64 lg:h-64 rounded-[32px] border border-black/5 dark:border-white/5 shadow-[0_20px_50px_-10px_rgba(0,0,0,0.08)] dark:shadow-[0_20px_50px_-10px_rgba(0,0,0,0.4)] bg-white dark:bg-zinc-900 overflow-hidden p-2.5 flex items-center justify-center transition-all duration-300 hover:shadow-[0_25px_60px_-12px_rgba(9,179,138,0.2)] hover:scale-[1.02]">
-          {avatarUrl ? (
-            <img
-              src={avatarUrl}
-              alt={profile?.nickname || 'Avatar'}
-              className="w-full h-full object-cover rounded-[24px]"
-              draggable={false}
-            />
-          ) : (
-            <div className="w-full h-full rounded-[24px] bg-primary/10 flex items-center justify-center">
-              <span className="text-5xl font-bold font-heading text-primary select-none">
-                {initials}
-              </span>
-            </div>
-          )}
+      {/* ===== 上半部分：左右分栏基本信息 ===== */}
+      <div className="flex flex-col md:flex-row items-center md:items-start gap-8 md:gap-14 mb-10 w-full">
+        {/* 左侧头像区 (方形微圆角) */}
+        <motion.div
+          className="relative shrink-0"
+          initial={{ scale: 0.9, opacity: 0 }}
+          animate={{ scale: 1, opacity: 1 }}
+          transition={{ duration: 0.5 }}
+        >
+          <div className="w-44 h-44 rounded-xl border border-black/5 dark:border-white/5 shadow-xs bg-white dark:bg-zinc-900 overflow-hidden p-1 flex items-center justify-center transition-all duration-300 hover:scale-[1.01]">
+            {avatarUrl ? (
+              <img
+                src={avatarUrl}
+                alt={profile?.nickname || 'Avatar'}
+                className="w-full h-full object-cover rounded-lg"
+                draggable={false}
+              />
+            ) : (
+              <div className="w-full h-full rounded-lg bg-primary/10 flex items-center justify-center">
+                <span className="text-4xl font-bold font-heading text-primary select-none">
+                  {initials}
+                </span>
+              </div>
+            )}
+          </div>
+        </motion.div>
+
+        {/* 右侧基本信息区 */}
+        <div className="flex-1 flex flex-col items-center md:items-start text-center md:text-left pt-2">
+          {/* Hi! 👋 */}
+          <motion.div
+            className="text-[#09B38A] italic text-3xl font-heading font-medium mb-2 flex items-center gap-1.5"
+            initial={{ y: 10, opacity: 0 }}
+            animate={{ y: 0, opacity: 1 }}
+            transition={{ delay: 0.1, duration: 0.4 }}
+          >
+            <span>Hi!</span>
+            <span className="animate-wave">👋</span>
+          </motion.div>
+
+          {/* Name */}
+          <motion.h1
+            className="text-4xl sm:text-5xl font-heading font-bold text-zinc-900 dark:text-zinc-50 tracking-tight mb-5 leading-none"
+            initial={{ y: 15, opacity: 0 }}
+            animate={{ y: 0, opacity: 1 }}
+            transition={{ delay: 0.2, duration: 0.4 }}
+          >
+            I'm {profile?.nickname || 'grtsinry43'}
+          </motion.h1>
+
+          {/* Bio / Tech Stack */}
+          <motion.div
+            className="text-sm sm:text-base text-zinc-400 dark:text-zinc-500 font-mono tracking-wide leading-relaxed font-normal"
+            initial={{ y: 15, opacity: 0 }}
+            animate={{ y: 0, opacity: 1 }}
+            transition={{ delay: 0.3, duration: 0.4 }}
+          >
+            {profile?.bio || 'Java/Kotlin + JavaScript/Typescript 全栈开发者 // 正在努力学习前端基建和架构设计'}
+          </motion.div>
         </div>
-      </motion.div>
+      </div>
 
-      {/* ===== 2. 右侧信息区 (左对齐) ===== */}
-      <div className="flex flex-col items-center md:items-start text-center md:text-left pt-2 w-full">
-        {/* 实时状态呼吸灯挂件 */}
+      {/* ===== 下半部分：详细介绍与社交链接 ===== */}
+      <div className="w-full flex flex-col gap-6 text-zinc-700 dark:text-zinc-300 font-body text-base md:text-[17px] leading-relaxed">
+        {/* Detailed Intro Lines */}
         <motion.div
-          className="flex items-center gap-2 px-3 py-1.5 rounded-full bg-[#09B38A]/5 dark:bg-[#09B38A]/10 border border-[#09B38A]/15 text-[#09B38A] text-[11px] font-mono mb-4 w-fit shadow-xs select-none"
-          initial={{ y: 10, opacity: 0 }}
-          animate={{ y: 0, opacity: 1 }}
-          transition={{ delay: 0.05, duration: 0.4 }}
+          className="flex flex-col gap-3.5 max-w-3xl font-normal"
+          initial={{ opacity: 0 }}
+          animate={{ opacity: 1 }}
+          transition={{ delay: 0.4, duration: 0.5 }}
         >
-          <span className="relative flex h-2 w-2">
-            <span className="animate-ping absolute inline-flex h-full w-full rounded-full bg-[#09B38A] opacity-75"></span>
-            <span className="relative inline-flex rounded-full h-2 w-2 bg-[#09B38A]"></span>
-          </span>
-          <span className="font-semibold tracking-wide">{profile?.socialLinks?.liveStatus || 'LIVE: 探索 AI 代理与全栈开发中...'}</span>
-        </motion.div>
-
-        {/* Hi! 👋 */}
-        <motion.div
-          className="text-[#09B38A] italic text-3xl font-heading font-medium mb-2 flex items-center gap-1.5"
-          initial={{ y: 10, opacity: 0 }}
-          animate={{ y: 0, opacity: 1 }}
-          transition={{ delay: 0.1, duration: 0.4 }}
-        >
-          <span>Hi!</span>
-          <span className="animate-wave">👋</span>
-        </motion.div>
-
-        {/* Name */}
-        <motion.h1
-          className="text-4xl sm:text-5xl md:text-6xl lg:text-7xl font-heading font-bold text-zinc-900 dark:text-zinc-50 tracking-tight mb-5 leading-none"
-          initial={{ y: 15, opacity: 0 }}
-          animate={{ y: 0, opacity: 1 }}
-          transition={{ delay: 0.2, duration: 0.4 }}
-        >
-          I'm {profile?.nickname || 'BUTVAN'}
-        </motion.h1>
-
-        {/* Bio / Tech Stack */}
-        <motion.div
-          className="text-sm sm:text-base md:text-lg text-zinc-500 dark:text-zinc-400 font-mono tracking-normal leading-relaxed mb-8 font-medium"
-          initial={{ y: 15, opacity: 0 }}
-          animate={{ y: 0, opacity: 1 }}
-          transition={{ delay: 0.3, duration: 0.4 }}
-        >
-          {profile?.bio || 'Java/Kotlin + JavaScript/Typescript 全栈开发者'}
-        </motion.div>
-
-        {/* CTA 核心入口区 */}
-        <motion.div
-          className="flex flex-wrap items-center gap-4 mb-8"
-          initial={{ y: 10, opacity: 0 }}
-          animate={{ y: 0, opacity: 1 }}
-          transition={{ delay: 0.4, duration: 0.4 }}
-        >
-          <Link
-            href="/room"
-            className="relative inline-flex items-center gap-2 px-6 py-3 rounded-full bg-[#09B38A] hover:bg-[#09B38A]/90 text-white text-sm sm:text-base font-semibold tracking-wide shadow-[0_10px_25px_-5px_rgba(9,179,138,0.3)] hover:shadow-[0_12px_30px_-5px_rgba(9,179,138,0.55)] hover:scale-[1.02] transition-all duration-300 group"
-          >
-            <span>🚪 进入我的 3D 虚拟空间</span>
-            <span className="group-hover:translate-x-1 transition-transform duration-200">&gt;</span>
-          </Link>
-          
-          <a
-            href="http://localhost:3000"
-            className="inline-flex items-center gap-2 px-6 py-3 rounded-full bg-zinc-200/80 hover:bg-zinc-300 dark:bg-zinc-800/80 dark:hover:bg-zinc-700/80 text-zinc-800 dark:text-zinc-100 text-sm sm:text-base font-semibold tracking-wide transition-all duration-300 hover:scale-[1.02]"
-          >
-            <span>⚡ 管理后台入口</span>
-          </a>
+          <p className="font-semibold text-zinc-800 dark:text-zinc-100">{introLine1}</p>
+          <p className="text-zinc-650 dark:text-zinc-400">{introLine2}</p>
         </motion.div>
 
         {/* Links */}
         <motion.div
-          className="flex items-center gap-6 flex-wrap justify-center md:justify-start"
+          className="flex items-center gap-6 mt-2 flex-wrap justify-center md:justify-start"
           initial={{ y: 10, opacity: 0 }}
           animate={{ y: 0, opacity: 1 }}
           transition={{ delay: 0.5, duration: 0.4 }}
@@ -179,18 +159,18 @@ export default function HeroSection({ profile, loading }: HeroSectionProps) {
             href={githubUrl}
             target="_blank"
             rel="noopener noreferrer"
-            className="flex items-center gap-2 text-zinc-500 hover:text-zinc-850 dark:hover:text-zinc-200 text-sm font-heading font-medium tracking-wide transition-colors group"
+            className="flex items-center gap-1.5 text-zinc-500 hover:text-zinc-850 dark:hover:text-zinc-200 text-sm font-heading font-medium tracking-wide transition-colors group"
           >
-            <GitFork className="w-4.5 h-4.5 text-zinc-400 group-hover:text-zinc-800 dark:group-hover:text-zinc-200 transition-colors" />
+            <GitFork className="w-4 h-4 text-zinc-400 group-hover:text-zinc-700 dark:group-hover:text-zinc-300 transition-colors" />
             GitHub
           </a>
 
           {/* Email Link */}
           <a
             href={emailUrl}
-            className="flex items-center gap-2 text-zinc-500 hover:text-zinc-850 dark:hover:text-zinc-200 text-sm font-heading font-medium tracking-wide transition-colors group"
+            className="flex items-center gap-1.5 text-zinc-500 hover:text-zinc-850 dark:hover:text-zinc-200 text-sm font-heading font-medium tracking-wide transition-colors group"
           >
-            <Mail className="w-4.5 h-4.5 text-zinc-400 group-hover:text-zinc-800 dark:group-hover:text-zinc-200 transition-colors" />
+            <Mail className="w-4 h-4 text-zinc-400 group-hover:text-zinc-700 dark:group-hover:text-zinc-300 transition-colors" />
             Email
           </a>
 
@@ -199,13 +179,36 @@ export default function HeroSection({ profile, loading }: HeroSectionProps) {
             href={rssUrl}
             target="_blank"
             rel="noopener noreferrer"
-            className="flex items-center gap-2 text-zinc-500 hover:text-zinc-850 dark:hover:text-zinc-200 text-sm font-heading font-medium tracking-wide transition-colors group"
+            className="flex items-center gap-1.5 text-zinc-500 hover:text-zinc-850 dark:hover:text-zinc-200 text-sm font-heading font-medium tracking-wide transition-colors group"
           >
-            <Rss className="w-4.5 h-4.5 text-zinc-400 group-hover:text-zinc-800 dark:group-hover:text-zinc-200 transition-colors" />
+            <Rss className="w-4 h-4 text-zinc-400 group-hover:text-zinc-700 dark:group-hover:text-zinc-300 transition-colors" />
             RSS
           </a>
         </motion.div>
       </div>
+
+      {/* ===== 右侧固定悬浮功能按钮 ===== */}
+      {!loading && (
+        <div className="fixed right-6 top-1/2 -translate-y-1/2 z-50 flex flex-col gap-3 select-none">
+          {/* 沉浸式房间入口 */}
+          <Link
+            href="/room"
+            className="w-10 h-10 rounded-full flex items-center justify-center bg-rose-50/80 hover:bg-rose-100 dark:bg-rose-950/20 dark:hover:bg-rose-900/40 text-rose-400 dark:text-rose-500 transition-all shadow-xs border border-rose-100/50 dark:border-rose-950/30 hover:scale-105 active:scale-95 group"
+            title="沉浸式虚拟房间"
+          >
+            <LayoutGrid className="w-4.5 h-4.5" />
+          </Link>
+          
+          {/* 管理后台入口 */}
+          <a
+            href="http://localhost:3000"
+            className="w-10 h-10 rounded-full flex items-center justify-center bg-rose-50/80 hover:bg-rose-100 dark:bg-rose-950/20 dark:hover:bg-rose-900/40 text-rose-400 dark:text-rose-500 transition-all shadow-xs border border-rose-100/50 dark:border-rose-950/30 hover:scale-105 active:scale-95 group"
+            title="管理后台入口"
+          >
+            <Wand2 className="w-4.5 h-4.5" />
+          </a>
+        </div>
+      )}
 
     </div>
   )
