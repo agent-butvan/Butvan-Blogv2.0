@@ -182,12 +182,12 @@ const SceneCanvas = forwardRef<HTMLDivElement, SceneCanvasProps>(
               return (
                 <div
                   key={hotspot.id}
-                  className={`absolute transition-colors group ${
+                  className={`absolute transition-all group ${
                     mode === 'draw' ? 'pointer-events-none' : 'cursor-move'
                   } ${
                     isSelected
-                      ? 'border-2 border-primary ring-2 ring-primary/30 z-30'
-                      : 'border border-dashed border-white/30 hover:border-white/60 z-20'
+                      ? 'border-2 border-primary bg-primary/20 ring-2 ring-primary/35 z-30'
+                      : 'border border-dashed border-primary/50 bg-primary/5 hover:border-primary/80 hover:bg-primary/10 z-20'
                   }`}
                   style={{
                     left: `${hotspot.xPercent}%`,
@@ -205,10 +205,14 @@ const SceneCanvas = forwardRef<HTMLDivElement, SceneCanvasProps>(
                     onHotspotSelect(hotspot)
                   }}
                 >
+                  {/*
+                    隐藏图片渲染以解决多余空图遮挡问题，
+                    仅利用透明 img 撑开自适应的高度和正确的长宽比例。
+                  */}
                   <img
                     src={spriteUrl}
                     alt={hotspot.itemName}
-                    className="w-full h-auto object-contain pointer-events-none select-none opacity-85 group-hover:opacity-100"
+                    className="w-full h-auto object-contain pointer-events-none select-none opacity-0"
                   />
 
                   {/* 悬浮标签 */}
