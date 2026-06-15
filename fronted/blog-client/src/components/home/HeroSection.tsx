@@ -1,7 +1,7 @@
 'use client'
 
 import React, { useRef, useEffect } from 'react'
-import { GitFork, Mail, Rss, LayoutGrid, Wand2 } from 'lucide-react'
+import { GitFork, Mail, Rss } from 'lucide-react'
 import Link from 'next/link'
 import type { ProfileVO } from '@/types/profile'
 import gsap from 'gsap'
@@ -153,11 +153,7 @@ export default function HeroSection({ profile, loading }: HeroSectionProps) {
         { scale: 1, opacity: 1, y: 0, duration: 0.8, stagger: 0.1, ease: "back.out(1.5)", delay: 0.95 }
       )
 
-      // 7. 右侧悬浮圆形交互按钮从屏幕右侧弹性弹入
-      gsap.fromTo(".float-btn-item",
-        { x: 70, opacity: 0, scale: 0.5 },
-        { x: 0, opacity: 1, scale: 1, duration: 1.2, stagger: 0.15, ease: "elastic.out(1.1, 0.7)", delay: 1.1 }
-      )
+
 
     }, containerRef)
 
@@ -281,28 +277,7 @@ export default function HeroSection({ profile, loading }: HeroSectionProps) {
         </div>
       </div>
 
-      {/* ===== 右侧固定悬浮功能按钮 ===== */}
-      {!loading && (
-        <div className="fixed right-6 top-1/2 -translate-y-1/2 z-50 flex flex-col gap-3 select-none">
-          {/* 沉浸式房间入口 */}
-          <Link
-            href="/room"
-            className="float-btn-item w-10 h-10 rounded-full flex items-center justify-center bg-rose-50/80 hover:bg-rose-100 dark:bg-rose-950/20 dark:hover:bg-rose-900/40 text-rose-400 dark:text-rose-500 transition-all shadow-xs border border-rose-100/50 dark:border-rose-950/30 hover:scale-105 active:scale-95 group opacity-0"
-            title="沉浸式虚拟房间"
-          >
-            <LayoutGrid className="w-4.5 h-4.5" />
-          </Link>
-          
-          {/* 管理后台入口 */}
-          <a
-            href="http://localhost:3000"
-            className="float-btn-item w-10 h-10 rounded-full flex items-center justify-center bg-rose-50/80 hover:bg-rose-100 dark:bg-rose-950/20 dark:hover:bg-rose-900/40 text-rose-400 dark:text-rose-500 transition-all shadow-xs border border-rose-100/50 dark:border-rose-950/30 hover:scale-105 active:scale-95 group opacity-0"
-            title="管理后台入口"
-          >
-            <Wand2 className="w-4.5 h-4.5" />
-          </a>
-        </div>
-      )}
+
 
     </div>
   )

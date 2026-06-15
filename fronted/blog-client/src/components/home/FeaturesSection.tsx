@@ -206,6 +206,8 @@ export default function FeaturesSection({ profile }: { profile: ProfileVO | null
             <div className="flex flex-wrap items-center gap-1.5 text-[10px] text-zinc-400 dark:text-zinc-500">
               <span>Powered by <a href="https://github.com" className="text-[#09B38A] hover:underline">Grtblog-v2</a></span>
               <span className="text-zinc-300 dark:text-zinc-800">|</span>
+              <a href="http://localhost:3000" target="_blank" rel="noopener noreferrer" className="hover:text-primary transition-colors duration-200">管理后台</a>
+              <span className="text-zinc-300 dark:text-zinc-800">|</span>
               <span>风雨飘摇中，本站已运行 <strong className="font-mono text-zinc-500 dark:text-zinc-400">{runTimeText}</strong></span>
               {footerIcp && (
                 <>
