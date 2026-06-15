@@ -142,7 +142,7 @@ export default function ArticleDetailPage() {
     }
   }
 
-  // 动态生成 TOC 目录及对 HTML 代码块的一键复制、macOS 圆点增强
+  // 1. 动态生成目录 TOC 并绑定随屏点亮 Observer
   useEffect(() => {
     if (loading || !article || !articleContentRef.current) return
 
@@ -150,7 +150,7 @@ export default function ArticleDetailPage() {
       if (!articleContentRef.current) return
       const contentDiv = articleContentRef.current
 
-      // 1. 动态生成目录 TOC
+      // 动态生成目录 TOC
       const headings = contentDiv.querySelectorAll('h2, h3')
       const tocItems: TocItem[] = []
       
@@ -169,7 +169,51 @@ export default function ArticleDetailPage() {
       })
       setToc(tocItems)
 
-      // 2. 动态增强代码块：注入 macOS 控制圆点和复制按钮
+      // Intersection Observer 大纲目录随屏滚动点亮
+      const observerOptions = {
+        root: null,
+        rootMargin: '0px 0px -60% 0px',
+        threshold: 0
+      }
+
+      const observer = new IntersectionObserver((entries) => {
+        entries.forEach((entry) => {
+          if (entry.isIntersecting) {
+            setActiveTocId(entry.target.id)
+          }
+        })
+      }, observerOptions)
+
+      headings.forEach(h => observer.observe(h))
+
+      // 临时存储以便清理
+      ;(contentDiv as any)._observer = observer
+      ;(contentDiv as any)._headings = headings
+    }, 50)
+
+    return () => {
+      clearTimeout(timer)
+      const contentDiv = articleContentRef.current
+      if (contentDiv) {
+        const observer = (contentDiv as any)._observer
+        const headings = (contentDiv as any)._headings
+        if (observer && headings) {
+          headings.forEach((h: any) => observer.unobserve(h))
+          observer.disconnect()
+        }
+      }
+    }
+  }, [loading, article])
+
+  // 2. 专门负责代码高亮与 macOS 框增强（当 loading/article 稳定且 toc 发生重渲染后执行）
+  useEffect(() => {
+    if (loading || !article || !articleContentRef.current) return
+
+    const timer = setTimeout(() => {
+      if (!articleContentRef.current) return
+      const contentDiv = articleContentRef.current
+
+      // 动态增强代码块：注入 macOS 控制圆点和复制按钮
       const preBlocks = contentDiv.querySelectorAll('pre')
       preBlocks.forEach((pre) => {
         // 避免重复包裹
@@ -251,42 +295,10 @@ export default function ArticleDetailPage() {
           code.style.background = 'transparent'
         }
       })
+    }, 100) // 延迟稍拉长为 100ms，避开 hydration/setToc 引发的首次页面绘制重排
 
-      // 3. Intersection Observer 大纲目录随屏滚动点亮
-      const observerOptions = {
-        root: null,
-        rootMargin: '0px 0px -60% 0px',
-        threshold: 0
-      }
-
-      const observer = new IntersectionObserver((entries) => {
-        entries.forEach((entry) => {
-          if (entry.isIntersecting) {
-            setActiveTocId(entry.target.id)
-          }
-        })
-      }, observerOptions)
-
-      headings.forEach(h => observer.observe(h))
-
-      // 临时存储以便清理
-      ;(contentDiv as any)._observer = observer
-      ;(contentDiv as any)._headings = headings
-    }, 50)
-
-    return () => {
-      clearTimeout(timer)
-      const contentDiv = articleContentRef.current
-      if (contentDiv) {
-        const observer = (contentDiv as any)._observer
-        const headings = (contentDiv as any)._headings
-        if (observer && headings) {
-          headings.forEach((h: any) => observer.unobserve(h))
-          observer.disconnect()
-        }
-      }
-    }
-  }, [loading, article])
+    return () => clearTimeout(timer)
+  }, [loading, article, toc])
 
   // GSAP 入场整体错落动效
   useEffect(() => {
@@ -511,7 +523,7 @@ export default function ArticleDetailPage() {
               {/* 核心正文 Markdown/HTML 内容 */}
               <div 
                 ref={articleContentRef}
-                className="animate-detail-item opacity-0 py-8 prose prose-zinc max-w-none dark:prose-invert prose-headings:font-serif prose-headings:font-bold prose-h2:text-xl prose-h2:mt-12 prose-h2:mb-5 prose-h2:pb-1.5 prose-h2:border-b prose-h2:border-zinc-200/40 dark:prose-h2:border-zinc-800/40 prose-h3:text-base prose-h3:mt-9 prose-h3:mb-4 prose-p:text-[15.5px] prose-p:leading-[1.88] prose-p:text-zinc-700 dark:prose-p:text-zinc-300 prose-p:mb-6 prose-blockquote:font-serif prose-blockquote:italic prose-blockquote:border-l-4 prose-blockquote:border-[#727BBA] prose-blockquote:bg-[#727BBA]/5 dark:prose-blockquote:bg-[#727BBA]/10 prose-blockquote:py-2.5 prose-blockquote:px-6 prose-blockquote:my-8 prose-blockquote:rounded-r-lg prose-blockquote:text-zinc-650 dark:prose-blockquote:text-zinc-350 prose-a:text-[#727BBA] prose-a:underline prose-a:underline-offset-4 hover:prose-a:text-[#727BBA]/80 prose-strong:text-zinc-950 dark:prose-strong:text-white prose-strong:font-bold prose-ul:text-[15px] prose-ul:list-disc prose-ul:pl-5 prose-ul:mb-6 prose-li:mb-3 text-justify"
+                className="animate-detail-item opacity-0 py-8 article-content-prose max-w-none"
                 dangerouslySetInnerHTML={{ __html: article.content }}
               />
 
