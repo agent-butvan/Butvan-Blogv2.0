@@ -5,7 +5,7 @@ import { useParams, useRouter } from 'next/navigation'
 import apiClient from '@/lib/api'
 import { toast } from '@/lib/toast'
 import { cropImageFromBackground } from '@/lib/canvas-crop'
-import { removeImageBackground, preloadRemovalModel } from '@/lib/background-removal'
+import { removeImageBackground } from '@/lib/background-removal'
 import SceneToolbar from '@/components/editor/SceneToolbar'
 import type { EditorMode } from '@/components/editor/SceneToolbar'
 import SceneCanvas from '@/components/editor/SceneCanvas'
@@ -60,6 +60,7 @@ export default function SceneEditorPage() {
 
   // --- Refs ---
   const containerRef = useRef<HTMLDivElement>(null)
+  const containerRectRef = useRef<DOMRect | null>(null)
   const spriteFileInputRef = useRef<HTMLInputElement>(null)
 
   // ==================== 数据加载 ====================
@@ -87,10 +88,7 @@ export default function SceneEditorPage() {
     }
   }, [sceneId, fetchSceneDetail])
 
-  // 预加载智能抠图 AI 模型（后台静默下载，不阻塞 UI）
-  useEffect(() => {
-    preloadRemovalModel()
-  }, [])
+
 
   // ==================== 热区操作 ====================
 
@@ -315,6 +313,7 @@ export default function SceneEditorPage() {
   const handleCanvasMouseDown = (e: React.MouseEvent<HTMLDivElement>) => {
     if (mode !== 'draw' || !containerRef.current) return
     const rect = containerRef.current.getBoundingClientRect()
+    containerRectRef.current = rect
     const x = e.clientX - rect.left
     const y = e.clientY - rect.top
     setDrawStart({ x, y })
@@ -324,8 +323,8 @@ export default function SceneEditorPage() {
 
   /** 画布 mouseMove */
   const handleCanvasMouseMove = (e: React.MouseEvent<HTMLDivElement>) => {
-    if (!isDrawing || !drawStart) return
-    const rect = containerRef.current!.getBoundingClientRect()
+    if (!isDrawing || !drawStart || !containerRectRef.current) return
+    const rect = containerRectRef.current
     setDrawingRect({
       startX: drawStart.x,
       startY: drawStart.y,
@@ -597,6 +596,11 @@ export default function SceneEditorPage() {
     ? `http://localhost:8080${scene.imageUrl}`
     : scene.imageUrl
 
+  // 动态合并当前正在拖拽/编辑中的热区坐标，使得画布能够实时反映位置与属性的变化
+  const hotspotsForCanvas = scene.hotspots.map((h) =>
+    activeHotspot && h.id === activeHotspot.id ? activeHotspot : h
+  )
+
   return (
     <div className="flex flex-col gap-6 p-6 min-h-screen text-zinc-600 dark:text-zinc-400 font-body max-w-[1600px] mx-auto text-left">
       {/* 工具栏 */}
@@ -617,7 +621,7 @@ export default function SceneEditorPage() {
         <SceneCanvas
           ref={containerRef}
           backgroundImageUrl={bgImgUrl}
-          hotspots={scene.hotspots}
+          hotspots={hotspotsForCanvas}
           mode={mode}
           activeHotspotId={activeHotspot?.id ?? null}
           drawingRect={drawingRect}
