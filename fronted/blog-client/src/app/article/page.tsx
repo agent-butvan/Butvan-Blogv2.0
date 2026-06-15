@@ -190,6 +190,9 @@ export default function ArticleListPage() {
   const [hoverStyle, setHoverStyle] = useState({ top: 0, height: 0, opacity: 0 })
   const containerRef = useRef<HTMLDivElement>(null)
 
+  // 用以确保页头与筛选栏的 GSAP 动画只在首次进入页面数据就绪时执行一次
+  const isInitialMounted = useRef(false)
+
   const handleMouseEnter = (e: React.MouseEvent<HTMLDivElement>) => {
     if (!containerRef.current) return
     const containerRect = containerRef.current.getBoundingClientRect()
@@ -328,33 +331,38 @@ export default function ArticleListPage() {
     fetchArticlesList()
   }, [selectedCategory, selectedTag, currentPage])
 
-  // GSAP 页面入场错落动画
+  // 1. 页头与过滤器仅在页面首次加载完毕后执行一次动画
   useEffect(() => {
     if (loading) return
+    if (isInitialMounted.current) return
+    isInitialMounted.current = true
 
     const ctx = gsap.context(() => {
-      // 1. 页头元素错落淡入
       gsap.fromTo('.animate-header-item', 
         { y: 12, opacity: 0 },
         { y: 0, opacity: 1, duration: 0.8, stagger: 0.15, ease: 'power2.out' }
       )
-
-      // 2. 极简筛选栏错落淡入
       gsap.fromTo('.animate-filter-item',
         { x: -10, opacity: 0 },
         { x: 0, opacity: 1, duration: 0.6, stagger: 0.1, ease: 'power2.out', delay: 0.25 }
       )
+    })
 
-      // 3. 文章列表错落淡入
+    return () => ctx.revert()
+  }, [loading])
+
+  // 2. 每次文章列表（数据）变动时，仅让文章列表和分页器播放入场动画
+  useEffect(() => {
+    if (loading) return
+
+    const ctx = gsap.context(() => {
       gsap.fromTo('.animate-list-item',
         { y: 16, opacity: 0 },
-        { y: 0, opacity: 1, duration: 0.7, stagger: 0.08, ease: 'power3.out', delay: 0.45 }
+        { y: 0, opacity: 1, duration: 0.7, stagger: 0.08, ease: 'power3.out' }
       )
-
-      // 4. 分页器淡入
       gsap.fromTo('.animate-pagination',
         { y: 10, opacity: 0 },
-        { y: 0, opacity: 1, duration: 0.5, ease: 'power2.out', delay: 0.75 }
+        { y: 0, opacity: 1, duration: 0.5, ease: 'power2.out', delay: 0.3 }
       )
     })
 
@@ -501,12 +509,30 @@ export default function ArticleListPage() {
 
         {/* 2. 文章列表展示区域 */}
         {loading ? (
-          /* ================= 加载状态 (Spinner + 骨架模拟器) ================= */
-          <div className="py-24 flex flex-col items-center justify-center gap-4">
-            <Spinner size="lg" color="accent" />
-            <p className="text-xs font-heading text-zinc-400 dark:text-zinc-650 tracking-wider animate-pulse">
-              正在加载文章列表，请稍候...
-            </p>
+          /* ================= 骨架屏局部加载状态 (无缝流畅，防止页面硬闪烁) ================= */
+          <div className="flex flex-col gap-8 text-left w-full max-w-3xl mx-auto animate-pulse">
+            {Array.from({ length: 3 }).map((_, i) => (
+              <div
+                key={i}
+                className="flex flex-col gap-3.5 px-6 py-6 sm:px-8 sm:py-7 border-b border-zinc-200/30 dark:border-zinc-800/30 last:border-0 w-full"
+              >
+                {/* 标题骨架 */}
+                <div className="h-6 w-3/4 bg-zinc-200 dark:bg-zinc-800 rounded-md" />
+                
+                {/* 描述摘要骨架 */}
+                <div className="space-y-2 mt-2">
+                  <div className="h-4 w-full bg-zinc-200/60 dark:bg-zinc-800/50 rounded-md" />
+                  <div className="h-4 w-5/6 bg-zinc-200/60 dark:bg-zinc-800/50 rounded-md" />
+                </div>
+                
+                {/* 元数据行骨架 */}
+                <div className="mt-3 flex flex-wrap gap-4">
+                  <div className="h-3 w-16 bg-zinc-200 dark:bg-zinc-850 rounded-md" />
+                  <div className="h-3 w-20 bg-zinc-200 dark:bg-zinc-850 rounded-md" />
+                  <div className="h-3 w-24 bg-zinc-200 dark:bg-zinc-850 rounded-md" />
+                </div>
+              </div>
+            ))}
           </div>
         ) : error ? (
           /* ================= 错误状态 ================= */

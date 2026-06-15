@@ -4,6 +4,7 @@ import React, { useState, useEffect } from 'react'
 import * as Icons from 'lucide-react'
 import { HelpCircle } from 'lucide-react'
 import { fetchNavigations } from '@/lib/profile'
+import Link from 'next/link'
 
 interface NavigationItem {
   id: number
@@ -41,7 +42,7 @@ export default function SidebarWidget() {
       {items.map((item) => {
         const IconComp = getIconComponent(item.icon)
         return (
-          <a
+          <Link
             key={item.id}
             href={item.linkUrl || '#'}
             className="group relative w-9 h-9 rounded-full flex items-center justify-center text-zinc-550 hover:text-[#727BBA] hover:bg-zinc-150/40 dark:text-zinc-400 dark:hover:text-[#727BBA] dark:hover:bg-zinc-900/40 transition-all duration-200 cursor-pointer"
@@ -52,7 +53,7 @@ export default function SidebarWidget() {
             <span className="absolute left-11 px-3 py-1.5 rounded-lg bg-zinc-900/90 dark:bg-white/95 text-white dark:text-zinc-950 text-[10px] font-heading font-bold uppercase tracking-wider whitespace-nowrap opacity-0 translate-x-[-10px] pointer-events-none group-hover:opacity-100 group-hover:translate-x-0 transition-all duration-200 shadow-xs">
               {item.title}
             </span>
-          </a>
+          </Link>
         )
       })}
     </div>

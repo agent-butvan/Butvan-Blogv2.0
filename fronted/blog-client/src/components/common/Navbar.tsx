@@ -60,25 +60,25 @@ export default function Navbar({ profile }: NavbarProps) {
                   <ChevronDown size={11} className="text-zinc-400 group-hover:rotate-180 transition-transform duration-200" />
                 </button>
               ) : (
-                <a
+                <Link
                   href={item.linkUrl || '#'}
                   className="text-xs font-semibold text-zinc-650 dark:text-zinc-350 hover:text-[#727BBA] dark:hover:text-[#727BBA] transition-colors cursor-pointer"
                 >
                   {item.title}
-                </a>
+                </Link>
               )}
 
               {/* 二级悬浮菜单 (PC端) */}
               {hasChildren && (
                 <div className="absolute top-full left-1/2 -translate-x-1/2 mt-1 w-40 rounded-xl border border-zinc-200/50 dark:border-zinc-800/60 bg-white/90 dark:bg-zinc-950/95 backdrop-blur-md shadow-lg py-1.5 opacity-0 pointer-events-none group-hover:opacity-100 group-hover:pointer-events-auto transition-all duration-200 transform translate-y-2 group-hover:translate-y-0 z-50">
                   {item.children!.map((child) => (
-                    <a
+                    <Link
                       key={child.id}
                       href={child.linkUrl || '#'}
                       className="block px-4 py-2 text-xs font-semibold text-zinc-650 dark:text-zinc-350 hover:bg-zinc-100/50 dark:hover:bg-zinc-900/50 hover:text-[#727BBA] dark:hover:text-[#727BBA] transition-all"
                     >
                       {child.title}
-                    </a>
+                    </Link>
                   ))}
                 </div>
               )}
@@ -117,13 +117,13 @@ export default function Navbar({ profile }: NavbarProps) {
               return (
                 <div key={item.id} className="flex flex-col gap-2">
                   {!hasChildren ? (
-                    <a
+                    <Link
                       href={item.linkUrl || '#'}
                       onClick={() => setMobileMenuOpen(false)}
                       className="text-sm font-semibold text-zinc-800 dark:text-zinc-200 py-1"
                     >
                       {item.title}
-                    </a>
+                    </Link>
                   ) : (
                     <div className="flex flex-col gap-2">
                       <span className="text-xs font-bold text-zinc-400 dark:text-zinc-500 uppercase tracking-widest">
@@ -131,14 +131,14 @@ export default function Navbar({ profile }: NavbarProps) {
                       </span>
                       <div className="flex flex-col gap-1.5 pl-3 border-l border-zinc-150 dark:border-zinc-850">
                         {item.children!.map((child) => (
-                          <a
+                          <Link
                             key={child.id}
                             href={child.linkUrl || '#'}
                             onClick={() => setMobileMenuOpen(false)}
                             className="text-xs font-semibold text-zinc-700 dark:text-zinc-300 py-1"
                           >
                             {child.title}
-                          </a>
+                          </Link>
                         ))}
                       </div>
                     </div>
