@@ -397,80 +397,68 @@ export default function ArticleListPage() {
       {/* 主体筛选区与文章列表 */}
       <section className="w-full max-w-5xl px-6 py-8 flex flex-col gap-8">
         
-        {/* 1. 高级过滤器 (分类 & 标签) */}
-        <div className="flex flex-col gap-4 bg-white/75 dark:bg-zinc-900/40 border border-zinc-200/50 dark:border-zinc-800/60 p-6 rounded-2xl backdrop-blur-md shadow-[0_8px_30px_rgba(0,0,0,0.02)] text-left">
-          
+        {/* 1. 高级过滤器 (分类 & 标签) - 极简人文字标流设计 */}
+        <div className="flex flex-col gap-6 py-6 px-4 border-b border-zinc-200/50 dark:border-zinc-800/40 text-left w-full max-w-3xl mx-auto">
           {/* 分类筛选 */}
-          <div className="flex flex-col gap-2.5">
-            <span className="text-xs font-bold text-[#727BBA] font-heading flex items-center gap-1.5">
-              <FolderOpen className="w-3.5 h-3.5" /> 文章分类
+          <div className="flex flex-wrap items-baseline gap-y-3 select-none">
+            <span className="text-[10px] font-heading font-bold tracking-wider text-zinc-400 dark:text-zinc-500 uppercase mr-6 w-16 shrink-0 flex items-center gap-1">
+              <FolderOpen className="w-3 h-3 text-[#727BBA]/60" /> 分类
             </span>
-            <div className="flex flex-wrap gap-2">
-              <Button
-                size="sm"
-                variant={selectedCategory === null ? 'primary' : 'outline'}
+            <div className="flex flex-wrap items-center gap-x-5 gap-y-1.5 text-xs">
+              <button
                 onClick={() => { setSelectedCategory(null); setCurrentPage(1); }}
-                className={`font-heading text-xs rounded-xl transition-all duration-200 ${
+                className={`transition-all duration-200 cursor-pointer ${
                   selectedCategory === null 
-                    ? 'bg-[#727BBA] text-white font-bold shadow-md shadow-[#727BBA]/25' 
-                    : 'bg-zinc-150/40 hover:bg-zinc-200/80 text-zinc-600 dark:bg-zinc-900/60 dark:hover:bg-zinc-800 dark:text-zinc-400 border border-zinc-200/30 dark:border-zinc-800/40'
+                    ? 'text-[#727BBA] font-bold underline underline-offset-4' 
+                    : 'text-zinc-500 hover:text-zinc-800 dark:text-zinc-400 dark:hover:text-zinc-100 font-medium'
                 }`}
               >
                 全部
-              </Button>
+              </button>
               {categories.map((cat) => (
-                <Button
+                <button
                   key={cat.id}
-                  size="sm"
-                  variant={selectedCategory === cat.id ? 'primary' : 'outline'}
                   onClick={() => { setSelectedCategory(cat.id); setCurrentPage(1); }}
-                  className={`font-heading text-xs rounded-xl transition-all duration-200 ${
+                  className={`transition-all duration-200 cursor-pointer ${
                     selectedCategory === cat.id 
-                      ? 'bg-[#727BBA] text-white font-bold shadow-md shadow-[#727BBA]/25' 
-                      : 'bg-zinc-150/40 hover:bg-zinc-200/80 text-zinc-600 dark:bg-zinc-900/60 dark:hover:bg-zinc-800 dark:text-zinc-400 border border-zinc-200/30 dark:border-zinc-800/40'
+                      ? 'text-[#727BBA] font-bold underline underline-offset-4' 
+                      : 'text-zinc-500 hover:text-zinc-800 dark:text-zinc-400 dark:hover:text-zinc-100 font-medium'
                   }`}
                 >
                   {cat.name}
-                </Button>
+                </button>
               ))}
             </div>
           </div>
 
-          {/* 装饰分割线 */}
-          <div className="w-full h-px bg-zinc-200/60 dark:bg-zinc-800/60 my-1" />
-
           {/* 标签筛选 */}
-          <div className="flex flex-col gap-2.5">
-            <span className="text-xs font-bold text-[#727BBA] font-heading flex items-center gap-1.5">
-              <TagIcon className="w-3.5 h-3.5" /> 标签筛选
+          <div className="flex flex-wrap items-baseline gap-y-3 select-none">
+            <span className="text-[10px] font-heading font-bold tracking-wider text-zinc-400 dark:text-zinc-500 uppercase mr-6 w-16 shrink-0 flex items-center gap-1">
+              <TagIcon className="w-3 h-3 text-[#727BBA]/60" /> 标签
             </span>
-            <div className="flex flex-wrap gap-1.5">
-              <Chip
-                size="md"
-                variant={selectedTag === null ? 'primary' : 'soft'}
+            <div className="flex flex-wrap items-center gap-x-4 gap-y-2 text-[11px]">
+              <button
                 onClick={() => { setSelectedTag(null); setCurrentPage(1); }}
-                className={`cursor-pointer transition-all duration-200 text-xs rounded-lg ${
+                className={`px-2 py-0.5 rounded-md transition-all duration-200 cursor-pointer ${
                   selectedTag === null 
-                    ? 'bg-[#727BBA] text-white font-bold' 
-                    : 'bg-zinc-150/40 hover:bg-zinc-200/80 text-zinc-650 dark:bg-zinc-900/60 dark:text-zinc-400 border border-zinc-200/30 dark:border-zinc-800/40'
+                    ? 'bg-[#727BBA]/10 text-[#727BBA] font-bold' 
+                    : 'text-zinc-500 hover:text-zinc-800 dark:text-zinc-400 dark:hover:text-zinc-100 font-medium'
                 }`}
               >
                 全部标签
-              </Chip>
+              </button>
               {tags.map((tag) => (
-                <Chip
+                <button
                   key={tag.id}
-                  size="md"
-                  variant={selectedTag === tag.id ? 'primary' : 'soft'}
                   onClick={() => { setSelectedTag(tag.id); setCurrentPage(1); }}
-                  className={`cursor-pointer transition-all duration-200 text-xs rounded-lg ${
+                  className={`px-2 py-0.5 rounded-md transition-all duration-200 cursor-pointer ${
                     selectedTag === tag.id 
-                      ? 'bg-[#727BBA] text-white font-bold' 
-                      : 'bg-zinc-150/40 hover:bg-zinc-200/80 text-zinc-650 dark:bg-zinc-900/60 dark:text-zinc-400 border border-zinc-200/30 dark:border-zinc-800/40'
+                      ? 'bg-[#727BBA]/10 text-[#727BBA] font-bold' 
+                      : 'text-zinc-500 hover:text-zinc-800 dark:text-zinc-400 dark:hover:text-zinc-100 font-medium hover:bg-zinc-100 dark:hover:bg-zinc-900/60'
                   }`}
                 >
-                  {tag.name}
-                </Chip>
+                  #{tag.name}
+                </button>
               ))}
             </div>
           </div>
@@ -541,7 +529,7 @@ export default function ArticleListPage() {
                   >
                     <Link
                       href={`/article/${article.slug}`}
-                      className="group relative flex flex-col gap-3.5 px-4 py-5 sm:px-6 sm:py-6 border-b border-zinc-200/30 dark:border-zinc-800/30 last:border-0 w-full outline-none"
+                      className="group relative flex flex-col gap-3.5 px-6 py-6 sm:px-8 sm:py-7 border-b border-zinc-200/30 dark:border-zinc-800/30 last:border-0 w-full outline-none"
                     >
                       {/* 标题 */}
                       <h2 className="font-serif text-lg sm:text-xl md:text-2xl font-medium text-zinc-900 dark:text-zinc-100 group-hover:text-[#727BBA] transition-colors duration-200 flex items-center gap-2">
@@ -568,7 +556,7 @@ export default function ArticleListPage() {
                       </p>
 
                       {/* 元数据行 */}
-                      <div className="mt-1 flex flex-wrap items-center gap-x-4 gap-y-1.5 text-[11px] sm:text-xs text-zinc-450 dark:text-zinc-500 font-mono sm:gap-x-6">
+                      <div className="mt-1 flex flex-wrap items-center gap-x-4 gap-y-1.5 text-[11px] sm:text-xs text-zinc-500 dark:text-zinc-400 font-mono sm:gap-x-6">
                         {/* 日期 */}
                         <div className="flex items-center gap-1.5">
                           <Calendar size={13} strokeWidth={1.5} />
@@ -603,14 +591,16 @@ export default function ArticleListPage() {
                           </div>
                         )}
 
-                        {/* 外部链接动效提示 */}
+                        {/* 外部链接斜向滑显微动效 */}
                         <div className="w-full sm:w-auto sm:ml-auto">
-                          <div className="flex items-center gap-1 text-zinc-300 hover:text-[#727BBA] dark:text-zinc-700 dark:hover:text-[#727BBA] transition-colors group/link">
-                            <span className="opacity-0 group-hover:opacity-100 transition-opacity text-[10px]">阅读全文</span>
+                          <div className="flex items-center gap-1.5 text-zinc-300 hover:text-[#727BBA] dark:text-zinc-700 dark:hover:text-[#727BBA] transition-colors">
+                            <span className="opacity-0 translate-x-1.5 group-hover:opacity-100 group-hover:translate-x-0 transition-all duration-300 text-[10px]">
+                              阅读全文
+                            </span>
                             <ExternalLink
                               size={12}
                               strokeWidth={1.5}
-                              className="opacity-0 group-hover:opacity-100 group-hover/link:-translate-y-0.5 group-hover/link:translate-x-0.5 transition-all"
+                              className="opacity-0 -translate-x-1 translate-y-1 group-hover:opacity-100 group-hover:translate-x-0 group-hover:translate-y-0 transition-all duration-300"
                             />
                           </div>
                         </div>
