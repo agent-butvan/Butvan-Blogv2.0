@@ -3,7 +3,6 @@
 import React, { useRef, useState, useEffect } from 'react'
 import { Save, Trash2, Upload, HelpCircle, SquareDashed } from 'lucide-react'
 import type { HotspotData } from './SceneCanvas'
-import type { EditorMode } from './SceneToolbar'
 import { fetchClientRoutes, fetchArticlesSimple, fetchCategoriesSimple } from '@/lib/client-route-api'
 import type { ClientRoute, ArticleSimple, CategorySimple } from '@/types/route'
 
@@ -68,11 +67,13 @@ export default function HotspotPropertiesPanel({
 
   // --- 加载下拉框数据 ---
   useEffect(() => {
-    setRoutesLoading(true)
-    fetchClientRoutes()
-      .then(setClientRoutes)
-      .catch(() => setClientRoutes([]))
-      .finally(() => setRoutesLoading(false))
+    setTimeout(() => {
+      setRoutesLoading(true)
+      fetchClientRoutes()
+        .then(setClientRoutes)
+        .catch(() => setClientRoutes([]))
+        .finally(() => setRoutesLoading(false))
+    }, 0)
   }, [])
 
   useEffect(() => {
