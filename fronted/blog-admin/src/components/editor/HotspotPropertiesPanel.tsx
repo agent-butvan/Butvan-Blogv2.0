@@ -207,7 +207,7 @@ export default function HotspotPropertiesPanel({
                   <button
                     onClick={handleReplaceClick}
                     disabled={uploading}
-                    className="flex items-center gap-1 px-2.5 py-1.5 rounded-md bg-white text-zinc-900 text-[10px] font-heading hover:bg-zinc-100 transition-colors cursor-pointer shadow-sm"
+                    className="flex items-center gap-1 px-2.5 py-1.5 rounded-md bg-white dark:bg-zinc-800 text-zinc-900 dark:text-zinc-100 text-[10px] font-heading hover:bg-zinc-100 dark:hover:bg-zinc-700 transition-colors cursor-pointer shadow-sm"
                   >
                     {uploading ? '上传中...' : <><Upload size={11} /> 替换物品图</>}
                   </button>

@@ -394,7 +394,7 @@ export default function ScenesPage() {
                         <button
                           type="button"
                           onClick={() => fileInputRef.current?.click()}
-                          className="px-3 py-1.5 rounded-md bg-white text-zinc-900 text-xs font-medium hover:bg-zinc-100 transition-colors cursor-pointer"
+                          className="px-3 py-1.5 rounded-md bg-white dark:bg-zinc-800 text-zinc-900 dark:text-zinc-100 text-xs font-medium hover:bg-zinc-100 dark:hover:bg-zinc-700 transition-colors cursor-pointer"
                         >
                           重新选择
                         </button>
@@ -416,7 +416,7 @@ export default function ScenesPage() {
                     </button>
                   )}
                   <span className="text-[10px] text-zinc-400 dark:text-zinc-500 mt-2 font-mono">
-                    推荐尺寸：1920×1080 PNG/JPG
+                    推荐 3840×2160（4K）PNG/JPG，最低 2560×1440
                   </span>
                 </div>
 
