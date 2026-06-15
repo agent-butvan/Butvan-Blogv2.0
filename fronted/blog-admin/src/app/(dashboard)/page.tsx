@@ -166,7 +166,7 @@ export default function DashboardPage() {
           {/* 左栏：流量走势 */}
           <div className="lg:col-span-8 p-4">
             <div className="flex items-center justify-between mb-2">
-              <h3 className="text-xs font-bold text-zinc-850 dark:text-zinc-250 flex items-center gap-1.5 uppercase tracking-wider">
+              <h3 className="text-xs font-bold text-zinc-800 dark:text-zinc-200 flex items-center gap-1.5 uppercase tracking-wider">
                 <span className="w-0.75 h-3 bg-primary rounded-full" />
                 博客主站 7 日流量及访问趋势
               </h3>
@@ -208,11 +208,11 @@ export default function DashboardPage() {
           {/* 右栏：核心负载指标与系统剩余度量 (3个环形 SVG 精致面板) */}
           <div className="lg:col-span-4 p-4 flex flex-col justify-between">
             <div className="flex flex-col gap-0.5 mb-2">
-              <h3 className="text-xs font-bold text-zinc-850 dark:text-zinc-250 flex items-center gap-1.5 uppercase tracking-wider">
+              <h3 className="text-xs font-bold text-zinc-800 dark:text-zinc-200 flex items-center gap-1.5 uppercase tracking-wider">
                 <span className="w-0.75 h-3 bg-secondary rounded-full" />
                 推理节点负载与 Token 指标
               </h3>
-              <p className="text-[10px] text-zinc-450">实时同步 AI 客户端调用数据</p>
+              <p className="text-[10px] text-zinc-400">实时同步 AI 客户端调用数据</p>
             </div>
 
             {/* 三个环形进度度量器 */}
@@ -225,7 +225,7 @@ export default function DashboardPage() {
                 <div key={ring.label} className="flex flex-col items-center gap-1 text-center">
                   <div className="relative flex items-center justify-center w-12 h-12">
                     <svg className="w-full h-full transform -rotate-90">
-                      <circle cx="24" cy="24" r="20" stroke="currentColor" strokeWidth="2.5" className="text-zinc-100 dark:text-zinc-850" fill="transparent" />
+                      <circle cx="24" cy="24" r="20" stroke="currentColor" strokeWidth="2.5" className="text-zinc-100 dark:text-zinc-800" fill="transparent" />
                       <circle 
                         cx="24" 
                         cy="24" 
@@ -241,13 +241,13 @@ export default function DashboardPage() {
                     </svg>
                     <span className="absolute text-[8px] font-mono font-bold text-zinc-700 dark:text-zinc-300">{ring.val}</span>
                   </div>
-                  <span className="text-[10px] text-zinc-450 dark:text-zinc-500 font-semibold">{ring.label}</span>
+                  <span className="text-[10px] text-zinc-400 dark:text-zinc-500 font-semibold">{ring.label}</span>
                 </div>
               ))}
             </div>
 
             {/* 底栏快讯 */}
-            <div className="bg-zinc-50 dark:bg-zinc-900/30 border border-zinc-150 dark:border-zinc-850 rounded-lg p-2.5 flex items-center justify-between text-[10px] font-medium">
+            <div className="bg-zinc-50 dark:bg-zinc-900/30 border border-zinc-200 dark:border-zinc-800 rounded-lg p-2.5 flex items-center justify-between text-[10px] font-medium">
               <div className="flex items-center gap-1.5 text-zinc-500">
                 <Activity size={12} className="text-[#9B8AFB]" />
                 <span>模型推理引擎状态:</span>
@@ -265,7 +265,7 @@ export default function DashboardPage() {
           {/* 左栏：最近发布文章数据展示 */}
           <div className="lg:col-span-8 p-4">
             <div className="flex items-center justify-between mb-3">
-              <h3 className="text-xs font-bold text-zinc-850 dark:text-zinc-250 flex items-center gap-1.5 uppercase tracking-wider">
+              <h3 className="text-xs font-bold text-zinc-800 dark:text-zinc-200 flex items-center gap-1.5 uppercase tracking-wider">
                 <span className="w-0.75 h-3 bg-amber-500 rounded-full" />
                 近期博文动态与热度统计
               </h3>
@@ -278,7 +278,7 @@ export default function DashboardPage() {
             <div className="overflow-x-auto custom-scrollbar">
               <table className="w-full text-left text-xs border-collapse min-w-[400px]">
                 <thead>
-                  <tr className="border-b border-zinc-200 dark:border-zinc-850 text-zinc-400 text-[10px] uppercase font-mono tracking-wider">
+                  <tr className="border-b border-zinc-200 dark:border-zinc-800 text-zinc-400 text-[10px] uppercase font-mono tracking-wider">
                     <th className="pb-2 font-bold">博文标题</th>
                     <th className="pb-2 font-bold text-center">状态</th>
                     <th className="pb-2 font-bold text-right">浏览量 (PV)</th>
@@ -327,7 +327,7 @@ export default function DashboardPage() {
           {/* 右栏：终端快捷命令 */}
           <div className="lg:col-span-4 p-4 flex flex-col justify-between gap-4">
             <div>
-              <h3 className="text-xs font-bold text-zinc-850 dark:text-zinc-250 flex items-center gap-1.5 uppercase tracking-wider mb-3">
+              <h3 className="text-xs font-bold text-zinc-800 dark:text-zinc-200 flex items-center gap-1.5 uppercase tracking-wider mb-3">
                 <span className="w-0.75 h-3 bg-red-500 rounded-full" />
                 常用模块快捷通道
               </h3>
@@ -343,10 +343,10 @@ export default function DashboardPage() {
                   <a
                     key={item.path}
                     href={item.path}
-                    className="flex items-center justify-between p-2 rounded-lg border border-zinc-150 dark:border-zinc-850 bg-zinc-50/20 dark:bg-zinc-900/10 hover:border-primary/30 hover:bg-primary/5 dark:hover:bg-primary/5 transition-all group"
+                    className="flex items-center justify-between p-2 rounded-lg border border-zinc-200 dark:border-zinc-800 bg-zinc-50/20 dark:bg-zinc-900/10 hover:border-primary/30 hover:bg-primary/5 dark:hover:bg-primary/5 transition-all group"
                   >
                     <div className="flex flex-col text-left">
-                      <span className="text-xs font-semibold text-zinc-750 dark:text-zinc-350 group-hover:text-primary transition-colors">
+                      <span className="text-xs font-semibold text-zinc-700 dark:text-zinc-300 group-hover:text-primary transition-colors">
                         {item.label}
                       </span>
                       <span className="text-[9px] text-zinc-400 dark:text-zinc-500">{item.desc}</span>
@@ -360,7 +360,7 @@ export default function DashboardPage() {
             </div>
 
             {/* 提示挂件 */}
-            <div className="text-[10px] text-zinc-450 dark:text-zinc-500 leading-normal bg-zinc-50 dark:bg-zinc-900/10 border border-zinc-150 dark:border-zinc-850 p-2.5 rounded-lg flex items-start gap-2">
+            <div className="text-[10px] text-zinc-400 dark:text-zinc-500 leading-normal bg-zinc-50 dark:bg-zinc-900/10 border border-zinc-200 dark:border-zinc-800 p-2.5 rounded-lg flex items-start gap-2">
               <span className="text-[#9B8AFB] mt-0.5 font-bold">ⓘ</span>
               <span>您可以通过顶栏的“控制中心”面包屑与右侧的主题切换来快速导航并切换视觉效果。</span>
             </div>
