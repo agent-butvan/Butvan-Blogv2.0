@@ -347,10 +347,10 @@ export default function NavigationPage() {
       {/* 页面标题 */}
       <div className="flex items-center justify-between">
         <div>
-          <h1 className="font-heading text-2xl font-bold text-neutral-dark">
+          <h1 className="font-heading text-2xl font-bold text-zinc-900 dark:text-zinc-50">
             导航菜单
           </h1>
-          <p className="text-sm text-zinc-500 mt-1">
+          <p className="text-sm text-zinc-500 dark:text-zinc-400 mt-1">
             配置前台与管理后台的导航菜单层级结构
           </p>
         </div>
@@ -364,18 +364,18 @@ export default function NavigationPage() {
 
       {/* 提示信息 */}
       {error && (
-        <div className="rounded-lg bg-red-50 border border-red-200 p-4 text-sm text-red-700 animate-fade-in">
+        <div className="rounded-lg bg-red-50 dark:bg-red-950/20 border border-red-200 dark:border-red-900/50 p-4 text-sm text-red-700 dark:text-red-400 animate-fade-in">
           {error}
         </div>
       )}
       {successMsg && (
-        <div className="rounded-lg bg-green-50 border border-green-200 p-4 text-sm text-green-700 animate-fade-in">
+        <div className="rounded-lg bg-green-50 dark:bg-green-950/20 border border-green-200 dark:border-green-900/50 p-4 text-sm text-green-700 dark:text-green-400 animate-fade-in">
           {successMsg}
         </div>
       )}
 
       {/* 位置 Tab */}
-      <div className="flex items-center gap-1 rounded-xl border border-zinc-200 bg-white p-1 w-fit">
+      <div className="flex items-center gap-1 rounded-xl border border-zinc-200 dark:border-zinc-800 bg-white dark:bg-zinc-950 p-1 w-fit">
         {POSITIONS.map((pos) => (
           <button
             key={pos}
@@ -383,7 +383,7 @@ export default function NavigationPage() {
             className={`px-4 py-1.5 rounded-lg text-sm font-medium transition-colors ${
               selectedPosition === pos
                 ? "bg-primary text-white shadow-sm"
-                : "text-zinc-500 hover:text-zinc-700"
+                : "text-zinc-500 dark:text-zinc-400 hover:text-zinc-700 dark:hover:text-zinc-200"
             }`}
           >
             {NAV_POSITION_LABELS[pos]}
@@ -392,9 +392,9 @@ export default function NavigationPage() {
       </div>
 
       {/* 菜单树表格 */}
-      <div className="rounded-xl border border-zinc-200 bg-white overflow-hidden">
+      <div className="rounded-xl border border-zinc-200 dark:border-zinc-800 bg-white dark:bg-zinc-950 overflow-hidden">
         {/* 表头 */}
-        <div className="flex items-center gap-3 px-5 py-3 border-b border-zinc-100 bg-zinc-50 text-xs font-medium text-zinc-500 uppercase tracking-wider">
+        <div className="flex items-center gap-3 px-5 py-3 border-b border-zinc-100 dark:border-zinc-800 bg-zinc-50 dark:bg-zinc-900/50 text-xs font-medium text-zinc-500 dark:text-zinc-400 uppercase tracking-wider">
           <span className="w-6" />
           <span className="flex-1">菜单名称</span>
           <span className="w-20 text-center">类型</span>
@@ -405,13 +405,13 @@ export default function NavigationPage() {
 
         {/* 内容 */}
         {loading ? (
-          <div className="px-5 py-16 text-center text-sm text-zinc-400">
+          <div className="px-5 py-16 text-center text-sm text-zinc-400 dark:text-zinc-550">
             加载中...
           </div>
         ) : menuTree.length === 0 ? (
           <div className="px-5 py-16 text-center">
-            <FolderOpen size={32} className="mx-auto mb-3 text-zinc-300" />
-            <p className="text-sm text-zinc-400 mb-4">
+            <FolderOpen size={32} className="mx-auto mb-3 text-zinc-300 dark:text-zinc-700" />
+            <p className="text-sm text-zinc-400 dark:text-zinc-550 mb-4">
               暂无菜单配置，点击上方按钮开始添加
             </p>
             <button
@@ -422,7 +422,7 @@ export default function NavigationPage() {
             </button>
           </div>
         ) : (
-          <div className="divide-y divide-zinc-50">
+          <div className="divide-y divide-zinc-50 dark:divide-zinc-900/50">
             {menuTree.map((item) => (
               <TreeNodeRow
                 key={item.id}
@@ -547,7 +547,7 @@ function TreeNodeRow({
   return (
     <>
       <div
-        className={`flex items-center gap-3 px-5 py-2.5 hover:bg-zinc-50 transition-colors group ${
+        className={`flex items-center gap-3 px-5 py-2.5 hover:bg-zinc-50 dark:hover:bg-zinc-900/20 transition-colors group ${
           hidden ? "opacity-50" : ""
         }`}
         style={{ paddingLeft: `${20 + depth * 24}px` }}
@@ -557,7 +557,7 @@ function TreeNodeRow({
           {hasChildren ? (
             <button
               onClick={() => onToggleCollapse(item.id)}
-              className="p-0.5 rounded hover:bg-zinc-200 text-zinc-400 transition-colors"
+              className="p-0.5 rounded hover:bg-zinc-200 dark:hover:bg-zinc-800 text-zinc-400 dark:text-zinc-500 transition-colors"
             >
               {isCollapsed ? (
                 <ChevronRight size={14} />
@@ -577,18 +577,18 @@ function TreeNodeRow({
           )}
           <span
             className={`text-sm truncate font-medium ${
-              hidden ? "text-zinc-400" : "text-neutral-dark"
+              hidden ? "text-zinc-400 dark:text-zinc-500" : "text-neutral-dark dark:text-zinc-100"
             }`}
           >
             {item.title}
           </span>
           {hidden && (
-            <span className="text-[10px] text-amber-500 bg-amber-50 px-1.5 py-0.5 rounded font-medium shrink-0">
+            <span className="text-[10px] text-amber-650 dark:text-amber-400 bg-amber-50 dark:bg-amber-950/30 px-1.5 py-0.5 rounded font-medium shrink-0">
               已隐藏
             </span>
           )}
           {item.icon && (
-            <code className="text-[10px] text-zinc-400 bg-zinc-100 px-1.5 py-0.5 rounded">
+            <code className="text-[10px] text-zinc-400 dark:text-zinc-550 bg-zinc-100 dark:bg-zinc-900 px-1.5 py-0.5 rounded">
               {item.icon}
             </code>
           )}
@@ -596,13 +596,13 @@ function TreeNodeRow({
 
         {/* 链接类型 */}
         <span className="w-20 text-center">
-          <span className="inline-block text-[11px] px-2 py-0.5 rounded-full bg-zinc-100 text-zinc-500">
+          <span className="inline-block text-[11px] px-2 py-0.5 rounded-full bg-zinc-100 dark:bg-zinc-900 text-zinc-500 dark:text-zinc-400">
             {linkTypeLabel}
           </span>
         </span>
 
         {/* 排序 */}
-        <span className="w-20 text-center text-xs text-zinc-400 font-mono">
+        <span className="w-20 text-center text-xs text-zinc-400 dark:text-zinc-550 font-mono">
           {item.sortOrder}
         </span>
 
@@ -612,8 +612,8 @@ function TreeNodeRow({
             onClick={() => onToggleVisible(item)}
             className={`p-1 rounded transition-colors ${
               item.isVisible !== false
-                ? "text-green-500 hover:bg-green-50"
-                : "text-zinc-300 hover:bg-zinc-100"
+                ? "text-green-500 hover:bg-green-50 dark:hover:bg-green-950/20"
+                : "text-zinc-300 dark:text-zinc-650 hover:bg-zinc-100 dark:hover:bg-zinc-800"
             }`}
             title={item.isVisible !== false ? "已显示，点击隐藏" : "已隐藏，点击显示"}
           >
@@ -630,7 +630,7 @@ function TreeNodeRow({
           <button
             onClick={() => onMoveUp(item)}
             disabled={isFirst}
-            className="p-1 rounded text-zinc-400 hover:bg-zinc-100 hover:text-zinc-600 transition-colors disabled:opacity-20"
+            className="p-1 rounded text-zinc-400 hover:bg-zinc-100 dark:hover:bg-zinc-800 hover:text-zinc-600 dark:hover:text-zinc-200 transition-colors disabled:opacity-20"
             title="上移"
           >
             <ChevronUp size={15} />
@@ -638,28 +638,28 @@ function TreeNodeRow({
           <button
             onClick={() => onMoveDown(item)}
             disabled={isLast}
-            className="p-1 rounded text-zinc-400 hover:bg-zinc-100 hover:text-zinc-600 transition-colors disabled:opacity-20"
+            className="p-1 rounded text-zinc-400 hover:bg-zinc-100 dark:hover:bg-zinc-800 hover:text-zinc-600 dark:hover:text-zinc-200 transition-colors disabled:opacity-20"
             title="下移"
           >
             <ChevronDown size={15} />
           </button>
           <button
             onClick={() => onAddChild(item.id)}
-            className="p-1 rounded text-zinc-400 hover:bg-primary/10 hover:text-primary transition-colors"
+            className="p-1 rounded text-zinc-400 hover:bg-primary/10 dark:hover:bg-primary/20 hover:text-primary transition-colors"
             title="添加子菜单"
           >
             <Plus size={15} />
           </button>
           <button
             onClick={() => onEdit(item)}
-            className="p-1 rounded text-zinc-400 hover:bg-zinc-100 hover:text-zinc-600 transition-colors"
+            className="p-1 rounded text-zinc-400 hover:bg-zinc-100 dark:hover:bg-zinc-800 hover:text-zinc-600 dark:hover:text-zinc-200 transition-colors"
             title="编辑"
           >
             <Edit size={14} />
           </button>
           <button
             onClick={() => onDelete(item)}
-            className="p-1 rounded text-zinc-400 hover:bg-red-50 hover:text-red-500 transition-colors"
+            className="p-1 rounded text-zinc-400 hover:bg-red-50 dark:hover:bg-red-950/30 hover:text-red-500 dark:hover:text-red-400 transition-colors"
             title="删除"
           >
             <Trash2 size={14} />
