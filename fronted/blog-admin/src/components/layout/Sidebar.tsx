@@ -105,7 +105,7 @@ export default function Sidebar() {
   return (
     <aside
       className={cn(
-        "flex flex-col h-[calc(100vh-1.5rem)] m-3 mr-0 rounded-2xl transition-all duration-200 select-none z-30 shrink-0 glass-panel overflow-hidden",
+        "flex flex-col h-full rounded-2xl transition-all duration-200 select-none z-30 shrink-0 glass-panel overflow-hidden",
         collapsed ? "w-[56px]" : "w-[220px]"
       )}
     >
