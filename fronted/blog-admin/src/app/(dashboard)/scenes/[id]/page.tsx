@@ -80,7 +80,11 @@ export default function SceneEditorPage() {
   }, [sceneId])
 
   useEffect(() => {
-    if (sceneId) fetchSceneDetail()
+    if (sceneId) {
+      setTimeout(() => {
+        fetchSceneDetail()
+      }, 0)
+    }
   }, [sceneId, fetchSceneDetail])
 
   // 预加载智能抠图 AI 模型（后台静默下载，不阻塞 UI）
@@ -555,9 +559,10 @@ export default function SceneEditorPage() {
           setScene(res.data.data)
         }
       }
-    } catch (err: any) {
+    } catch (err: unknown) {
+      const errorObj = err as { message?: string }
       console.error('框选裁剪流程失败', err)
-      toast.error(err?.message || '裁剪失败，请重试')
+      toast.error(errorObj?.message || '裁剪失败，请重试')
     } finally {
       setIsCropping(false)
       setMode('select')

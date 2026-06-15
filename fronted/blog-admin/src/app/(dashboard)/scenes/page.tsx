@@ -52,7 +52,9 @@ export default function ScenesPage() {
   }
 
   useEffect(() => {
-    fetchScenes()
+    setTimeout(() => {
+      fetchScenes()
+    }, 0)
   }, [])
 
   // 上传背景大图
