@@ -1,7 +1,7 @@
 "use client";
 
 import React, { useState, useEffect, useRef } from "react";
-import { User, Upload, Save, GitFork, Mail, Rss, AlertCircle } from "lucide-react";
+import { User, Upload, Save, GitFork, Mail, Rss, AlertCircle, Loader2 } from "lucide-react";
 import apiClient from "@/lib/api";
 import { toast } from "@/lib/toast";
 import { cn } from "@heroui/react";
@@ -203,12 +203,7 @@ export default function SettingsPage() {
   };
 
   if (loading) {
-    return (
-      <div className="w-full min-h-[60vh] flex flex-col items-center justify-center gap-3 text-zinc-500">
-        <div className="w-8 h-8 border-2 border-primary border-t-transparent rounded-full animate-spin" />
-        <span className="text-xs font-heading">正在获取公开个人资料...</span>
-      </div>
-    );
+    return <SettingsSkeleton />;
   }
 
   // --- 检测全页表单是否被修改 (Dirty-state) ---
@@ -235,7 +230,7 @@ export default function SettingsPage() {
         <h1 className="text-sm font-bold text-zinc-900 dark:text-zinc-50 font-heading">
           博主个人公开资料设置
         </h1>
-        <span className="text-[10px] bg-primary/10 text-primary px-2 py-0.5 rounded-full font-mono font-bold">
+        <span className="text-xs bg-primary/10 text-primary px-2 py-0.5 rounded-full font-mono font-bold">
           CONSOLE
         </span>
       </div>
@@ -253,14 +248,14 @@ export default function SettingsPage() {
                 <h3 className="text-xs font-semibold text-zinc-900 dark:text-zinc-50">
                   1. 基础形象与展示
                 </h3>
-                <p className="text-[11px] text-zinc-400 dark:text-zinc-500">
+                <p className="text-xs text-zinc-550 dark:text-zinc-400">
                   配置您的公开昵称和一句话签名，这是读者对您的第一印象。
                 </p>
               </div>
               <div className="grid grid-cols-1 md:grid-cols-2 gap-3.5 pt-1">
                 {/* 昵称 */}
                 <div className="flex flex-col gap-1.5">
-                  <span className="text-[10px] font-semibold text-zinc-400 dark:text-zinc-500 uppercase tracking-wider">
+                  <span className="text-xs font-semibold text-zinc-650 dark:text-zinc-400 uppercase tracking-wider">
                     博主展示昵称 <span className="text-red-500">*</span>
                   </span>
                   <input
@@ -268,20 +263,20 @@ export default function SettingsPage() {
                     value={nickname}
                     onChange={(e) => setNickname(e.target.value)}
                     placeholder="昵称"
-                    className="w-full bg-zinc-50/50 hover:bg-zinc-50/80 focus:bg-white dark:bg-zinc-900/25 dark:hover:bg-zinc-900/40 dark:focus:bg-zinc-950 border border-zinc-200 dark:border-zinc-800 rounded-lg px-3 h-8.5 text-xs text-zinc-900 dark:text-zinc-100 focus:outline-none focus:ring-1.5 focus:ring-primary/20 focus:border-primary transition-all"
+                    className="w-full bg-zinc-50/50 hover:bg-zinc-50/80 focus:bg-white dark:bg-zinc-900/25 dark:hover:bg-zinc-900/40 dark:focus:bg-zinc-950 border border-zinc-200 dark:border-zinc-800 rounded-lg px-3 h-8.5 text-xs text-zinc-900 dark:text-zinc-100 placeholder-zinc-500 dark:placeholder-zinc-400 focus:outline-none focus:ring-1.5 focus:ring-primary/20 focus:border-primary transition-all duration-200"
                   />
                 </div>
 
                 {/* 签名 (Bio) */}
                 <div className="flex flex-col gap-1.5">
-                  <span className="text-[10px] font-semibold text-zinc-400 dark:text-zinc-500 uppercase tracking-wider">
+                  <span className="text-xs font-semibold text-zinc-650 dark:text-zinc-400 uppercase tracking-wider">
                     一句话签名 / 职业头衔 (Bio)
                   </span>
                   <input
                     value={bio}
                     onChange={(e) => setBio(e.target.value)}
                     placeholder="Java/Kotlin 全栈开发 / 独立设计师"
-                    className="w-full bg-zinc-50/50 hover:bg-zinc-50/80 focus:bg-white dark:bg-zinc-900/25 dark:hover:bg-zinc-900/40 dark:focus:bg-zinc-950 border border-zinc-200 dark:border-zinc-800 rounded-lg px-3 h-8.5 text-xs text-zinc-900 dark:text-zinc-100 focus:outline-none focus:ring-1.5 focus:ring-primary/20 focus:border-primary transition-all"
+                    className="w-full bg-zinc-50/50 hover:bg-zinc-50/80 focus:bg-white dark:bg-zinc-900/25 dark:hover:bg-zinc-900/40 dark:focus:bg-zinc-950 border border-zinc-200 dark:border-zinc-800 rounded-lg px-3 h-8.5 text-xs text-zinc-900 dark:text-zinc-100 placeholder-zinc-500 dark:placeholder-zinc-400 focus:outline-none focus:ring-1.5 focus:ring-primary/20 focus:border-primary transition-all duration-200"
                   />
                 </div>
               </div>
@@ -296,27 +291,27 @@ export default function SettingsPage() {
                 <h3 className="text-xs font-semibold text-zinc-900 dark:text-zinc-50">
                   2. 详细关于我文案
                 </h3>
-                <p className="text-[11px] text-zinc-400 dark:text-zinc-500">
+                <p className="text-xs text-zinc-555 dark:text-zinc-400">
                   前台「关于我」页面展示的核心短标签以及长句介绍，可用 Emoji 修饰。
                 </p>
               </div>
               <div className="flex flex-col gap-3.5 pt-1">
                 {/* 第一行 */}
                 <div className="flex flex-col gap-1.5">
-                  <span className="text-[10px] font-semibold text-zinc-400 dark:text-zinc-500 uppercase tracking-wider">
+                  <span className="text-xs font-semibold text-zinc-650 dark:text-zinc-400 uppercase tracking-wider">
                     核心自我标签 (第一行文案)
                   </span>
                   <input
                     value={introLine1}
                     onChange={(e) => setIntroLine1(e.target.value)}
                     placeholder="例如：🔥 大三前端探索者 | 写代码也写生活 | 开源项目复盘 ✨"
-                    className="w-full bg-zinc-50/50 hover:bg-zinc-50/80 focus:bg-white dark:bg-zinc-900/25 dark:hover:bg-zinc-900/40 dark:focus:bg-zinc-950 border border-zinc-200 dark:border-zinc-800 rounded-lg px-3 h-8.5 text-xs text-zinc-900 dark:text-zinc-100 focus:outline-none focus:ring-1.5 focus:ring-primary/20 focus:border-primary transition-all"
+                    className="w-full bg-zinc-50/50 hover:bg-zinc-50/80 focus:bg-white dark:bg-zinc-900/25 dark:hover:bg-zinc-900/40 dark:focus:bg-zinc-950 border border-zinc-200 dark:border-zinc-800 rounded-lg px-3 h-8.5 text-xs text-zinc-900 dark:text-zinc-100 placeholder-zinc-500 dark:placeholder-zinc-400 focus:outline-none focus:ring-1.5 focus:ring-primary/20 focus:border-primary transition-all duration-200"
                   />
                 </div>
 
                 {/* 第二行 (故事正文) */}
                 <div className="flex flex-col gap-1.5">
-                  <span className="text-[10px] font-semibold text-zinc-400 dark:text-zinc-500 uppercase tracking-wider">
+                  <span className="text-xs font-semibold text-zinc-650 dark:text-zinc-400 uppercase tracking-wider">
                     博客宗旨与详细故事 (第二行文案)
                   </span>
                   <textarea
@@ -324,7 +319,7 @@ export default function SettingsPage() {
                     onChange={(e) => setIntroLine2(e.target.value)}
                     placeholder="例如：欢迎来我的博客交流学习，一起成长进步，用代码碰撞灵感，一起走更远~"
                     rows={3}
-                    className="w-full bg-zinc-50/50 hover:bg-zinc-50/80 focus:bg-white dark:bg-zinc-900/25 dark:hover:bg-zinc-900/40 dark:focus:bg-zinc-950 border border-zinc-200 dark:border-zinc-800 rounded-lg p-2.5 text-xs text-zinc-900 dark:text-zinc-100 focus:outline-none focus:ring-1.5 focus:ring-primary/20 focus:border-primary transition-all resize-none leading-relaxed"
+                    className="w-full bg-zinc-50/50 hover:bg-zinc-50/80 focus:bg-white dark:bg-zinc-900/25 dark:hover:bg-zinc-900/40 dark:focus:bg-zinc-950 border border-zinc-200 dark:border-zinc-800 rounded-lg p-2.5 text-xs text-zinc-900 dark:text-zinc-100 placeholder-zinc-500 dark:placeholder-zinc-400 focus:outline-none focus:ring-1.5 focus:ring-primary/20 focus:border-primary transition-all duration-200 resize-none leading-relaxed"
                   />
                 </div>
               </div>
@@ -339,61 +334,42 @@ export default function SettingsPage() {
                 <h3 className="text-xs font-semibold text-zinc-900 dark:text-zinc-50">
                   3. 社交与订阅网络
                 </h3>
-                <p className="text-[11px] text-zinc-400 dark:text-zinc-500">
+                <p className="text-xs text-zinc-555 dark:text-zinc-400">
                   绑定您的社交及外部渠道，绑定的链接将实时在右侧名片和前台进行点亮。
                 </p>
               </div>
-              <div className="grid grid-cols-1 sm:grid-cols-3 gap-3.5 pt-1">
-                {/* GitHub */}
+              <div className="grid grid-cols-1 sm:grid-cols-3 gap-3.5 p                {/* Email */}
                 <div className="flex flex-col gap-1.5">
-                  <span className="text-[10px] font-semibold text-zinc-400 dark:text-zinc-500 uppercase tracking-wider">
-                    GitHub 主页链接
-                  </span>
-                  <div className="relative flex items-center rounded-lg overflow-hidden border border-zinc-200 dark:border-zinc-800 bg-zinc-50/50 focus-within:ring-1.5 focus-within:ring-primary/20 focus-within:border-primary focus-within:bg-white dark:bg-zinc-900/25 dark:focus-within:bg-zinc-950 transition-all">
-                    <span className="flex items-center gap-1 px-2.5 py-2 bg-zinc-100/60 dark:bg-zinc-800/80 border-r border-zinc-200 dark:border-zinc-800 text-[9px] font-mono text-zinc-400 dark:text-zinc-500 select-none">
-                      <GitFork size={10} /> github.com/
-                    </span>
-                    <input
-                      value={github}
-                      onChange={(e) => setGithub(e.target.value)}
-                      placeholder="用户名"
-                      className="w-full px-2.5 h-8 text-xs bg-transparent text-zinc-900 dark:text-zinc-100 focus:outline-none font-mono"
-                    />
-                  </div>
-                </div>
-
-                {/* Email */}
-                <div className="flex flex-col gap-1.5">
-                  <span className="text-[10px] font-semibold text-zinc-400 dark:text-zinc-500 uppercase tracking-wider">
+                  <span className="text-xs font-semibold text-zinc-650 dark:text-zinc-400 uppercase tracking-wider">
                     公开联系邮箱
                   </span>
-                  <div className="relative flex items-center rounded-lg overflow-hidden border border-zinc-200 dark:border-zinc-800 bg-zinc-50/50 focus-within:ring-1.5 focus-within:ring-primary/20 focus-within:border-primary focus-within:bg-white dark:bg-zinc-900/25 dark:focus-within:bg-zinc-950 transition-all">
-                    <span className="flex items-center gap-1 px-2.5 py-2 bg-zinc-100/60 dark:bg-zinc-800/80 border-r border-zinc-200 dark:border-zinc-800 text-[9px] font-mono text-zinc-400 dark:text-zinc-500 select-none">
+                  <div className="relative flex items-center rounded-lg overflow-hidden border border-zinc-200 dark:border-zinc-800 bg-zinc-50/50 focus-within:ring-1.5 focus-within:ring-primary/20 focus-within:border-primary focus-within:bg-white dark:bg-zinc-900/25 dark:focus-within:bg-zinc-950 transition-all duration-200">
+                    <span className="flex items-center gap-1 px-2.5 py-2 bg-zinc-100/60 dark:bg-zinc-800/80 border-r border-zinc-200 dark:border-zinc-800 text-[10px] font-mono text-zinc-500 dark:text-zinc-400 select-none">
                       <Mail size={10} /> mailto:
                     </span>
                     <input
                       value={email}
                       onChange={(e) => setEmail(e.target.value)}
                       placeholder="email@example.com"
-                      className="w-full px-2.5 h-8 text-xs bg-transparent text-zinc-900 dark:text-zinc-100 focus:outline-none font-mono"
+                      className="w-full px-2.5 h-8 text-xs bg-transparent text-zinc-900 dark:text-zinc-100 placeholder-zinc-500 dark:placeholder-zinc-400 focus:outline-none font-mono"
                     />
                   </div>
                 </div>
 
                 {/* RSS */}
                 <div className="flex flex-col gap-1.5">
-                  <span className="text-[10px] font-semibold text-zinc-400 dark:text-zinc-500 uppercase tracking-wider">
+                  <span className="text-xs font-semibold text-zinc-650 dark:text-zinc-400 uppercase tracking-wider">
                     RSS 订阅源路径
                   </span>
-                  <div className="relative flex items-center rounded-lg overflow-hidden border border-zinc-200 dark:border-zinc-800 bg-zinc-50/50 focus-within:ring-1.5 focus-within:ring-primary/20 focus-within:border-primary focus-within:bg-white dark:bg-zinc-900/25 dark:focus-within:bg-zinc-950 transition-all">
-                    <span className="flex items-center gap-1 px-2.5 py-2 bg-zinc-100/60 dark:bg-zinc-800/80 border-r border-zinc-200 dark:border-zinc-800 text-[9px] font-mono text-zinc-400 dark:text-zinc-500 select-none">
+                  <div className="relative flex items-center rounded-lg overflow-hidden border border-zinc-200 dark:border-zinc-800 bg-zinc-50/50 focus-within:ring-1.5 focus-within:ring-primary/20 focus-within:border-primary focus-within:bg-white dark:bg-zinc-900/25 dark:focus-within:bg-zinc-950 transition-all duration-200">
+                    <span className="flex items-center gap-1 px-2.5 py-2 bg-zinc-100/60 dark:bg-zinc-800/80 border-r border-zinc-200 dark:border-zinc-800 text-[10px] font-mono text-zinc-500 dark:text-zinc-400 select-none">
                       <Rss size={10} /> PATH:
                     </span>
                     <input
                       value={rss}
                       onChange={(e) => setRss(e.target.value)}
                       placeholder="/feed.xml"
-                      className="w-full px-2.5 h-8 text-xs bg-transparent text-zinc-900 dark:text-zinc-100 focus:outline-none font-mono"
+                      className="w-full px-2.5 h-8 text-xs bg-transparent text-zinc-900 dark:text-zinc-100 placeholder-zinc-500 dark:placeholder-zinc-400 focus:outline-none font-mono"
                     />
                   </div>
                 </div>
@@ -409,60 +385,60 @@ export default function SettingsPage() {
                 <h3 className="text-xs font-semibold text-zinc-900 dark:text-zinc-50">
                   4. 页脚站点信息配置
                 </h3>
-                <p className="text-[11px] text-zinc-400 dark:text-zinc-500">
+                <p className="text-xs text-zinc-550 dark:text-zinc-400">
                   配置前台首页最下方页脚的动态及静态展示内容，包括建站起点计算天数与备案号。
                 </p>
               </div>
               <div className="grid grid-cols-1 md:grid-cols-2 gap-3.5 pt-1">
                 {/* 页脚站点大标题 */}
                 <div className="flex flex-col gap-1.5">
-                  <span className="text-[10px] font-semibold text-zinc-400 dark:text-zinc-500 uppercase tracking-wider">
+                  <span className="text-xs font-semibold text-zinc-650 dark:text-zinc-400 uppercase tracking-wider">
                     页脚站点大标题
                   </span>
                   <input
                     value={footerTitle}
                     onChange={(e) => setFooterTitle(e.target.value)}
                     placeholder="例如：grtsinry43's Blog."
-                    className="w-full bg-zinc-50/50 hover:bg-zinc-50/80 focus:bg-white dark:bg-zinc-900/25 dark:hover:bg-zinc-900/40 dark:focus:bg-zinc-950 border border-zinc-200/80 dark:border-zinc-800 rounded-lg px-3 h-8.5 text-xs text-zinc-900 dark:text-zinc-100 focus:outline-none focus:ring-1.5 focus:ring-primary/20 focus:border-primary transition-all"
+                    className="w-full bg-zinc-50/50 hover:bg-zinc-50/80 focus:bg-white dark:bg-zinc-900/25 dark:hover:bg-zinc-900/40 dark:focus:bg-zinc-950 border border-zinc-200/80 dark:border-zinc-800 rounded-lg px-3 h-8.5 text-xs text-zinc-900 dark:text-zinc-100 placeholder-zinc-500 dark:placeholder-zinc-400 focus:outline-none focus:ring-1.5 focus:ring-primary/20 focus:border-primary transition-all duration-200"
                   />
                 </div>
 
                 {/* 页脚站点副标题 */}
                 <div className="flex flex-col gap-1.5">
-                  <span className="text-[10px] font-semibold text-zinc-400 dark:text-zinc-500 uppercase tracking-wider">
+                  <span className="text-xs font-semibold text-zinc-650 dark:text-zinc-400 uppercase tracking-wider">
                     页脚站点副标语
                   </span>
                   <input
                     value={footerSubtitle}
                     onChange={(e) => setFooterSubtitle(e.target.value)}
                     placeholder="例如：总之岁月漫长，然而值得等待"
-                    className="w-full bg-zinc-50/50 hover:bg-zinc-50/80 focus:bg-white dark:bg-zinc-900/25 dark:hover:bg-zinc-900/40 dark:focus:bg-zinc-950 border border-zinc-200/80 dark:border-zinc-800 rounded-lg px-3 h-8.5 text-xs text-zinc-900 dark:text-zinc-100 focus:outline-none focus:ring-1.5 focus:ring-primary/20 focus:border-primary transition-all"
+                    className="w-full bg-zinc-50/50 hover:bg-zinc-50/80 focus:bg-white dark:bg-zinc-900/25 dark:hover:bg-zinc-900/40 dark:focus:bg-zinc-950 border border-zinc-200/80 dark:border-zinc-800 rounded-lg px-3 h-8.5 text-xs text-zinc-900 dark:text-zinc-100 placeholder-zinc-500 dark:placeholder-zinc-400 focus:outline-none focus:ring-1.5 focus:ring-primary/20 focus:border-primary transition-all duration-200"
                   />
                 </div>
 
                 {/* 备案号 */}
                 <div className="flex flex-col gap-1.5">
-                  <span className="text-[10px] font-semibold text-zinc-400 dark:text-zinc-500 uppercase tracking-wider">
+                  <span className="text-xs font-semibold text-zinc-650 dark:text-zinc-400 uppercase tracking-wider">
                     站点备案号 (ICP)
                   </span>
                   <input
                     value={footerIcp}
                     onChange={(e) => setFooterIcp(e.target.value)}
                     placeholder="例如：湘ICP备2023033970号-1"
-                    className="w-full bg-zinc-50/50 hover:bg-zinc-50/80 focus:bg-white dark:bg-zinc-900/25 dark:hover:bg-zinc-900/40 dark:focus:bg-zinc-950 border border-zinc-200/80 dark:border-zinc-800 rounded-lg px-3 h-8.5 text-xs text-zinc-900 dark:text-zinc-100 focus:outline-none focus:ring-1.5 focus:ring-primary/20 focus:border-primary transition-all"
+                    className="w-full bg-zinc-50/50 hover:bg-zinc-50/80 focus:bg-white dark:bg-zinc-900/25 dark:hover:bg-zinc-900/40 dark:focus:bg-zinc-950 border border-zinc-200/80 dark:border-zinc-800 rounded-lg px-3 h-8.5 text-xs text-zinc-900 dark:text-zinc-100 placeholder-zinc-500 dark:placeholder-zinc-400 focus:outline-none focus:ring-1.5 focus:ring-primary/20 focus:border-primary transition-all duration-200"
                   />
                 </div>
 
                 {/* 建站时间 */}
                 <div className="flex flex-col gap-1.5">
-                  <span className="text-[10px] font-semibold text-zinc-400 dark:text-zinc-500 uppercase tracking-wider">
+                  <span className="text-xs font-semibold text-zinc-650 dark:text-zinc-400 uppercase tracking-wider">
                     建站起始日期 (格式：YYYY-MM-DD)
                   </span>
                   <input
                     value={footerStartDate}
                     onChange={(e) => setFooterStartDate(e.target.value)}
                     placeholder="例如：2022-06-15"
-                    className="w-full bg-zinc-50/50 hover:bg-zinc-50/80 focus:bg-white dark:bg-zinc-900/25 dark:hover:bg-zinc-900/40 dark:focus:bg-zinc-950 border border-zinc-200/80 dark:border-zinc-800 rounded-lg px-3 h-8.5 text-xs text-zinc-900 dark:text-zinc-100 focus:outline-none focus:ring-1.5 focus:ring-primary/20 focus:border-primary transition-all font-mono"
+                    className="w-full bg-zinc-50/50 hover:bg-zinc-50/80 focus:bg-white dark:bg-zinc-900/25 dark:hover:bg-zinc-900/40 dark:focus:bg-zinc-950 border border-zinc-200/80 dark:border-zinc-800 rounded-lg px-3 h-8.5 text-xs text-zinc-900 dark:text-zinc-100 placeholder-zinc-500 dark:placeholder-zinc-400 focus:outline-none focus:ring-1.5 focus:ring-primary/20 focus:border-primary transition-all duration-200 font-mono"
                   />
                 </div>
               </div>
@@ -472,20 +448,25 @@ export default function SettingsPage() {
 
           {/* 表单底部统一操作栏 */}
           <div className="px-5 py-3 bg-zinc-50/80 dark:bg-zinc-900/30 border-t border-zinc-150 dark:border-zinc-900 flex justify-between items-center">
-            <div className="flex items-center gap-1.5 text-[10px] text-zinc-400 dark:text-zinc-500">
+            <div className="flex items-center gap-1.5 text-xs text-zinc-550 dark:text-zinc-400">
               <AlertCircle size={12} />
               <span>检测到更改后会即刻点亮保存按钮</span>
             </div>
             <button
               type="submit"
               disabled={saving || !isFormDirty}
-              className="flex items-center gap-1.5 px-4.5 py-1.5 rounded-lg text-xs font-semibold transition-all shadow-xs cursor-pointer bg-primary text-white disabled:bg-zinc-100 disabled:text-zinc-400 dark:disabled:bg-zinc-900 dark:disabled:text-zinc-600 disabled:cursor-not-allowed hover:opacity-95"
+              className="flex items-center gap-1.5 px-4.5 py-1.5 rounded-lg text-xs font-semibold transition-all duration-200 shadow-xs cursor-pointer bg-primary text-white disabled:bg-zinc-100 disabled:text-zinc-400 dark:disabled:bg-zinc-900 dark:disabled:text-zinc-600 disabled:cursor-not-allowed hover:opacity-95"
             >
-              <Save size={12} />
+              {saving ? (
+                <Loader2 size={12} className="animate-spin" />
+              ) : (
+                <Save size={12} />
+              )}
               {saving ? "正在同步..." : isFormDirty ? "保存所有修改" : "所有更改已同步"}
             </button>
           </div>
         </form>
+
 
         {/* 右侧：预览与头像上传二合一名片挂件 (占 4 列) */}
         <div className="lg:col-span-4 flex flex-col gap-4">
@@ -495,7 +476,7 @@ export default function SettingsPage() {
             
             {/* 顶层装饰渐变横幅 */}
             <div className="h-24 bg-gradient-to-r from-emerald-400/10 via-teal-500/10 to-indigo-500/10 dark:from-emerald-400/20 dark:via-teal-500/20 dark:to-indigo-500/20 border-b border-zinc-100 dark:border-zinc-900 relative">
-              <span className="absolute top-3 right-3 text-[9px] font-semibold bg-emerald-500/10 text-emerald-600 dark:text-emerald-400 px-1.5 py-0.5 rounded uppercase tracking-wider">
+              <span className="absolute top-3 right-3 text-[10px] font-semibold bg-emerald-500/10 text-emerald-600 dark:text-emerald-400 px-1.5 py-0.5 rounded uppercase tracking-wider">
                 LIVE CARD
               </span>
             </div>
@@ -514,7 +495,7 @@ export default function SettingsPage() {
               {/* Hover 更换头像蒙层 */}
               <div 
                 onClick={handleAvatarClick}
-                className="absolute inset-0 bg-black/45 opacity-0 group-hover:opacity-100 flex flex-col items-center justify-center text-white text-[9px] transition-opacity duration-150"
+                className="absolute inset-0 bg-black/45 opacity-0 group-hover:opacity-100 flex flex-col items-center justify-center text-white text-[10px] transition-opacity duration-200"
                 title="点击更换形象头像"
               >
                 <Upload size={10} className="mb-0.5" />
@@ -540,7 +521,7 @@ export default function SettingsPage() {
                   </h4>
                   <span className="w-1.5 h-1.5 rounded-full bg-emerald-500 animate-pulse" title="博客状态：在线" />
                 </div>
-                <p className="text-[11px] text-zinc-400 dark:text-zinc-500 truncate w-full">
+                <p className="text-xs text-zinc-550 dark:text-zinc-400 truncate w-full">
                   {bio || "职业头衔 / 签名未设置"}
                 </p>
               </div>
@@ -548,7 +529,7 @@ export default function SettingsPage() {
               {/* 分界线与故事预览展示 */}
               <div className="border-t border-zinc-100 dark:border-zinc-900 pt-3 flex flex-col gap-2.5">
                 <div className="flex flex-col gap-1.5">
-                  <span className="text-[9px] font-semibold text-zinc-400 dark:text-zinc-500 uppercase tracking-widest">
+                  <span className="text-[10px] font-semibold text-zinc-550 dark:text-zinc-450 uppercase tracking-widest">
                     关于我 · 故事预览
                   </span>
                   
@@ -558,27 +539,27 @@ export default function SettingsPage() {
                   </div>
 
                   {/* 第二行文案 */}
-                  <p className="text-[11px] text-zinc-500 dark:text-zinc-400 leading-relaxed line-clamp-3 whitespace-pre-wrap min-h-[48px]">
+                  <p className="text-xs text-zinc-600 dark:text-zinc-350 leading-relaxed line-clamp-3 whitespace-pre-wrap min-h-[48px]">
                     {introLine2 || "在此输入您的博客详细欢迎文案与故事简介，这些信息将被高保真地渲染在博客的公开板块中。"}
                   </p>
                 </div>
               </div>
 
               {/* 联动页脚及备案信息 */}
-              <div className="border-t border-zinc-100 dark:border-zinc-900 pt-3 flex flex-col gap-1.5 text-[9px] text-zinc-400 dark:text-zinc-500">
+              <div className="border-t border-zinc-100 dark:border-zinc-900 pt-3 flex flex-col gap-1.5 text-[10px] text-zinc-550 dark:text-zinc-400">
                 <div className="flex justify-between">
                   <span>站点名称:</span>
-                  <span className="font-semibold text-zinc-700 dark:text-zinc-300 truncate max-w-[120px]">{footerTitle || "未设置"}</span>
+                  <span className="font-semibold text-zinc-700 dark:text-zinc-350 truncate max-w-[120px]">{footerTitle || "未设置"}</span>
                 </div>
                 <div className="flex justify-between">
                   <span>ICP 备案:</span>
-                  <span className="font-semibold text-zinc-700 dark:text-zinc-300 truncate max-w-[120px]">{footerIcp || "未设置"}</span>
+                  <span className="font-semibold text-zinc-700 dark:text-zinc-350 truncate max-w-[120px]">{footerIcp || "未设置"}</span>
                 </div>
               </div>
 
               {/* 联动社交网络状态指示器 */}
               <div className="border-t border-zinc-100 dark:border-zinc-900 pt-3 flex items-center justify-between">
-                <span className="text-[9px] font-semibold text-zinc-400 dark:text-zinc-500 uppercase tracking-widest">
+                <span className="text-[10px] font-semibold text-zinc-550 dark:text-zinc-450 uppercase tracking-widest">
                   社交渠道
                 </span>
                 <div className="flex items-center gap-3">
@@ -623,13 +604,72 @@ export default function SettingsPage() {
           {/* 头像上传的单独提示框 */}
           <div className="p-3 bg-zinc-50/50 dark:bg-zinc-900/20 border border-zinc-200 dark:border-zinc-800 rounded-lg flex items-start gap-2.5">
             <Upload size={12} className="text-zinc-400 mt-0.5 shrink-0" />
-            <span className="text-[10px] text-zinc-400 dark:text-zinc-500 leading-normal">
+            <span className="text-xs text-zinc-550 dark:text-zinc-400 leading-normal">
               小提示：鼠标悬停在右侧卡片头像上，点击“修改”即可上传更换头像，上传后需保存左侧表单使之完全发布。
             </span>
           </div>
 
+
         </div>
 
+      </div>
+    </div>
+  );
+}
+
+/** Settings 骨架屏组件 (基于高密度设计，保持与原布局结构完全一致) */
+function SettingsSkeleton() {
+  return (
+    <div className="max-w-[1200px] mx-auto p-2 md:p-4 flex flex-col gap-5 text-left font-body animate-pulse">
+      {/* 头部标题骨架 */}
+      <div className="flex items-center gap-2 pb-2.5 border-b border-zinc-200 dark:border-zinc-800">
+        <div className="w-4.5 h-4.5 bg-zinc-200 dark:bg-zinc-800 rounded animate-pulse" />
+        <div className="h-5 w-40 bg-zinc-200 dark:bg-zinc-800 rounded animate-pulse" />
+        <div className="w-12 h-4 bg-zinc-200 dark:bg-zinc-800 rounded-full animate-pulse" />
+      </div>
+
+      <div className="grid grid-cols-1 lg:grid-cols-12 gap-5 items-start">
+        {/* 左侧大面板骨架 */}
+        <div className="lg:col-span-8 bg-white dark:bg-zinc-950 border border-zinc-200 dark:border-zinc-800 rounded-xl p-5 flex flex-col gap-6">
+          {[1, 2, 3, 4].map((section) => (
+            <div key={section} className="flex flex-col gap-3">
+              <div className="flex flex-col gap-1.5">
+                <div className="h-4 w-32 bg-zinc-200 dark:bg-zinc-850 rounded" />
+                <div className="h-3 w-64 bg-zinc-200 dark:bg-zinc-850 rounded" />
+              </div>
+              <div className="grid grid-cols-1 md:grid-cols-2 gap-3.5 pt-1">
+                <div className="flex flex-col gap-1.5">
+                  <div className="h-3 w-20 bg-zinc-200 dark:bg-zinc-850 rounded" />
+                  <div className="h-8.5 w-full bg-zinc-100 dark:bg-zinc-900/60 rounded-lg" />
+                </div>
+                <div className="flex flex-col gap-1.5">
+                  <div className="h-3 w-24 bg-zinc-200 dark:bg-zinc-850 rounded" />
+                  <div className="h-8.5 w-full bg-zinc-100 dark:bg-zinc-900/60 rounded-lg" />
+                </div>
+              </div>
+              {section !== 4 && <div className="border-t border-zinc-100 dark:border-zinc-900/60 pt-2" />}
+            </div>
+          ))}
+        </div>
+
+        {/* 右侧名片骨架 */}
+        <div className="lg:col-span-4 flex flex-col gap-4">
+          <div className="bg-white dark:bg-zinc-950 border border-zinc-200 dark:border-zinc-800 rounded-xl overflow-hidden flex flex-col relative">
+            <div className="h-24 bg-zinc-100/50 dark:bg-zinc-900/50 border-b border-zinc-100 dark:border-zinc-900" />
+            <div className="-mt-10 ml-5 w-18 h-18 rounded-full border-2 border-white dark:border-zinc-950 bg-zinc-200 dark:bg-zinc-800 shadow-sm shrink-0" />
+            <div className="pt-3 px-5 pb-5 flex flex-col gap-4">
+              <div className="flex flex-col gap-1">
+                <div className="h-4 w-24 bg-zinc-200 dark:bg-zinc-850 rounded" />
+                <div className="h-3 w-36 bg-zinc-200 dark:bg-zinc-850 rounded" />
+              </div>
+              <div className="border-t border-zinc-100 dark:border-zinc-900 pt-3 flex flex-col gap-2.5">
+                <div className="h-3 w-16 bg-zinc-200 dark:bg-zinc-850 rounded" />
+                <div className="h-4 w-full bg-zinc-100/50 dark:bg-zinc-900/40 rounded" />
+                <div className="h-10 w-full bg-zinc-100/50 dark:bg-zinc-900/40 rounded" />
+              </div>
+            </div>
+          </div>
+        </div>
       </div>
     </div>
   );
