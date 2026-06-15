@@ -1,7 +1,7 @@
 "use client";
 
 import React, { useState, useEffect, useRef } from "react";
-import { User, Upload, Save, Github, Mail, Rss, Laptop, FileText, Sparkles } from "lucide-react";
+import { User, Upload, Save, GitFork, Mail, Rss, Laptop, FileText, Sparkles } from "lucide-react";
 import apiClient from "@/lib/api";
 import { toast } from "@/lib/toast";
 
@@ -266,7 +266,7 @@ export default function SettingsPage() {
               {/* GitHub */}
               <div className="flex items-center gap-2">
                 <div className="w-8 h-8 rounded-lg bg-zinc-100 dark:bg-zinc-800 flex items-center justify-center shrink-0">
-                  <Github size={14} className="text-zinc-600 dark:text-zinc-400" />
+                  <GitFork size={14} className="text-zinc-600 dark:text-zinc-400" />
                 </div>
                 <input
                   value={github}
