@@ -185,7 +185,7 @@ export default function TopBar() {
           href="https://github.com"
           target="_blank"
           rel="noopener noreferrer"
-          className="p-1.5 rounded-md text-zinc-500 hover:bg-zinc-150 dark:hover:bg-zinc-800 hover:text-zinc-800 dark:text-zinc-400 dark:hover:text-zinc-200 transition-colors cursor-pointer"
+          className="p-1.5 rounded-md text-zinc-500 hover:bg-zinc-100 dark:hover:bg-zinc-800 hover:text-zinc-800 dark:text-zinc-400 dark:hover:text-zinc-200 transition-colors cursor-pointer"
           title="项目代码库"
         >
           <GitBranch size={16} />
@@ -194,7 +194,7 @@ export default function TopBar() {
         {/* 全屏切换 */}
         <button
           onClick={toggleFullscreen}
-          className="p-1.5 rounded-md text-zinc-500 hover:bg-zinc-150 dark:hover:bg-zinc-800 hover:text-zinc-800 dark:text-zinc-400 dark:hover:text-zinc-200 transition-colors cursor-pointer"
+          className="p-1.5 rounded-md text-zinc-500 hover:bg-zinc-100 dark:hover:bg-zinc-800 hover:text-zinc-800 dark:text-zinc-400 dark:hover:text-zinc-200 transition-colors cursor-pointer"
           title={isFullscreen ? "退出全屏" : "网页全屏"}
         >
           {isFullscreen ? <Minimize2 size={16} /> : <Maximize2 size={16} />}
@@ -203,7 +203,7 @@ export default function TopBar() {
         {/* 手动深浅色切换 */}
         <button
           onClick={toggleDark}
-          className="p-1.5 rounded-md text-zinc-500 hover:bg-zinc-150 dark:hover:bg-zinc-800 hover:text-zinc-800 dark:text-zinc-400 dark:hover:text-zinc-200 transition-colors cursor-pointer"
+          className="p-1.5 rounded-md text-zinc-500 hover:bg-zinc-100 dark:hover:bg-zinc-800 hover:text-zinc-800 dark:text-zinc-400 dark:hover:text-zinc-200 transition-colors cursor-pointer"
           title={isDark ? "切换为亮色模式" : "切换为暗色模式"}
         >
           {isDark ? <Sun size={16} className="text-amber-500" /> : <Moon size={16} />}
@@ -213,7 +213,7 @@ export default function TopBar() {
         <div className="relative" ref={bellRef}>
           <button
             onClick={() => setBellOpen(!bellOpen)}
-            className="p-1.5 rounded-md text-zinc-500 hover:bg-zinc-150 dark:hover:bg-zinc-800 hover:text-zinc-800 dark:text-zinc-400 dark:hover:text-zinc-200 transition-colors relative cursor-pointer"
+            className="p-1.5 rounded-md text-zinc-500 hover:bg-zinc-100 dark:hover:bg-zinc-800 hover:text-zinc-800 dark:text-zinc-400 dark:hover:text-zinc-200 transition-colors relative cursor-pointer"
             title="通知中心"
           >
             <Bell size={16} />
@@ -221,7 +221,7 @@ export default function TopBar() {
           </button>
 
           {bellOpen && (
-            <div className="absolute right-0 top-full mt-1.5 w-60 rounded-xl border border-zinc-150 dark:border-zinc-805 bg-white dark:bg-zinc-900 py-2.5 shadow-lg z-50 animate-[fadeIn_0.12s_ease-out] text-left">
+            <div className="absolute right-0 top-full mt-1.5 w-60 rounded-xl border border-zinc-200 dark:border-zinc-800 bg-white dark:bg-zinc-900 py-2.5 shadow-lg z-50 animate-[fadeIn_0.12s_ease-out] text-left">
               <div className="px-3 pb-2 border-b border-zinc-100 dark:border-zinc-800 flex justify-between items-center">
                 <span className="text-xs font-bold text-zinc-800 dark:text-zinc-200">系统通知</span>
                 <span className="text-[10px] text-zinc-400">仅展示近期</span>
@@ -258,9 +258,9 @@ export default function TopBar() {
           </button>
 
           {menuOpen && (
-            <div className="absolute right-0 top-full mt-1.5 w-44 rounded-xl border border-zinc-150 dark:border-zinc-805 bg-white dark:bg-zinc-900 py-1 shadow-lg z-50 animate-[fadeIn_0.12s_ease-out] text-left">
+            <div className="absolute right-0 top-full mt-1.5 w-44 rounded-xl border border-zinc-200 dark:border-zinc-800 bg-white dark:bg-zinc-900 py-1 shadow-lg z-50 animate-[fadeIn_0.12s_ease-out] text-left">
               {/* 用户元数据 */}
-              <div className="px-3 py-1.5 border-b border-zinc-100 dark:border-zinc-805">
+              <div className="px-3 py-1.5 border-b border-zinc-100 dark:border-zinc-800">
                 <p className="text-xs font-bold text-zinc-800 dark:text-zinc-250 truncate">{user?.nickname}</p>
                 <p className="text-[10px] text-zinc-400 truncate">{user?.username}</p>
               </div>
