@@ -233,13 +233,19 @@ export default function Sidebar() {
                             }
                           }}
                           className={cn(
-                            "w-full flex items-center gap-2.5 px-3 py-2 rounded-md text-xs transition-all duration-150 cursor-pointer text-left focus:outline-none",
+                            "w-full flex items-center gap-2.5 px-3 py-1.5 rounded-md text-xs transition-all duration-150 cursor-pointer text-left focus:outline-none hover:translate-x-0.5",
                             childActive
-                              ? "bg-primary/10 text-primary font-semibold shadow-xs"
-                              : "text-zinc-500 dark:text-zinc-400 hover:bg-zinc-50 dark:hover:bg-zinc-800/30 hover:text-zinc-950 dark:hover:text-zinc-100"
+                              ? "text-primary font-medium"
+                              : "text-zinc-500 dark:text-zinc-400 hover:text-zinc-900 dark:hover:text-zinc-100"
                           )}
                         >
-                          <ChildIcon size={14} className="shrink-0 text-zinc-400" />
+                          <ChildIcon 
+                            size={13} 
+                            className={cn(
+                              "shrink-0 transition-colors", 
+                              childActive ? "text-primary" : "text-zinc-400 dark:text-zinc-500"
+                            )} 
+                          />
                           <span className="whitespace-nowrap truncate tracking-wide">
                             {child.title}
                           </span>
