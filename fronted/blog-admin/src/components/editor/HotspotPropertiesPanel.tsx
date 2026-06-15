@@ -261,7 +261,7 @@ export default function HotspotPropertiesPanel({
                   value={
                     key === 'heightPercent'
                       ? (hotspot.heightPercent?.toString() ?? '')
-                      : String((hotspot as Record<string, unknown>)[key] ?? '')
+                      : String((hotspot as unknown as Record<string, unknown>)[key] ?? '')
                   }
                   onChange={(e) => {
                     const val = e.target.value === '' ? 0 : Number(e.target.value)
