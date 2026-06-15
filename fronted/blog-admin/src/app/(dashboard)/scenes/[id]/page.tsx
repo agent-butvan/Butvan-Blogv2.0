@@ -570,27 +570,20 @@ export default function SceneEditorPage() {
     }
   }
 
-  // ==================== 加载 / 错误状态 ====================
-
   if (loading) {
-    return (
-      <div className="w-full min-h-screen flex flex-col items-center justify-center text-zinc-500 dark:text-zinc-400 gap-4">
-        <Spinner size="lg" />
-        <span className="text-sm font-heading">载入场景编辑器中...</span>
-      </div>
-    )
+    return <EditorSkeleton />;
   }
 
   if (!scene) {
     return (
-      <div className="w-full min-h-screen flex flex-col items-center justify-center p-6">
-        <div className="bg-white dark:bg-zinc-900 border border-zinc-200 dark:border-zinc-800 p-6 rounded-2xl max-w-sm text-center shadow-sm">
-          <p className="text-sm text-zinc-600 dark:text-zinc-300 mb-4">
+      <div className="w-full min-h-screen flex flex-col items-center justify-center p-6 bg-transparent">
+        <div className="bg-white/80 dark:bg-zinc-950/80 backdrop-blur-md border border-zinc-200 dark:border-zinc-800 p-6 rounded-2xl max-w-sm text-center shadow-lg">
+          <p className="text-sm text-zinc-700 dark:text-zinc-300 mb-4 font-heading">
             目标场景不存在或已被移除。
           </p>
           <button
             onClick={() => router.push('/scenes')}
-            className="rounded-lg border border-zinc-200 dark:border-zinc-800 bg-white dark:bg-zinc-900 px-4 py-2 text-xs text-zinc-700 dark:text-zinc-300 hover:bg-zinc-50 dark:hover:bg-zinc-800 hover:border-zinc-300 dark:hover:border-zinc-700 transition-colors cursor-pointer"
+            className="rounded-lg border border-zinc-200 dark:border-zinc-800 bg-white dark:bg-zinc-900 px-4 py-2 text-xs text-zinc-700 dark:text-zinc-300 hover:bg-zinc-50 dark:hover:bg-zinc-800 hover:border-zinc-300 dark:hover:border-zinc-700 transition-colors duration-200 cursor-pointer"
           >
             返回列表
           </button>
@@ -598,6 +591,7 @@ export default function SceneEditorPage() {
       </div>
     )
   }
+
 
   const bgImgUrl = scene.imageUrl.startsWith('/')
     ? `http://localhost:8080${scene.imageUrl}`
@@ -684,3 +678,44 @@ export default function SceneEditorPage() {
     </div>
   )
 }
+
+/** 场景编辑器骨架屏组件 (基于双栏设计，保持与画布+面板完全一致) */
+function EditorSkeleton() {
+  return (
+    <div className="flex flex-col gap-6 p-6 min-h-screen text-left font-body max-w-[1600px] mx-auto animate-pulse">
+      {/* 顶部工具栏骨架 */}
+      <div className="flex items-center justify-between border-b border-zinc-200 dark:border-zinc-800 pb-4 flex-wrap gap-3">
+        <div className="flex items-center gap-3">
+          <div className="w-24 h-8 bg-zinc-200 dark:bg-zinc-800 rounded-lg" />
+          <div className="flex flex-col gap-1.5">
+            <div className="h-5 w-36 bg-zinc-200 dark:bg-zinc-800 rounded" />
+            <div className="h-3.5 w-24 bg-zinc-200 dark:bg-zinc-800 rounded" />
+          </div>
+        </div>
+        <div className="flex gap-2">
+          <div className="w-44 h-9 bg-zinc-200 dark:bg-zinc-800 rounded-xl" />
+          <div className="w-28 h-9 bg-zinc-200 dark:bg-zinc-850 rounded-lg" />
+        </div>
+      </div>
+
+      {/* 主面板骨架 */}
+      <div className="grid grid-cols-1 xl:grid-cols-4 gap-6 items-start">
+        {/* 左侧画布占位 */}
+        <div className="xl:col-span-3 flex flex-col gap-3">
+          <div className="h-10 w-full bg-zinc-150 dark:bg-zinc-900 border border-zinc-200 dark:border-zinc-800 rounded-xl" />
+          <div className="aspect-video w-full bg-zinc-200 dark:bg-zinc-850 border border-zinc-200 dark:border-zinc-800 rounded-2xl" />
+        </div>
+        {/* 右侧属性面板占位 */}
+        <div className="xl:col-span-1 bg-white dark:bg-zinc-950 border border-zinc-200 dark:border-zinc-800 rounded-2xl p-5 flex flex-col gap-5">
+          <div className="h-4 w-28 bg-zinc-200 dark:bg-zinc-800 rounded" />
+          <div className="h-24 w-full bg-zinc-150 dark:bg-zinc-900 rounded-lg" />
+          <div className="border-t border-zinc-200 dark:border-zinc-800 pt-3 flex flex-col gap-3">
+            <div className="h-4 w-16 bg-zinc-200 dark:bg-zinc-850 rounded" />
+            <div className="h-20 w-full bg-zinc-150 dark:bg-zinc-900 rounded-lg" />
+          </div>
+        </div>
+      </div>
+    </div>
+  );
+}
+

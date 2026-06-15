@@ -76,10 +76,10 @@ export default function SceneToolbar({
           <h1 className="text-lg font-bold font-heading text-zinc-900 dark:text-zinc-50">
             场景物品编辑器
           </h1>
-          <p className="text-xs text-zinc-500 dark:text-zinc-400 mt-0.5">
+          <p className="text-xs text-zinc-650 dark:text-zinc-400 mt-0.5">
             编辑场景：
             <span className="text-primary font-bold ml-1">{sceneTitle}</span>
-            <span className="text-zinc-400 dark:text-zinc-500 ml-2 font-mono text-[11px]">
+            <span className="text-zinc-550 dark:text-zinc-400 ml-2 font-mono text-xs">
               ID {sceneId}
             </span>
           </p>
@@ -89,14 +89,14 @@ export default function SceneToolbar({
       {/* 右侧：模式切换 + 手动上传 */}
       <div className="flex items-center gap-2">
         {/* 模式切换组 */}
-        <div className="flex items-center rounded-xl bg-zinc-100/80 dark:bg-zinc-900 border border-zinc-200 dark:border-zinc-800 p-1 gap-0.5">
+        <div className="flex items-center rounded-xl bg-zinc-100/80 dark:bg-zinc-900 border border-zinc-200 dark:border-zinc-800 p-1 gap-0.5 animate-fade-in duration-200">
           {/* 选择编辑模式 */}
           <button
             onClick={() => onModeChange('select')}
             className={`${modeBtnBase} border-transparent cursor-pointer ${
               mode === 'select'
                 ? 'bg-white dark:bg-zinc-800 text-primary border-zinc-200 dark:border-zinc-700 shadow-sm font-semibold'
-                : 'text-zinc-500 dark:text-zinc-400 hover:text-zinc-900 dark:hover:text-white hover:bg-white/50 dark:hover:bg-white/5'
+                : 'text-zinc-600 dark:text-zinc-400 hover:text-zinc-900 dark:hover:text-white hover:bg-white/50 dark:hover:bg-white/5'
             }`}
           >
             <MousePointer2 size={14} />
@@ -109,7 +109,7 @@ export default function SceneToolbar({
             className={`${modeBtnBase} border-transparent cursor-pointer ${
               mode === 'draw'
                 ? 'bg-white dark:bg-zinc-800 text-primary border-zinc-200 dark:border-zinc-700 shadow-sm font-semibold animate-draw-pulse'
-                : 'text-zinc-500 dark:text-zinc-400 hover:text-zinc-900 dark:hover:text-white hover:bg-white/50 dark:hover:bg-white/5'
+                : 'text-zinc-600 dark:text-zinc-400 hover:text-zinc-900 dark:hover:text-white hover:bg-white/50 dark:hover:bg-white/5'
             }`}
           >
             <SquareDashed size={14} />
@@ -124,7 +124,7 @@ export default function SceneToolbar({
             className={`${modeBtnBase} border-zinc-200 dark:border-zinc-800 cursor-pointer shadow-sm ${
               smartExtraction
                 ? 'bg-primary/10 text-primary border-primary/40 font-semibold'
-                : 'bg-white dark:bg-zinc-900 text-zinc-500 dark:text-zinc-400 hover:bg-zinc-50 dark:hover:bg-zinc-800'
+                : 'bg-white dark:bg-zinc-900 text-zinc-600 dark:text-zinc-400 hover:bg-zinc-50 dark:hover:bg-zinc-800'
             }`}
             title={smartExtraction ? '已启用 AI 智能抠图' : '已关闭智能抠图，使用矩形裁剪'}
           >
@@ -148,6 +148,7 @@ export default function SceneToolbar({
           <Upload size={14} />
           {uploading ? '上传中...' : '上传物品图'}
         </button>
+
       </div>
     </div>
   )

@@ -131,22 +131,23 @@ const SceneCanvas = forwardRef<HTMLDivElement, SceneCanvasProps>(
       <div className={`flex flex-col gap-3 ${className}`}>
         {/* 画布提示栏 */}
         <div className="flex items-center justify-between bg-white dark:bg-zinc-900 border border-zinc-200 dark:border-zinc-800 px-4 py-2.5 rounded-xl shadow-xs">
-          <span className="text-xs font-heading text-zinc-700 dark:text-zinc-300 flex items-center gap-1.5">
+          <span className="text-xs font-heading text-zinc-800 dark:text-zinc-200 flex items-center gap-1.5">
             <Move size={14} className="text-primary" />
             {mode === 'draw'
               ? '框选模式 — 在场景上拖动鼠标框选物品区域，松开自动裁剪上传'
               : '编辑模式 — 点击物品选中，拖拽移动位置，拖拽右下角拉伸缩放'}
           </span>
           <span
-            className={`text-[10px] font-heading px-2 py-0.5 rounded-full border ${
+            className={`text-xs font-heading px-2 py-0.5 rounded-full border ${
               mode === 'draw'
                 ? 'border-primary/40 text-primary bg-primary/5'
-                : 'border-zinc-200 dark:border-zinc-800 text-zinc-500 dark:text-zinc-400 bg-zinc-50 dark:bg-zinc-800/40'
+                : 'border-zinc-200 dark:border-zinc-800 text-zinc-650 dark:text-zinc-400 bg-zinc-50 dark:bg-zinc-800/40'
             }`}
           >
             {mode === 'draw' ? '🔲 绘制模式' : '🖱 选择模式'}
           </span>
         </div>
+
 
         {/* 画布容器 */}
         <div
@@ -304,7 +305,7 @@ const SceneCanvas = forwardRef<HTMLDivElement, SceneCanvasProps>(
                       e.stopPropagation()
                       onConfirmCrop?.()
                     }}
-                    className="px-2.5 py-1 rounded bg-primary hover:bg-primary/90 text-white text-[10px] font-heading font-medium flex items-center gap-1 cursor-pointer transition-colors shadow-sm"
+                    className="px-2.5 py-1 rounded-md bg-primary hover:bg-primary/90 text-white text-xs font-heading font-medium flex items-center gap-1 cursor-pointer transition-colors duration-200 shadow-sm"
                   >
                     确认裁剪 ✂️
                   </button>
@@ -313,10 +314,11 @@ const SceneCanvas = forwardRef<HTMLDivElement, SceneCanvasProps>(
                       e.stopPropagation()
                       onCancelCrop?.()
                     }}
-                    className="px-2 py-1 rounded bg-zinc-800 hover:bg-zinc-700 text-zinc-300 text-[10px] font-heading cursor-pointer transition-colors"
+                    className="px-2 py-1 rounded-md bg-zinc-800 hover:bg-zinc-700 text-zinc-200 text-xs font-heading cursor-pointer transition-colors duration-200"
                   >
                     取消
                   </button>
+
                 </div>
               )}
             </div>
