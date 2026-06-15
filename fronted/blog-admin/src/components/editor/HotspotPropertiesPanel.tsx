@@ -77,22 +77,24 @@ export default function HotspotPropertiesPanel({
 
   useEffect(() => {
     if (!hotspot) return
-    // 按需懒加载：仅首次切换到对应类型时请求
-    if (hotspot.redirectType === 'ARTICLE' && articles.length === 0 && !articlesLoading) {
-      setArticlesLoading(true)
-      fetchArticlesSimple()
-        .then(setArticles)
-        .catch(() => setArticles([]))
-        .finally(() => setArticlesLoading(false))
-    }
-    if (hotspot.redirectType === 'CATEGORY' && categories.length === 0 && !categoriesLoading) {
-      setCategoriesLoading(true)
-      fetchCategoriesSimple()
-        .then(setCategories)
-        .catch(() => setCategories([]))
-        .finally(() => setCategoriesLoading(false))
-    }
-  }, [hotspot?.redirectType])
+    setTimeout(() => {
+      // 按需懒加载：仅首次切换到对应类型时请求
+      if (hotspot.redirectType === 'ARTICLE' && articles.length === 0 && !articlesLoading) {
+        setArticlesLoading(true)
+        fetchArticlesSimple()
+          .then(setArticles)
+          .catch(() => setArticles([]))
+          .finally(() => setArticlesLoading(false))
+      }
+      if (hotspot.redirectType === 'CATEGORY' && categories.length === 0 && !categoriesLoading) {
+        setCategoriesLoading(true)
+        fetchCategoriesSimple()
+          .then(setCategories)
+          .catch(() => setCategories([]))
+          .finally(() => setCategoriesLoading(false))
+      }
+    }, 0)
+  }, [hotspot?.redirectType, articles.length, articlesLoading, categories.length, categoriesLoading, hotspot])
 
   /** 解析图片 URL */
   const resolveUrl = (url: string) =>
@@ -258,7 +260,7 @@ export default function HotspotPropertiesPanel({
                   value={
                     key === 'heightPercent'
                       ? (hotspot.heightPercent?.toString() ?? '')
-                      : String((hotspot as any)[key] ?? '')
+                      : String((hotspot as Record<string, unknown>)[key] ?? '')
                   }
                   onChange={(e) => {
                     const val = e.target.value === '' ? 0 : Number(e.target.value)
