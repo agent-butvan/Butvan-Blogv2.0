@@ -42,11 +42,12 @@ export default function HomePage() {
           <div className="absolute bottom-8 left-1/2 -translate-x-1/2 z-20 flex flex-col items-center gap-1">
             <Link 
               href="/room" 
-              className="group flex items-center gap-1.5 px-4 py-2 rounded-full bg-white/80 dark:bg-zinc-900/80 border border-zinc-200/50 dark:border-zinc-800/80 text-xs font-semibold text-zinc-700 dark:text-zinc-300 hover:text-primary dark:hover:text-primary hover:border-primary/50 dark:hover:border-primary/50 hover:shadow-md transition-all duration-200 cursor-pointer shadow-xs"
+              className="group flex items-center gap-1.5 text-sm font-heading font-extrabold tracking-widest text-zinc-600 dark:text-zinc-300 hover:scale-[1.03] transition-all duration-200 cursor-pointer text-shine-effect"
             >
-              <span>🚪 探索可梵的 3D 沉浸式场景空间 &rarr;</span>
+              <span>🚪 探索可梵的 3D 沉浸式场景空间</span>
+              <span className="arrow-push-effect font-mono">&rarr;</span>
             </Link>
-            <span className="text-sm text-zinc-400 dark:text-zinc-600 font-light select-none animate-bounce mt-2" title="向下滚动查看博文">↓</span>
+            <span className="text-xs text-zinc-400 dark:text-zinc-600 font-light select-none animate-bounce mt-3" title="向下滚动查看博文">↓ 向下滚动查看博文</span>
           </div>
         )}
       </section>

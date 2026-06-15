@@ -56,3 +56,54 @@ h1, h2, h3, h4, h5, h6 {
   50%  { transform: translate(-2vw, 7vh) scale(0.97); }
   80%  { transform: translate(-5vw, -3vh) scale(1.04); }
 }
+
+/* ===== 场景空间入口文字流光 & 箭头跳动动画 ===== */
+@keyframes textShine {
+  0% { background-position: -200% center; }
+  100% { background-position: 200% center; }
+}
+
+@keyframes arrowPush {
+  0%, 100% { transform: translateX(0); }
+  50% { transform: translateX(5px); }
+}
+
+.text-shine-effect {
+  background: linear-gradient(
+    to right, 
+    #71717a 0%, 
+    #18181b 25%, 
+    #09B38A 50%, 
+    #18181b 75%, 
+    #71717a 100%
+  );
+  background-size: 200% auto;
+  -webkit-background-clip: text;
+  -webkit-text-fill-color: transparent;
+  animation: textShine 4s linear infinite;
+  transition: all 0.3s ease;
+}
+
+.dark .text-shine-effect {
+  background: linear-gradient(
+    to right, 
+    #a1a1aa 0%, 
+    #f4f4f5 25%, 
+    #09B38A 50%, 
+    #f4f4f5 75%, 
+    #a1a1aa 100%
+  );
+  background-size: 200% auto;
+  -webkit-background-clip: text;
+  -webkit-text-fill-color: transparent;
+}
+
+.text-shine-effect:hover {
+  filter: drop-shadow(0 0 2px rgba(9, 179, 138, 0.2));
+}
+
+.arrow-push-effect {
+  display: inline-block;
+  animation: arrowPush 1.2s ease-in-out infinite;
+}
+
