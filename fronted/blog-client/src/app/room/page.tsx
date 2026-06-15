@@ -4,6 +4,8 @@ import React, { useState, useEffect } from 'react'
 import { Card, Button, Chip, Spinner } from '@heroui/react'
 import { ArrowLeft, FileText, Settings, Sparkles, RefreshCw } from 'lucide-react'
 import Link from 'next/link'
+import Image from 'next/image'
+import { resolveImageUrl } from '@/lib/image-url'
 
 // Define v0.2 Hotspot and Scene types matching backend VO
 interface Hotspot {
@@ -161,9 +163,7 @@ export default function RoomPage() {
   }
 
   // 拼装完整的背景图片地址
-  const bgImgUrl = scene.imageUrl.startsWith('/')
-    ? `http://localhost:8080${scene.imageUrl}`
-    : scene.imageUrl
+  const bgImgUrl = resolveImageUrl(scene.imageUrl)
 
   return (
     <main className="relative w-screen h-screen overflow-hidden bg-[#0d1117] flex items-center justify-center font-body selection:bg-primary/30">
@@ -185,12 +185,16 @@ export default function RoomPage() {
         }}
         onMouseMove={handleMouseMove}
       >
-        {/* 背景图使用 <img> 标签而非 CSS background-image，
-            浏览器 <img> 解码器能更好地利用原生分辨率进行高质量缩放 */}
-        <img
+        {/* 背景图使用 next/image 组件，
+            自动生成多分辨率 srcSet 和 WebP/AVIF 转码，
+            解决 Retina 高分屏模糊问题 */}
+        <Image
           src={bgImgUrl}
           alt="Room Background"
-          className="absolute inset-0 w-full h-full object-cover"
+          fill
+          className="object-cover"
+          sizes="100vw"
+          preload
           draggable={false}
         />
 
@@ -205,9 +209,7 @@ export default function RoomPage() {
 
             if (!hotspot.itemImageUrl) return null
 
-            const spriteUrl = hotspot.itemImageUrl.startsWith('/')
-              ? `http://localhost:8080${hotspot.itemImageUrl}`
-              : hotspot.itemImageUrl
+            const spriteUrl = resolveImageUrl(hotspot.itemImageUrl)
 
             return (
               <div
@@ -228,18 +230,26 @@ export default function RoomPage() {
                 onMouseLeave={() => setHoveredHotspot(null)}
                 onClick={() => handleHotspotClick(hotspot)}
               >
-                <img
-                  src={spriteUrl}
-                  alt={hotspot.itemName}
-                  className="w-full h-auto object-contain transition-all duration-[450ms] ease-out pointer-events-auto"
-                  style={{
-                    opacity: isHovered || isActive ? 1 : 0,
-                    filter:
-                      isHovered || isActive
-                        ? 'drop-shadow(0 0 15px rgba(114, 123, 186, 0.95)) drop-shadow(0 5px 10px rgba(0, 0, 0, 0.35))'
-                        : 'none',
-                  }}
-                />
+                {/* 精灵图使用 next/image 优化，自动 WebP 转码消除锯齿模糊 */}
+                <div className="relative w-full">
+                  <Image
+                    src={spriteUrl}
+                    alt={hotspot.itemName}
+                    width={800}
+                    height={600}
+                    sizes={`${hotspot.widthPercent}vw`}
+                    className="object-contain transition-all duration-[450ms] ease-out pointer-events-auto"
+                    style={{
+                      width: '100%',
+                      height: 'auto',
+                      opacity: isHovered || isActive ? 1 : 0,
+                      filter:
+                        isHovered || isActive
+                          ? 'drop-shadow(0 0 15px rgba(114, 123, 186, 0.95)) drop-shadow(0 5px 10px rgba(0, 0, 0, 0.35))'
+                          : 'none',
+                    }}
+                  />
+                </div>
               </div>
             )
           })}
@@ -277,30 +287,7 @@ export default function RoomPage() {
         </div>
       )}
 
-      {/* 4. HEADS-UP DISPLAY (HUD) */}
-      {!zoomState.active && (
-        <div className="absolute inset-x-0 top-0 p-8 flex justify-between items-center z-20 pointer-events-none select-none">
-          {/* 返回首页按钮 */}
-          <Link href="/" className="pointer-events-auto">
-            <div className="bg-neutral-light/65 dark:bg-neutral-dark/65 backdrop-blur-lg border border-white/10 px-4 py-2.5 rounded-2xl shadow-lg flex items-center gap-2 hover:bg-white/10 transition-colors cursor-pointer">
-              <ArrowLeft className="w-4 h-4 text-primary" />
-              <span className="text-xs font-heading text-neutral-dark dark:text-neutral-light">
-                返回首页
-              </span>
-            </div>
-          </Link>
-          <div className="pointer-events-auto flex gap-2">
-            <Chip
-              color="accent"
-              variant="soft"
-              size="sm"
-              className="font-heading border border-primary/20 backdrop-blur-md"
-            >
-              ✨ {scene.title} — 探索并点击交互切片
-            </Chip>
-          </div>
-        </div>
-      )}
+
 
       {/* 5. TRANSITION FADE SCREEN AND SUB-PAGES */}
       <div
