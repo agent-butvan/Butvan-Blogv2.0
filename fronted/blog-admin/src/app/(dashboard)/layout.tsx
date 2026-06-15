@@ -21,19 +21,21 @@ export default function DashboardLayout({
   const [ready, setReady] = useState(false);
 
   useEffect(() => {
-    // 登录页面无需检查
-    if (pathname === "/login") {
+    setTimeout(() => {
+      // 登录页面无需检查
+      if (pathname === "/login") {
+        setReady(true);
+        return;
+      }
+
+      // 未登录则跳转登录页
+      if (!isAuthenticated()) {
+        router.replace("/login");
+        return;
+      }
+
       setReady(true);
-      return;
-    }
-
-    // 未登录则跳转登录页
-    if (!isAuthenticated()) {
-      router.replace("/login");
-      return;
-    }
-
-    setReady(true);
+    }, 0);
   }, [pathname, router]);
 
   // 加载中显示 Spinner

@@ -83,18 +83,7 @@ function removeItemFromTree(
     }));
 }
 
-/** 在树中查找节点（返回引用） */
-function findItemInTree(
-  tree: NavigationItem[],
-  id: number
-): NavigationItem | null {
-  for (const item of tree) {
-    if (item.id === id) return item;
-    const found = findItemInTree(item.children, id);
-    if (found) return found;
-  }
-  return null;
-}
+
 
 /** 统计子节点数量 */
 function countChildren(item: NavigationItem): number {
@@ -156,7 +145,9 @@ export default function NavigationPage() {
   }, [selectedPosition]);
 
   useEffect(() => {
-    loadData();
+    setTimeout(() => {
+      loadData();
+    }, 0);
   }, [loadData]);
 
   /** 显示成功消息 */

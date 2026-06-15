@@ -1,5 +1,6 @@
 "use client";
 
+import { useState, useEffect } from "react";
 import dynamic from "next/dynamic";
 import type { MDEditorProps } from "@uiw/react-md-editor";
 
@@ -30,8 +31,26 @@ export default function MarkdownEditor({
   height = 500,
   placeholder = "开始 Markdown 写作...",
 }: MarkdownEditorProps) {
+  const [colorMode, setColorMode] = useState<"light" | "dark">("light");
+
+  useEffect(() => {
+    const checkDark = () => {
+      const isDark = document.documentElement.classList.contains("dark");
+      setColorMode(isDark ? "dark" : "light");
+    };
+    checkDark();
+
+    const observer = new MutationObserver(checkDark);
+    observer.observe(document.documentElement, {
+      attributes: true,
+      attributeFilter: ["class"],
+    });
+
+    return () => observer.disconnect();
+  }, []);
+
   return (
-    <div data-color-mode="light">
+    <div data-color-mode={colorMode}>
       <MDEditor
         value={value}
         onChange={(val) => onChange(val || "")}
