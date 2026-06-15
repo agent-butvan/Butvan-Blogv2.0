@@ -1,7 +1,7 @@
 'use client'
 
 import React, { useState, useEffect, useRef } from 'react'
-import { Card, Button, Chip, Spinner } from '@heroui/react'
+import { Button, Chip, Spinner } from '@heroui/react'
 import { 
   FileText, 
   Calendar, 
