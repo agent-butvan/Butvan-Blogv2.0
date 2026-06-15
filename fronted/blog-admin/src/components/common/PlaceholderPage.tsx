@@ -18,7 +18,7 @@ export default function PlaceholderPage({
       <div className="mb-5 flex h-16 w-16 items-center justify-center rounded-2xl bg-primary/10">
         <Icon size={28} className="text-primary" />
       </div>
-      <h1 className="font-heading text-xl font-bold text-neutral-dark mb-2">
+      <h1 className="font-heading text-xl font-bold text-zinc-900 dark:text-zinc-50 mb-2">
         {title}
       </h1>
       <p className="text-sm text-zinc-400 max-w-sm">{description}</p>
