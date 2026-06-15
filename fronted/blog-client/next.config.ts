@@ -29,6 +29,24 @@ const nextConfig: NextConfig = {
     // 缓存 TTL：开发环境设短以方便调试
     minimumCacheTTL: 60,
   },
+  // ============================================================
+  // 路由重定向配置（解决用户访问历史复数路由 /articles 报 404 问题）
+  // 将所有的复数页面访问永久重定向至单数 /article
+  // ============================================================
+  async redirects() {
+    return [
+      {
+        source: '/articles',
+        destination: '/article',
+        permanent: true,
+      },
+      {
+        source: '/articles/:path*',
+        destination: '/article/:path*',
+        permanent: true,
+      },
+    ];
+  },
 };
 
 export default nextConfig;
