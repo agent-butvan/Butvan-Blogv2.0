@@ -105,12 +105,12 @@ export default function Sidebar() {
   return (
     <aside
       className={cn(
-        "flex flex-col bg-zinc-50 dark:bg-[#0c0c10] border-r border-zinc-200 dark:border-zinc-800 h-screen sticky top-0 transition-all duration-200 select-none z-30 shrink-0",
+        "flex flex-col h-[calc(100vh-1.5rem)] m-3 mr-0 rounded-2xl transition-all duration-200 select-none z-30 shrink-0 glass-panel overflow-hidden",
         collapsed ? "w-[56px]" : "w-[220px]"
       )}
     >
       {/* 顶层 Logo 标志区 (高度对齐 TopBar) */}
-      <div className="flex h-[52px] items-center justify-between px-3 border-b border-zinc-200 dark:border-zinc-800 shrink-0 bg-white dark:bg-zinc-900/50">
+      <div className="flex h-[52px] items-center justify-between px-3 border-b border-zinc-200/50 dark:border-zinc-800/40 shrink-0 bg-white/20 dark:bg-zinc-900/20">
         {!collapsed && (
           <div className="flex items-center gap-2 animate-[fadeIn_0.15s_ease-out]">
             <span className="font-heading font-extrabold text-[10px] bg-primary text-white w-5 h-5 rounded-md flex items-center justify-center tracking-tighter">VB</span>
@@ -293,7 +293,7 @@ export default function Sidebar() {
 
       {/* 底部版权信息 (极简) */}
       {!collapsed && (
-        <div className="px-3.5 py-2.5 border-t border-zinc-200 dark:border-zinc-800 shrink-0 text-left bg-white dark:bg-zinc-900/10">
+        <div className="px-3.5 py-2.5 border-t border-zinc-200/50 dark:border-zinc-800/40 shrink-0 text-left bg-white/10 dark:bg-zinc-900/5">
           <p className="text-[9px] text-zinc-400 dark:text-zinc-500 tracking-wider font-mono">VB CONSOLE 2.0</p>
         </div>
       )}

@@ -152,7 +152,7 @@ export default function TopBar() {
   const breadcrumbs = getBreadcrumbs();
 
   return (
-    <header className="flex h-[52px] items-center justify-between border-b border-zinc-200 dark:border-zinc-800 bg-white dark:bg-zinc-900 px-4 sticky top-0 z-10 select-none shrink-0 transition-colors">
+    <header className="flex h-[52px] items-center justify-between px-4 z-10 select-none shrink-0 glass-panel rounded-2xl">
       
       {/* 左侧：带 Icon 的高集成面包屑 */}
       <div className="flex items-center gap-1.5 text-zinc-500 dark:text-zinc-400">
@@ -221,8 +221,8 @@ export default function TopBar() {
           </button>
 
           {bellOpen && (
-            <div className="absolute right-0 top-full mt-1.5 w-60 rounded-xl border border-zinc-200 dark:border-zinc-800 bg-white dark:bg-zinc-900 py-2.5 shadow-lg z-50 animate-[fadeIn_0.12s_ease-out] text-left">
-              <div className="px-3 pb-2 border-b border-zinc-100 dark:border-zinc-800 flex justify-between items-center">
+            <div className="absolute right-0 top-full mt-1.5 w-60 rounded-xl glass-panel py-2.5 z-50 animate-[fadeIn_0.12s_ease-out] text-left">
+              <div className="px-3 pb-2 border-b border-zinc-200/40 dark:border-zinc-800/40 flex justify-between items-center">
                 <span className="text-xs font-bold text-zinc-800 dark:text-zinc-200">系统通知</span>
                 <span className="text-[10px] text-zinc-400">仅展示近期</span>
               </div>
@@ -258,9 +258,9 @@ export default function TopBar() {
           </button>
 
           {menuOpen && (
-            <div className="absolute right-0 top-full mt-1.5 w-44 rounded-xl border border-zinc-200 dark:border-zinc-800 bg-white dark:bg-zinc-900 py-1 shadow-lg z-50 animate-[fadeIn_0.12s_ease-out] text-left">
+            <div className="absolute right-0 top-full mt-1.5 w-44 rounded-xl glass-panel py-1 z-50 animate-[fadeIn_0.12s_ease-out] text-left">
               {/* 用户元数据 */}
-              <div className="px-3 py-1.5 border-b border-zinc-100 dark:border-zinc-800">
+              <div className="px-3 py-1.5 border-b border-zinc-200/40 dark:border-zinc-800/40">
                 <p className="text-xs font-bold text-zinc-800 dark:text-zinc-250 truncate">{user?.nickname}</p>
                 <p className="text-[10px] text-zinc-400 truncate">{user?.username}</p>
               </div>

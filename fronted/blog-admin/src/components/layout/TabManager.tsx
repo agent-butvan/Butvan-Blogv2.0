@@ -160,10 +160,10 @@ export default function TabManager() {
   };
 
   return (
-    <div className="flex h-9 items-center justify-between border-b border-zinc-200 dark:border-zinc-800 bg-white dark:bg-zinc-900 select-none px-4 shrink-0">
+    <div className="flex h-9 items-center justify-between select-none px-4 shrink-0 bg-transparent">
       
       {/* 标签列表区 */}
-      <div className="flex flex-1 items-center overflow-x-auto custom-scrollbar h-full -mb-px">
+      <div className="flex flex-1 items-center overflow-x-auto custom-scrollbar h-full gap-1.5">
         {tabs.map((tab) => {
           const active = pathname === tab.url;
           return (
@@ -171,10 +171,10 @@ export default function TabManager() {
               key={tab.url}
               onClick={() => handleTabClick(tab.url)}
               className={cn(
-                "group flex h-9 items-center gap-1.5 px-4 text-xs font-medium border-r border-zinc-200 dark:border-zinc-800 transition-all cursor-pointer relative shrink-0",
+                "group flex h-7 items-center gap-1.5 px-3 text-xs font-semibold rounded-lg transition-all cursor-pointer relative shrink-0",
                 active
-                  ? "bg-zinc-50 dark:bg-zinc-950 text-primary font-bold border-b-2 border-b-primary"
-                  : "bg-white dark:bg-zinc-900 text-zinc-500 dark:text-zinc-400 hover:bg-zinc-50/50 dark:hover:bg-zinc-900/50 hover:text-zinc-800 dark:hover:text-zinc-200"
+                  ? "bg-primary/15 dark:bg-primary/25 text-primary dark:text-[#b0a2ff] font-bold"
+                  : "bg-white/40 dark:bg-zinc-900/40 text-zinc-500 dark:text-zinc-400 hover:bg-white/80 dark:hover:bg-zinc-850/60 hover:text-zinc-800 dark:hover:text-zinc-200"
               )}
             >
               <span className="whitespace-nowrap tracking-wide">{tab.title}</span>
@@ -206,7 +206,7 @@ export default function TabManager() {
         </button>
 
         {menuOpen && (
-          <div className="absolute right-0 top-full mt-1.5 w-36 rounded-lg border border-zinc-200 dark:border-zinc-800 bg-white dark:bg-zinc-900 py-1 shadow-lg z-50 animate-[fadeIn_0.12s_ease-out] text-left">
+            <div className="absolute right-0 top-full mt-1.5 w-36 rounded-lg glass-panel py-1 z-50 animate-[fadeIn_0.12s_ease-out] text-left">
             <button
               onClick={handleCloseOthers}
               className="flex w-full items-center gap-2 px-3 py-1.5 text-left text-[11px] font-medium text-zinc-600 dark:text-zinc-400 hover:bg-zinc-50 dark:hover:bg-zinc-800 transition-colors"
