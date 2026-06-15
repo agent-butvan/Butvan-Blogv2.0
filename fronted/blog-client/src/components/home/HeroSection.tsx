@@ -57,7 +57,7 @@ export default function HeroSection({ profile, loading }: HeroSectionProps) {
   }
 
   return (
-    <div className="relative z-10 flex flex-col md:flex-row items-center md:items-start gap-10 md:gap-16 lg:gap-20 max-w-5xl w-full justify-center py-12 md:py-16 text-left font-body">
+    <div className="relative z-10 flex flex-col items-center md:items-start gap-8 max-w-2xl w-full justify-center py-12 md:py-16 text-left font-body">
       
       {/* 注入招手动画样式 */}
       <style jsx global>{`
@@ -98,7 +98,7 @@ export default function HeroSection({ profile, loading }: HeroSectionProps) {
       </motion.div>
 
       {/* ===== 2. 右侧信息区 (左对齐) ===== */}
-      <div className="flex-1 flex flex-col items-center md:items-start text-center md:text-left pt-2 md:pt-4">
+      <div className="flex flex-col items-center md:items-start text-center md:text-left pt-2 w-full">
         {/* 实时状态呼吸灯挂件 */}
         <motion.div
           className="flex items-center gap-2 px-3 py-1.5 rounded-full bg-[#09B38A]/5 dark:bg-[#09B38A]/10 border border-[#09B38A]/15 text-[#09B38A] text-[11px] font-mono mb-4 w-fit shadow-xs select-none"
@@ -136,7 +136,7 @@ export default function HeroSection({ profile, loading }: HeroSectionProps) {
 
         {/* Bio / Tech Stack */}
         <motion.div
-          className="text-sm sm:text-base md:text-lg text-zinc-500 dark:text-zinc-400 font-mono tracking-normal leading-relaxed mb-6 font-medium"
+          className="text-sm sm:text-base md:text-lg text-zinc-500 dark:text-zinc-400 font-mono tracking-normal leading-relaxed mb-8 font-medium"
           initial={{ y: 15, opacity: 0 }}
           animate={{ y: 0, opacity: 1 }}
           transition={{ delay: 0.3, duration: 0.4 }}
@@ -144,23 +144,12 @@ export default function HeroSection({ profile, loading }: HeroSectionProps) {
           {profile?.bio || 'Java/Kotlin + JavaScript/Typescript 全栈开发者'}
         </motion.div>
 
-        {/* Detailed Intro Lines */}
-        <motion.div
-          className="flex flex-col gap-3.5 text-zinc-700 dark:text-zinc-300 font-body text-sm sm:text-base md:text-lg max-w-2xl mb-8 leading-relaxed font-normal"
-          initial={{ opacity: 0 }}
-          animate={{ opacity: 1 }}
-          transition={{ delay: 0.4, duration: 0.5 }}
-        >
-          <p className="font-semibold text-zinc-800 dark:text-zinc-100 text-[15px] sm:text-[17px] md:text-[19px]">{introLine1}</p>
-          <p className="text-zinc-650 dark:text-zinc-400 text-sm sm:text-base md:text-[17px]">{introLine2}</p>
-        </motion.div>
-
         {/* CTA 核心入口区 */}
         <motion.div
           className="flex flex-wrap items-center gap-4 mb-8"
           initial={{ y: 10, opacity: 0 }}
           animate={{ y: 0, opacity: 1 }}
-          transition={{ delay: 0.45, duration: 0.4 }}
+          transition={{ delay: 0.4, duration: 0.4 }}
         >
           <Link
             href="/room"
