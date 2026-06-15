@@ -62,6 +62,14 @@ interface SceneCanvasProps {
   onHotspotDragStart: (e: React.MouseEvent<HTMLDivElement>, hotspot: HotspotData) => void
   /** 开始缩放热区 */
   onHotspotResizeStart: (e: React.MouseEvent<HTMLDivElement>, hotspot: HotspotData) => void
+  /** 开始拖拽临时选区 */
+  onDrawingRectDragStart?: (e: React.MouseEvent<HTMLDivElement>) => void
+  /** 开始缩放临时选区 */
+  onDrawingRectResizeStart?: (e: React.MouseEvent<HTMLDivElement>) => void
+  /** 确认裁剪选区 */
+  onConfirmCrop?: () => void
+  /** 取消裁剪选区 */
+  onCancelCrop?: () => void
   /** 外部 class */
   className?: string
 }
@@ -91,6 +99,10 @@ const SceneCanvas = forwardRef<HTMLDivElement, SceneCanvasProps>(
       onHotspotSelect,
       onHotspotDragStart,
       onHotspotResizeStart,
+      onDrawingRectDragStart,
+      onDrawingRectResizeStart,
+      onConfirmCrop,
+      onCancelCrop,
       className = '',
     },
     ref
@@ -240,8 +252,14 @@ const SceneCanvas = forwardRef<HTMLDivElement, SceneCanvasProps>(
           {/* Layer 5: 正在绘制的矩形选区 */}
           {mode === 'draw' && drawingRect && (
             <div
-              className="absolute z-40 pointer-events-none"
+              className={`absolute z-40 transition-shadow ${
+                isDrawing ? 'pointer-events-none' : 'pointer-events-auto cursor-move shadow-2xl'
+              }`}
               style={getDrawRectStyle()}
+              onMouseDown={(e) => {
+                if (isDrawing) return
+                onDrawingRectDragStart?.(e)
+              }}
             >
               {/* 蓝色半透明填充 */}
               <div className="absolute inset-0 bg-primary/15 border-2 border-primary rounded-sm" />
@@ -258,6 +276,47 @@ const SceneCanvas = forwardRef<HTMLDivElement, SceneCanvasProps>(
                     const h = Math.abs(drawingRect.currentY - drawingRect.startY)
                     return `${Math.round(w)}×${Math.round(h)} px`
                   })()}
+                </div>
+              )}
+
+              {/* 选中态右下角缩放把手 */}
+              {!isDrawing && (
+                <div
+                  className="absolute -bottom-1.5 -right-1.5 w-3.5 h-3.5 bg-primary border border-black rounded-full cursor-se-resize z-50 flex items-center justify-center hover:scale-125 transition-transform"
+                  onMouseDown={(e) => {
+                    e.stopPropagation()
+                    e.preventDefault()
+                    onDrawingRectResizeStart?.(e)
+                  }}
+                >
+                  <Maximize size={10} className="text-black" />
+                </div>
+              )}
+
+              {/* 确认与取消微型悬浮工具栏 */}
+              {!isDrawing && !isCropping && (
+                <div 
+                  className="absolute -bottom-12 left-1/2 -translate-x-1/2 flex items-center gap-1.5 bg-zinc-950/95 border border-white/10 px-2 py-1.5 rounded-xl shadow-2xl z-50 pointer-events-auto select-none whitespace-nowrap animate-fade-in"
+                  onMouseDown={(e) => e.stopPropagation()} // 阻止拖拽冒泡
+                >
+                  <button
+                    onClick={(e) => {
+                      e.stopPropagation()
+                      onConfirmCrop?.()
+                    }}
+                    className="px-2.5 py-1 rounded bg-primary hover:bg-primary/90 text-white text-[10px] font-heading font-medium flex items-center gap-1 cursor-pointer transition-colors shadow-sm"
+                  >
+                    确认裁剪 ✂️
+                  </button>
+                  <button
+                    onClick={(e) => {
+                      e.stopPropagation()
+                      onCancelCrop?.()
+                    }}
+                    className="px-2 py-1 rounded bg-zinc-800 hover:bg-zinc-700 text-zinc-300 text-[10px] font-heading cursor-pointer transition-colors"
+                  >
+                    取消
+                  </button>
                 </div>
               )}
             </div>

@@ -4,7 +4,7 @@ import React, { useState, useEffect, useRef, useCallback } from 'react'
 import { useParams, useRouter } from 'next/navigation'
 import apiClient from '@/lib/api'
 import { toast } from '@/lib/toast'
-import { cropImageFromBackground, trimAndSmoothCutout } from '@/lib/canvas-crop'
+import { cropImageFromBackground } from '@/lib/canvas-crop'
 import { removeImageBackground, preloadRemovalModel } from '@/lib/background-removal'
 import SceneToolbar from '@/components/editor/SceneToolbar'
 import type { EditorMode } from '@/components/editor/SceneToolbar'
@@ -330,19 +330,17 @@ export default function SceneEditorPage() {
     })
   }
 
-  /** 画布 mouseUp → 完成框选 → 自动裁剪上传 */
+  /** 画布 mouseUp → 完成框选 → 保持选区等待调整与确认 */
   const handleCanvasMouseUp = (e: React.MouseEvent<HTMLDivElement>) => {
     if (!isDrawing || !drawingRect || !containerRef.current) return
     const containerRect = containerRef.current.getBoundingClientRect()
 
-    // 归一化起止点（支持任意方向拖拽）
-    const minX = Math.min(drawingRect.startX, drawingRect.currentX)
-    const minY = Math.min(drawingRect.startY, drawingRect.currentY)
-    const maxX = Math.max(drawingRect.startX, drawingRect.currentX)
-    const maxY = Math.max(drawingRect.startY, drawingRect.currentY)
+    // 归一化起止点（支持任意方向拖拽拉出的矩形）
+    const minX = Math.max(0, Math.min(drawingRect.startX, drawingRect.currentX))
+    const minY = Math.max(0, Math.min(drawingRect.startY, drawingRect.currentY))
+    const maxX = Math.min(containerRect.width, Math.max(drawingRect.startX, drawingRect.currentX))
+    const maxY = Math.min(containerRect.height, Math.max(drawingRect.startY, drawingRect.currentY))
 
-    const xPercent = (minX / containerRect.width) * 100
-    const yPercent = (minY / containerRect.height) * 100
     const widthPercent = ((maxX - minX) / containerRect.width) * 100
     const heightPercent = ((maxY - minY) / containerRect.height) * 100
 
@@ -356,7 +354,114 @@ export default function SceneEditorPage() {
       return
     }
 
+    // 保存归一化后的选区，等待微调
+    setDrawingRect({
+      startX: minX,
+      startY: minY,
+      currentX: maxX,
+      currentY: maxY,
+    })
+  }
+
+  /** 拖拽移动临时选选区 */
+  const handleDrawingRectDragStart = (e: React.MouseEvent<HTMLDivElement>) => {
+    e.stopPropagation()
+    e.preventDefault()
+    if (!containerRef.current || !drawingRect) return
+
+    const containerRect = containerRef.current.getBoundingClientRect()
+    const startX = e.clientX
+    const startY = e.clientY
+
+    const rectW = drawingRect.currentX - drawingRect.startX
+    const rectH = drawingRect.currentY - drawingRect.startY
+    const initStartX = drawingRect.startX
+    const initStartY = drawingRect.startY
+
+    const handleMouseMove = (moveEvent: MouseEvent) => {
+      const dx = moveEvent.clientX - startX
+      const dy = moveEvent.clientY - startY
+
+      const newX = Math.max(0, Math.min(containerRect.width - rectW, initStartX + dx))
+      const newY = Math.max(0, Math.min(containerRect.height - rectH, initStartY + dy))
+
+      setDrawingRect({
+        startX: newX,
+        startY: newY,
+        currentX: newX + rectW,
+        currentY: newY + rectH,
+      })
+    }
+
+    const handleMouseUp = () => {
+      document.removeEventListener('mousemove', handleMouseMove)
+      document.removeEventListener('mouseup', handleMouseUp)
+    }
+
+    document.addEventListener('mousemove', handleMouseMove)
+    document.addEventListener('mouseup', handleMouseUp)
+  }
+
+  /** 拖拽缩放临时选区 */
+  const handleDrawingRectResizeStart = (e: React.MouseEvent<HTMLDivElement>) => {
+    e.stopPropagation()
+    e.preventDefault()
+    if (!containerRef.current || !drawingRect) return
+
+    const containerRect = containerRef.current.getBoundingClientRect()
+    const startX = e.clientX
+    const startY = e.clientY
+
+    const rectW = drawingRect.currentX - drawingRect.startX
+    const rectH = drawingRect.currentY - drawingRect.startY
+    const initStartX = drawingRect.startX
+    const initStartY = drawingRect.startY
+
+    const handleMouseMove = (moveEvent: MouseEvent) => {
+      const dx = moveEvent.clientX - startX
+      const dy = moveEvent.clientY - startY
+
+      const newW = Math.max(10, Math.min(containerRect.width - initStartX, rectW + dx))
+      const newH = Math.max(10, Math.min(containerRect.height - initStartY, rectH + dy))
+
+      setDrawingRect({
+        startX: initStartX,
+        startY: initStartY,
+        currentX: initStartX + newW,
+        currentY: initStartY + newH,
+      })
+    }
+
+    const handleMouseUp = () => {
+      document.removeEventListener('mousemove', handleMouseMove)
+      document.removeEventListener('mouseup', handleMouseUp)
+    }
+
+    document.addEventListener('mousemove', handleMouseMove)
+    document.addEventListener('mouseup', handleMouseUp)
+  }
+
+  /** 确认裁剪 */
+  const handleConfirmCrop = () => {
+    if (!drawingRect || !containerRef.current) return
+    const containerRect = containerRef.current.getBoundingClientRect()
+
+    const xPercent = (drawingRect.startX / containerRect.width) * 100
+    const yPercent = (drawingRect.startY / containerRect.height) * 100
+    const widthPercent = ((drawingRect.currentX - drawingRect.startX) / containerRect.width) * 100
+    const heightPercent = ((drawingRect.currentY - drawingRect.startY) / containerRect.height) * 100
+
+    if (widthPercent < 0.5 || heightPercent < 0.5) {
+      toast.warning('选区太小，请重新调整')
+      return
+    }
+
     handleDrawingComplete({ xPercent, yPercent, widthPercent, heightPercent })
+  }
+
+  /** 取消裁剪 */
+  const handleCancelCrop = () => {
+    setDrawingRect(null)
   }
 
   /** 框选完成 → 裁剪 + 上传 + 创建热区 */
@@ -372,7 +477,7 @@ export default function SceneEditorPage() {
       const bgUrl = scene!.imageUrl.startsWith('/')
         ? `http://localhost:8080${scene!.imageUrl}`
         : scene!.imageUrl
-      const { blob: croppedBlob, naturalWidth, naturalHeight } = await cropImageFromBackground(
+      const { blob: croppedBlob } = await cropImageFromBackground(
         bgUrl,
         rect.xPercent,
         rect.yPercent,
@@ -380,36 +485,16 @@ export default function SceneEditorPage() {
         rect.heightPercent
       )
 
-      // 2. 智能抠图（如果已启用）：从矩形裁剪图中提取主体物品并优化边缘
+      // 2. 智能抠图（如果已启用）：从矩形裁剪图中提取主体物品
       let finalBlob: Blob = croppedBlob
-      let finalXPercent = rect.xPercent
-      let finalYPercent = rect.yPercent
-      let finalWidthPercent = rect.widthPercent
-      let finalHeightPercent = rect.heightPercent
-
       if (smartExtraction) {
         setExtractionProgress(0)
         try {
-          // AI 背景移除
           const removalResult = await removeImageBackground(
             croppedBlob,
             (progress) => setExtractionProgress(progress)
           )
-
-          // 核心优化：裁切透明边缘像素并进行 Alpha 边缘盒模糊（羽化）平滑
-          const trimResult = await trimAndSmoothCutout(removalResult.blob)
-          finalBlob = trimResult.blob
-
-          // 重算热区坐标，确保定位边框与实际去背景物体完美贴合
-          const sx = Math.round((rect.xPercent / 100) * naturalWidth)
-          const sy = Math.round((rect.yPercent / 100) * naturalHeight)
-          const finalSx = sx + trimResult.dx
-          const finalSy = sy + trimResult.dy
-          
-          finalXPercent = (finalSx / naturalWidth) * 100
-          finalYPercent = (finalSy / naturalHeight) * 100
-          finalWidthPercent = (trimResult.dw / naturalWidth) * 100
-          finalHeightPercent = (trimResult.dh / naturalHeight) * 100
+          finalBlob = removalResult.blob
         } catch (err) {
           console.warn('智能抠图失败，回退到矩形裁剪图', err)
           // 抠图失败时静默回退，使用原裁剪图
@@ -417,7 +502,7 @@ export default function SceneEditorPage() {
         }
       }
 
-      // 3. 上传最终 of the 物品图
+      // 3. 上传最终的物品图
       const formData = new FormData()
       formData.append('file', finalBlob, `crop-${Date.now()}.png`)
       const uploadRes = await apiClient.post('/admin/media/upload', formData, {
@@ -433,10 +518,10 @@ export default function SceneEditorPage() {
         sceneId: Number(sceneId),
         itemName: '未命名物品',
         itemImageUrl: croppedImageUrl,
-        xPercent: Number(finalXPercent.toFixed(2)),
-        yPercent: Number(finalYPercent.toFixed(2)),
-        widthPercent: Number(finalWidthPercent.toFixed(2)),
-        heightPercent: Number(finalHeightPercent.toFixed(2)),
+        xPercent: Number(rect.xPercent.toFixed(2)),
+        yPercent: Number(rect.yPercent.toFixed(2)),
+        widthPercent: Number(rect.widthPercent.toFixed(2)),
+        heightPercent: Number(rect.heightPercent.toFixed(2)),
         hoverTips: '框选裁剪的物品',
         redirectType: 'INTERNAL',
         redirectPath: '/about',
@@ -547,6 +632,10 @@ export default function SceneEditorPage() {
           onHotspotSelect={handleSelectHotspot}
           onHotspotDragStart={handleDragStart}
           onHotspotResizeStart={handleResizeStart}
+          onDrawingRectDragStart={handleDrawingRectDragStart}
+          onDrawingRectResizeStart={handleDrawingRectResizeStart}
+          onConfirmCrop={handleConfirmCrop}
+          onCancelCrop={handleCancelCrop}
           className="xl:col-span-3"
         />
 
