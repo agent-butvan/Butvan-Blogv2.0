@@ -1,16 +1,14 @@
 "use client";
 
 import { useEffect, useState } from "react";
+import Link from "next/link";
 import {
   FileText,
   MessageSquare,
   Eye,
   Users,
   ArrowRight,
-  TrendingUp,
-  Activity,
-  HardDrive,
-  Cpu
+  Activity
 } from "lucide-react";
 import apiClient from "@/lib/api";
 import type { ApiResponse } from "@/types/common";
@@ -271,9 +269,9 @@ export default function DashboardPage() {
                 <span className="w-0.75 h-3 bg-amber-500 rounded-full" />
                 近期博文动态与热度统计
               </h3>
-              <a href="/articles" className="text-[10px] text-primary hover:underline flex items-center gap-0.5 font-bold">
+              <Link href="/articles" className="text-[10px] text-primary hover:underline flex items-center gap-0.5 font-bold">
                 跳转文章列表 <ArrowRight size={10} />
-              </a>
+              </Link>
             </div>
 
             {/* 数据表格 */}
