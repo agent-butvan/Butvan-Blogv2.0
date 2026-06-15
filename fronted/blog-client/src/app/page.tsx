@@ -38,8 +38,8 @@ export default function HomePage() {
         <HeroSection profile={profile} loading={loading} />
       </section>
 
-      {/* Layer 3: 第二屏 — 技能/兴趣卡片 */}
-      <FeaturesSection />
+      {/* Layer 3: 第二屏 — 技能/兴趣卡片（页脚） */}
+      <FeaturesSection profile={profile} />
     </main>
   )
 }
