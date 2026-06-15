@@ -1,6 +1,6 @@
 'use client'
 
-import React, { useState, useEffect } from 'react'
+import React, { useState, useEffect, useRef } from 'react'
 import { Card, Button, Chip, Spinner } from '@heroui/react'
 import { 
   FileText, 
@@ -12,7 +12,10 @@ import {
   AlertCircle, 
   Inbox, 
   ArrowLeft,
-  Sparkles
+  Sparkles,
+  Heart,
+  Pin,
+  ExternalLink
 } from 'lucide-react'
 import Link from 'next/link'
 import Image from 'next/image'
@@ -182,6 +185,25 @@ export default function ArticleListPage() {
 
   const pageSize = 6
 
+  // Fluid Hover State 用于单栏列表背景滑动特效
+  const [hoverStyle, setHoverStyle] = useState({ top: 0, height: 0, opacity: 0 })
+  const containerRef = useRef<HTMLDivElement>(null)
+
+  const handleMouseEnter = (e: React.MouseEvent<HTMLDivElement>) => {
+    if (!containerRef.current) return
+    const containerRect = containerRef.current.getBoundingClientRect()
+    const targetRect = e.currentTarget.getBoundingClientRect()
+    setHoverStyle({
+      top: targetRect.top - containerRect.top,
+      height: targetRect.height,
+      opacity: 1
+    })
+  }
+
+  const handleMouseLeave = () => {
+    setHoverStyle(prev => ({ ...prev, opacity: 0 }))
+  }
+
   /**
    * 从后端或降级本地 Mock 获取分类与标签列表
    */
@@ -335,26 +357,42 @@ export default function ArticleListPage() {
       {/* 左侧悬浮侧挂导航 */}
       <SidebarWidget />
 
-      {/* 顶部高端大气的渐变打光 Banner */}
-      <section className="w-full max-w-5xl px-6 pt-12 pb-8 border-b border-zinc-200/50 dark:border-zinc-900/60 relative overflow-hidden flex flex-col gap-3 text-left">
-        <div className="absolute top-[-20%] left-[20%] w-[350px] h-[350px] bg-[#727BBA]/5 dark:bg-[#727BBA]/10 rounded-full blur-[100px] pointer-events-none" />
-        
-        <div className="flex flex-col gap-2 mt-2">
-          <h1 className="text-3xl md:text-4xl font-extrabold font-heading text-zinc-900 dark:text-zinc-50 tracking-tight flex items-center gap-3">
-            <FileText className="w-8 h-8 text-[#727BBA]" />
+      {/* 顶部极简居中人文页头 */}
+      <header className="relative w-full max-w-5xl px-4 pt-16 pb-8 text-center flex flex-col items-center select-none">
+        <div className="relative flex flex-col items-center">
+          <span className="absolute -top-4 -right-10 [writing-mode:vertical-rl] text-[9px] font-serif font-bold text-[#727BBA]/60 dark:text-[#727BBA]/50 tracking-[0.3em] uppercase border-r border-[#727BBA]/20 pr-1 h-10">
+            ARCHIVE
+          </span>
+
+          <h1 className="text-2xl md:text-3xl font-serif font-bold text-zinc-900 dark:text-zinc-50 tracking-[0.1em] flex items-center gap-2">
             文章归档
-            <span className="text-[#727BBA] text-sm font-normal tracking-widest hidden md:inline ml-2">/ ARCHIVE</span>
             {isMocked && (
-              <Chip size="sm" variant="soft" color="warning" className="text-warning-600 dark:text-warning-300 border-warning-500/20 text-[10px] ml-2 font-bold font-heading">
-                演示模式 (已降级)
+              <Chip size="sm" className="bg-amber-100 text-amber-700 dark:bg-amber-950/40 dark:text-amber-400 border border-amber-200/50 dark:border-amber-900/30 text-[9px] scale-90 origin-left font-bold font-heading">
+                演示数据
               </Chip>
             )}
           </h1>
-          <p className="text-xs md:text-sm text-zinc-500 dark:text-zinc-400 max-w-2xl leading-relaxed font-semibold">
-            在这里，我将沉淀所有的技术积累与思考。包含前端探索、后端高并发架构设计、数据库优化调优及一些零星的个人随笔记录。
-          </p>
+
+          {/* 极简点线修饰 */}
+          <div className="flex items-center gap-2 mt-3">
+            <div className="w-1 h-1 rounded-full bg-[#727BBA]/40"></div>
+            <div className="w-12 h-px bg-[#727BBA]/20"></div>
+            <div className="w-1 h-1 rounded-full bg-[#727BBA]/40"></div>
+          </div>
         </div>
-      </section>
+
+        <p className="mt-5 font-serif italic text-sm md:text-base text-zinc-700 dark:text-zinc-200 opacity-90 tracking-wide">
+          文字是思考的锚点
+        </p>
+
+        <div className="mt-4 flex items-start gap-2 max-w-lg mx-auto">
+          <span className="text-[#727BBA]/40 font-serif text-lg leading-none">“</span>
+          <p className="text-[13px] leading-relaxed text-zinc-500 dark:text-zinc-400 font-serif text-center italic">
+            按时间顺序排布的思考、笔记与技术沉淀。在这里，你可以找到所有历史文章的快照。
+          </p>
+          <span className="text-[#727BBA]/40 font-serif text-lg leading-none self-end">”</span>
+        </div>
+      </header>
 
       {/* 主体筛选区与文章列表 */}
       <section className="w-full max-w-5xl px-6 py-8 flex flex-col gap-8">
@@ -476,107 +514,109 @@ export default function ArticleListPage() {
             </Button>
           </div>
         ) : (
-          /* ================= 正常渲染文章列表 (网格布局) ================= */
-          <div className="flex flex-col gap-8 text-left animate-[fadeIn_0.35s_ease-out]">
-            <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
-              {articles.map((article) => {
-                const coverUrl = article.coverImageUrl ? resolveImageUrl(article.coverImageUrl) : null
-                
+          /* ================= 正常渲染文章列表 (极简人文单栏 + Fluid Hover) ================= */
+          <div className="flex flex-col gap-8 text-left animate-[fadeIn_0.35s_ease-out] w-full max-w-3xl mx-auto">
+            <div 
+              ref={containerRef}
+              onMouseLeave={handleMouseLeave}
+              className="flex flex-col relative isolate w-full"
+            >
+              {/* Fluid Background 跟随滑块 */}
+              <div 
+                className="absolute left-0 w-full bg-[#E9EEE8] dark:bg-[#727BBA]/15 rounded-2xl pointer-events-none -z-10 fluid-hover-bg"
+                style={{
+                  top: `${hoverStyle.top}px`,
+                  height: `${hoverStyle.height}px`,
+                  opacity: hoverStyle.opacity
+                }}
+              />
+
+              {articles.map((article, index) => {
                 return (
-                  <Card
+                  <div
                     key={article.id}
-                    className="border border-zinc-200/50 dark:border-zinc-800/60 bg-white dark:bg-zinc-900/30 hover:bg-white dark:hover:bg-zinc-900/50 transition-all duration-[400ms] rounded-2xl flex flex-col overflow-hidden h-[410px] hover:scale-[1.015] hover:border-[#727BBA]/40 group hover:shadow-[0_20px_50px_rgba(0,0,0,0.03)] dark:hover:shadow-[0_20px_50px_rgba(114,123,186,0.04)]"
+                    className="article-enter rounded-2xl transition-colors duration-300"
+                    style={{ animationDelay: `${index * 80}ms` }}
+                    onMouseEnter={handleMouseEnter}
                   >
-                    {/* 文章封面图区域 */}
-                    <div className="relative w-full h-44 bg-zinc-100 dark:bg-zinc-900 overflow-hidden shrink-0 border-b border-zinc-200/40 dark:border-zinc-800/40">
-                      {coverUrl ? (
-                        <Image
-                          src={coverUrl}
-                          alt={article.title}
-                          fill
-                          className="object-cover transition-transform duration-500 group-hover:scale-103"
-                          sizes="(max-width: 768px) 100vw, 300px"
-                        />
-                      ) : (
-                        <div className="w-full h-full flex flex-col items-center justify-center bg-gradient-to-br from-[#727BBA]/10 to-[#09B38A]/10 text-[#727BBA]/20">
-                          <FileText className="w-12 h-12 stroke-[1.2]" />
-                        </div>
-                      )}
-                      
-                      {/* 置顶 & 推荐徽章 */}
-                      <div className="absolute top-3 left-3 flex gap-1.5 z-10 select-none">
-                        {article.isPinned && (
-                          <Chip size="sm" className="bg-[#727BBA] text-white text-[10px] font-bold h-5 shadow-lg shadow-[#727BBA]/20 border-none">
-                            置顶
-                          </Chip>
-                        )}
-                        {article.isFeatured && (
-                          <Chip size="sm" className="bg-[#09B38A] text-white text-[10px] font-bold h-5 shadow-lg shadow-[#09B38A]/20 border-none">
-                            精选
-                          </Chip>
-                        )}
-                      </div>
-
-                      {/* 分类徽章 */}
-                      {article.categoryName && (
-                        <div className="absolute bottom-3 right-3 z-10 select-none">
-                          <Chip size="sm" className="bg-white/80 dark:bg-zinc-950/80 backdrop-blur-sm border border-zinc-200/50 dark:border-zinc-800/60 text-zinc-700 dark:text-zinc-300 text-[10px] font-medium h-5">
-                            {article.categoryName}
-                          </Chip>
-                        </div>
-                      )}
-                    </div>
-
-                    {/* 卡片主体内容 */}
-                    <Card.Content className="p-5 flex-1 flex flex-col justify-between text-left">
-                      <div className="flex flex-col gap-2.5 text-left">
-                        {/* 发布时间与阅读量 */}
-                        <div className="flex items-center gap-4 text-[10px] text-zinc-400 dark:text-zinc-500 font-mono">
-                          <span className="flex items-center gap-1">
-                            <Calendar className="w-3 h-3 text-[#727BBA]/70" />
-                            {formatDate(article.publishedAt)}
-                          </span>
-                          <span className="flex items-center gap-1">
-                            <Eye className="w-3 h-3 text-[#727BBA]/70" />
-                            {article.viewCount} 次浏览
-                          </span>
-                        </div>
-
-                        {/* 标题 */}
-                        <h3 className="text-sm font-bold text-zinc-800 dark:text-zinc-50 leading-snug group-hover:text-[#727BBA] transition-colors line-clamp-2 min-h-10 text-left">
-                          {article.title}
-                        </h3>
-
-                        {/* 摘要描述 */}
-                        <p className="text-xs text-zinc-500 dark:text-zinc-400 leading-relaxed line-clamp-3 min-h-[54px] text-left">
-                          {article.summary}
-                        </p>
-                      </div>
-
-                      {/* 卡片底栏跳转与标签 */}
-                      <div className="border-t border-zinc-200/50 dark:border-zinc-900/60 pt-3.5 mt-3.5 flex items-center justify-between">
-                        {/* 标签列展示 */}
-                        <div className="flex gap-1 overflow-hidden max-w-[65%] shrink-0">
-                          {article.tags && article.tags.length > 0 ? (
-                            article.tags.slice(0, 2).map((t) => (
-                              <span key={t.id} className="text-[9px] bg-zinc-100 dark:bg-zinc-900/60 border border-zinc-200/60 dark:border-zinc-800/60 text-zinc-500 dark:text-zinc-400 px-1.5 py-0.5 rounded-md truncate font-mono">
-                                #{t.name}
-                              </span>
-                            ))
-                          ) : (
-                            <span className="text-[9px] text-zinc-450 dark:text-zinc-600 italic">无标签</span>
+                    <Link
+                      href={`/article/${article.slug}`}
+                      className="group relative flex flex-col gap-3.5 px-4 py-5 sm:px-6 sm:py-6 border-b border-zinc-200/30 dark:border-zinc-800/30 last:border-0 w-full outline-none"
+                    >
+                      {/* 标题 */}
+                      <h2 className="font-serif text-lg sm:text-xl md:text-2xl font-medium text-zinc-900 dark:text-zinc-100 group-hover:text-[#727BBA] transition-colors duration-200 flex items-center gap-2">
+                        <span>{article.title}</span>
+                        <div className="flex gap-1 shrink-0 items-center">
+                          {article.isPinned && (
+                            <span className="inline-flex shrink-0 items-center gap-0.5 ml-1.5 align-middle px-1 py-px text-[9px] font-mono font-normal tracking-wider text-[#727BBA]">
+                              <Pin size={10} className="rotate-45" />
+                              <span className="scale-75 origin-left">置顶</span>
+                            </span>
+                          )}
+                          {article.isFeatured && (
+                            <span className="inline-flex shrink-0 items-center gap-0.5 ml-1 align-middle px-1 py-px text-[9px] font-mono font-normal tracking-wider text-[#09B38A]">
+                              <Sparkles size={10} />
+                              <span className="scale-75 origin-left">精选</span>
+                            </span>
                           )}
                         </div>
+                      </h2>
 
-                        {/* 进入阅读按钮 */}
-                        <Link href={`/article/${article.slug}`}>
-                          <Button size="sm" variant="ghost" className="text-[11px] text-[#727BBA] hover:text-[#727BBA]/80 group-hover:gap-1.5 font-bold font-heading p-0 bg-transparent min-w-0 h-auto gap-0.5 transition-all duration-200">
-                            阅读正文 <ChevronRight className="w-3.5 h-3.5" />
-                          </Button>
-                        </Link>
+                      {/* 描述摘要 */}
+                      <p className="text-zinc-500 dark:text-zinc-400 text-xs sm:text-sm leading-relaxed line-clamp-2">
+                        {article.summary || '暂无摘要'}
+                      </p>
+
+                      {/* 元数据行 */}
+                      <div className="mt-1 flex flex-wrap items-center gap-x-4 gap-y-1.5 text-[11px] sm:text-xs text-zinc-450 dark:text-zinc-500 font-mono sm:gap-x-6">
+                        {/* 日期 */}
+                        <div className="flex items-center gap-1.5">
+                          <Calendar size={13} strokeWidth={1.5} />
+                          <span>{formatDate(article.publishedAt)}</span>
+                        </div>
+
+                        {/* 分类 */}
+                        {article.categoryName && (
+                          <div className="flex items-center gap-1.5">
+                            <FolderOpen size={13} strokeWidth={1.5} />
+                            <span>{article.categoryName}</span>
+                          </div>
+                        )}
+
+                        {/* 浏览量 */}
+                        <div className="flex items-center gap-1.5">
+                          <Eye size={13} strokeWidth={1.5} />
+                          <span>{article.viewCount} 次浏览</span>
+                        </div>
+
+                        {/* 标签 */}
+                        {article.tags && article.tags.length > 0 && (
+                          <div className="flex items-center gap-1.5">
+                            <TagIcon size={12} strokeWidth={1.5} />
+                            <div className="flex gap-1.5">
+                              {article.tags.slice(0, 3).map(t => (
+                                <span key={t.id} className="text-[10px] hover:text-[#727BBA]">
+                                  #{t.name}
+                                </span>
+                              ))}
+                            </div>
+                          </div>
+                        )}
+
+                        {/* 外部链接动效提示 */}
+                        <div className="w-full sm:w-auto sm:ml-auto">
+                          <div className="flex items-center gap-1 text-zinc-300 hover:text-[#727BBA] dark:text-zinc-700 dark:hover:text-[#727BBA] transition-colors group/link">
+                            <span className="opacity-0 group-hover:opacity-100 transition-opacity text-[10px]">阅读全文</span>
+                            <ExternalLink
+                              size={12}
+                              strokeWidth={1.5}
+                              className="opacity-0 group-hover:opacity-100 group-hover/link:-translate-y-0.5 group-hover/link:translate-x-0.5 transition-all"
+                            />
+                          </div>
+                        </div>
                       </div>
-                    </Card.Content>
-                  </Card>
+                    </Link>
+                  </div>
                 )
               })}
             </div>
