@@ -73,7 +73,7 @@ export default function HeroSection({ profile, loading }: HeroSectionProps) {
       `}</style>
 
       {/* ===== 上半部分：左右分栏基本信息 ===== */}
-      <div className="flex flex-col md:flex-row items-center md:items-start gap-8 md:gap-14 mb-10 w-full">
+      <div className="flex flex-col md:flex-row items-center md:items-start gap-10 md:gap-16 mb-12 w-full">
         {/* 左侧头像区 (方形微圆角) */}
         <motion.div
           className="relative shrink-0"
@@ -81,17 +81,17 @@ export default function HeroSection({ profile, loading }: HeroSectionProps) {
           animate={{ scale: 1, opacity: 1 }}
           transition={{ duration: 0.5 }}
         >
-          <div className="w-44 h-44 rounded-xl border border-black/5 dark:border-white/5 shadow-xs bg-white dark:bg-zinc-900 overflow-hidden p-1 flex items-center justify-center transition-all duration-300 hover:scale-[1.01]">
+          <div className="w-48 h-48 md:w-56 md:h-56 rounded-2xl border border-black/5 dark:border-white/5 shadow-xs bg-white dark:bg-zinc-900 overflow-hidden p-1.5 flex items-center justify-center transition-all duration-300 hover:scale-[1.01]">
             {avatarUrl ? (
               <img
                 src={avatarUrl}
                 alt={profile?.nickname || 'Avatar'}
-                className="w-full h-full object-cover rounded-lg"
+                className="w-full h-full object-cover rounded-xl"
                 draggable={false}
               />
             ) : (
-              <div className="w-full h-full rounded-lg bg-primary/10 flex items-center justify-center">
-                <span className="text-4xl font-bold font-heading text-primary select-none">
+              <div className="w-full h-full rounded-xl bg-primary/10 flex items-center justify-center">
+                <span className="text-5xl font-bold font-heading text-primary select-none">
                   {initials}
                 </span>
               </div>
@@ -100,10 +100,10 @@ export default function HeroSection({ profile, loading }: HeroSectionProps) {
         </motion.div>
 
         {/* 右侧基本信息区 */}
-        <div className="flex-1 flex flex-col items-center md:items-start text-center md:text-left pt-2">
+        <div className="flex-1 flex flex-col items-center md:items-start text-center md:text-left pt-2 md:pt-4">
           {/* Hi! 👋 */}
           <motion.div
-            className="text-[#09B38A] italic text-3xl font-heading font-medium mb-2 flex items-center gap-1.5"
+            className="text-[#09B38A] italic text-4xl md:text-5xl font-heading font-medium mb-3 flex items-center gap-1.5"
             initial={{ y: 10, opacity: 0 }}
             animate={{ y: 0, opacity: 1 }}
             transition={{ delay: 0.1, duration: 0.4 }}
@@ -114,7 +114,7 @@ export default function HeroSection({ profile, loading }: HeroSectionProps) {
 
           {/* Name */}
           <motion.h1
-            className="text-4xl sm:text-5xl font-heading font-bold text-zinc-900 dark:text-zinc-50 tracking-tight mb-5 leading-none"
+            className="text-5xl sm:text-6xl md:text-[68px] lg:text-[76px] font-heading font-bold text-zinc-900 dark:text-zinc-50 tracking-tight mb-6 leading-none"
             initial={{ y: 15, opacity: 0 }}
             animate={{ y: 0, opacity: 1 }}
             transition={{ delay: 0.2, duration: 0.4 }}
@@ -124,7 +124,7 @@ export default function HeroSection({ profile, loading }: HeroSectionProps) {
 
           {/* Bio / Tech Stack */}
           <motion.div
-            className="text-sm sm:text-base text-zinc-400 dark:text-zinc-500 font-mono tracking-wide leading-relaxed font-normal"
+            className="text-base sm:text-lg md:text-xl text-zinc-400 dark:text-zinc-500 font-mono tracking-wide leading-relaxed font-normal"
             initial={{ y: 15, opacity: 0 }}
             animate={{ y: 0, opacity: 1 }}
             transition={{ delay: 0.3, duration: 0.4 }}
@@ -135,10 +135,10 @@ export default function HeroSection({ profile, loading }: HeroSectionProps) {
       </div>
 
       {/* ===== 下半部分：详细介绍与社交链接 ===== */}
-      <div className="w-full flex flex-col gap-6 text-zinc-700 dark:text-zinc-300 font-body text-base md:text-[17px] leading-relaxed">
+      <div className="w-full flex flex-col gap-8 text-zinc-700 dark:text-zinc-300 font-body text-lg sm:text-xl md:text-[22px] leading-relaxed">
         {/* Detailed Intro Lines */}
         <motion.div
-          className="flex flex-col gap-3.5 max-w-3xl font-normal"
+          className="flex flex-col gap-5 max-w-4xl font-normal"
           initial={{ opacity: 0 }}
           animate={{ opacity: 1 }}
           transition={{ delay: 0.4, duration: 0.5 }}
@@ -149,7 +149,7 @@ export default function HeroSection({ profile, loading }: HeroSectionProps) {
 
         {/* Links */}
         <motion.div
-          className="flex items-center gap-6 mt-2 flex-wrap justify-center md:justify-start"
+          className="flex items-center gap-7 mt-3 flex-wrap justify-center md:justify-start"
           initial={{ y: 10, opacity: 0 }}
           animate={{ y: 0, opacity: 1 }}
           transition={{ delay: 0.5, duration: 0.4 }}
@@ -159,18 +159,18 @@ export default function HeroSection({ profile, loading }: HeroSectionProps) {
             href={githubUrl}
             target="_blank"
             rel="noopener noreferrer"
-            className="flex items-center gap-1.5 text-zinc-500 hover:text-zinc-850 dark:hover:text-zinc-200 text-sm font-heading font-medium tracking-wide transition-colors group"
+            className="flex items-center gap-2 text-zinc-500 hover:text-zinc-850 dark:hover:text-zinc-200 text-base md:text-[17px] font-heading font-medium tracking-wide transition-colors group"
           >
-            <GitFork className="w-4 h-4 text-zinc-400 group-hover:text-zinc-700 dark:group-hover:text-zinc-300 transition-colors" />
+            <GitFork className="w-4.5 h-4.5 text-zinc-400 group-hover:text-zinc-700 dark:group-hover:text-zinc-300 transition-colors" />
             GitHub
           </a>
 
           {/* Email Link */}
           <a
             href={emailUrl}
-            className="flex items-center gap-1.5 text-zinc-500 hover:text-zinc-850 dark:hover:text-zinc-200 text-sm font-heading font-medium tracking-wide transition-colors group"
+            className="flex items-center gap-2 text-zinc-500 hover:text-zinc-850 dark:hover:text-zinc-200 text-base md:text-[17px] font-heading font-medium tracking-wide transition-colors group"
           >
-            <Mail className="w-4 h-4 text-zinc-400 group-hover:text-zinc-700 dark:group-hover:text-zinc-300 transition-colors" />
+            <Mail className="w-4.5 h-4.5 text-zinc-400 group-hover:text-zinc-700 dark:group-hover:text-zinc-300 transition-colors" />
             Email
           </a>
 
@@ -179,9 +179,9 @@ export default function HeroSection({ profile, loading }: HeroSectionProps) {
             href={rssUrl}
             target="_blank"
             rel="noopener noreferrer"
-            className="flex items-center gap-1.5 text-zinc-500 hover:text-zinc-850 dark:hover:text-zinc-200 text-sm font-heading font-medium tracking-wide transition-colors group"
+            className="flex items-center gap-2 text-zinc-500 hover:text-zinc-850 dark:hover:text-zinc-200 text-base md:text-[17px] font-heading font-medium tracking-wide transition-colors group"
           >
-            <Rss className="w-4 h-4 text-zinc-400 group-hover:text-zinc-700 dark:group-hover:text-zinc-300 transition-colors" />
+            <Rss className="w-4.5 h-4.5 text-zinc-400 group-hover:text-zinc-700 dark:group-hover:text-zinc-300 transition-colors" />
             RSS
           </a>
         </motion.div>
