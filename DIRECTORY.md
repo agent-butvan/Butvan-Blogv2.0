@@ -40,8 +40,8 @@ Butvan Blog2.0/                                    # 📦 项目根目录
 │   │   ├── src/
 │   │   │   ├── app/                               #     Next.js App Router 路由层
 │   │   │   │   ├── page.tsx                       #         🏠 首页 — 房间场景：PNG图层切片物理悬浮交互、镜头缩放聚焦
-│   │   │   │   ├── articles/                      #       📝 文章模块
-│   │   │   │   │   ├── page.tsx                   #         文章列表页（分页、筛选）
+│   │   │   │   ├── article/                       #       📝 文章模块
+│   │   │   │   │   ├── page.tsx                   #         文章列表页（分页、多维筛选、Mock降级）
 │   │   │   │   │   └── [slug]/                    #         文章详情页
 │   │   │   │   │       └── page.tsx               #           正文渲染、评论、系列导航
 │   │   │   │   ├── categories/                    #       📂 分类模块
@@ -298,9 +298,9 @@ Butvan Blog2.0/                                    # 📦 项目根目录
             │   │       ├── JwtUtil.java            #         JWT 工具类（签发、解析、校验 Token）
             │   │       └── SecurityConfig.java     #         Spring Security 配置（放行白名单、权限规则）
             │   └── resources/
-            │       ├── application.yml             #         主配置文件（公共配置）
-            │       ├── application-dev.yml         #         开发环境配置（本地数据库、debug 日志）
-            │       └── application-prod.yml        #         生产环境配置（连接池、日志级别）
+            │       ├── application.yml             #         主配置文件（导入 database 与 routes 配置文件）
+            │       ├── application-database.yml    #         数据库、JPA及JWT安全证书配置文件
+            │       └── application-routes.yml      #         前台页面客户端路由映射配置文件
             └── test/
                 └── java/com/butvan/blog/service/   #       🧪 单元测试与集成测试
 ```
