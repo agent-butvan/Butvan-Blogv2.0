@@ -6,6 +6,7 @@ import Link from 'next/link'
 import FluidBackground from '@/components/home/FluidBackground'
 import HeroSection from '@/components/home/HeroSection'
 import FeaturesSection from '@/components/home/FeaturesSection'
+import Navbar from '@/components/common/Navbar'
 import { fetchProfile } from '@/lib/profile'
 import type { ProfileVO } from '@/types/profile'
 import gsap from 'gsap'
@@ -141,11 +142,14 @@ export default function HomePage() {
 
   return (
     <main className="relative w-full min-h-screen overflow-x-hidden bg-[#f6f6f6] dark:bg-zinc-950 font-body selection:bg-primary/20 text-zinc-900 dark:text-zinc-50 transition-colors">
+      {/* 顶部动态主导航栏 */}
+      <Navbar profile={profile} />
+
       {/* 隐藏夜店流体动画背景以匹配图片极简灰白风格 */}
       {/* <FluidBackground /> */}
 
       {/* Layer 2: 首屏 — 个人信息（完美契合参考图的极简左右+上下组合排版） */}
-      <section className="relative w-full min-h-screen flex items-center justify-center px-6 md:px-16 lg:px-24">
+      <section className="relative w-full min-h-[calc(100vh-4rem)] flex items-center justify-center px-6 md:px-16 lg:px-24">
         <HeroSection profile={profile} loading={loading} />
 
         {!loading && (
