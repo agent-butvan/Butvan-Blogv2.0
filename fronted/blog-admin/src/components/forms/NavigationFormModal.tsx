@@ -47,26 +47,28 @@ export default function NavigationFormModal({
   // 弹窗打开时重置表单
   useEffect(() => {
     if (open) {
-      if (initialData) {
-        setTitle(initialData.title);
-        setLinkType(initialData.linkType as NavLinkType);
-        setLinkTargetId(initialData.linkTargetId?.toString() || "");
-        setLinkUrl(initialData.linkUrl || "");
-        setIcon(initialData.icon || "");
-        setSortOrder(initialData.sortOrder.toString());
-        setIsVisible(initialData.isVisible ?? true);
-        setIsOpenNewTab(initialData.isOpenNewTab ?? false);
-      } else {
-        setTitle("");
-        setLinkType("NONE");
-        setLinkTargetId("");
-        setLinkUrl("");
-        setIcon("");
-        setSortOrder("0");
-        setIsVisible(true);
-        setIsOpenNewTab(false);
-      }
-      setError(null);
+      setTimeout(() => {
+        if (initialData) {
+          setTitle(initialData.title);
+          setLinkType(initialData.linkType as NavLinkType);
+          setLinkTargetId(initialData.linkTargetId?.toString() || "");
+          setLinkUrl(initialData.linkUrl || "");
+          setIcon(initialData.icon || "");
+          setSortOrder(initialData.sortOrder.toString());
+          setIsVisible(initialData.isVisible ?? true);
+          setIsOpenNewTab(initialData.isOpenNewTab ?? false);
+        } else {
+          setTitle("");
+          setLinkType("NONE");
+          setLinkTargetId("");
+          setLinkUrl("");
+          setIcon("");
+          setSortOrder("0");
+          setIsVisible(true);
+          setIsOpenNewTab(false);
+        }
+        setError(null);
+      }, 0);
     }
   }, [open, initialData]);
 
