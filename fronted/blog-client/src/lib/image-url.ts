@@ -20,8 +20,8 @@ const API_BASE = process.env.NEXT_PUBLIC_API_BASE_URL || 'http://localhost:8080'
  */
 export function resolveImageUrl(url?: string): string {
   if (!url) return ''
-  // 已经是绝对 URL（含协议头）则直接返回
-  if (url.startsWith('http://') || url.startsWith('https://')) return url
+  // 已经是绝对 URL（含协议头）或本地静态 public 目录图片则直接返回
+  if (url.startsWith('http://') || url.startsWith('https://') || url.startsWith('/images/')) return url
   // 相对路径拼接后端基础 URL
   if (url.startsWith('/')) return `${API_BASE}${url}`
   return `${API_BASE}/${url}`
