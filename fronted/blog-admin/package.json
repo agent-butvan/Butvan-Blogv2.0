@@ -10,6 +10,8 @@
   },
   "dependencies": {
     "@heroui/react": "^3.1.0",
+    "@imgly/background-removal": "^1.7.0",
+    "@uiw/react-markdown-preview": "^5.2.1",
     "@uiw/react-md-editor": "^4.1.1",
     "axios": "^1.17.0",
     "framer-motion": "^12.40.0",

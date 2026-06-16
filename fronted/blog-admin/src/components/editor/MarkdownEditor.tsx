@@ -5,6 +5,10 @@ import dynamic from "next/dynamic";
 import type { MDEditorProps } from "@uiw/react-md-editor";
 import SlashMenu, { SLASH_COMMANDS, type SlashCommand } from "./SlashMenu";
 
+// 引入 react-md-editor 及其预览的基础 CSS 样式，解决文本与光标错位、显示在左上方的问题
+import "@uiw/react-md-editor/markdown-editor.css";
+import "@uiw/react-markdown-preview/markdown.css";
+
 /**
  * Markdown 编辑器（动态导入，避免 SSR 时加载 CodeMirror 报错）
  */
