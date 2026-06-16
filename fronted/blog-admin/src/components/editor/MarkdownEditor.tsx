@@ -113,8 +113,8 @@ export default function MarkdownEditor({
   }, []);
 
   // 过滤后的命令集
-  const getFilteredCommands = useCallback(() => {
-    const query = searchQueryRef.current.trim().toLowerCase();
+  const getFilteredCommands = useCallback((customQuery?: string) => {
+    const query = (customQuery !== undefined ? customQuery : searchQueryRef.current).trim().toLowerCase();
     return SLASH_COMMANDS.filter(
       (cmd) =>
         cmd.label.toLowerCase().includes(query) ||
@@ -248,7 +248,7 @@ export default function MarkdownEditor({
           
           // 动态智能方向定位判定：
           // 列表每一项 44px，头部 35px，最大 max-h-60 约 240px。动态计算当前过滤后的命令列表高度
-          const activeCmds = getFilteredCommands();
+          const activeCmds = getFilteredCommands(query);
           const menuHeight = Math.min(240, activeCmds.length * 44 + 35);
           
           // 计算光标底部距离编辑最外层容器底部的可用垂直空间
