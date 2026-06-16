@@ -126,21 +126,10 @@ h6 {
   color: #727BBA !important;
 }
 
-.w-md-editor-text-pre,
+.w-md-editor-text-pre > code,
 .w-md-editor-text-input {
   font-family: ui-monospace, SFMono-Regular, Menlo, Monaco, Consolas, monospace !important;
   font-size: 14px !important;
-  line-height: 1.75 !important;
-  padding: 8px 16px !important;
-  margin: 0 !important;
-}
-
-.w-md-editor-text-pre > code {
-  font-family: inherit !important;
-  font-size: inherit !important;
-  line-height: inherit !important;
-  padding: 0 !important;
-  margin: 0 !important;
 }
 
 /* 解决输入编辑区在书写标题 (#) 时，因为高亮插件导致字体变大而产生的光标对不齐、偏低偏小的问题 */
