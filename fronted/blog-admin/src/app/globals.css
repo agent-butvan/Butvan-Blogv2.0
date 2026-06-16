@@ -133,6 +133,11 @@ h6 {
   line-height: 1.75 !important;
 }
 
+/* 解决输入编辑区在书写标题 (#) 时，因为高亮插件导致字体变大而产生的光标对不齐、偏低偏小的问题 */
+.w-md-editor-text * {
+  font-size: inherit !important;
+}
+
 /* Markdown 预览区 */
 .wmde-markdown {
   font-family: var(--font-body);
