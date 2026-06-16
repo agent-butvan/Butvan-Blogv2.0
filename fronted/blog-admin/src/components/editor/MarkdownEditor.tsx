@@ -1,8 +1,10 @@
 "use client";
 
 import { useState, useEffect, useRef, useCallback } from "react";
-import { useEditor, EditorContent } from "@tiptap/react";
+import { useEditor, EditorContent, ReactNodeViewRenderer } from "@tiptap/react";
 import StarterKit from "@tiptap/starter-kit";
+import { TextSelection } from "@tiptap/pm/state";
+import CodeBlockComponent from "./CodeBlockComponent";
 import { Markdown } from "@tiptap/markdown";
 import Link from "@tiptap/extension-link";
 import Image from "@tiptap/extension-image";
@@ -245,11 +247,12 @@ export default function MarkdownEditor({
         },
         codeBlock: false,
       }),
-      CodeBlockLowlight.configure({
-        lowlight,
-        HTMLAttributes: {
-          class: "hljs-code-block rounded-xl border border-zinc-200 dark:border-zinc-800 bg-zinc-50 dark:bg-zinc-900/60 p-4 font-mono text-sm leading-relaxed my-4 overflow-x-auto",
+      CodeBlockLowlight.extend({
+        addNodeView() {
+          return ReactNodeViewRenderer(CodeBlockComponent);
         },
+      }).configure({
+        lowlight,
       }),
       Markdown,
       Link.configure({
@@ -314,6 +317,51 @@ export default function MarkdownEditor({
               return true;
             }
           }
+
+          // 如果光标在代码块中，支持高阶 Tab 缩进及括号自动闭合/越界逻辑 (提供智能 CodeMirror/IDE 编辑体验)
+          const { state } = view;
+          const { selection } = state;
+          const { $from } = selection;
+          const isInsideCodeBlock = $from.parent.type.name === "codeBlock";
+
+          if (isInsideCodeBlock) {
+            // 1. 按下 Tab 键时，插入 2 个空格而不是失去焦点
+            if (event.key === "Tab") {
+              event.preventDefault();
+              view.dispatch(state.tr.insertText("  "));
+              return true;
+            }
+
+            // 2. 括号与引号自动闭合
+            const brackets: Record<string, string> = {
+              "(": ")",
+              "{": "}",
+              "[": "]",
+              '"': '"',
+              "'": "'",
+              "`": "`",
+            };
+
+            if (brackets[event.key] !== undefined) {
+              event.preventDefault();
+              const closing = brackets[event.key];
+              view.dispatch(
+                state.tr
+                  .insertText(event.key + closing)
+                  .setSelection(TextSelection.create(state.tr.doc, selection.from + 1))
+              );
+              return true;
+            }
+
+            // 3. 越过自动闭合的右侧括号/引号
+            const textAfterCursor = $from.parent.textBetween($from.parentOffset, $from.parentOffset + 1);
+            if (event.key === textAfterCursor && [")", "}", "]", '"', "'", "`"].includes(event.key)) {
+              event.preventDefault();
+              view.dispatch(state.tr.setSelection(TextSelection.create(state.tr.doc, selection.from + 1)));
+              return true;
+            }
+          }
+
           return false;
         },
         // 拖入文件自动上传
