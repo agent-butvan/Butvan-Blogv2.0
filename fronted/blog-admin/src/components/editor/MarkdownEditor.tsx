@@ -10,6 +10,8 @@ import Placeholder from "@tiptap/extension-placeholder";
 import TaskList from "@tiptap/extension-task-list";
 import TaskItem from "@tiptap/extension-task-item";
 import Underline from "@tiptap/extension-underline";
+import CodeBlockLowlight from "@tiptap/extension-code-block-lowlight";
+import { all, createLowlight } from "lowlight";
 import { cn } from "@heroui/react";
 import {
   Undo,
@@ -32,6 +34,8 @@ import {
 
 import SlashMenu, { SLASH_COMMANDS, type SlashCommand } from "./SlashMenu";
 import apiClient from "@/lib/api";
+
+const lowlight = createLowlight(all);
 
 export interface MarkdownEditorProps {
   value: string;
@@ -238,6 +242,13 @@ export default function MarkdownEditor({
       StarterKit.configure({
         heading: {
           levels: [1, 2, 3, 4, 5, 6],
+        },
+        codeBlock: false,
+      }),
+      CodeBlockLowlight.configure({
+        lowlight,
+        HTMLAttributes: {
+          class: "hljs-code-block rounded-xl border border-zinc-200 dark:border-zinc-800 bg-zinc-50 dark:bg-zinc-900/60 p-4 font-mono text-sm leading-relaxed my-4 overflow-x-auto",
         },
       }),
       Markdown,
