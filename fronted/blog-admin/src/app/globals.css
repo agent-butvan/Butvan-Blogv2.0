@@ -24,8 +24,8 @@
   --font-body: "Space Grotesk", sans-serif;
 
   /* 品牌色 */
-  --color-primary: #9b8afb; /* 品牌主色 — 紫色 */
-  --color-secondary: #4ea3ff; /* 蓝色 — 流量、用户、在线数 */
+  --color-primary: #727BBA; /* 品牌主色 — 静谧深海紫色 */
+  --color-secondary: #9BADCF; /* 蓝色/浅蓝灰色 — 辅助 */
   --color-accent: #cdbde8; /* 辅助高亮 — 浅紫 */
 
   /* 辅助状态色 */
@@ -80,28 +80,70 @@ h6 {
  * ============================================================================ */
 .w-md-editor {
   --md-editor-font-family: var(--font-body);
-  border-radius: 8px;
-  box-shadow: 0 1px 2px rgba(0, 0, 0, 0.05);
-  border: 1px solid #e4e4e7;
+  border-radius: 12px !important;
+  box-shadow: 0 4px 12px rgba(0, 0, 0, 0.02) !important;
+  border: 1px solid rgba(228, 228, 231, 0.6) !important;
+  background-color: #ffffff !important;
+  transition: all 0.2s ease;
+  overflow: hidden;
+}
+
+:root.dark .w-md-editor {
+  border-color: rgba(63, 63, 70, 0.4) !important;
+  background-color: #0c0c10 !important;
+  box-shadow: 0 4px 16px rgba(0, 0, 0, 0.2) !important;
+}
+
+.w-md-editor:focus-within {
+  border-color: #727BBA !important;
+  box-shadow: 0 0 0 3px rgba(114, 123, 186, 0.15) !important;
 }
 
 .w-md-editor-toolbar {
-  border-bottom: 1px solid #e4e4e7;
-  background: #fafafa;
+  border-bottom: 1px solid rgba(228, 228, 231, 0.6) !important;
+  background-color: #f8fafc !important;
+  padding: 8px 12px !important;
+}
+
+:root.dark .w-md-editor-toolbar {
+  border-bottom-color: rgba(63, 63, 70, 0.4) !important;
+  background-color: #121218 !important;
+}
+
+/* 按钮图标状态颜色微调 */
+.w-md-editor-toolbar button {
+  color: #52525b !important;
+  border-radius: 6px !important;
+  transition: all 0.15s ease !important;
+}
+
+:root.dark .w-md-editor-toolbar button {
+  color: #a1a1aa !important;
+}
+
+.w-md-editor-toolbar button:hover {
+  background-color: rgba(114, 123, 186, 0.08) !important;
+  color: #727BBA !important;
 }
 
 .w-md-editor-text-pre > code,
 .w-md-editor-text-input {
-  font-family: "JetBrains Mono", "Fira Code", monospace !important;
-  font-size: 14px;
-  line-height: 1.7;
+  font-family: ui-monospace, SFMono-Regular, Menlo, Monaco, Consolas, monospace !important;
+  font-size: 14px !important;
+  line-height: 1.75 !important;
 }
 
 /* Markdown 预览区 */
 .wmde-markdown {
   font-family: var(--font-body);
-  font-size: 15px;
+  font-size: 14px;
   line-height: 1.8;
+  background-color: transparent !important;
+  color: #27272a !important;
+}
+
+:root.dark .wmde-markdown {
+  color: #e4e4e7 !important;
 }
 
 .wmde-markdown h1,
@@ -112,7 +154,19 @@ h6 {
 .wmde-markdown h6 {
   font-family: var(--font-heading);
   font-weight: 700;
-  border-bottom: none;
+  border-bottom: none !important;
+  color: #09090b !important;
+  margin-top: 1.5rem !important;
+  margin-bottom: 0.75rem !important;
+}
+
+:root.dark .wmde-markdown h1,
+:root.dark .wmde-markdown h2,
+:root.dark .wmde-markdown h3,
+:root.dark .wmde-markdown h4,
+:root.dark .wmde-markdown h5,
+:root.dark .wmde-markdown h6 {
+  color: #ffffff !important;
 }
 
 /* ============================================================================

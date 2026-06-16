@@ -2,6 +2,7 @@
 
 import { useEffect, useState } from "react";
 import { useParams, useRouter } from "next/navigation";
+import { cn } from "@heroui/react";
 import ArticleForm from "@/components/forms/ArticleForm";
 import apiClient from "@/lib/api";
 import type { ApiResponse } from "@/types/common";
@@ -10,9 +11,8 @@ import { ArrowLeft, Loader2 } from "lucide-react";
 
 /**
  * 编辑文章页面
- * - 加载已有文章数据
- * - 复用 ArticleForm 表单
- * - 保存更新
+ * - 简化顶部返回控制条并嵌入文章状态小徽标
+ * - 拓宽布局最大宽度为 max-w-6xl 适配双栏形态
  */
 export default function EditArticlePage() {
   const params = useParams();
@@ -61,8 +61,8 @@ export default function EditArticlePage() {
   // 加载中
   if (loading) {
     return (
-      <div className="flex items-center justify-center py-32">
-        <Loader2 size={32} className="animate-spin text-zinc-300" />
+      <div className="flex items-center justify-center py-32 select-none">
+        <Loader2 size={28} className="animate-spin text-zinc-350 dark:text-zinc-650" />
       </div>
     );
   }
@@ -70,11 +70,11 @@ export default function EditArticlePage() {
   // 加载失败
   if (error && !article) {
     return (
-      <div className="max-w-4xl mx-auto text-center py-32">
-        <p className="text-zinc-500 mb-4">{error}</p>
+      <div className="max-w-md mx-auto text-center py-24 select-none">
+        <p className="text-sm text-zinc-500 dark:text-zinc-400 mb-5">{error}</p>
         <button
           onClick={() => router.push("/articles")}
-          className="text-primary hover:underline text-sm"
+          className="rounded-xl border border-zinc-200 dark:border-zinc-800 hover:bg-zinc-50 dark:hover:bg-zinc-900 px-5 py-2.5 text-xs font-semibold transition-colors cursor-pointer"
         >
           返回文章列表
         </button>
@@ -92,46 +92,58 @@ export default function EditArticlePage() {
     tagIds: article?.tagIds,
     status: article?.status || "DRAFT",
     visibility: article?.visibility,
+    password: article?.password,
+    isPinned: article?.isPinned,
+    isFeatured: article?.isFeatured,
+    isAllowComment: article?.isAllowComment,
     seoTitle: article?.seoTitle,
     seoDescription: article?.seoDescription,
     seoKeywords: article?.seoKeywords,
   };
 
   return (
-    <div className="max-w-4xl mx-auto space-y-6">
-      {/* 顶部导航 */}
-      <div className="flex items-center justify-between">
+    <div className="max-w-6xl mx-auto space-y-6">
+      {/* 顶部极简导航栏 */}
+      <div className="flex items-center justify-between border-b border-zinc-200/40 dark:border-zinc-850 pb-4 select-none">
         <div className="flex items-center gap-4">
           <button
             onClick={() => router.push("/articles")}
-            className="flex items-center gap-1 text-sm text-zinc-500 hover:text-zinc-700 transition-colors"
+            className="flex items-center gap-1.5 text-xs font-semibold text-zinc-400 hover:text-zinc-700 dark:hover:text-zinc-300 transition-colors group cursor-pointer"
           >
-            <ArrowLeft size={16} /> 返回列表
+            <ArrowLeft size={14} className="group-hover:-translate-x-0.5 transition-transform" />
+            <span>返回列表</span>
           </button>
-          <div>
-            <h1 className="font-heading text-2xl font-bold text-neutral-dark">
-              编辑文章
-            </h1>
-            <p className="text-sm text-zinc-500 mt-1">
-              ID: {id} · 状态: {article?.status === "PUBLISHED" ? "已发布" : "草稿"}
-            </p>
-          </div>
+          <div className="h-4 w-px bg-zinc-200 dark:bg-zinc-800" />
+          <h1 className="font-heading text-sm font-bold text-neutral-dark dark:text-zinc-200">
+            编辑文章
+          </h1>
+          <span className={cn(
+            "px-2 py-0.5 rounded-md text-[10px] font-bold uppercase border select-none",
+            article?.status === "PUBLISHED"
+              ? "bg-green-50/50 text-green-700 dark:bg-green-950/20 dark:text-green-400 border-green-200/40 dark:border-green-900/30"
+              : "bg-zinc-100/60 text-zinc-500 dark:bg-zinc-900/50 dark:text-zinc-400 border-zinc-200/40 dark:border-zinc-800/60"
+          )}>
+            {article?.status === "PUBLISHED" ? "已发布" : "草稿"}
+          </span>
+          <span className="text-[10px] text-zinc-400 font-mono select-none">
+            ID: {id}
+          </span>
         </div>
       </div>
 
-      {/* 操作提示 */}
+      {/* 提示信息 */}
       {error && (
-        <div className="rounded-lg bg-red-50 border border-red-200 p-4 text-sm text-red-700">
+        <div className="rounded-xl bg-red-50 dark:bg-red-950/20 border border-red-200/60 dark:border-red-900/35 p-4 text-xs font-medium text-red-700 dark:text-red-400 animate-fade-in">
           {error}
         </div>
       )}
       {successMsg && (
-        <div className="rounded-lg bg-green-50 border border-green-200 p-4 text-sm text-green-700">
+        <div className="rounded-xl bg-green-50 dark:bg-green-950/20 border border-green-200/60 dark:border-green-900/35 p-4 text-xs font-medium text-green-700 dark:text-green-400 animate-fade-in">
           {successMsg}
         </div>
       )}
 
-      {/* 表单 */}
+      {/* 双栏表单 */}
       <ArticleForm initialData={initialData} onSave={handleSave} saving={saving} />
     </div>
   );

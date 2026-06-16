@@ -2,6 +2,7 @@
 
 import { useState } from "react";
 import { useRouter } from "next/navigation";
+import { ArrowLeft } from "lucide-react";
 import ArticleForm from "@/components/forms/ArticleForm";
 import apiClient from "@/lib/api";
 import type { ApiResponse } from "@/types/common";
@@ -9,9 +10,8 @@ import type { ArticleSaveDTO, ArticleDetail } from "@/types/article";
 
 /**
  * 新建文章页面
- * - 使用 ArticleForm 表单组件
- * - 保存草稿 / 直接发布
- * - 创建成功后跳转到编辑页
+ * - 移除了多余大标题，升级为顶部极简面包屑控制条
+ * - 扩宽最大宽度至 max-w-6xl 以适配左正文右参数的双栏布局
  */
 export default function NewArticlePage() {
   const router = useRouter();
@@ -49,23 +49,37 @@ export default function NewArticlePage() {
   };
 
   return (
-    <div className="max-w-4xl mx-auto space-y-6">
-      <div>
-        <h1 className="font-heading text-2xl font-bold text-neutral-dark">写文章</h1>
-        <p className="text-sm text-zinc-500 mt-1">使用 Markdown 撰写，左栏编辑右栏实时预览</p>
+    <div className="max-w-6xl mx-auto space-y-6">
+      {/* 顶部极简导航 */}
+      <div className="flex items-center justify-between border-b border-zinc-200/40 dark:border-zinc-850 pb-4 select-none">
+        <div className="flex items-center gap-4">
+          <button
+            onClick={() => router.push("/articles")}
+            className="flex items-center gap-1.5 text-xs font-semibold text-zinc-400 hover:text-zinc-700 dark:hover:text-zinc-300 transition-colors group cursor-pointer"
+          >
+            <ArrowLeft size={14} className="group-hover:-translate-x-0.5 transition-transform" />
+            <span>返回列表</span>
+          </button>
+          <div className="h-4 w-px bg-zinc-200 dark:bg-zinc-800" />
+          <h1 className="font-heading text-sm font-bold text-neutral-dark dark:text-zinc-200">
+            撰写新文章
+          </h1>
+        </div>
       </div>
 
+      {/* 提示信息 */}
       {error && (
-        <div className="rounded-lg bg-red-50 border border-red-200 p-4 text-sm text-red-700 animate-fade-in">
+        <div className="rounded-xl bg-red-50 dark:bg-red-950/20 border border-red-200/60 dark:border-red-900/35 p-4 text-xs font-medium text-red-700 dark:text-red-400 animate-fade-in">
           {error}
         </div>
       )}
       {successMsg && (
-        <div className="rounded-lg bg-green-50 border border-green-200 p-4 text-sm text-green-700 animate-fade-in">
+        <div className="rounded-xl bg-green-50 dark:bg-green-950/20 border border-green-200/60 dark:border-green-900/35 p-4 text-xs font-medium text-green-700 dark:text-green-400 animate-fade-in">
           {successMsg}
         </div>
       )}
 
+      {/* 双栏表单 */}
       <ArticleForm onSave={handleSave} saving={saving} />
     </div>
   );
