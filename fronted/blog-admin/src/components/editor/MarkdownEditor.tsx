@@ -324,7 +324,7 @@ export default function MarkdownEditor({
           const { state } = view;
           const { selection } = state;
           const { $from } = selection;
-          const isInsideCodeBlock = $from.parent.type.name === "codeBlock";
+          const isInsideCodeBlock = $from && $from.parent && $from.parent.type.name === "codeBlock";
 
           if (isInsideCodeBlock) {
             // 1. 按下 Tab 键时，插入 2 个空格而不是失去焦点
@@ -347,11 +347,11 @@ export default function MarkdownEditor({
             if (brackets[event.key] !== undefined) {
               event.preventDefault();
               const closing = brackets[event.key];
-              view.dispatch(
-                state.tr
-                  .insertText(event.key + closing)
-                  .setSelection(TextSelection.create(state.tr.doc, selection.from + 1))
-              );
+              const tr = state.tr;
+              tr.insertText(event.key + closing);
+              const targetPos = Math.min(selection.from + 1, tr.doc.content.size);
+              tr.setSelection(TextSelection.create(tr.doc, targetPos));
+              view.dispatch(tr);
               return true;
             }
 
@@ -360,7 +360,10 @@ export default function MarkdownEditor({
             const textAfterCursor = textContent.slice($from.parentOffset, $from.parentOffset + 1);
             if (event.key === textAfterCursor && [")", "}", "]", '"', "'", "`"].includes(event.key)) {
               event.preventDefault();
-              view.dispatch(state.tr.setSelection(TextSelection.create(state.tr.doc, selection.from + 1)));
+              const tr = state.tr;
+              const targetPos = Math.min(selection.from + 1, tr.doc.content.size);
+              tr.setSelection(TextSelection.create(tr.doc, targetPos));
+              view.dispatch(tr);
               return true;
             }
           }

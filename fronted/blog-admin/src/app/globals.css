@@ -152,16 +152,16 @@ h6 {
 }
 
 /* ============================================================================
- * 语法高亮代码块 (Sleek Dark Theme)
+ * 语法高亮代码块 (自适应明暗模式高品质配色)
  * ============================================================================ */
 .code-block-container {
-  background-color: #0c0f19 !important; /* Premium Slate/Zinc 950 code editor background */
-  border-color: rgba(228, 228, 231, 0.15) !important;
+  background-color: #f8fafc !important; /* 浅色模式：淡灰蓝色 */
+  border-color: #e2e8f0 !important;
   transition: all 0.2s ease-in-out;
 }
 
 :root.dark .code-block-container {
-  background-color: #070913 !important; /* Even darker black-blue in dark mode */
+  background-color: #070913 !important; /* 深色模式：静谧深海 */
   border-color: rgba(63, 63, 70, 0.4) !important;
 }
 
@@ -170,27 +170,47 @@ h6 {
   background-color: transparent !important;
   border: none !important;
   margin: 0 !important;
-  padding: 1.25rem !important;
+  padding: 0 !important; /* 统一清空 padding，由组件内部布局及 padding 控制对齐 */
 }
 
 /* 内部代码文字与字体 */
 .code-block-container pre code {
   font-family: ui-monospace, SFMono-Regular, Menlo, Monaco, Consolas, "JetBrains Mono", "Fira Code", monospace !important;
-  font-size: 0.875rem !important;
-  color: #f4f4f5 !important; /* Keep code text light */
+  font-size: 13px !important;
+  line-height: 22px !important;
+  color: #3f3f46 !important; /* 浅色模式默认字色 */
 }
 
-/* 代码块语法高亮 (Quiet Deep Sea 调色盘配色) */
+:root.dark .code-block-container pre code {
+  color: #e4e4e7 !important; /* 深色模式默认字色 */
+}
+
+/* 行号项样式覆盖，确保与代码行像素级严格对齐 */
+.code-block-container .line-number-item {
+  height: 22px !important;
+  line-height: 22px !important;
+  display: flex !important;
+  align-items: center !important;
+  justify-content: flex-end !important;
+  font-size: 13px !important;
+  font-family: ui-monospace, SFMono-Regular, Menlo, Monaco, Consolas, "JetBrains Mono", "Fira Code", monospace !important;
+}
+
+/* ============================================================================
+ * 代码高亮颜色明暗适配 (针对性配色以保证对比度)
+ * ============================================================================ */
+
+/* --- 浅色模式语法高亮 --- */
 .code-block-container .hljs-comment,
 .code-block-container .hljs-quote {
-  color: #71717a !important; /* 注释：灰 */
+  color: #8e9cae !important;
   font-style: italic !important;
 }
 
 .code-block-container .hljs-keyword,
 .code-block-container .hljs-selector-tag,
 .code-block-container .hljs-addition {
-  color: #727BBA !important; /* 关键字：深海紫 */
+  color: #2563eb !important; /* 亮蓝 */
   font-weight: 600 !important;
 }
 
@@ -199,14 +219,14 @@ h6 {
 .code-block-container .hljs-meta,
 .code-block-container .hljs-regexp,
 .code-block-container .hljs-attribute {
-  color: #9BADCF !important; /* 字符串与数字：冷空蓝 */
+  color: #0d783e !important; /* 雅致绿 */
 }
 
 .code-block-container .hljs-title,
 .code-block-container .hljs-section,
 .code-block-container .hljs-name,
 .code-block-container .hljs-class {
-  color: #cdbde8 !important; /* 类名/标题：浅紫 */
+  color: #7c3aed !important; /* 靛紫 */
 }
 
 .code-block-container .hljs-variable,
@@ -215,6 +235,44 @@ h6 {
 .code-block-container .hljs-built_in,
 .code-block-container .hljs-builtin-name,
 .code-block-container .hljs-params {
+  color: #ea580c !important; /* 橙红 */
+}
+
+/* --- 深色模式语法高亮 --- */
+:root.dark .code-block-container .hljs-comment,
+:root.dark .code-block-container .hljs-quote {
+  color: #71717a !important;
+  font-style: italic !important;
+}
+
+:root.dark .code-block-container .hljs-keyword,
+:root.dark .code-block-container .hljs-selector-tag,
+:root.dark .code-block-container .hljs-addition {
+  color: #727BBA !important; /* 关键字：深海紫 */
+  font-weight: 600 !important;
+}
+
+:root.dark .code-block-container .hljs-number,
+:root.dark .code-block-container .hljs-string,
+:root.dark .code-block-container .hljs-meta,
+:root.dark .code-block-container .hljs-regexp,
+:root.dark .code-block-container .hljs-attribute {
+  color: #9BADCF !important; /* 字符串与数字：冷空蓝 */
+}
+
+:root.dark .code-block-container .hljs-title,
+:root.dark .code-block-container .hljs-section,
+:root.dark .code-block-container .hljs-name,
+:root.dark .code-block-container .hljs-class {
+  color: #cdbde8 !important; /* 类名/标题：浅紫 */
+}
+
+:root.dark .code-block-container .hljs-variable,
+:root.dark .code-block-container .hljs-template-variable,
+:root.dark .code-block-container .hljs-type,
+:root.dark .code-block-container .hljs-built_in,
+:root.dark .code-block-container .hljs-builtin-name,
+:root.dark .code-block-container .hljs-params {
   color: #fca5a5 !important; /* 内置对象：柔红 */
 }
 
