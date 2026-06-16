@@ -20,7 +20,7 @@ import {
   X,
   Lock
 } from 'lucide-react'
-import { Button, Spinner, Chip } from '@heroui/react'
+import { Button, Spinner } from '@heroui/react'
 import Navbar from '@/components/common/Navbar'
 import SidebarWidget from '@/components/common/SidebarWidget'
 import { MOCK_ARTICLES } from '@/lib/mock-data'
@@ -388,19 +388,19 @@ export default function ArticleDetailPage() {
       {/* 主体布局架构 */}
       <div className="w-full max-w-5xl px-6 py-10 flex flex-col gap-6">
         
-        {/* 面包屑与返回 */}
-        <div className="animate-detail-item opacity-0 flex items-center justify-between w-full max-w-2xl mx-auto mb-2 text-xs text-zinc-400 dark:text-zinc-500 font-mono">
+        {/* 面包屑与返回：添加高度约束，使用 inline-flex 与 leading-none 确保垂直居中对齐 */}
+        <div className="animate-detail-item opacity-0 flex items-center justify-between w-full max-w-2xl mx-auto mb-2 text-xs text-zinc-400 dark:text-zinc-500 font-mono h-6">
           <Link 
             href="/article" 
-            className="flex items-center gap-1 hover:text-[#727BBA] transition-colors group cursor-pointer"
+            className="inline-flex items-center gap-1 hover:text-[#727BBA] transition-colors group cursor-pointer h-full"
           >
             <ArrowLeft size={13} className="group-hover:-translate-x-0.5 transition-transform" />
-            <span>返回归档</span>
+            <span className="leading-none">返回归档</span>
           </Link>
-          <div className="flex items-center gap-1.5 select-none">
-            <span>文章</span>
-            <ChevronRight size={10} />
-            <span className="truncate max-w-40 select-none text-zinc-500 dark:text-zinc-400">{article?.title}</span>
+          <div className="inline-flex items-center gap-1.5 select-none h-full">
+            <span className="leading-none">文章</span>
+            <ChevronRight size={12} className="text-zinc-400" />
+            <span className="truncate max-w-40 select-none text-zinc-500 dark:text-zinc-400 leading-none">{article?.title}</span>
           </div>
         </div>
 
@@ -478,16 +478,17 @@ export default function ArticleDetailPage() {
             <article className="w-full max-w-2xl mx-auto flex flex-col">
               {/* 顶部标题与元数据页头 */}
               <header className="animate-detail-item opacity-0 border-b border-zinc-200/50 dark:border-zinc-900/60 pb-7 select-none">
+                {/* 分类及演示数据标签：改用 span 自定义内边距防贴边，保留演示数据标签 */}
                 <div className="flex flex-wrap items-center gap-2 mb-3">
                   {article.categoryName && (
-                    <Chip size="sm" className="bg-[#727BBA]/10 text-[#727BBA] text-[10px] font-bold uppercase rounded-md border border-[#727BBA]/25 tracking-wide">
+                    <span className="inline-flex items-center px-2.5 py-0.5 bg-[#727BBA]/10 text-[#727BBA] text-[10px] font-bold uppercase rounded border border-[#727BBA]/25 tracking-wide">
                       {article.categoryName}
-                    </Chip>
+                    </span>
                   )}
                   {isMocked && (
-                    <Chip size="sm" className="bg-amber-100 text-amber-700 dark:bg-amber-950/40 dark:text-amber-400 border border-amber-200/50 dark:border-amber-900/30 text-[9px] font-bold">
+                    <span className="inline-flex items-center px-2.5 py-0.5 bg-amber-100 text-amber-700 dark:bg-amber-950/40 dark:text-amber-400 border border-amber-200/50 dark:border-amber-900/30 text-[10px] font-bold rounded">
                       演示数据
-                    </Chip>
+                    </span>
                   )}
                 </div>
 
@@ -536,7 +537,7 @@ export default function ArticleDetailPage() {
                   {article.tags.map(t => (
                     <span 
                       key={t.id} 
-                      className="px-2.5 py-0.5 rounded-md text-[11px] font-mono text-zinc-500 dark:text-zinc-400 bg-zinc-150/40 dark:bg-zinc-900/50 hover:text-[#727BBA] dark:hover:text-[#727BBA] transition-colors cursor-pointer select-none"
+                      className="px-2.5 py-1 rounded text-[11px] font-mono text-zinc-500 dark:text-zinc-400 bg-zinc-150/40 dark:bg-zinc-900/50 hover:text-[#727BBA] dark:hover:text-[#727BBA] transition-colors cursor-pointer select-none"
                     >
                       #{t.name}
                     </span>
