@@ -76,71 +76,46 @@ h6 {
 }
 
 /* ============================================================================
- * MDXEditor 所见即所得编辑器自定义样式（飞书风格）
+ * Tiptap 所见即所得编辑器自定义样式（飞书风格）
  * ============================================================================ */
-.mdxeditor-custom {
-  --editor-background: #ffffff;
-  --toolbar-bg: #f8fafc;
-  --accent-color: #727BBA;
-  --accent-base: #727BBA;
-  border-radius: 12px;
-  overflow: hidden;
-  transition: all 0.2s ease;
-}
-
-:root.dark .mdxeditor-custom {
-  --editor-background: #09090b;
-  --toolbar-bg: #121218;
-  --accent-color: #727BBA;
-  --accent-base: #727BBA;
-  color-scheme: dark;
-}
-
-/* 编辑器容器与聚焦 */
-.mdxeditor-custom:focus-within {
-  border-color: #727BBA !important;
-  box-shadow: 0 0 0 3px rgba(114, 123, 186, 0.15) !important;
-}
-
-/* 覆盖工具栏背景和边框 */
-.mdxeditor-custom [role="toolbar"] {
-  background-color: var(--toolbar-bg) !important;
-  border-bottom: 1px solid rgba(228, 228, 231, 0.6) !important;
-}
-
-:root.dark .mdxeditor-custom [role="toolbar"] {
-  border-bottom-color: rgba(63, 63, 70, 0.4) !important;
-}
-
-/* 工具栏按钮悬浮与圆角 */
-.mdxeditor-custom [role="toolbar"] button {
-  border-radius: 8px !important;
-  transition: all 0.15s ease !important;
-}
-
-.mdxeditor-custom [role="toolbar"] button:hover {
-  background-color: rgba(114, 123, 186, 0.08) !important;
-}
-
-/* 编辑器正文区域的飞书式排版微调 */
-.custom-editor-content {
+.ProseMirror {
   font-family: var(--font-body) !important;
   line-height: 1.8 !important;
   color: #27272a !important;
 }
 
-:root.dark .custom-editor-content {
+:root.dark .ProseMirror {
   color: #e4e4e7 !important;
-  background-color: #0c0c10 !important;
+  background-color: #09090b !important;
+}
+
+/* 编辑器容器与聚焦 */
+.ProseMirror-focused {
+  outline: none !important;
+}
+
+/* 占位符 Placeholder */
+.ProseMirror p.is-editor-empty:first-child::before,
+.ProseMirror p.is-empty::before {
+  color: #a1a1aa !important;
+  content: attr(data-placeholder);
+  float: left;
+  height: 0;
+  pointer-events: none;
+}
+
+:root.dark .ProseMirror p.is-editor-empty:first-child::before,
+:root.dark .ProseMirror p.is-empty::before {
+  color: #52525b !important;
 }
 
 /* headings 样式直接渲染 */
-.custom-editor-content h1,
-.custom-editor-content h2,
-.custom-editor-content h3,
-.custom-editor-content h4,
-.custom-editor-content h5,
-.custom-editor-content h6 {
+.ProseMirror h1,
+.ProseMirror h2,
+.ProseMirror h3,
+.ProseMirror h4,
+.ProseMirror h5,
+.ProseMirror h6 {
   font-family: var(--font-heading) !important;
   font-weight: 700 !important;
   color: #09090b !important;
@@ -148,22 +123,22 @@ h6 {
   margin-bottom: 0.75rem !important;
 }
 
-:root.dark .custom-editor-content h1,
-:root.dark .custom-editor-content h2,
-:root.dark .custom-editor-content h3,
-:root.dark .custom-editor-content h4,
-:root.dark .custom-editor-content h5,
-:root.dark .custom-editor-content h6 {
+:root.dark .ProseMirror h1,
+:root.dark .ProseMirror h2,
+:root.dark .ProseMirror h3,
+:root.dark .ProseMirror h4,
+:root.dark .ProseMirror h5,
+:root.dark .ProseMirror h6 {
   color: #ffffff !important;
 }
 
-.custom-editor-content h1 { font-size: 1.8rem !important; }
-.custom-editor-content h2 { font-size: 1.5rem !important; }
-.custom-editor-content h3 { font-size: 1.25rem !important; }
-.custom-editor-content h4 { font-size: 1.1rem !important; }
+.ProseMirror h1 { font-size: 1.8rem !important; }
+.ProseMirror h2 { font-size: 1.5rem !important; }
+.ProseMirror h3 { font-size: 1.25rem !important; }
+.ProseMirror h4 { font-size: 1.1rem !important; }
 
 /* 引用、代码块与表格 */
-.custom-editor-content blockquote {
+.ProseMirror blockquote {
   border-left: 4px solid #727BBA !important;
   background-color: rgba(114, 123, 186, 0.05) !important;
   padding: 0.75rem 1rem !important;
@@ -172,12 +147,12 @@ h6 {
   font-style: italic !important;
 }
 
-:root.dark .custom-editor-content blockquote {
+:root.dark .ProseMirror blockquote {
   background-color: rgba(114, 123, 186, 0.03) !important;
 }
 
 /* 语法高亮代码块 */
-.custom-editor-content pre {
+.ProseMirror pre {
   background-color: #f4f4f5 !important;
   border: 1px solid #e4e4e7 !important;
   border-radius: 8px !important;
@@ -186,41 +161,79 @@ h6 {
   overflow-x: auto !important;
 }
 
-:root.dark .custom-editor-content pre {
+:root.dark .ProseMirror pre {
   background-color: #18181b !important;
   border-color: #27272a !important;
 }
 
-.custom-editor-content pre code {
+.ProseMirror pre code {
   font-family: ui-monospace, SFMono-Regular, Menlo, Monaco, Consolas, monospace !important;
   font-size: 0.875rem !important;
 }
 
+/* 任务清单样式 (Task List) */
+.ProseMirror ul[data-type="taskList"] {
+  list-style: none !important;
+  padding: 0 !important;
+  margin: 1rem 0 !important;
+}
+
+.ProseMirror ul[data-type="taskList"] li {
+  display: flex !important;
+  align-items: flex-start !important;
+  margin-bottom: 0.5rem !important;
+}
+
+.ProseMirror ul[data-type="taskList"] li > label {
+  margin-right: 0.5rem !important;
+  user-select: none !important;
+  margin-top: 0.25rem !important;
+}
+
+.ProseMirror ul[data-type="taskList"] li > div {
+  flex: 1 1 auto !important;
+}
+
+/* 列表缩进 */
+.ProseMirror ul,
+.ProseMirror ol {
+  padding-left: 1.5rem !important;
+  margin: 1rem 0 !important;
+}
+
+.ProseMirror ul {
+  list-style-type: disc !important;
+}
+
+.ProseMirror ol {
+  list-style-type: decimal !important;
+}
+
 /* 表格样式 */
-.custom-editor-content table {
+.ProseMirror table {
   width: 100% !important;
   border-collapse: collapse !important;
   margin: 1.5rem 0 !important;
 }
 
-.custom-editor-content th,
-.custom-editor-content td {
+.ProseMirror th,
+.ProseMirror td {
   border: 1px solid #e4e4e7 !important;
   padding: 0.5rem 0.75rem !important;
   text-align: left !important;
 }
 
-:root.dark .custom-editor-content th,
-:root.dark .custom-editor-content td {
+:root.dark .ProseMirror th,
+:root.dark .ProseMirror td {
   border-color: #27272a !important;
 }
 
-.custom-editor-content th {
+.ProseMirror th {
   background-color: #f4f4f5 !important;
   font-weight: 600 !important;
 }
 
-:root.dark .custom-editor-content th {
+:root.dark .ProseMirror th {
   background-color: #18181b !important;
 }
 
