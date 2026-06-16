@@ -76,105 +76,152 @@ h6 {
 }
 
 /* ============================================================================
- * Markdown 编辑器（@uiw/react-md-editor）样式覆盖
+ * MDXEditor 所见即所得编辑器自定义样式（飞书风格）
  * ============================================================================ */
-.w-md-editor {
-  --md-editor-font-family: var(--font-body);
-  border-radius: 12px !important;
-  box-shadow: 0 4px 12px rgba(0, 0, 0, 0.02) !important;
-  border: 1px solid rgba(228, 228, 231, 0.6) !important;
-  background-color: #ffffff !important;
-  transition: all 0.2s ease;
+.mdxeditor-custom {
+  --editor-background: #ffffff;
+  --toolbar-bg: #f8fafc;
+  --accent-color: #727BBA;
+  --accent-base: #727BBA;
+  border-radius: 12px;
   overflow: hidden;
+  transition: all 0.2s ease;
 }
 
-:root.dark .w-md-editor {
-  border-color: rgba(63, 63, 70, 0.4) !important;
-  background-color: #0c0c10 !important;
-  box-shadow: 0 4px 16px rgba(0, 0, 0, 0.2) !important;
+:root.dark .mdxeditor-custom {
+  --editor-background: #09090b;
+  --toolbar-bg: #121218;
+  --accent-color: #727BBA;
+  --accent-base: #727BBA;
+  color-scheme: dark;
 }
 
-.w-md-editor:focus-within {
+/* 编辑器容器与聚焦 */
+.mdxeditor-custom:focus-within {
   border-color: #727BBA !important;
   box-shadow: 0 0 0 3px rgba(114, 123, 186, 0.15) !important;
 }
 
-.w-md-editor-toolbar {
+/* 覆盖工具栏背景和边框 */
+.mdxeditor-custom [role="toolbar"] {
+  background-color: var(--toolbar-bg) !important;
   border-bottom: 1px solid rgba(228, 228, 231, 0.6) !important;
-  background-color: #f8fafc !important;
-  padding: 8px 12px !important;
 }
 
-:root.dark .w-md-editor-toolbar {
+:root.dark .mdxeditor-custom [role="toolbar"] {
   border-bottom-color: rgba(63, 63, 70, 0.4) !important;
-  background-color: #121218 !important;
 }
 
-/* 按钮图标状态颜色微调 */
-.w-md-editor-toolbar button {
-  color: #52525b !important;
-  border-radius: 6px !important;
+/* 工具栏按钮悬浮与圆角 */
+.mdxeditor-custom [role="toolbar"] button {
+  border-radius: 8px !important;
   transition: all 0.15s ease !important;
 }
 
-:root.dark .w-md-editor-toolbar button {
-  color: #a1a1aa !important;
-}
-
-.w-md-editor-toolbar button:hover {
+.mdxeditor-custom [role="toolbar"] button:hover {
   background-color: rgba(114, 123, 186, 0.08) !important;
-  color: #727BBA !important;
 }
 
-/* 编辑器文本层与输入层对齐：确保等宽字体 + 统一行高 + 杜绝标题字号放大 */
-/* 使用更高特异性的选择器（加 .w-md-editor 前缀），确保覆盖库默认样式
- * 同时显式对齐 pre > code 与 textarea 的 line-height，解决光标偏上问题 */
-.w-md-editor .w-md-editor-text-pre > code,
-.w-md-editor .w-md-editor-text-input {
-  font-family: ui-monospace, SFMono-Regular, Menlo, Monaco, Consolas, monospace !important;
-  font-size: 14px !important;
-  line-height: 18px !important;
-}
-
-/* 解决输入编辑区在书写标题 (#) 时，因为高亮插件导致字体变大而产生的光标对不齐、偏低偏小的问题 */
-.w-md-editor .w-md-editor-text * {
-  font-size: inherit !important;
-}
-
-/* Markdown 预览区 */
-.wmde-markdown {
-  font-family: var(--font-body);
-  font-size: 14px;
-  line-height: 1.8;
-  background-color: transparent !important;
+/* 编辑器正文区域的飞书式排版微调 */
+.custom-editor-content {
+  font-family: var(--font-body) !important;
+  line-height: 1.8 !important;
   color: #27272a !important;
 }
 
-:root.dark .wmde-markdown {
+:root.dark .custom-editor-content {
   color: #e4e4e7 !important;
+  background-color: #0c0c10 !important;
 }
 
-.wmde-markdown h1,
-.wmde-markdown h2,
-.wmde-markdown h3,
-.wmde-markdown h4,
-.wmde-markdown h5,
-.wmde-markdown h6 {
-  font-family: var(--font-heading);
-  font-weight: 700;
-  border-bottom: none !important;
+/* headings 样式直接渲染 */
+.custom-editor-content h1,
+.custom-editor-content h2,
+.custom-editor-content h3,
+.custom-editor-content h4,
+.custom-editor-content h5,
+.custom-editor-content h6 {
+  font-family: var(--font-heading) !important;
+  font-weight: 700 !important;
   color: #09090b !important;
   margin-top: 1.5rem !important;
   margin-bottom: 0.75rem !important;
 }
 
-:root.dark .wmde-markdown h1,
-:root.dark .wmde-markdown h2,
-:root.dark .wmde-markdown h3,
-:root.dark .wmde-markdown h4,
-:root.dark .wmde-markdown h5,
-:root.dark .wmde-markdown h6 {
+:root.dark .custom-editor-content h1,
+:root.dark .custom-editor-content h2,
+:root.dark .custom-editor-content h3,
+:root.dark .custom-editor-content h4,
+:root.dark .custom-editor-content h5,
+:root.dark .custom-editor-content h6 {
   color: #ffffff !important;
+}
+
+.custom-editor-content h1 { font-size: 1.8rem !important; }
+.custom-editor-content h2 { font-size: 1.5rem !important; }
+.custom-editor-content h3 { font-size: 1.25rem !important; }
+.custom-editor-content h4 { font-size: 1.1rem !important; }
+
+/* 引用、代码块与表格 */
+.custom-editor-content blockquote {
+  border-left: 4px solid #727BBA !important;
+  background-color: rgba(114, 123, 186, 0.05) !important;
+  padding: 0.75rem 1rem !important;
+  margin: 1rem 0 !important;
+  border-radius: 0 8px 8px 0 !important;
+  font-style: italic !important;
+}
+
+:root.dark .custom-editor-content blockquote {
+  background-color: rgba(114, 123, 186, 0.03) !important;
+}
+
+/* 语法高亮代码块 */
+.custom-editor-content pre {
+  background-color: #f4f4f5 !important;
+  border: 1px solid #e4e4e7 !important;
+  border-radius: 8px !important;
+  padding: 1rem !important;
+  margin: 1rem 0 !important;
+  overflow-x: auto !important;
+}
+
+:root.dark .custom-editor-content pre {
+  background-color: #18181b !important;
+  border-color: #27272a !important;
+}
+
+.custom-editor-content pre code {
+  font-family: ui-monospace, SFMono-Regular, Menlo, Monaco, Consolas, monospace !important;
+  font-size: 0.875rem !important;
+}
+
+/* 表格样式 */
+.custom-editor-content table {
+  width: 100% !important;
+  border-collapse: collapse !important;
+  margin: 1.5rem 0 !important;
+}
+
+.custom-editor-content th,
+.custom-editor-content td {
+  border: 1px solid #e4e4e7 !important;
+  padding: 0.5rem 0.75rem !important;
+  text-align: left !important;
+}
+
+:root.dark .custom-editor-content th,
+:root.dark .custom-editor-content td {
+  border-color: #27272a !important;
+}
+
+.custom-editor-content th {
+  background-color: #f4f4f5 !important;
+  font-weight: 600 !important;
+}
+
+:root.dark .custom-editor-content th {
+  background-color: #18181b !important;
 }
 
 /* ============================================================================

@@ -148,6 +148,7 @@ Butvan Blog2.0/                                    # 📦 项目根目录
 │       │   │   │   └── TabManager.tsx             #         多标签页签管理器（持久化缓存、页签关闭/切换）
 │       │   │   ├── editor/                        #       编辑器组件
 │       │   │   │   ├── MarkdownEditor.tsx         #         Markdown 富文本编辑器
+│       │   │   │   ├── InitializedMDXEditor.tsx   #         所见即所得 (WYSIWYG) 客户端编辑器组件
 │       │   │   │   ├── SceneToolbar.tsx           #         场景编辑器顶部工具栏
 │       │   │   │   ├── SceneCanvas.tsx            #         场景编辑器可视化画布
 │       │   │   │   └── HotspotPropertiesPanel.tsx #         场景热区物品属性编辑面板
@@ -371,4 +372,4 @@ Butvan Blog2.0/                                    # 📦 项目根目录
 
 ---
 
-*最后更新：2026-06-15*
+*最后更新：2026-06-16*

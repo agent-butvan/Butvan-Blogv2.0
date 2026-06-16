@@ -6,9 +6,8 @@ import { cn } from "@heroui/react";
 import {
   Save,
   Send,
-  Eye,
-  EyeOff,
   SlidersHorizontal,
+  EyeOff,
   X,
   ChevronDown,
   Sparkles,
@@ -60,7 +59,6 @@ export default function ArticleForm({ initialData, onSave, saving = false }: Art
   const router = useRouter();
 
   // 1. UI 视图交互状态
-  const [showPreview, setShowPreview] = useState(false);
   const [showMeta, setShowMeta] = useState(false);
 
   // 2. 表单核心数据状态
@@ -250,21 +248,6 @@ export default function ArticleForm({ initialData, onSave, saving = false }: Art
             </button>
           </div>
 
-          {/* 实时分屏预览控制开关 */}
-          <button
-            type="button"
-            onClick={() => setShowPreview(!showPreview)}
-            className={cn(
-              "flex h-9 w-9 items-center justify-center rounded-xl border transition-all cursor-pointer",
-              showPreview
-                ? "bg-primary/10 border-primary/40 text-primary"
-                : "border-zinc-200 dark:border-zinc-800 bg-white dark:bg-zinc-900 text-zinc-400 hover:text-zinc-700 dark:hover:text-zinc-200 hover:border-zinc-300 dark:hover:border-zinc-750"
-            )}
-            title={showPreview ? "关闭预览" : "开启分屏预览"}
-          >
-            {showPreview ? <EyeOff size={15} /> : <Eye size={15} />}
-          </button>
-
           {/* 侧边 Drawer 配置滑块 */}
           <button
             type="button"
@@ -296,7 +279,6 @@ export default function ArticleForm({ initialData, onSave, saving = false }: Art
             value={content}
             onChange={setContent}
             height={640}
-            preview={showPreview ? "live" : "edit"}
           />
 
           {/* 右下角常驻统计浮层 (EditorStatsOverlay) */}
