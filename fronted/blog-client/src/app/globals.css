@@ -236,3 +236,54 @@ h1, h2, h3, h4, h5, h6 {
   color: #f43f5e; /* rose-500 */
 }
 
+/* ===== 动态代码块容器高保真 Fallback 样式 ===== */
+.mac-code-wrapper {
+  position: relative;
+  margin-top: 2rem;
+  margin-bottom: 2rem;
+  border-radius: 0.75rem;
+  overflow: hidden;
+  border: 1px solid rgba(228, 228, 231, 0.15) !important;
+  box-shadow: 0 10px 15px -3px rgba(0, 0, 0, 0.1), 0 4px 6px -2px rgba(0, 0, 0, 0.05);
+  background-color: #09090b !important; /* 强制白昼与黑夜均使用优雅的深色背景 */
+  font-family: ui-monospace, SFMono-Regular, Menlo, Monaco, Consolas, "Liberation Mono", "Courier New", monospace;
+}
+
+.dark .mac-code-wrapper {
+  border-color: rgba(63, 63, 70, 0.3) !important;
+  background-color: #18181b !important;
+}
+
+/* macOS 头部控制栏 */
+.mac-code-wrapper > div:first-child {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  padding: 0.5rem 1rem;
+  border-bottom: 1px solid rgba(9, 9, 11, 0.6);
+  background-color: #09090b;
+  user-select: none;
+}
+
+.dark .mac-code-wrapper > div:first-child {
+  background-color: #18181b;
+  border-bottom-color: rgba(24, 24, 27, 0.6);
+}
+
+/* 代码区域滚动条与文本色 */
+.mac-code-wrapper pre {
+  margin: 0 !important;
+  padding: 1rem 1.25rem !important;
+  overflow-x: auto;
+  background: transparent !important;
+  color: #e4e4e7 !important; /* zinc-200 */
+}
+
+.mac-code-wrapper pre code {
+  background: transparent !important;
+  font-family: inherit;
+  font-size: 0.875rem;
+  line-height: 1.7;
+}
+
+

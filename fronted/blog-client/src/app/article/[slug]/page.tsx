@@ -205,100 +205,124 @@ export default function ArticleDetailPage() {
     }
   }, [loading, article])
 
-  // 2. 专门负责代码高亮与 macOS 框增强（当 loading/article 稳定且 toc 发生重渲染后执行）
+  // 2. 专门负责代码高亮与 macOS 框增强（当 loading/article 稳定且 toc 发生重渲染后执行，使用 content 作为核心依赖之一）
   useEffect(() => {
     if (loading || !article || !articleContentRef.current) return
 
-    const timer = setTimeout(() => {
-      if (!articleContentRef.current) return
+    let isCancelled = false
+
+    const enhanceCodeBlocks = () => {
+      if (isCancelled || !articleContentRef.current) return
       const contentDiv = articleContentRef.current
 
       // 动态增强代码块：注入 macOS 控制圆点和复制按钮
       const preBlocks = contentDiv.querySelectorAll('pre')
+      
+      // 如果第一次没找到且文章内容中确实包含 pre 字符，可能 DOM 还在渲染中，我们在 200ms 后重试一次
+      if (preBlocks.length === 0 && article.content.includes('<pre>')) {
+        setTimeout(() => {
+          if (!isCancelled) enhanceCodeBlocks()
+        }, 200)
+        return
+      }
+
       preBlocks.forEach((pre) => {
-        // 避免重复包裹
-        if (pre.parentElement?.classList.contains('mac-code-wrapper')) return
+        try {
+          // 避免重复包裹
+          if (pre.parentElement?.classList.contains('mac-code-wrapper')) return
 
-        const wrapper = document.createElement('div')
-        wrapper.className = 'mac-code-wrapper relative my-8 rounded-xl overflow-hidden border border-zinc-200/40 dark:border-zinc-800/40 bg-zinc-950/90 dark:bg-zinc-900/90 shadow-md font-mono'
-        
-        const header = document.createElement('div')
-        header.className = 'flex items-center justify-between px-4 py-2 border-b border-zinc-900/60 bg-zinc-950 select-none'
-        
-        // macOS 经典三色圆点
-        header.innerHTML = `
-          <div class="flex items-center gap-1.5 shrink-0">
-            <span class="w-2.5 h-2.5 rounded-full bg-[#ff5f56]"></span>
-            <span class="w-2.5 h-2.5 rounded-full bg-[#ffbd2e]"></span>
-            <span class="w-2.5 h-2.5 rounded-full bg-[#27c93f]"></span>
-          </div>
-        `
+          const wrapper = document.createElement('div')
+          wrapper.className = 'mac-code-wrapper relative my-8 rounded-xl overflow-hidden border border-zinc-200/40 dark:border-zinc-800/40 bg-zinc-950/90 dark:bg-zinc-900/90 shadow-md font-mono'
+          
+          const header = document.createElement('div')
+          header.className = 'flex items-center justify-between px-4 py-2 border-b border-zinc-900/60 bg-zinc-950 select-none'
+          
+          // macOS 经典三色圆点
+          header.innerHTML = `
+            <div class="flex items-center gap-1.5 shrink-0">
+              <span class="w-2.5 h-2.5 rounded-full bg-[#ff5f56]"></span>
+              <span class="w-2.5 h-2.5 rounded-full bg-[#ffbd2e]"></span>
+              <span class="w-2.5 h-2.5 rounded-full bg-[#27c93f]"></span>
+            </div>
+          `
 
-        // 动态判断代码语言并应用高亮
-        const code = pre.querySelector('code')
-        let lang = 'CODE'
-        if (code) {
-          const classes = Array.from(code.classList)
-          const langClass = classes.find(c => c.startsWith('language-'))
-          if (langClass) {
-            lang = langClass.replace('language-', '').toUpperCase()
+          // 动态判断代码语言并应用高亮
+          const code = pre.querySelector('code')
+          let lang = 'CODE'
+          if (code) {
+            const classes = Array.from(code.classList)
+            const langClass = classes.find(c => c.startsWith('language-'))
+            if (langClass) {
+              lang = langClass.replace('language-', '').toUpperCase()
+            }
+            // 调用 highlight.js 高亮，并在报错时捕获异常以不影响包裹框架
+            try {
+              hljs.highlightElement(code as HTMLElement)
+            } catch (highlightErr) {
+              console.error('hljs高亮渲染异常：', highlightErr)
+            }
           }
-          // 调用 highlight.js 高亮
-          hljs.highlightElement(code as HTMLElement)
-        }
 
-        const langIndicator = document.createElement('span')
-        langIndicator.className = 'text-[9px] font-bold text-zinc-500 tracking-wider absolute left-16'
-        langIndicator.innerText = lang
-        header.appendChild(langIndicator)
+          const langIndicator = document.createElement('span')
+          langIndicator.className = 'text-[9px] font-bold text-zinc-500 tracking-wider absolute left-16'
+          langIndicator.innerText = lang
+          header.appendChild(langIndicator)
 
-        // 复制按钮
-        const copyBtn = document.createElement('button')
-        copyBtn.className = 'flex items-center gap-1 text-[10px] text-zinc-400 hover:text-white transition-colors cursor-pointer bg-transparent border-0 outline-none p-0.5'
-        copyBtn.innerHTML = `
-          <svg xmlns="http://www.w3.org/2000/svg" width="11" height="11" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><rect width="14" height="14" x="8" y="8" rx="2" ry="2"/><path d="M4 16c-1.1 0-2-.9-2-2V4c0-1.1.9-2 2-2h10c1.1 0 2 .9 2 2"/></svg>
-          <span>复制</span>
-        `
+          // 复制按钮
+          const copyBtn = document.createElement('button')
+          copyBtn.className = 'flex items-center gap-1 text-[10px] text-zinc-400 hover:text-white transition-colors cursor-pointer bg-transparent border-0 outline-none p-0.5'
+          copyBtn.innerHTML = `
+            <svg xmlns="http://www.w3.org/2000/svg" width="11" height="11" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><rect width="14" height="14" x="8" y="8" rx="2" ry="2"/><path d="M4 16c-1.1 0-2-.9-2-2V4c0-1.1.9-2 2-2h10c1.1 0 2 .9 2 2"/></svg>
+            <span>复制</span>
+          `
 
-        copyBtn.addEventListener('click', async () => {
-          const textToCopy = code?.innerText || pre.innerText || ''
-          try {
-            await navigator.clipboard.writeText(textToCopy)
-            copyBtn.innerHTML = `
-              <svg xmlns="http://www.w3.org/2000/svg" width="11" height="11" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" class="text-emerald-400"><path d="M20 6 9 17l-5-5"/></svg>
-              <span class="text-emerald-400 font-bold">已复制</span>
-            `
-            setTimeout(() => {
+          copyBtn.addEventListener('click', async () => {
+            const textToCopy = code?.innerText || pre.innerText || ''
+            try {
+              await navigator.clipboard.writeText(textToCopy)
               copyBtn.innerHTML = `
-                <svg xmlns="http://www.w3.org/2000/svg" width="11" height="11" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><rect width="14" height="14" x="8" y="8" rx="2" ry="2"/><path d="M4 16c-1.1 0-2-.9-2-2V4c0-1.1.9-2 2-2h10c1.1 0 2 .9 2 2"/></svg>
-                <span>复制</span>
+                <svg xmlns="http://www.w3.org/2000/svg" width="11" height="11" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" class="text-emerald-400"><path d="M20 6 9 17l-5-5"/></svg>
+                <span class="text-emerald-400 font-bold">已复制</span>
               `
-            }, 2000)
-          } catch (err) {
-            console.error('复制代码失败', err)
+              setTimeout(() => {
+                copyBtn.innerHTML = `
+                  <svg xmlns="http://www.w3.org/2000/svg" width="11" height="11" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><rect width="14" height="14" x="8" y="8" rx="2" ry="2"/><path d="M4 16c-1.1 0-2-.9-2-2V4c0-1.1.9-2 2-2h10c1.1 0 2 .9 2 2"/></svg>
+                  <span>复制</span>
+                `
+              }, 2000)
+            } catch (err) {
+              console.error('复制代码失败', err)
+            }
+          })
+
+          header.appendChild(copyBtn)
+
+          // 重构结构
+          pre.parentNode?.insertBefore(wrapper, pre)
+          wrapper.appendChild(header)
+          wrapper.appendChild(pre)
+          
+          // 去除原生 pre/code 的多余外描边与内边距，并将 code 背景设为透明，以防语法高亮库覆盖
+          pre.style.margin = '0'
+          pre.style.padding = '1rem 1.25rem'
+          pre.style.overflowX = 'auto'
+          pre.style.background = 'transparent'
+          if (code) {
+            code.style.background = 'transparent'
           }
-        })
-
-        header.appendChild(copyBtn)
-
-        // 重构结构
-        pre.parentNode?.insertBefore(wrapper, pre)
-        wrapper.appendChild(header)
-        wrapper.appendChild(pre)
-        
-        // 去除原生 pre/code 的多余外描边与内边距，并将 code 背景设为透明，以防语法高亮库覆盖
-        pre.style.margin = '0'
-        pre.style.padding = '1rem 1.25rem'
-        pre.style.overflowX = 'auto'
-        pre.style.background = 'transparent'
-        if (code) {
-          code.style.background = 'transparent'
+        } catch (err) {
+          console.error('处理单个代码块异常：', err)
         }
       })
-    }, 100) // 延迟稍拉长为 100ms，避开 hydration/setToc 引发的首次页面绘制重排
+    }
 
-    return () => clearTimeout(timer)
-  }, [loading, article, toc])
+    const timer = setTimeout(enhanceCodeBlocks, 100)
+
+    return () => {
+      isCancelled = true
+      clearTimeout(timer)
+    }
+  }, [loading, article?.content, toc])
 
   // GSAP 入场整体错落动效
   useEffect(() => {
