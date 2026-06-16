@@ -7,7 +7,7 @@ import ArticleForm from "@/components/forms/ArticleForm";
 import apiClient from "@/lib/api";
 import type { ApiResponse } from "@/types/common";
 import type { ArticleDetail, ArticleSaveDTO } from "@/types/article";
-import { ArrowLeft, Loader2 } from "lucide-react";
+import { Loader2 } from "lucide-react";
 
 /**
  * 编辑文章页面
@@ -96,6 +96,8 @@ export default function EditArticlePage() {
     isPinned: article?.isPinned,
     isFeatured: article?.isFeatured,
     isAllowComment: article?.isAllowComment,
+    contentType: article?.contentType,
+    template: article?.template,
     seoTitle: article?.seoTitle,
     seoDescription: article?.seoDescription,
     seoKeywords: article?.seoKeywords,
@@ -103,34 +105,6 @@ export default function EditArticlePage() {
 
   return (
     <div className="max-w-6xl mx-auto space-y-6">
-      {/* 顶部极简导航栏 */}
-      <div className="flex items-center justify-between border-b border-zinc-200/40 dark:border-zinc-850 pb-4 select-none">
-        <div className="flex items-center gap-4">
-          <button
-            onClick={() => router.push("/articles")}
-            className="flex items-center gap-1.5 text-xs font-semibold text-zinc-400 hover:text-zinc-700 dark:hover:text-zinc-300 transition-colors group cursor-pointer"
-          >
-            <ArrowLeft size={14} className="group-hover:-translate-x-0.5 transition-transform" />
-            <span>返回列表</span>
-          </button>
-          <div className="h-4 w-px bg-zinc-200 dark:bg-zinc-800" />
-          <h1 className="font-heading text-sm font-bold text-neutral-dark dark:text-zinc-200">
-            编辑文章
-          </h1>
-          <span className={cn(
-            "px-2 py-0.5 rounded-md text-[10px] font-bold uppercase border select-none",
-            article?.status === "PUBLISHED"
-              ? "bg-green-50/50 text-green-700 dark:bg-green-950/20 dark:text-green-400 border-green-200/40 dark:border-green-900/30"
-              : "bg-zinc-100/60 text-zinc-500 dark:bg-zinc-900/50 dark:text-zinc-400 border-zinc-200/40 dark:border-zinc-800/60"
-          )}>
-            {article?.status === "PUBLISHED" ? "已发布" : "草稿"}
-          </span>
-          <span className="text-[10px] text-zinc-400 font-mono select-none">
-            ID: {id}
-          </span>
-        </div>
-      </div>
-
       {/* 提示信息 */}
       {error && (
         <div className="rounded-xl bg-red-50 dark:bg-red-950/20 border border-red-200/60 dark:border-red-900/35 p-4 text-xs font-medium text-red-700 dark:text-red-400 animate-fade-in">

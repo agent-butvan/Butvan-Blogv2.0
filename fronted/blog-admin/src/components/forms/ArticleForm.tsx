@@ -1,8 +1,25 @@
 "use client";
 
 import { useState, useEffect, type FormEvent } from "react";
+import { useRouter } from "next/navigation";
 import { cn } from "@heroui/react";
-import { Save, Send, Eye, EyeOff, ChevronDown, Image as ImageIcon } from "lucide-react";
+import {
+  Save,
+  Send,
+  Eye,
+  EyeOff,
+  SlidersHorizontal,
+  X,
+  ChevronDown,
+  Sparkles,
+  ArrowLeft,
+  Settings,
+  Folder,
+  Tag,
+  BookOpen,
+  Layout,
+  MessageSquare
+} from "lucide-react";
 import MarkdownEditor from "@/components/editor/MarkdownEditor";
 import apiClient from "@/lib/api";
 import type { ApiResponse } from "@/types/common";
@@ -34,42 +51,54 @@ const MOCK_TAGS = [
 ];
 
 /**
- * 文章编辑表单
- * - 双栏 Notion / Figma 风格：左正文宽编辑，右常驻设置面板
- * - 整合分类、标签多选、置顶、推荐、评论开关、可见性设置
- * - 支持 API 与本地 Mock 双通道降级加载
+ * 文章后台高保真编辑器工作台
+ * - 顶栏吸顶 Header：集成无框大标题、URL Slug、状态切换、预览模式及侧边栏开关
+ * - 双栏写作区：支持纯编辑与实时双栏分屏预览无缝切换，右下角带有常驻字数统计浮层
+ * - 侧边滑出抽屉 (MetaDrawer)：点击右侧设置按钮划出，管理所有分类、标签、评论等高级参数，对接数据库字段
  */
 export default function ArticleForm({ initialData, onSave, saving = false }: ArticleFormProps) {
-  // 数据字段状态
+  const router = useRouter();
+
+  // 1. UI 视图交互状态
+  const [showPreview, setShowPreview] = useState(false);
+  const [showMeta, setShowMeta] = useState(false);
+
+  // 2. 表单核心数据状态
   const [title, setTitle] = useState(initialData?.title || "");
   const [slug, setSlug] = useState(initialData?.slug || "");
   const [summary, setSummary] = useState(initialData?.summary || "");
   const [content, setContent] = useState(initialData?.content || "");
   const [coverImageUrl, setCoverImageUrl] = useState(initialData?.coverImageUrl || "");
   
-  // 扩展参数
+  // 数据库字段映射与联动
   const [categoryId, setCategoryId] = useState<number | undefined>(initialData?.categoryId);
   const [tagIds, setTagIds] = useState<number[]>(initialData?.tagIds || []);
-  const [isPinned, setIsPinned] = useState<boolean>(initialData?.isPinned || false);
-  const [isFeatured, setIsFeatured] = useState<boolean>(initialData?.isFeatured || false);
-  const [isAllowComment, setIsAllowComment] = useState<boolean>(initialData?.isAllowComment !== false);
+  const [status, setStatus] = useState<"DRAFT" | "PUBLISHED">(
+    (initialData?.status as any) === "PUBLISHED" ? "PUBLISHED" : "DRAFT"
+  );
   const [visibility, setVisibility] = useState<"PUBLIC" | "PRIVATE" | "PASSWORD_PROTECTED">(
     (initialData?.visibility as any) || "PUBLIC"
   );
   const [password, setPassword] = useState<string>(initialData?.password || "");
+  const [isPinned, setIsPinned] = useState<boolean>(initialData?.isPinned || false);
+  const [isFeatured, setIsFeatured] = useState<boolean>(initialData?.isFeatured || false);
+  const [isAllowComment, setIsAllowComment] = useState<boolean>(initialData?.isAllowComment !== false);
+  const [contentType, setContentType] = useState<"ARTICLE" | "NOTE" | "GALLERY" | "PROJECT">(
+    initialData?.contentType || "ARTICLE"
+  );
+  const [template, setTemplate] = useState<string>(initialData?.template || "");
 
-  // SEO 设置
+  // SEO 元数据
   const [seoTitle, setSeoTitle] = useState(initialData?.seoTitle || "");
   const [seoDescription, setSeoDescription] = useState(initialData?.seoDescription || "");
   const [seoKeywords, setSeoKeywords] = useState(initialData?.seoKeywords || "");
 
-  // 接口数据
+  // 3. 接口拉取与 Mock 数据源
   const [categories, setCategories] = useState<any[]>([]);
   const [tags, setTags] = useState<any[]>([]);
 
-  // 双通道数据加载（尝试真实 API，失败则平滑降级至 Mock 预置数据）
   useEffect(() => {
-    // 1. 分类加载
+    // 拉取分类
     apiClient.get<ApiResponse<any[]>>("/categories/simple")
       .then((res) => {
         if (res.data?.data && Array.isArray(res.data.data)) {
@@ -82,7 +111,7 @@ export default function ArticleForm({ initialData, onSave, saving = false }: Art
         setCategories(MOCK_CATEGORIES);
       });
 
-    // 2. 标签加载
+    // 拉取标签
     apiClient.get<ApiResponse<any>>("/tags")
       .then((res) => {
         const list = res.data?.data;
@@ -91,7 +120,6 @@ export default function ArticleForm({ initialData, onSave, saving = false }: Art
         } else if (list && Array.isArray(list.records)) {
           setTags(list.records);
         } else {
-          // 尝试 tags/simple
           apiClient.get<ApiResponse<any[]>>("/tags/simple")
             .then(r => {
               if (Array.isArray(r.data?.data)) setTags(r.data.data);
@@ -105,10 +133,17 @@ export default function ArticleForm({ initialData, onSave, saving = false }: Art
       });
   }, []);
 
-  // 保存处理
-  const handleSave = (status: "DRAFT" | "PUBLISHED") => {
+  // 4. 正文字数及阅读时间实时统计
+  const charCount = content.length;
+  const chineseCharCount = (content.match(/[\u4e00-\u9fa5]/g) || []).length;
+  const paragraphCount = content.split(/\n+/).filter((p) => p.trim()).length;
+  const wordCount = content.split(/\s+/).filter((w) => w.trim()).length;
+  const readingMinutes = Math.ceil(charCount / 300) || 1;
+
+  // 5. 保存与提交逻辑
+  const handleTriggerSave = () => {
     const data: ArticleSaveDTO = {
-      title,
+      title: title || "无标题",
       slug: slug || undefined,
       summary: summary || undefined,
       content,
@@ -116,11 +151,13 @@ export default function ArticleForm({ initialData, onSave, saving = false }: Art
       categoryId: categoryId || undefined,
       tagIds: tagIds.length > 0 ? tagIds : undefined,
       status,
+      visibility,
+      password: visibility === "PASSWORD_PROTECTED" ? password : undefined,
       isPinned,
       isFeatured,
       isAllowComment,
-      visibility,
-      password: visibility === "PASSWORD_PROTECTED" ? password : undefined,
+      contentType,
+      template: template || undefined,
       seoTitle: seoTitle || undefined,
       seoDescription: seoDescription || undefined,
       seoKeywords: seoKeywords || undefined,
@@ -133,296 +170,446 @@ export default function ArticleForm({ initialData, onSave, saving = false }: Art
   };
 
   return (
-    <form onSubmit={handleSubmit} className="w-full">
-      {/* 采用 Grid 左右双栏 Notion 风格布局 */}
-      <div className="grid grid-cols-1 lg:grid-cols-4 gap-8 items-start">
+    <form onSubmit={handleSubmit} className="flex flex-col h-full w-full bg-transparent min-h-[calc(100vh-140px)]">
+      
+      {/* 顶栏吸顶 Header：集成标题与所有核心工作流控制 */}
+      <header className="sticky top-0 bg-background/80 backdrop-blur-md border-b border-zinc-200/50 dark:border-zinc-900/60 pb-5 mb-5 flex flex-col gap-4 sm:flex-row sm:items-center sm:justify-between z-20 select-none">
         
-        {/* 左栏：核心写作区（占 3 份宽度） */}
-        <div className="lg:col-span-3 space-y-5">
-          {/* Notion 式扁平无框大标题 */}
+        {/* 左侧：返回列表与无框扁平大标题输入 */}
+        <div className="flex flex-1 items-center gap-3">
+          <button
+            type="button"
+            onClick={() => router.push("/articles")}
+            className="flex h-9 w-9 items-center justify-center rounded-xl border border-zinc-200 dark:border-zinc-800 bg-white dark:bg-zinc-900 text-zinc-400 hover:text-zinc-700 dark:hover:text-zinc-200 hover:border-zinc-300 dark:hover:border-zinc-750 transition-all cursor-pointer"
+            title="返回列表"
+          >
+            <ArrowLeft size={16} />
+          </button>
+          
           <input
             type="text"
             value={title}
             onChange={(e) => setTitle(e.target.value)}
-            placeholder="无标题"
+            placeholder="在这里开始你的写作吧..."
             required
-            className="w-full bg-transparent px-0 py-2 text-4xl font-extrabold font-heading text-zinc-900 dark:text-zinc-50 placeholder-zinc-300 dark:placeholder-zinc-800 border-0 outline-none focus:ring-0 focus:outline-none transition-all"
+            className="flex-1 bg-transparent px-2 text-xl font-bold font-heading text-neutral-dark dark:text-zinc-50 placeholder-zinc-300 dark:placeholder-zinc-700 border-0 outline-none focus:ring-0 focus:outline-none transition-colors"
           />
-
-          {/* 实时分屏 Markdown 编辑器 */}
-          <div className="rounded-xl overflow-hidden border border-zinc-200/50 dark:border-zinc-850">
-            <MarkdownEditor value={content} onChange={setContent} height={600} />
-          </div>
         </div>
 
-        {/* 右栏：常驻属性设置面板（占 1 份宽度） */}
-        <div className="lg:col-span-1 space-y-5 sticky top-6">
-          <div className="glass-panel bg-noise-texture rounded-2xl border border-zinc-200/60 dark:border-zinc-900/60 p-5 space-y-5 shadow-sm">
-            
-            {/* 第一部分：操作发布与状态 */}
-            <div className="space-y-2.5 pb-4 border-b border-zinc-200/50 dark:border-zinc-900/60">
-              <label className="block text-[10px] font-bold text-zinc-400 dark:text-zinc-500 uppercase tracking-widest">
-                操作面板
-              </label>
-              <div className="grid grid-cols-2 gap-2">
-                <button
-                  type="button"
-                  onClick={() => handleSave("DRAFT")}
-                  disabled={saving || !title.trim()}
-                  className="flex items-center justify-center gap-1.5 rounded-xl border border-zinc-200 dark:border-zinc-800 bg-white/80 dark:bg-zinc-900/80 py-2 px-3 text-xs font-semibold text-zinc-700 dark:text-zinc-300 hover:bg-zinc-50 dark:hover:bg-zinc-850 hover:border-zinc-300 dark:hover:border-zinc-700 transition-all cursor-pointer disabled:opacity-50"
-                >
-                  <Save size={14} />
-                  <span>存草稿</span>
-                </button>
-                <button
-                  type="button"
-                  onClick={() => handleSave("PUBLISHED")}
-                  disabled={saving || !title.trim()}
-                  className="flex items-center justify-center gap-1.5 rounded-xl bg-primary py-2 px-3 text-xs font-bold text-white hover:opacity-90 transition-opacity cursor-pointer disabled:opacity-50"
-                >
-                  <Send size={14} />
-                  <span>发布</span>
-                </button>
-              </div>
-            </div>
+        {/* 右侧：短链接别名、AI、预览、状态配置与保存发布 */}
+        <div className="flex flex-wrap items-center gap-3.5">
+          
+          {/* 行内 /posts/ 短链接别名 */}
+          <div className="flex items-center gap-1 text-[11px] text-zinc-400 font-mono">
+            <span className="opacity-80">/posts/</span>
+            <input
+              type="text"
+              value={slug}
+              onChange={(e) => setSlug(e.target.value)}
+              placeholder="短别名"
+              className="w-24 border-b border-zinc-200/80 dark:border-zinc-800 p-0 pb-0.5 text-[11px] font-mono leading-none focus:border-primary focus:outline-none text-zinc-650 dark:text-zinc-350 bg-transparent transition-colors"
+            />
+          </div>
 
-            {/* 第二部分：所属分类 */}
-            <div className="space-y-1.5">
-              <label className="block text-[10px] font-bold text-zinc-400 dark:text-zinc-500 uppercase tracking-widest">
-                所属分类
-              </label>
-              <div className="relative">
-                <select
-                  value={categoryId || ""}
-                  onChange={(e) => setCategoryId(Number(e.target.value) || undefined)}
-                  className="w-full rounded-xl border border-zinc-200/60 dark:border-zinc-800 bg-white dark:bg-zinc-900 px-3.5 py-2.5 text-xs text-zinc-800 dark:text-zinc-200 outline-none focus:border-primary focus:ring-2 focus:ring-primary/10 transition-all cursor-pointer appearance-none"
-                >
-                  <option value="">未分类</option>
-                  {categories.map((c) => (
-                    <option key={c.id} value={c.id}>
-                      {c.name}
-                    </option>
-                  ))}
-                </select>
-                <ChevronDown size={14} className="text-zinc-400 absolute right-3.5 top-3.5 pointer-events-none" />
-              </div>
-            </div>
+          {/* AI 助手占位示意 */}
+          <button
+            type="button"
+            onClick={() => alert("AI 智能修饰与标题生成即将上线，敬请期待！")}
+            className="flex items-center gap-1 py-1.5 px-3 rounded-lg text-xs font-semibold bg-zinc-100/80 dark:bg-zinc-900/80 hover:bg-primary/8 text-zinc-550 dark:text-zinc-450 hover:text-primary border border-transparent hover:border-primary/20 transition-all cursor-pointer"
+            title="AI 标题/摘要助手"
+          >
+            <Sparkles size={13} />
+            <span>AI</span>
+          </button>
 
-            {/* 第三部分：平滑选择的多选标签 */}
-            <div className="space-y-2">
-              <label className="block text-[10px] font-bold text-zinc-400 dark:text-zinc-500 uppercase tracking-widest">
-                文章标签
-              </label>
-              <div className="flex flex-wrap gap-1.5">
-                {tags.map((t) => {
-                  const isSelected = tagIds.includes(t.id);
-                  return (
-                    <button
-                      key={t.id}
-                      type="button"
-                      onClick={() => {
-                        if (isSelected) {
-                          setTagIds(tagIds.filter((id) => id !== t.id));
-                        } else {
-                          setTagIds([...tagIds, t.id]);
-                        }
-                      }}
-                      className={cn(
-                        "px-2.5 py-1 text-[11px] font-semibold rounded-lg border transition-all cursor-pointer select-none",
-                        isSelected
-                          ? "bg-primary/10 border-primary/40 text-primary"
-                          : "bg-white dark:bg-zinc-900/60 border-zinc-200/60 dark:border-zinc-800/80 text-zinc-500 dark:text-zinc-400 hover:border-zinc-300 dark:hover:border-zinc-700"
-                      )}
-                    >
-                      #{t.name}
-                    </button>
-                  );
-                })}
-              </div>
-            </div>
+          {/* 草稿 / 发布单选组合按钮 */}
+          <div className="flex items-center bg-zinc-100 dark:bg-zinc-950 p-1 rounded-xl border border-zinc-200/30 dark:border-zinc-900/30">
+            <button
+              type="button"
+              onClick={() => setStatus("DRAFT")}
+              className={cn(
+                "py-1 px-3 text-[10px] font-bold rounded-lg transition-all cursor-pointer",
+                status === "DRAFT"
+                  ? "bg-white dark:bg-zinc-900 shadow-xs text-primary"
+                  : "text-zinc-500 hover:text-zinc-700 dark:hover:text-zinc-300"
+              )}
+            >
+              草稿
+            </button>
+            <button
+              type="button"
+              onClick={() => setStatus("PUBLISHED")}
+              className={cn(
+                "py-1 px-3 text-[10px] font-bold rounded-lg transition-all cursor-pointer",
+                status === "PUBLISHED"
+                  ? "bg-white dark:bg-zinc-900 shadow-xs text-primary"
+                  : "text-zinc-500 hover:text-zinc-700 dark:hover:text-zinc-300"
+              )}
+            >
+              发布
+            </button>
+          </div>
 
-            {/* 第四部分：可见性设置与密码 */}
-            <div className="space-y-2 pt-2 border-t border-zinc-200/50 dark:border-zinc-900/60">
-              <label className="block text-[10px] font-bold text-zinc-400 dark:text-zinc-500 uppercase tracking-widest">
-                文章可见性
-              </label>
-              <div className="grid grid-cols-3 gap-1 bg-zinc-100 dark:bg-zinc-950 p-1 rounded-xl">
-                {[
-                  { key: "PUBLIC" as const, label: "公开" },
-                  { key: "PRIVATE" as const, label: "私密" },
-                  { key: "PASSWORD_PROTECTED" as const, label: "密码" },
-                ].map((item) => (
+          {/* 实时分屏预览控制开关 */}
+          <button
+            type="button"
+            onClick={() => setShowPreview(!showPreview)}
+            className={cn(
+              "flex h-9 w-9 items-center justify-center rounded-xl border transition-all cursor-pointer",
+              showPreview
+                ? "bg-primary/10 border-primary/40 text-primary"
+                : "border-zinc-200 dark:border-zinc-800 bg-white dark:bg-zinc-900 text-zinc-400 hover:text-zinc-700 dark:hover:text-zinc-200 hover:border-zinc-300 dark:hover:border-zinc-750"
+            )}
+            title={showPreview ? "关闭预览" : "开启分屏预览"}
+          >
+            {showPreview ? <EyeOff size={15} /> : <Eye size={15} />}
+          </button>
+
+          {/* 侧边 Drawer 配置滑块 */}
+          <button
+            type="button"
+            onClick={() => setShowMeta(true)}
+            className="flex h-9 w-9 items-center justify-center rounded-xl border border-zinc-200 dark:border-zinc-800 bg-white dark:bg-zinc-900 text-zinc-400 hover:text-zinc-700 dark:hover:text-zinc-200 hover:border-zinc-300 dark:hover:border-zinc-750 transition-all cursor-pointer"
+            title="文章设置属性"
+          >
+            <SlidersHorizontal size={15} />
+          </button>
+
+          {/* 保存触发按钮 */}
+          <button
+            type="button"
+            onClick={handleTriggerSave}
+            disabled={saving || !title.trim()}
+            className="flex items-center gap-1.5 rounded-xl bg-primary py-2 px-4.5 text-xs font-bold text-white hover:opacity-90 active:scale-95 transition-all cursor-pointer disabled:opacity-50"
+          >
+            <Save size={13} />
+            <span>{status === "PUBLISHED" ? "发布新版" : "保存草稿"}</span>
+          </button>
+
+        </div>
+      </header>
+
+      {/* 主面板写作区：内置实时预览切换与字数信息常驻 */}
+      <main className="flex-1 min-h-0 relative">
+        <div className="relative h-full w-full rounded-xl overflow-hidden border border-zinc-200/50 dark:border-zinc-850 bg-white dark:bg-zinc-950">
+          <MarkdownEditor
+            value={content}
+            onChange={setContent}
+            height={640}
+            preview={showPreview ? "live" : "edit"}
+          />
+
+          {/* 右下角常驻统计浮层 (EditorStatsOverlay) */}
+          <div className="absolute bottom-4 right-4 bg-white/95 dark:bg-zinc-900/95 backdrop-blur-md border border-zinc-200/50 dark:border-zinc-800/60 px-4 py-2 rounded-xl text-[10px] font-mono text-zinc-550 dark:text-zinc-400 select-none shadow-md z-10 flex items-center gap-4.5">
+            <div className="flex items-center gap-1">
+              <span>共</span>
+              <strong className="text-zinc-800 dark:text-zinc-200 font-bold">{charCount}</strong>
+              <span>字符</span>
+            </div>
+            <div className="h-2.5 w-px bg-zinc-200 dark:bg-zinc-800" />
+            <div className="flex items-center gap-1">
+              <span>中文</span>
+              <strong className="text-zinc-800 dark:text-zinc-200 font-bold">{chineseCharCount}</strong>
+              <span>字</span>
+            </div>
+            <div className="h-2.5 w-px bg-zinc-200 dark:bg-zinc-800" />
+            <div className="flex items-center gap-1">
+              <strong className="text-zinc-800 dark:text-zinc-200 font-bold">{paragraphCount}</strong>
+              <span>段落</span>
+            </div>
+            <div className="h-2.5 w-px bg-zinc-200 dark:bg-zinc-800" />
+            <div className="flex items-center gap-1">
+              <span>阅读约</span>
+              <strong className="text-zinc-800 dark:text-zinc-200 font-bold">{readingMinutes}</strong>
+              <span>分钟</span>
+            </div>
+          </div>
+        </div>
+      </main>
+
+      {/* 遮罩层 (Drawer Backdrop) */}
+      {showMeta && (
+        <div
+          className="fixed inset-0 bg-zinc-950/20 dark:bg-zinc-950/40 backdrop-blur-xs z-30 transition-opacity animate-[fadeIn_0.2s_ease-out]"
+          onClick={() => setShowMeta(false)}
+        />
+      )}
+
+      {/* 侧边滑出抽屉 (Slide Drawer Panel) */}
+      <div className={cn(
+        "fixed top-0 right-0 z-40 h-full w-88 bg-white dark:bg-zinc-950 border-l border-zinc-200/80 dark:border-zinc-900/80 shadow-2xl p-6 overflow-y-auto transition-transform duration-300 ease-out flex flex-col gap-5.5 select-none",
+        showMeta ? "translate-x-0 animate-[slideIn_0.25s_ease-out]" : "translate-x-full"
+      )}>
+        
+        {/* 抽屉头部 */}
+        <div className="flex items-center justify-between border-b border-zinc-200/50 dark:border-zinc-900/60 pb-3.5">
+          <h2 className="font-heading text-sm font-bold text-neutral-dark dark:text-zinc-200 flex items-center gap-2">
+            <Settings size={15} />
+            <span>文章设置</span>
+          </h2>
+          <button
+            type="button"
+            onClick={() => setShowMeta(false)}
+            className="p-1 rounded-full hover:bg-zinc-100 dark:hover:bg-zinc-900 text-zinc-400 hover:text-zinc-700 dark:hover:text-zinc-300 transition-colors cursor-pointer"
+          >
+            <X size={15} />
+          </button>
+        </div>
+
+        {/* 抽屉设置表单内容 */}
+        <div className="flex-1 space-y-5.5 custom-scrollbar overflow-y-auto pr-1 pb-6">
+          
+          {/* 所属分类 (Select) */}
+          <div className="space-y-1.5">
+            <label className="text-[10px] font-bold text-zinc-400 dark:text-zinc-500 uppercase tracking-widest flex items-center gap-1.5">
+              <Folder size={11} />
+              <span>分类</span>
+            </label>
+            <div className="relative">
+              <select
+                value={categoryId || ""}
+                onChange={(e) => setCategoryId(Number(e.target.value) || undefined)}
+                className="w-full rounded-xl border border-zinc-200/60 dark:border-zinc-800 bg-white dark:bg-zinc-900 px-3.5 py-2.5 text-xs text-zinc-800 dark:text-zinc-200 outline-none focus:border-primary focus:ring-2 focus:ring-primary/10 transition-all cursor-pointer appearance-none"
+              >
+                <option value="">选择分类（可空）</option>
+                {categories.map((c) => (
+                  <option key={c.id} value={c.id}>
+                    {c.name}
+                  </option>
+                ))}
+              </select>
+              <ChevronDown size={14} className="text-zinc-400 absolute right-3.5 top-3 pointer-events-none" />
+            </div>
+          </div>
+
+          {/* 标签 (Tag Chips) */}
+          <div className="space-y-2">
+            <label className="text-[10px] font-bold text-zinc-400 dark:text-zinc-500 uppercase tracking-widest flex items-center gap-1.5">
+              <Tag size={11} />
+              <span>标签</span>
+            </label>
+            <div className="flex flex-wrap gap-1.5">
+              {tags.map((t) => {
+                const isSelected = tagIds.includes(t.id);
+                return (
                   <button
-                    key={item.key}
+                    key={t.id}
                     type="button"
-                    onClick={() => setVisibility(item.key)}
+                    onClick={() => {
+                      if (isSelected) {
+                        setTagIds(tagIds.filter((id) => id !== t.id));
+                      } else {
+                        setTagIds([...tagIds, t.id]);
+                      }
+                    }}
                     className={cn(
-                      "py-1.5 text-[10px] font-bold rounded-lg transition-all cursor-pointer",
-                      visibility === item.key
-                        ? "bg-white dark:bg-zinc-900 shadow-sm text-primary"
-                        : "text-zinc-500 hover:text-zinc-700 dark:hover:text-zinc-300"
+                      "px-2.5 py-1 text-[11px] font-semibold rounded-lg border transition-all cursor-pointer",
+                      isSelected
+                        ? "bg-primary/10 border-primary/40 text-primary"
+                        : "bg-white dark:bg-zinc-900/60 border-zinc-200/60 dark:border-zinc-800/80 text-zinc-500 dark:text-zinc-400 hover:border-zinc-300 dark:hover:border-zinc-700"
                     )}
                   >
-                    {item.label}
+                    #{t.name}
                   </button>
-                ))}
-              </div>
-              {visibility === "PASSWORD_PROTECTED" && (
-                <div className="animate-fade-in relative mt-1.5">
-                  <input
-                    type="text"
-                    value={password}
-                    onChange={(e) => setPassword(e.target.value)}
-                    placeholder="设定文章访问密码"
-                    required
-                    className="w-full rounded-xl border border-zinc-200 dark:border-zinc-800 bg-white dark:bg-zinc-900 pl-3.5 pr-8 py-2 text-xs text-zinc-850 dark:text-zinc-200 outline-none focus:border-primary focus:ring-2 focus:ring-primary/10 transition-all"
-                  />
-                  <EyeOff size={13} className="text-zinc-400 absolute right-3 top-3" />
-                </div>
-              )}
+                );
+              })}
             </div>
+          </div>
 
-            {/* 第五部分：开关属性组合 */}
-            <div className="space-y-3 pt-3 border-t border-zinc-200/50 dark:border-zinc-900/60">
-              {/* 置顶 */}
-              <label className="flex items-center justify-between cursor-pointer select-none">
-                <span className="text-xs font-semibold text-zinc-650 dark:text-zinc-400">首页置顶</span>
-                <input
-                  type="checkbox"
-                  checked={isPinned}
-                  onChange={(e) => setIsPinned(e.target.checked)}
-                  className="sr-only peer"
-                />
-                <div className="relative w-8 h-4.5 bg-zinc-200 dark:bg-zinc-800 peer-focus:outline-none rounded-full peer peer-checked:after:translate-x-full rtl:peer-checked:after:-translate-x-full peer-checked:after:border-white after:content-[''] after:absolute after:top-[2px] after:left-[2px] after:bg-white after:border-zinc-300 after:border after:rounded-full after:h-3.5 after:w-3.5 after:transition-all dark:border-zinc-650 peer-checked:bg-primary"></div>
-              </label>
-
-              {/* 推荐 */}
-              <label className="flex items-center justify-between cursor-pointer select-none">
-                <span className="text-xs font-semibold text-zinc-650 dark:text-zinc-400">特别推荐</span>
-                <input
-                  type="checkbox"
-                  checked={isFeatured}
-                  onChange={(e) => setIsFeatured(e.target.checked)}
-                  className="sr-only peer"
-                />
-                <div className="relative w-8 h-4.5 bg-zinc-200 dark:bg-zinc-800 peer-focus:outline-none rounded-full peer peer-checked:after:translate-x-full rtl:peer-checked:after:-translate-x-full peer-checked:after:border-white after:content-[''] after:absolute after:top-[2px] after:left-[2px] after:bg-white after:border-zinc-300 after:border after:rounded-full after:h-3.5 after:w-3.5 after:transition-all dark:border-zinc-650 peer-checked:bg-primary"></div>
-              </label>
-
-              {/* 允许评论 */}
-              <label className="flex items-center justify-between cursor-pointer select-none">
-                <span className="text-xs font-semibold text-zinc-650 dark:text-zinc-400">允许评论</span>
-                <input
-                  type="checkbox"
-                  checked={isAllowComment}
-                  onChange={(e) => setIsAllowComment(e.target.checked)}
-                  className="sr-only peer"
-                />
-                <div className="relative w-8 h-4.5 bg-zinc-200 dark:bg-zinc-800 peer-focus:outline-none rounded-full peer peer-checked:after:translate-x-full rtl:peer-checked:after:-translate-x-full peer-checked:after:border-white after:content-[''] after:absolute after:top-[2px] after:left-[2px] after:bg-white after:border-zinc-300 after:border after:rounded-full after:h-3.5 after:w-3.5 after:transition-all dark:border-zinc-650 peer-checked:bg-primary"></div>
-              </label>
-            </div>
-
-            {/* 第六部分：文章摘要 */}
-            <div className="space-y-1.5 pt-3 border-t border-zinc-200/50 dark:border-zinc-900/60">
-              <label className="block text-[10px] font-bold text-zinc-400 dark:text-zinc-500 uppercase tracking-widest">
-                文章摘要
-              </label>
-              <textarea
-                value={summary}
-                onChange={(e) => setSummary(e.target.value)}
-                placeholder="关于本文的简单介绍..."
-                rows={3}
-                className="w-full rounded-xl border border-zinc-200/60 dark:border-zinc-800 bg-white dark:bg-zinc-900 px-3 py-2.5 text-xs text-zinc-800 dark:text-zinc-200 placeholder-zinc-400 dark:placeholder-zinc-600 outline-none focus:border-primary focus:ring-2 focus:ring-primary/10 transition-all resize-none"
-              />
-            </div>
-
-            {/* 第七部分：URL 别名 */}
+          {/* 内容类型 (content_type) & 自定义模板 (template) */}
+          <div className="grid grid-cols-2 gap-3 pt-1">
             <div className="space-y-1.5">
-              <label className="block text-[10px] font-bold text-zinc-400 dark:text-zinc-500 uppercase tracking-widest">
-                URL 别名 (Slug)
+              <label className="text-[10px] font-bold text-zinc-400 dark:text-zinc-500 uppercase tracking-widest flex items-center gap-1.5">
+                <BookOpen size={11} />
+                <span>内容类型</span>
+              </label>
+              <select
+                value={contentType}
+                onChange={(e) => setContentType(e.target.value as any)}
+                className="w-full rounded-xl border border-zinc-200/60 dark:border-zinc-800 bg-white dark:bg-zinc-900 px-3.5 py-2.5 text-xs text-zinc-850 dark:text-zinc-200 outline-none transition-all cursor-pointer"
+              >
+                <option value="ARTICLE">文章</option>
+                <option value="NOTE">随笔</option>
+                <option value="GALLERY">画廊</option>
+                <option value="PROJECT">项目</option>
+              </select>
+            </div>
+            
+            <div className="space-y-1.5">
+              <label className="text-[10px] font-bold text-zinc-400 dark:text-zinc-500 uppercase tracking-widest flex items-center gap-1.5">
+                <Layout size={11} />
+                <span>自定义模板</span>
               </label>
               <input
                 type="text"
-                value={slug}
-                onChange={(e) => setSlug(e.target.value)}
-                placeholder="留空自动根据标题转换"
-                className="w-full rounded-xl border border-zinc-200/60 dark:border-zinc-800 bg-white dark:bg-zinc-900 px-3 py-2 text-xs text-zinc-800 dark:text-zinc-200 placeholder-zinc-400 dark:placeholder-zinc-600 font-mono outline-none focus:border-primary focus:ring-2 focus:ring-primary/10 transition-all"
+                value={template}
+                onChange={(e) => setTemplate(e.target.value)}
+                placeholder="默认"
+                className="w-full rounded-xl border border-zinc-200/60 dark:border-zinc-800 bg-white dark:bg-zinc-900 px-3 py-2 text-xs text-zinc-850 dark:text-zinc-200 placeholder-zinc-400 dark:placeholder-zinc-650 outline-none focus:border-primary transition-all"
               />
             </div>
-
-            {/* 第八部分：封面图 */}
-            <div className="space-y-1.5">
-              <label className="block text-[10px] font-bold text-zinc-400 dark:text-zinc-500 uppercase tracking-widest">
-                封面图链接
-              </label>
-              <input
-                type="url"
-                value={coverImageUrl}
-                onChange={(e) => setCoverImageUrl(e.target.value)}
-                placeholder="https://example.com/cover.jpg"
-                className="w-full rounded-xl border border-zinc-200/60 dark:border-zinc-800 bg-white dark:bg-zinc-900 px-3 py-2 text-xs text-zinc-800 dark:text-zinc-200 placeholder-zinc-400 dark:placeholder-zinc-600 outline-none focus:border-primary focus:ring-2 focus:ring-primary/10 transition-all"
-              />
-              {coverImageUrl ? (
-                <div className="relative rounded-xl overflow-hidden border border-zinc-200 dark:border-zinc-800 mt-2">
-                  <img
-                    src={coverImageUrl}
-                    alt="封面预览"
-                    className="h-24 w-full object-cover"
-                  />
-                </div>
-              ) : (
-                <div className="flex flex-col items-center justify-center border border-dashed border-zinc-200/80 dark:border-zinc-800/80 rounded-xl py-4 text-zinc-450 dark:text-zinc-550 select-none">
-                  <ImageIcon size={16} />
-                  <span className="text-[10px] scale-90 font-medium mt-1">暂无封面</span>
-                </div>
-              )}
-            </div>
-
-            {/* 第九部分：折叠的 SEO 参数 */}
-            <details className="group border border-zinc-200/50 dark:border-zinc-800/60 rounded-xl overflow-hidden bg-white/40 dark:bg-zinc-950/20">
-              <summary className="flex items-center justify-between px-3.5 py-2.5 text-[11px] font-bold text-zinc-500 dark:text-zinc-450 cursor-pointer hover:bg-zinc-50 dark:hover:bg-zinc-900/40 select-none">
-                <span>SEO 元数据</span>
-                <span className="transition-transform group-open:rotate-180">
-                  <ChevronDown size={13} />
-                </span>
-              </summary>
-              <div className="p-3 border-t border-zinc-200/50 dark:border-zinc-800/60 space-y-3">
-                <div className="space-y-1">
-                  <label className="text-[9px] font-bold text-zinc-400 dark:text-zinc-500">SEO 标题</label>
-                  <input
-                    type="text"
-                    value={seoTitle}
-                    onChange={(e) => setSeoTitle(e.target.value)}
-                    placeholder="留空默认使用文章标题"
-                    className="w-full rounded-lg border border-zinc-200 dark:border-zinc-800 bg-white dark:bg-zinc-900 px-2.5 py-1.5 text-xs text-zinc-850 dark:text-zinc-250 outline-none"
-                  />
-                </div>
-                <div className="space-y-1">
-                  <label className="text-[9px] font-bold text-zinc-400 dark:text-zinc-500">SEO 描述</label>
-                  <textarea
-                    value={seoDescription}
-                    onChange={(e) => setSeoDescription(e.target.value)}
-                    placeholder="留空默认使用文章摘要"
-                    rows={2}
-                    className="w-full rounded-lg border border-zinc-200 dark:border-zinc-800 bg-white dark:bg-zinc-900 px-2.5 py-1.5 text-xs text-zinc-850 dark:text-zinc-250 outline-none resize-none"
-                  />
-                </div>
-                <div className="space-y-1">
-                  <label className="text-[9px] font-bold text-zinc-400 dark:text-zinc-500">SEO 关键词 (逗号分割)</label>
-                  <input
-                    type="text"
-                    value={seoKeywords}
-                    onChange={(e) => setSeoKeywords(e.target.value)}
-                    placeholder="react, nextjs, blog"
-                    className="w-full rounded-lg border border-zinc-200 dark:border-zinc-800 bg-white dark:bg-zinc-900 px-2.5 py-1.5 text-xs text-zinc-850 dark:text-zinc-250 outline-none"
-                  />
-                </div>
-              </div>
-            </details>
-
           </div>
-        </div>
 
+          {/* 属性控制开关组 */}
+          <div className="space-y-3 pt-3 border-t border-zinc-200/50 dark:border-zinc-900/60">
+            <label className="flex items-center justify-between cursor-pointer">
+              <span className="text-xs font-semibold text-zinc-650 dark:text-zinc-400">首页置顶</span>
+              <input
+                type="checkbox"
+                checked={isPinned}
+                onChange={(e) => setIsPinned(e.target.checked)}
+                className="sr-only peer"
+              />
+              <div className="relative w-8 h-4.5 bg-zinc-200 dark:bg-zinc-800 peer-focus:outline-none rounded-full peer peer-checked:after:translate-x-full rtl:peer-checked:after:-translate-x-full peer-checked:after:border-white after:content-[''] after:absolute after:top-[2px] after:left-[2px] after:bg-white after:border-zinc-300 after:border after:rounded-full after:h-3.5 after:w-3.5 after:transition-all dark:border-zinc-650 peer-checked:bg-primary"></div>
+            </label>
+
+            <label className="flex items-center justify-between cursor-pointer">
+              <span className="text-xs font-semibold text-zinc-650 dark:text-zinc-400">特别推荐</span>
+              <input
+                type="checkbox"
+                checked={isFeatured}
+                onChange={(e) => setIsFeatured(e.target.checked)}
+                className="sr-only peer"
+              />
+              <div className="relative w-8 h-4.5 bg-zinc-200 dark:bg-zinc-800 peer-focus:outline-none rounded-full peer peer-checked:after:translate-x-full rtl:peer-checked:after:-translate-x-full peer-checked:after:border-white after:content-[''] after:absolute after:top-[2px] after:left-[2px] after:bg-white after:border-zinc-300 after:border after:rounded-full after:h-3.5 after:w-3.5 after:transition-all dark:border-zinc-650 peer-checked:bg-primary"></div>
+            </label>
+
+            <label className="flex items-center justify-between cursor-pointer">
+              <span className="text-xs font-semibold text-zinc-650 dark:text-zinc-400">允许评论</span>
+              <input
+                type="checkbox"
+                checked={isAllowComment}
+                onChange={(e) => setIsAllowComment(e.target.checked)}
+                className="sr-only peer"
+              />
+              <div className="relative w-8 h-4.5 bg-zinc-200 dark:bg-zinc-800 peer-focus:outline-none rounded-full peer peer-checked:after:translate-x-full rtl:peer-checked:after:-translate-x-full peer-checked:after:border-white after:content-[''] after:absolute after:top-[2px] after:left-[2px] after:bg-white after:border-zinc-300 after:border after:rounded-full after:h-3.5 after:w-3.5 after:transition-all dark:border-zinc-650 peer-checked:bg-primary"></div>
+            </label>
+          </div>
+
+          {/* 可见性选择 */}
+          <div className="space-y-2 pt-3 border-t border-zinc-200/50 dark:border-zinc-900/60">
+            <label className="block text-[10px] font-bold text-zinc-400 dark:text-zinc-500 uppercase tracking-widest">
+              文章可见性
+            </label>
+            <div className="grid grid-cols-3 gap-1 bg-zinc-100 dark:bg-zinc-950 p-1 rounded-xl">
+              {[
+                { key: "PUBLIC" as const, label: "公开" },
+                { key: "PRIVATE" as const, label: "私密" },
+                { key: "PASSWORD_PROTECTED" as const, label: "密码" },
+              ].map((item) => (
+                <button
+                  key={item.key}
+                  type="button"
+                  onClick={() => setVisibility(item.key)}
+                  className={cn(
+                    "py-1.5 text-[10px] font-bold rounded-lg transition-all cursor-pointer",
+                    visibility === item.key
+                      ? "bg-white dark:bg-zinc-900 shadow-xs text-primary"
+                      : "text-zinc-500 hover:text-zinc-700 dark:hover:text-zinc-300"
+                  )}
+                >
+                  {item.label}
+                </button>
+              ))}
+            </div>
+            {visibility === "PASSWORD_PROTECTED" && (
+              <div className="animate-fade-in relative mt-1.5">
+                <input
+                  type="text"
+                  value={password}
+                  onChange={(e) => setPassword(e.target.value)}
+                  placeholder="请输入访问密码"
+                  required
+                  className="w-full rounded-xl border border-zinc-200 dark:border-zinc-800 bg-white dark:bg-zinc-900 pl-3.5 pr-8 py-2 text-xs text-zinc-850 dark:text-zinc-250 outline-none focus:border-primary focus:ring-2 focus:ring-primary/10 transition-all"
+                />
+                <EyeOff size={13} className="text-zinc-400 absolute right-3 top-3" />
+              </div>
+            )}
+          </div>
+
+          {/* 摘要与描述 */}
+          <div className="space-y-1.5 pt-3 border-t border-zinc-200/50 dark:border-zinc-900/60">
+            <label className="block text-[10px] font-bold text-zinc-400 dark:text-zinc-500 uppercase tracking-widest flex items-center gap-1">
+              <MessageSquare size={11} />
+              <span>外显描述摘要</span>
+            </label>
+            <textarea
+              value={summary}
+              onChange={(e) => setSummary(e.target.value)}
+              placeholder="文章简要描述..."
+              rows={3}
+              className="w-full rounded-xl border border-zinc-200/60 dark:border-zinc-800 bg-white dark:bg-zinc-900 px-3 py-2 text-xs text-zinc-850 dark:text-zinc-200 placeholder-zinc-400 dark:placeholder-zinc-600 outline-none focus:border-primary focus:ring-2 focus:ring-primary/10 transition-all resize-none"
+            />
+          </div>
+
+          {/* 封面图片 */}
+          <div className="space-y-1.5">
+            <label className="block text-[10px] font-bold text-zinc-400 dark:text-zinc-500 uppercase tracking-widest">
+              封面图 URL
+            </label>
+            <input
+              type="url"
+              value={coverImageUrl}
+              onChange={(e) => setCoverImageUrl(e.target.value)}
+              placeholder="https://example.com/cover.jpg"
+              className="w-full rounded-xl border border-zinc-200/60 dark:border-zinc-800 bg-white dark:bg-zinc-900 px-3 py-2 text-xs text-zinc-850 dark:text-zinc-200 placeholder-zinc-400 dark:placeholder-zinc-650 outline-none focus:border-primary focus:ring-2 focus:ring-primary/10 transition-all"
+            />
+            {coverImageUrl && (
+              <div className="relative rounded-xl overflow-hidden border border-zinc-200 dark:border-zinc-800 mt-2">
+                <img
+                  src={coverImageUrl}
+                  alt="封面预览"
+                  className="h-24 w-full object-cover"
+                />
+              </div>
+            )}
+          </div>
+
+          {/* SEO 折叠面板 */}
+          <details className="group border border-zinc-200/50 dark:border-zinc-800/60 rounded-xl overflow-hidden bg-white/40 dark:bg-zinc-950/20">
+            <summary className="flex items-center justify-between px-3.5 py-2.5 text-[11px] font-bold text-zinc-500 dark:text-zinc-450 cursor-pointer hover:bg-zinc-50 dark:hover:bg-zinc-900/40 select-none">
+              <span>SEO 优化字段</span>
+              <span className="transition-transform group-open:rotate-180">
+                <ChevronDown size={13} />
+              </span>
+            </summary>
+            <div className="p-3 border-t border-zinc-200/50 dark:border-zinc-800/60 space-y-3">
+              <div className="space-y-1">
+                <label className="text-[9px] font-bold text-zinc-400 dark:text-zinc-500">SEO 标题</label>
+                <input
+                  type="text"
+                  value={seoTitle}
+                  onChange={(e) => setSeoTitle(e.target.value)}
+                  placeholder="默认使用文章标题"
+                  className="w-full rounded-lg border border-zinc-200 dark:border-zinc-800 bg-white dark:bg-zinc-900 px-2.5 py-1.5 text-xs text-zinc-850 dark:text-zinc-250 outline-none"
+                />
+              </div>
+              <div className="space-y-1">
+                <label className="text-[9px] font-bold text-zinc-400 dark:text-zinc-500">SEO 描述</label>
+                <textarea
+                  value={seoDescription}
+                  onChange={(e) => setSeoDescription(e.target.value)}
+                  placeholder="默认使用文章摘要"
+                  rows={2}
+                  className="w-full rounded-lg border border-zinc-200 dark:border-zinc-800 bg-white dark:bg-zinc-900 px-2.5 py-1.5 text-xs text-zinc-850 dark:text-zinc-250 outline-none resize-none"
+                />
+              </div>
+              <div className="space-y-1">
+                <label className="text-[9px] font-bold text-zinc-400 dark:text-zinc-500">SEO 关键词 (逗号分割)</label>
+                <input
+                  type="text"
+                  value={seoKeywords}
+                  onChange={(e) => setSeoKeywords(e.target.value)}
+                  placeholder="react, nextjs"
+                  className="w-full rounded-lg border border-zinc-200 dark:border-zinc-800 bg-white dark:bg-zinc-900 px-2.5 py-1.5 text-xs text-zinc-850 dark:text-zinc-250 outline-none"
+                />
+              </div>
+            </div>
+          </details>
+
+        </div>
       </div>
+
     </form>
   );
 }

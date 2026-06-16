@@ -2,7 +2,6 @@
 
 import { useState } from "react";
 import { useRouter } from "next/navigation";
-import { ArrowLeft } from "lucide-react";
 import ArticleForm from "@/components/forms/ArticleForm";
 import apiClient from "@/lib/api";
 import type { ApiResponse } from "@/types/common";
@@ -50,23 +49,6 @@ export default function NewArticlePage() {
 
   return (
     <div className="max-w-6xl mx-auto space-y-6">
-      {/* 顶部极简导航 */}
-      <div className="flex items-center justify-between border-b border-zinc-200/40 dark:border-zinc-850 pb-4 select-none">
-        <div className="flex items-center gap-4">
-          <button
-            onClick={() => router.push("/articles")}
-            className="flex items-center gap-1.5 text-xs font-semibold text-zinc-400 hover:text-zinc-700 dark:hover:text-zinc-300 transition-colors group cursor-pointer"
-          >
-            <ArrowLeft size={14} className="group-hover:-translate-x-0.5 transition-transform" />
-            <span>返回列表</span>
-          </button>
-          <div className="h-4 w-px bg-zinc-200 dark:bg-zinc-800" />
-          <h1 className="font-heading text-sm font-bold text-neutral-dark dark:text-zinc-200">
-            撰写新文章
-          </h1>
-        </div>
-      </div>
-
       {/* 提示信息 */}
       {error && (
         <div className="rounded-xl bg-red-50 dark:bg-red-950/20 border border-red-200/60 dark:border-red-900/35 p-4 text-xs font-medium text-red-700 dark:text-red-400 animate-fade-in">

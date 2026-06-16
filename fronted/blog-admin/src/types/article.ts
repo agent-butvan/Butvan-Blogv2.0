@@ -61,6 +61,7 @@ export interface ArticleSaveDTO {
   isFeatured?: boolean;
   isAllowComment?: boolean;
   contentType?: ContentType;
+  template?: string;
   seoTitle?: string;
   seoDescription?: string;
   seoKeywords?: string;

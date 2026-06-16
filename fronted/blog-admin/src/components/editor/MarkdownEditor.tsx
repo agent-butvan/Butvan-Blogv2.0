@@ -17,19 +17,21 @@ export interface MarkdownEditorProps {
   onChange: (value: string) => void;
   height?: number;
   placeholder?: string;
+  preview?: "edit" | "live" | "preview";
 }
 
 /**
  * Markdown 编辑器封装组件
  * - 基于 @uiw/react-md-editor（GitHub 风格）
  * - 客户端动态加载，避免 SSR 水合问题
- * - 左编辑 / 右预览分屏模式
+ * - 支持通过 preview 属性动态控制分屏状态
  */
 export default function MarkdownEditor({
   value,
   onChange,
   height = 500,
   placeholder = "开始 Markdown 写作...",
+  preview = "live",
 }: MarkdownEditorProps) {
   const [colorMode, setColorMode] = useState<"light" | "dark">("light");
 
@@ -56,7 +58,7 @@ export default function MarkdownEditor({
         onChange={(val) => onChange(val || "")}
         height={height}
         visibleDragbar={false}
-        preview="live"
+        preview={preview}
         textareaProps={{
           placeholder,
         }}
