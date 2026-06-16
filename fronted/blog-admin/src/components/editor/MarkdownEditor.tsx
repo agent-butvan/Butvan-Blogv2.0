@@ -77,6 +77,7 @@ export default function MarkdownEditor({
   const selectedIndexRef = useRef(0);
   const filteredCountRef = useRef(0);
   const searchQueryRef = useRef("");
+  const editorRef = useRef<any>(null);
 
   useEffect(() => {
     menuOpenRef.current = menuOpen;
@@ -122,6 +123,12 @@ export default function MarkdownEditor({
     );
   }, []);
 
+  // 为被 keydown 闭包调用的方法建立 Ref
+  const getFilteredCommandsRef = useRef(getFilteredCommands);
+  useEffect(() => {
+    getFilteredCommandsRef.current = getFilteredCommands;
+  }, [getFilteredCommands]);
+
   // 上传图片处理，对接 `/admin/media/upload` 接口
   const handleImageUpload = async (file: File): Promise<string> => {
     const formData = new FormData();
@@ -141,9 +148,10 @@ export default function MarkdownEditor({
 
   // 执行斜杠快捷命令
   const executeCommand = useCallback((cmd: SlashCommand) => {
-    if (!editor) return;
+    const activeEditor = editorRef.current;
+    if (!activeEditor) return;
 
-    const { selection } = editor.state;
+    const { selection } = activeEditor.state;
     const { $from } = selection;
     const textContent = $from.parent.textContent;
     const textBeforeCursor = textContent.slice(0, $from.parentOffset);
@@ -157,7 +165,7 @@ export default function MarkdownEditor({
       const fromPos = selection.from - (textBeforeCursor.length - slashIndex);
       const toPos = selection.from;
 
-      let chain = editor.chain().focus().deleteRange({ from: fromPos, to: toPos });
+      let chain = activeEditor.chain().focus().deleteRange({ from: fromPos, to: toPos });
 
       // 根据指令映射对应的 Tiptap 排版方法
       if (cmd.id === "h1") {
@@ -179,8 +187,6 @@ export default function MarkdownEditor({
       } else if (cmd.id === "hr") {
         chain = chain.setHorizontalRule();
       } else if (cmd.id === "table") {
-        // 动态引入表格需要 Tiptap Table 扩展，这里暂用插入 Markdown 代码块或使用标准水平线代替
-        // 为了稳定，直接插入表格标记文本或提示框
         chain = chain.insertContent("\n| 列 1 | 列 2 |\n| ---- | ---- |\n| 内容 | 内容 |\n");
       } else if (cmd.id === "link") {
         const url = prompt("请输入链接 URL:", "https://");
@@ -195,7 +201,7 @@ export default function MarkdownEditor({
           if (fileInput.files && fileInput.files[0]) {
             try {
               const url = await handleImageUpload(fileInput.files[0]);
-              editor.chain().focus().setImage({ src: url }).run();
+              activeEditor.chain().focus().setImage({ src: url }).run();
             } catch (err: any) {
               alert(err.message || "上传失败");
             }
@@ -209,10 +215,23 @@ export default function MarkdownEditor({
     setMenuOpen(false);
   }, []);
 
+  const executeCommandRef = useRef(executeCommand);
+  useEffect(() => {
+    executeCommandRef.current = executeCommand;
+  }, [executeCommand]);
+
   // 检测斜杠并更新位置
   const handleSlashDetection = (currEditor: any) => {
     const { selection } = currEditor.state;
     const { $from } = selection;
+
+    // 如果光标在代码块内部，不要弹出斜杠指令菜单，避免正常编写注释或路径时受到打扰
+    const isInsideCodeBlock = $from && $from.parent && $from.parent.type.name === "codeBlock";
+    if (isInsideCodeBlock) {
+      setMenuOpen(false);
+      return;
+    }
+
     const textContent = $from.parent.textContent;
     const textBeforeCursor = textContent.slice(0, $from.parentOffset);
     const match = textBeforeCursor.match(/(?:^|\s)\/([a-zA-Z0-9]*)$/);
@@ -223,13 +242,31 @@ export default function MarkdownEditor({
       setMenuOpen(true);
 
       try {
-        // coordsAtPos 可以返回游标处绝对像素坐标，彻底抛弃原有 Mirror Div 计算
         const coords = currEditor.view.coordsAtPos(selection.from);
         if (containerRef.current) {
           const containerRect = containerRef.current.getBoundingClientRect();
+          
+          // 动态智能方向定位判定：
+          // 列表每一项 44px，头部 35px，最大 max-h-60 约 240px。动态计算当前过滤后的命令列表高度
+          const activeCmds = getFilteredCommands();
+          const menuHeight = Math.min(240, activeCmds.length * 44 + 35);
+          
+          // 计算光标底部距离编辑最外层容器底部的可用垂直空间
+          const spaceBelow = containerRect.bottom - coords.bottom;
+          
+          let top = 0;
+          // 如果下方空间不够容纳菜单，并且上方空间较多，就自适应翻转向上弹出
+          if (spaceBelow < menuHeight && (coords.top - containerRect.top) > spaceBelow) {
+            top = coords.top - containerRect.top - menuHeight - 6;
+          } else {
+            top = coords.bottom - containerRect.top + 6;
+          }
+          
+          const left = coords.left - containerRect.left;
+          
           setMenuPosition({
-            top: coords.bottom - containerRect.top + containerRef.current.scrollTop + 6,
-            left: coords.left - containerRect.left + containerRef.current.scrollLeft,
+            top,
+            left,
           });
         }
       } catch (err) {
@@ -306,10 +343,10 @@ export default function MarkdownEditor({
             }
             if (event.key === "Enter") {
               event.preventDefault();
-              const cmds = getFilteredCommands();
+              const cmds = getFilteredCommandsRef.current();
               const activeCommand = cmds[selectedIndexRef.current];
               if (activeCommand) {
-                executeCommand(activeCommand);
+                executeCommandRef.current(activeCommand);
               }
               return true;
             }
@@ -448,6 +485,11 @@ export default function MarkdownEditor({
       handleSlashDetection(currEditor);
     },
   });
+
+  // 同步最新的 editor 实例到 Ref 中，彻底打破 handleDOMEvents 的闭包陷阱
+  useEffect(() => {
+    editorRef.current = editor;
+  }, [editor]);
 
   // 监听来自外部 value 状态（在数据加载出来时设置到编辑器中）
   useEffect(() => {
@@ -678,7 +720,10 @@ export default function MarkdownEditor({
       </div>
 
       {/* 编辑器核心内容区域 */}
-      <div className="flex-1 w-full bg-white dark:bg-zinc-950 overflow-y-auto">
+      <div 
+        className="flex-1 w-full bg-white dark:bg-zinc-950 overflow-y-auto"
+        onScroll={() => setMenuOpen(false)}
+      >
         <EditorContent editor={editor} />
       </div>
 
