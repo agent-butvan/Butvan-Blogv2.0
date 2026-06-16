@@ -334,7 +334,40 @@ export default function MarkdownEditor({
               return true;
             }
 
-            // 2. 括号与引号自动闭合
+            // 2. 按下 Enter 键换行时自动缩进
+            if (event.key === "Enter") {
+              event.preventDefault();
+              const textContent = $from.parent.textContent;
+              const offset = $from.parentOffset;
+              
+              // 找到当前行的起点
+              const lastNewline = textContent.lastIndexOf("\n", offset - 1);
+              const lineStart = lastNewline === -1 ? 0 : lastNewline + 1;
+              
+              // 光标之前的当前行内容
+              const currentLineBeforeCursor = textContent.slice(lineStart, offset);
+              
+              // 提取缩进空白字符
+              const matchIndent = currentLineBeforeCursor.match(/^\s*/);
+              const indent = matchIndent ? matchIndent[0] : "";
+              
+              // 判定是否需要增加额外缩进 (针对冒号或大括号结尾)
+              const trimmedLine = currentLineBeforeCursor.trimEnd();
+              let extraIndent = "";
+              if (trimmedLine.endsWith(":") || trimmedLine.endsWith("{")) {
+                extraIndent = "  ";
+              }
+              
+              const insertText = "\n" + indent + extraIndent;
+              const tr = state.tr;
+              tr.insertText(insertText);
+              const targetPos = Math.min(selection.from + insertText.length, tr.doc.content.size);
+              tr.setSelection(TextSelection.create(tr.doc, targetPos));
+              view.dispatch(tr);
+              return true;
+            }
+
+            // 3. 括号与引号自动闭合
             const brackets: Record<string, string> = {
               "(": ")",
               "{": "}",

@@ -165,6 +165,41 @@ h6 {
   border-color: rgba(63, 63, 70, 0.4) !important;
 }
 
+/* 顶部栏明暗自适应 */
+.code-block-container .code-block-header {
+  background-color: #f1f5f9 !important;
+  border-color: #e2e8f0 !important;
+  color: #64748b !important;
+}
+
+:root.dark .code-block-container .code-block-header {
+  background-color: #0c0f19 !important;
+  border-color: rgba(63, 63, 70, 0.3) !important;
+  color: #a1a1aa !important;
+}
+
+/* 主体背景自适应 */
+.code-block-container .code-block-body {
+  background-color: #ffffff !important;
+}
+
+:root.dark .code-block-container .code-block-body {
+  background-color: #09090b !important;
+}
+
+/* 行号列自适应 */
+.code-block-container .line-numbers-col {
+  background-color: #f8fafc !important;
+  border-color: #e2e8f0 !important;
+  color: #94a3b8 !important;
+}
+
+:root.dark .code-block-container .line-numbers-col {
+  background-color: rgba(12, 15, 25, 0.4) !important;
+  border-color: rgba(63, 63, 70, 0.3) !important;
+  color: #4b5563 !important;
+}
+
 /* 让 pre 继承容器背景 */
 .code-block-container pre {
   background-color: transparent !important;
