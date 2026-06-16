@@ -126,14 +126,18 @@ h6 {
   color: #727BBA !important;
 }
 
-.w-md-editor-text-pre > code,
-.w-md-editor-text-input {
+/* 编辑器文本层与输入层对齐：确保等宽字体 + 统一行高 + 杜绝标题字号放大 */
+/* 使用更高特异性的选择器（加 .w-md-editor 前缀），确保覆盖库默认样式
+ * 同时显式对齐 pre > code 与 textarea 的 line-height，解决光标偏上问题 */
+.w-md-editor .w-md-editor-text-pre > code,
+.w-md-editor .w-md-editor-text-input {
   font-family: ui-monospace, SFMono-Regular, Menlo, Monaco, Consolas, monospace !important;
   font-size: 14px !important;
+  line-height: 18px !important;
 }
 
 /* 解决输入编辑区在书写标题 (#) 时，因为高亮插件导致字体变大而产生的光标对不齐、偏低偏小的问题 */
-.w-md-editor-text * {
+.w-md-editor .w-md-editor-text * {
   font-size: inherit !important;
 }
 
