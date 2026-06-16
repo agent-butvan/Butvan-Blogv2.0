@@ -151,61 +151,70 @@ h6 {
   background-color: rgba(114, 123, 186, 0.03) !important;
 }
 
-/* 语法高亮代码块 */
-.ProseMirror pre {
-  background-color: #f4f4f5 !important;
-  border: 1px solid #e4e4e7 !important;
-  border-radius: 12px !important;
-  padding: 1rem !important;
-  margin: 1rem 0 !important;
-  overflow-x: auto !important;
+/* ============================================================================
+ * 语法高亮代码块 (Sleek Dark Theme)
+ * ============================================================================ */
+.code-block-container {
+  background-color: #0c0f19 !important; /* Premium Slate/Zinc 950 code editor background */
+  border-color: rgba(228, 228, 231, 0.15) !important;
+  transition: all 0.2s ease-in-out;
 }
 
-:root.dark .ProseMirror pre {
-  background-color: #121218 !important;
-  border-color: #27272a !important;
+:root.dark .code-block-container {
+  background-color: #070913 !important; /* Even darker black-blue in dark mode */
+  border-color: rgba(63, 63, 70, 0.4) !important;
 }
 
-.ProseMirror pre code {
-  font-family: ui-monospace, SFMono-Regular, Menlo, Monaco, Consolas, monospace !important;
+/* 让 pre 继承容器背景 */
+.code-block-container pre {
+  background-color: transparent !important;
+  border: none !important;
+  margin: 0 !important;
+  padding: 1.25rem !important;
+}
+
+/* 内部代码文字与字体 */
+.code-block-container pre code {
+  font-family: ui-monospace, SFMono-Regular, Menlo, Monaco, Consolas, "JetBrains Mono", "Fira Code", monospace !important;
   font-size: 0.875rem !important;
+  color: #f4f4f5 !important; /* Keep code text light */
 }
 
 /* 代码块语法高亮 (Quiet Deep Sea 调色盘配色) */
-.ProseMirror pre .hljs-comment,
-.ProseMirror pre .hljs-quote {
+.code-block-container .hljs-comment,
+.code-block-container .hljs-quote {
   color: #71717a !important; /* 注释：灰 */
   font-style: italic !important;
 }
 
-.ProseMirror pre .hljs-keyword,
-.ProseMirror pre .hljs-selector-tag,
-.ProseMirror pre .hljs-addition {
+.code-block-container .hljs-keyword,
+.code-block-container .hljs-selector-tag,
+.code-block-container .hljs-addition {
   color: #727BBA !important; /* 关键字：深海紫 */
   font-weight: 600 !important;
 }
 
-.ProseMirror pre .hljs-number,
-.ProseMirror pre .hljs-string,
-.ProseMirror pre .hljs-meta,
-.ProseMirror pre .hljs-regexp,
-.ProseMirror pre .hljs-attribute {
+.code-block-container .hljs-number,
+.code-block-container .hljs-string,
+.code-block-container .hljs-meta,
+.code-block-container .hljs-regexp,
+.code-block-container .hljs-attribute {
   color: #9BADCF !important; /* 字符串与数字：冷空蓝 */
 }
 
-.ProseMirror pre .hljs-title,
-.ProseMirror pre .hljs-section,
-.ProseMirror pre .hljs-name,
-.ProseMirror pre .hljs-class {
+.code-block-container .hljs-title,
+.code-block-container .hljs-section,
+.code-block-container .hljs-name,
+.code-block-container .hljs-class {
   color: #cdbde8 !important; /* 类名/标题：浅紫 */
 }
 
-.ProseMirror pre .hljs-variable,
-.ProseMirror pre .hljs-template-variable,
-.ProseMirror pre .hljs-type,
-.ProseMirror pre .hljs-built_in,
-.ProseMirror pre .hljs-builtin-name,
-.ProseMirror pre .hljs-params {
+.code-block-container .hljs-variable,
+.code-block-container .hljs-template-variable,
+.code-block-container .hljs-type,
+.code-block-container .hljs-built_in,
+.code-block-container .hljs-builtin-name,
+.code-block-container .hljs-params {
   color: #fca5a5 !important; /* 内置对象：柔红 */
 }
 

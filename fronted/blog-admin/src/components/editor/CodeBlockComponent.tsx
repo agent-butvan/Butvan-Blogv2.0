@@ -2,13 +2,14 @@
 
 import { useState } from "react";
 import { NodeViewContent, NodeViewWrapper, type NodeViewProps } from "@tiptap/react";
-import { Check, Copy, Code, ChevronDown } from "lucide-react";
+import { Check, Copy, ChevronDown } from "lucide-react";
 
 /**
- * Tiptap 代码块 React 节点渲染组件
- * - 渲染扁平精美的卡片边框
- * - 左上角：代码图标与编程语言选择下拉框（直接绑定并修改 node language 属性）
- * - 右上角：一键复制源码按钮（支持复制反馈动画）
+ * 高颜值 Tiptap 代码块 React 节点渲染组件
+ * - 采用 macOS 三色经典窗口控制按钮装饰
+ * - 支持直接交互切换编程语言的下拉菜单
+ * - 右侧一键复制，提供动画反馈与对齐提示
+ * - 统一采用高品质深色编辑器主题（类似 Carbon / VS Code），在明暗模式下均展现极致的高级质感
  */
 export default function CodeBlockComponent({
   node: {
@@ -18,9 +19,7 @@ export default function CodeBlockComponent({
 }: NodeViewProps) {
   const [copied, setCopied] = useState(false);
 
-  // 复制当前代码块所有文本到剪贴板
   const handleCopy = async () => {
-    // 获取编辑器内该代码块节点的文本内容
     const preEl = document.getElementById(`code-block-${language}`);
     const text = preEl?.textContent || "";
     
@@ -47,28 +46,38 @@ export default function CodeBlockComponent({
     { value: "bash", label: "Bash/Shell" },
   ];
 
+  const currentLabel = LANGUAGES.find(l => l.value === language)?.label || "Plain Text";
+
   return (
-    <NodeViewWrapper className="code-block relative rounded-xl border border-zinc-200 dark:border-zinc-850 bg-zinc-50 dark:bg-zinc-900/40 my-5 overflow-hidden">
-      {/* 顶部控制栏 */}
+    <NodeViewWrapper className="code-block-container relative rounded-xl border border-zinc-200/80 dark:border-zinc-800 bg-zinc-950 text-zinc-100 my-6 shadow-lg overflow-hidden transition-all duration-200 focus-within:ring-2 focus-within:ring-primary/40 focus-within:border-primary">
+      {/* 头部控制栏 (仿 macOS 窗口) */}
       <div 
         contentEditable={false} 
-        className="flex items-center justify-between px-4 py-2 bg-zinc-100/70 dark:bg-zinc-900/80 border-b border-zinc-200 dark:border-zinc-850 text-xs text-zinc-500 font-mono select-none"
+        className="flex items-center justify-between px-4 py-2.5 bg-zinc-900 border-b border-zinc-850/80 text-xs text-zinc-400 font-mono select-none"
       >
-        <div className="flex items-center gap-2">
-          <Code size={13} className="text-zinc-400" />
-          <div className="relative flex items-center">
+        {/* 左侧：macOS 三色圆点 + 语言选择器 */}
+        <div className="flex items-center gap-3.5">
+          <div className="flex items-center gap-1.5 shrink-0">
+            <span className="w-3 h-3 rounded-full bg-[#ff5f56]" />
+            <span className="w-3 h-3 rounded-full bg-[#ffbd2e]" />
+            <span className="w-3 h-3 rounded-full bg-[#27c93f]" />
+          </div>
+          
+          <div className="h-3.5 w-px bg-zinc-800" />
+          
+          <div className="relative flex items-center group">
             <select
               value={language || "plaintext"}
               onChange={(e) => updateAttributes({ language: e.target.value })}
-              className="bg-transparent pr-5 py-0.5 border-none outline-none cursor-pointer text-[11px] font-bold text-zinc-650 dark:text-zinc-400 hover:text-primary dark:hover:text-zinc-200 appearance-none font-mono transition-colors"
+              className="bg-transparent pr-6 py-0.5 border-none outline-none cursor-pointer text-[11px] font-bold text-zinc-400 group-hover:text-zinc-200 appearance-none font-mono transition-colors"
             >
               {LANGUAGES.map((lang) => (
-                <option key={lang.value} value={lang.value} className="bg-white dark:bg-zinc-950 text-zinc-800 dark:text-zinc-200">
+                <option key={lang.value} value={lang.value} className="bg-zinc-900 text-zinc-300">
                   {lang.label}
                 </option>
               ))}
             </select>
-            <ChevronDown size={10} className="absolute right-0.5 pointer-events-none text-zinc-400" />
+            <ChevronDown size={11} className="absolute right-0.5 pointer-events-none text-zinc-500 group-hover:text-zinc-300 transition-colors" />
           </div>
         </div>
 
@@ -76,13 +85,13 @@ export default function CodeBlockComponent({
         <button
           type="button"
           onClick={handleCopy}
-          className="flex items-center gap-1.5 px-2 py-1 rounded-md bg-transparent hover:bg-zinc-200/50 dark:hover:bg-zinc-800/50 text-[10px] font-bold text-zinc-500 hover:text-zinc-800 dark:hover:text-zinc-300 transition-all cursor-pointer"
+          className="flex items-center gap-1.5 px-2.5 py-1 rounded-lg hover:bg-zinc-800 text-[10px] font-bold text-zinc-400 hover:text-zinc-200 transition-all cursor-pointer border border-transparent hover:border-zinc-700/50"
           title="复制全部代码"
         >
           {copied ? (
             <>
-              <Check size={11} className="text-emerald-500" />
-              <span className="text-emerald-500">已复制</span>
+              <Check size={11} className="text-emerald-400" />
+              <span className="text-emerald-400">已复制</span>
             </>
           ) : (
             <>
@@ -93,12 +102,12 @@ export default function CodeBlockComponent({
         </button>
       </div>
 
-      {/* 代码编辑区 */}
+      {/* 代码内容编辑区 */}
       <pre 
         id={`code-block-${language}`} 
-        className="p-4 m-0 font-mono text-sm leading-relaxed overflow-x-auto bg-transparent"
+        className="p-5 m-0 font-mono text-sm leading-relaxed overflow-x-auto bg-transparent focus:outline-none focus-visible:outline-none"
       >
-        <NodeViewContent as={"code" as any} />
+        <NodeViewContent as={"code" as any} className="focus:outline-none" />
       </pre>
     </NodeViewWrapper>
   );

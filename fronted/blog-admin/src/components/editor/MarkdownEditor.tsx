@@ -145,7 +145,8 @@ export default function MarkdownEditor({
 
     const { selection } = editor.state;
     const { $from } = selection;
-    const textBeforeCursor = $from.parent.textBetween(0, $from.parentOffset);
+    const textContent = $from.parent.textContent;
+    const textBeforeCursor = textContent.slice(0, $from.parentOffset);
 
     // 匹配行尾的斜杠，以及其后面的字母 query
     const match = textBeforeCursor.match(/(?:^|\s)\/([a-zA-Z0-9]*)$/);
@@ -212,7 +213,8 @@ export default function MarkdownEditor({
   const handleSlashDetection = (currEditor: any) => {
     const { selection } = currEditor.state;
     const { $from } = selection;
-    const textBeforeCursor = $from.parent.textBetween(0, $from.parentOffset);
+    const textContent = $from.parent.textContent;
+    const textBeforeCursor = textContent.slice(0, $from.parentOffset);
     const match = textBeforeCursor.match(/(?:^|\s)\/([a-zA-Z0-9]*)$/);
 
     if (match) {
@@ -354,7 +356,8 @@ export default function MarkdownEditor({
             }
 
             // 3. 越过自动闭合的右侧括号/引号
-            const textAfterCursor = $from.parent.textBetween($from.parentOffset, $from.parentOffset + 1);
+            const textContent = $from.parent.textContent;
+            const textAfterCursor = textContent.slice($from.parentOffset, $from.parentOffset + 1);
             if (event.key === textAfterCursor && [")", "}", "]", '"', "'", "`"].includes(event.key)) {
               event.preventDefault();
               view.dispatch(state.tr.setSelection(TextSelection.create(state.tr.doc, selection.from + 1)));
