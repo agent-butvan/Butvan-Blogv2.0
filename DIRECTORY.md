@@ -149,7 +149,9 @@ Butvan Blog2.0/                                    # 📦 项目根目录
 │       │   │   │   ├── AdminLayout.tsx            #         后台整体布局壳（侧边栏+页签栏+内容区）
 │       │   │   │   ├── Sidebar.tsx                #         可折叠侧边栏菜单
 │       │   │   │   ├── TopBar.tsx                 #         顶栏（面包屑、全屏、深色切换、用户登出）
-│       │   │   │   └── TabManager.tsx             #         多标签页签管理器（持久化缓存、页签关闭/切换）
+│       │   │   │   ├── TabManager.tsx             #         多标签页签管理器（持久化缓存、页签关闭/切换）
+│       │   │   │   ├── MobileHeader.tsx           #         移动端专属顶栏（Logo、滑动菜单触发、页面标题）
+│       │   │   │   └── MobileRightPanel.tsx       #         移动端右侧操作抽屉面板（用户卡片、主题、全屏、登出）
 │       │   │   ├── editor/                        #       编辑器组件
 │       │   │   │   ├── MarkdownEditor.tsx         #         Markdown 富文本编辑器
 │       │   │   │   ├── InitializedMDXEditor.tsx   #         所见即所得 (WYSIWYG) 客户端编辑器组件

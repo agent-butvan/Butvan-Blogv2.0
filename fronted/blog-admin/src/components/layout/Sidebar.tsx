@@ -4,7 +4,7 @@ import { useState, useEffect } from "react";
 import { usePathname, useRouter } from "next/navigation";
 import { cn } from "@heroui/react";
 import * as Icons from "lucide-react";
-import { ChevronLeft, ChevronRight, AlertCircle, RefreshCw, HelpCircle, ChevronDown } from "lucide-react";
+import { ChevronLeft, ChevronRight, AlertCircle, RefreshCw, HelpCircle, ChevronDown, X } from "lucide-react";
 import apiClient from "@/lib/api";
 import type { ApiResponse } from "@/types/common";
 import type { NavigationItem } from "@/types/navigation";
@@ -19,6 +19,12 @@ const getIconComponent = (iconName?: string): Icons.LucideIcon => {
   return IconComponent || HelpCircle;
 };
 
+interface SidebarProps {
+  isMobile?: boolean;
+  isOpen?: boolean;
+  onClose?: () => void;
+}
+
 /**
  * 侧边栏导航组件
  * - 紧密排版，高利用率，摒弃多余留白
@@ -26,7 +32,7 @@ const getIconComponent = (iconName?: string): Icons.LucideIcon => {
  * - 支持侧边栏折叠收缩（展开 220px，收缩 56px）
  * - 支持子路由感知展开与二级菜单连线指示
  */
-export default function Sidebar() {
+export default function Sidebar({ isMobile = false, isOpen = false, onClose }: SidebarProps) {
   const pathname = usePathname();
   const router = useRouter();
   
@@ -105,13 +111,17 @@ export default function Sidebar() {
   return (
     <aside
       className={cn(
-        "flex flex-col h-full rounded-2xl transition-all duration-200 select-none z-30 shrink-0 glass-panel overflow-hidden",
-        collapsed ? "w-[56px]" : "w-[220px]"
+        isMobile
+          ? "fixed left-0 top-0 h-full w-[240px] z-50 glass-panel flex flex-col select-none transition-transform duration-300 shadow-2xl rounded-r-2xl rounded-l-none border-r border-zinc-200/50 dark:border-zinc-800/40"
+          : "flex flex-col h-full rounded-2xl transition-all duration-200 select-none z-30 shrink-0 glass-panel overflow-hidden",
+        isMobile
+          ? (isOpen ? "translate-x-0" : "-translate-x-full")
+          : (collapsed ? "w-[56px]" : "w-[220px]")
       )}
     >
       {/* 顶层 Logo 标志区 (高度对齐 TopBar) */}
       <div className="flex h-[52px] items-center justify-between px-3 border-b border-zinc-200/50 dark:border-zinc-800/40 shrink-0 bg-white/20 dark:bg-zinc-900/20">
-        {!collapsed && (
+        {(!collapsed || isMobile) && (
           <div className="flex items-center gap-2 animate-[fadeIn_0.15s_ease-out]">
             <span className="font-heading font-extrabold text-[10px] bg-primary text-white w-5 h-5 rounded-md flex items-center justify-center tracking-tighter">VB</span>
             <span className="font-heading font-bold text-xs text-zinc-800 dark:text-zinc-200 whitespace-nowrap tracking-wider">
@@ -119,16 +129,26 @@ export default function Sidebar() {
             </span>
           </div>
         )}
-        <button
-          onClick={() => setCollapsed(!collapsed)}
-          className={cn(
-            "p-1 rounded-md hover:bg-zinc-200 dark:hover:bg-zinc-800 text-zinc-400 dark:text-zinc-500 hover:text-zinc-700 dark:hover:text-zinc-300 transition-colors cursor-pointer",
-            collapsed ? "mx-auto" : "ml-auto"
-          )}
-          aria-label={collapsed ? "展开侧边栏" : "收起侧边栏"}
-        >
-          {collapsed ? <ChevronRight size={14} /> : <ChevronLeft size={14} />}
-        </button>
+        {!isMobile ? (
+          <button
+            onClick={() => setCollapsed(!collapsed)}
+            className={cn(
+              "p-1 rounded-md hover:bg-zinc-200 dark:hover:bg-zinc-800 text-zinc-400 dark:text-zinc-500 hover:text-zinc-700 dark:hover:text-zinc-300 transition-colors cursor-pointer",
+              collapsed ? "mx-auto" : "ml-auto"
+            )}
+            aria-label={collapsed ? "展开侧边栏" : "收起侧边栏"}
+          >
+            {collapsed ? <ChevronRight size={14} /> : <ChevronLeft size={14} />}
+          </button>
+        ) : (
+          <button
+            onClick={onClose}
+            className="p-1 rounded-md hover:bg-zinc-200/50 dark:hover:bg-zinc-800 text-zinc-400 dark:text-zinc-500 hover:text-zinc-700 dark:hover:text-zinc-300 transition-colors cursor-pointer"
+            aria-label="关闭侧边栏"
+          >
+            <X size={14} />
+          </button>
+        )}
       </div>
 
       {/* 核心菜单列表区 */}
@@ -229,6 +249,7 @@ export default function Sidebar() {
                           onClick={() => {
                             if (child.linkUrl) {
                               router.push(child.linkUrl);
+                              if (isMobile && onClose) onClose();
                             }
                           }}
                           className={cn(
@@ -265,6 +286,7 @@ export default function Sidebar() {
               onClick={() => {
                 if (item.linkUrl) {
                   router.push(item.linkUrl);
+                  if (isMobile && onClose) onClose();
                 }
               }}
               className={cn(
