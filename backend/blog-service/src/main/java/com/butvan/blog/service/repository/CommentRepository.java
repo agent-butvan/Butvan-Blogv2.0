@@ -2,6 +2,7 @@ package com.butvan.blog.service.repository;
 
 import com.butvan.blog.pojo.entity.Comment;
 import org.springframework.data.jpa.repository.JpaRepository;
+import org.springframework.data.jpa.repository.JpaSpecificationExecutor;
 import org.springframework.stereotype.Repository;
 import java.util.List;
 
@@ -9,7 +10,7 @@ import java.util.List;
  * 评论数据库操作数据访问接口 (JPA Repository)
  */
 @Repository
-public interface CommentRepository extends JpaRepository<Comment, Long> {
+public interface CommentRepository extends JpaRepository<Comment, Long>, JpaSpecificationExecutor<Comment> {
 
     /**
      * 根据文章 ID 与发布状态查询全部可用评论

@@ -39,6 +39,12 @@ public class CommentVO {
 
     private String replyTo; // 当前评论所回复的上一级被回复者昵称名称（如：“张三 回复 @李四”，这里为“李四”）
 
+    private String status; // 评论的审核状态
+
+    private String articleTitle; // 关联文章标题
+
+    private String articleSlug; // 关联文章 Slug 标识
+
     private LocalDateTime createdAt; // 评论发表的创建时间
 
     private List<CommentVO> replies; // 递归嵌套的二级及后代子评论回复列表 (树状支持)

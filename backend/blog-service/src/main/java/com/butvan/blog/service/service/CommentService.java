@@ -34,4 +34,40 @@ public interface CommentService {
      * @param commentId 评论主键 ID
      */
     void likeComment(Long commentId);
+
+    /**
+     * 后台管理 - 分页检索评论列表
+     *
+     * @param status 状态筛选，可选值：APPROVED, PENDING, SPAM, TRASH
+     * @param keyword 关键词模糊搜索，可匹配评论正文内容、发布人昵称或发布人邮箱
+     * @param page 页码 (1-based)
+     * @param size 每页记录数
+     * @return 统一封装的 PageResult 分页响应体
+     */
+    com.butvan.blog.common.result.PageResult listAdminComments(String status, String keyword, Integer page, Integer size);
+
+    /**
+     * 后台管理 - 更新评论状态
+     *
+     * @param id 评论主键 ID
+     * @param status 状态值，可选：APPROVED, PENDING, SPAM, TRASH
+     */
+    void updateCommentStatus(Long id, String status);
+
+    /**
+     * 后台管理 - 管理员对评论进行快捷回复
+     *
+     * @param id 被回复的父评论 ID
+     * @param content 回复的正文内容
+     * @param username 当前登录的管理员用户名
+     * @return 产生保存后的评论回复 VO 对象
+     */
+    CommentVO replyComment(Long id, String content, String username);
+
+    /**
+     * 后台管理 - 物理彻底删除一条评论记录
+     *
+     * @param id 评论 ID
+     */
+    void deleteComment(Long id);
 }
