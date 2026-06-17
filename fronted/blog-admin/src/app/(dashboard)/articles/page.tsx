@@ -235,7 +235,7 @@ export default function ArticlesPage() {
         type="button"
         disabled={isCurrentLoading}
         onClick={() => handleQuickUpdate(item, { status: status === "PUBLISHED" ? "DRAFT" : "PUBLISHED" } as any)}
-        className="group/status inline-flex items-center gap-1.5 px-2 py-1 rounded-lg hover:bg-zinc-100 dark:hover:bg-zinc-900 border border-transparent hover:border-zinc-200/40 dark:hover:border-zinc-800/50 cursor-pointer disabled:opacity-50 select-none transition-all outline-none"
+        className="group/status inline-flex items-center gap-1 px-1.5 py-0.5 rounded-lg hover:bg-zinc-100 dark:hover:bg-zinc-900 border border-transparent hover:border-zinc-200/40 dark:hover:border-zinc-800/50 cursor-pointer disabled:opacity-50 select-none transition-all outline-none whitespace-nowrap"
         title={status === "PUBLISHED" ? "点击快捷切换为【草稿】" : "点击快捷切换为【已发布】"}
       >
         {isCurrentLoading ? (
@@ -304,7 +304,7 @@ export default function ArticlesPage() {
               "h-8 w-8 rounded-xl text-xs font-bold transition-all cursor-pointer flex items-center justify-center border",
               page === i
                 ? "bg-primary border-primary text-white shadow-sm"
-                : "border-zinc-200/60 dark:border-zinc-850 hover:bg-zinc-100 dark:hover:bg-zinc-900 text-zinc-600 dark:text-zinc-400 bg-white dark:bg-zinc-950"
+                : "border-zinc-200/60 dark:border-zinc-800 hover:bg-zinc-100 dark:hover:bg-zinc-900 text-zinc-600 dark:text-zinc-400 bg-white dark:bg-zinc-950"
             )}
           >
             {i}
@@ -360,17 +360,17 @@ export default function ArticlesPage() {
 
       {/* 筛选 + 搜索栏 - 紧凑大厂排版 */}
       <div className="flex flex-wrap items-center gap-3">
-        <div className="flex h-9 items-center gap-2 rounded-xl border border-zinc-200/60 dark:border-zinc-850 bg-white dark:bg-zinc-950 px-3 py-1.5 flex-1 max-w-xs transition-all focus-within:ring-2 focus-within:ring-primary/20 focus-within:border-primary">
+        <div className="flex h-9 items-center gap-2 rounded-xl border border-zinc-200/60 dark:border-zinc-800 bg-white dark:bg-zinc-950 px-3 py-1.5 flex-1 max-w-xs transition-all focus-within:ring-2 focus-within:ring-primary/20 focus-within:border-primary">
           <Search size={14} className="text-zinc-400 dark:text-zinc-500 shrink-0" />
           <input
             type="text"
             value={keyword}
             onChange={(e) => { setKeyword(e.target.value); setPage(1); }}
             placeholder="搜索文章标题..."
-            className="flex-1 border-0 bg-transparent p-0 text-xs text-zinc-850 dark:text-zinc-100 outline-none placeholder-zinc-400 dark:placeholder-zinc-650 focus:ring-0 leading-normal"
+            className="flex-1 border-0 bg-transparent p-0 text-xs text-zinc-800 dark:text-zinc-100 outline-none placeholder-zinc-400 dark:placeholder-zinc-650 focus:ring-0 leading-normal"
           />
         </div>
-        <div className="flex h-9 items-center gap-1.5 px-3 py-1.5 rounded-xl border border-zinc-200/60 dark:border-zinc-850 bg-white dark:bg-zinc-950 text-xs text-zinc-600 dark:text-zinc-400">
+        <div className="flex h-9 items-center gap-1.5 px-3 py-1.5 rounded-xl border border-zinc-200/60 dark:border-zinc-800 bg-white dark:bg-zinc-950 text-xs text-zinc-600 dark:text-zinc-400">
           <Filter size={12} className="text-zinc-400 dark:text-zinc-550 shrink-0" />
           <select
             value={statusFilter}
@@ -387,10 +387,10 @@ export default function ArticlesPage() {
       </div>
 
       {/* 文章表格 - 极简精致大厂排版 */}
-      <div className="overflow-x-auto rounded-2xl border border-zinc-200/60 dark:border-zinc-850 bg-white dark:bg-zinc-950 shadow-xs">
+      <div className="overflow-x-auto rounded-2xl border border-zinc-200/60 dark:border-zinc-800 bg-white dark:bg-zinc-950 shadow-xs">
         <table className="w-full text-xs text-left border-collapse min-w-[900px] table-fixed">
           <thead>
-            <tr className="border-b border-zinc-150 dark:border-zinc-850 bg-zinc-50/70 dark:bg-zinc-900/40 text-[10px] font-bold text-zinc-400 dark:text-zinc-500 uppercase tracking-widest select-none">
+            <tr className="border-b border-zinc-150 dark:border-zinc-800 bg-zinc-50/70 dark:bg-zinc-900/40 text-[10px] font-bold text-zinc-400 dark:text-zinc-500 uppercase tracking-widest select-none">
               <th className="px-4 py-3.5 w-12 text-center">
                 <input
                   type="checkbox"
@@ -413,7 +413,7 @@ export default function ArticlesPage() {
               <th className="px-5 py-3.5 w-24 text-right">管理操作</th>
             </tr>
           </thead>
-          <tbody className="divide-y divide-zinc-100 dark:divide-zinc-850 text-zinc-700 dark:text-zinc-350">
+          <tbody className="divide-y divide-zinc-100 dark:divide-zinc-800/50 text-zinc-700 dark:text-zinc-350">
             {loading ? (
               <tr>
                 <td colSpan={10} className="px-5 py-16 text-center select-none">
@@ -440,7 +440,7 @@ export default function ArticlesPage() {
                 return (
                   <tr
                     key={article.id}
-                    className="group border-b border-zinc-150 dark:border-zinc-850 hover:bg-zinc-50/50 dark:hover:bg-zinc-900/20 transition-all duration-150"
+                    className="group border-b border-zinc-150 dark:border-zinc-800 hover:bg-zinc-50/50 dark:hover:bg-zinc-900/20 transition-all duration-150"
                   >
                     {/* 选择框 */}
                     <td className="px-4 py-3.5 text-center">
@@ -622,7 +622,7 @@ export default function ArticlesPage() {
             <button
               onClick={() => setPage((p) => Math.max(1, p - 1))}
               disabled={page <= 1}
-              className="rounded-xl border border-zinc-200/60 dark:border-zinc-850 px-3 py-1.5 hover:bg-zinc-150/40 dark:hover:bg-zinc-900/60 text-zinc-650 dark:text-zinc-350 disabled:opacity-30 dark:disabled:opacity-20 transition-all cursor-pointer disabled:cursor-not-allowed font-bold outline-none"
+              className="rounded-xl border border-zinc-200/60 dark:border-zinc-800 px-3 py-1.5 hover:bg-zinc-150/40 dark:hover:bg-zinc-900/60 text-zinc-650 dark:text-zinc-350 disabled:opacity-30 dark:disabled:opacity-20 transition-all cursor-pointer disabled:cursor-not-allowed font-bold outline-none"
             >
               上一页
             </button>
@@ -634,7 +634,7 @@ export default function ArticlesPage() {
             <button
               onClick={() => setPage((p) => Math.min(totalPages, p + 1))}
               disabled={page >= totalPages}
-              className="rounded-xl border border-zinc-200/60 dark:border-zinc-850 px-3 py-1.5 hover:bg-zinc-150/40 dark:hover:bg-zinc-900/60 text-zinc-650 dark:text-zinc-350 disabled:opacity-30 dark:disabled:opacity-20 transition-all cursor-pointer disabled:cursor-not-allowed font-bold outline-none"
+              className="rounded-xl border border-zinc-200/60 dark:border-zinc-800 px-3 py-1.5 hover:bg-zinc-150/40 dark:hover:bg-zinc-900/60 text-zinc-650 dark:text-zinc-350 disabled:opacity-30 dark:disabled:opacity-20 transition-all cursor-pointer disabled:cursor-not-allowed font-bold outline-none"
             >
               下一页
             </button>
