@@ -20,6 +20,9 @@
 # production
 /build
 
+# doxc
+/doxc
+
 # misc
 .DS_Store
 *.pem
