@@ -182,17 +182,19 @@ h1, h2, h3, h4, h5, h6 {
 
 /* 引用样式 */
 .article-content-prose blockquote {
-  font-style: italic;
-  border-left: 4px solid #727BBA;
-  background-color: rgba(114, 123, 186, 0.05);
-  padding: 1.2rem 1.8rem;
-  margin: 2.4rem 0;
-  border-radius: 0 8px 8px 0;
-  color: #52525b; /* zinc-600 */
+  font-style: normal;
+  border-left: 3px solid rgba(114, 123, 186, 0.85); /* 精致的主色竖线 */
+  background-color: transparent; /* 去除臃肿的卡片块状背景 */
+  padding: 0.4rem 0 0.4rem 1.25rem;
+  margin: 2.2rem 0;
+  color: #71717a; /* zinc-500 */
+  font-size: 0.98em;
+  font-weight: 500;
+  line-height: 1.8;
 }
 .dark .article-content-prose blockquote {
-  background-color: rgba(114, 123, 186, 0.08);
-  color: #d4d4d8; /* zinc-300 */
+  border-left-color: rgba(114, 123, 186, 0.5);
+  color: #a1a1aa; /* zinc-400 */
 }
 
 /* 列表样式 */
