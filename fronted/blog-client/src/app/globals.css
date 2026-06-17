@@ -236,54 +236,137 @@ h1, h2, h3, h4, h5, h6 {
   color: #f43f5e; /* rose-500 */
 }
 
-/* ===== 动态代码块容器高保真 Fallback 样式 ===== */
-.mac-code-wrapper {
-  position: relative;
+/* ===== 新版通用定制化代码块样式系统 (自适应亮暗色) ===== */
+.md-codeblock {
+  font-family: ui-monospace, SFMono-Regular, Menlo, Monaco, Consolas, "Liberation Mono", "Courier New", monospace;
   margin-top: 2rem;
   margin-bottom: 2rem;
-  border-radius: 0.75rem;
-  overflow: hidden;
-  border: 1px solid rgba(228, 228, 231, 0.15) !important;
-  box-shadow: 0 10px 15px -3px rgba(0, 0, 0, 0.1), 0 4px 6px -2px rgba(0, 0, 0, 0.05);
-  background-color: #09090b !important; /* 强制白昼与黑夜均使用优雅的深色背景 */
-  font-family: ui-monospace, SFMono-Regular, Menlo, Monaco, Consolas, "Liberation Mono", "Courier New", monospace;
 }
 
-.dark .mac-code-wrapper {
-  border-color: rgba(63, 63, 70, 0.3) !important;
-  background-color: #18181b !important;
+/* 滚动条美化 */
+.md-codeblock__body pre::-webkit-scrollbar {
+  height: 6px;
+  width: 6px;
 }
 
-/* macOS 头部控制栏 */
-.mac-code-wrapper > div:first-child {
-  display: flex;
-  align-items: center;
-  justify-content: space-between;
-  padding: 0.5rem 1rem;
-  border-bottom: 1px solid rgba(9, 9, 11, 0.6);
-  background-color: #09090b;
-  user-select: none;
+.md-codeblock__body pre::-webkit-scrollbar-track {
+  background: transparent;
 }
 
-.dark .mac-code-wrapper > div:first-child {
-  background-color: #18181b;
-  border-bottom-color: rgba(24, 24, 27, 0.6);
+.md-codeblock__body pre::-webkit-scrollbar-thumb {
+  background: rgba(0, 0, 0, 0.08);
+  border-radius: 9999px;
 }
 
-/* 代码区域滚动条与文本色 */
-.mac-code-wrapper pre {
-  margin: 0 !important;
-  padding: 1rem 1.25rem !important;
-  overflow-x: auto;
-  background: transparent !important;
-  color: #e4e4e7 !important; /* zinc-200 */
+.md-codeblock__body pre::-webkit-scrollbar-thumb:hover {
+  background: rgba(0, 0, 0, 0.16);
 }
 
-.mac-code-wrapper pre code {
-  background: transparent !important;
-  font-family: inherit;
-  font-size: 0.875rem;
-  line-height: 1.7;
+.dark .md-codeblock__body pre::-webkit-scrollbar-thumb {
+  background: rgba(255, 255, 255, 0.08);
 }
+
+.dark .md-codeblock__body pre::-webkit-scrollbar-thumb:hover {
+  background: rgba(255, 255, 255, 0.16);
+}
+
+/* highlight.js 经典 GitHub 亮暗自适应语法高亮色彩 */
+.md-codeblock__body .hljs {
+  color: #24292f;
+}
+
+.md-codeblock__body .hljs-comment,
+.md-codeblock__body .hljs-quote {
+  color: #6e7781;
+}
+
+.md-codeblock__body .hljs-keyword,
+.md-codeblock__body .hljs-selector-tag,
+.md-codeblock__body .hljs-literal {
+  color: #cf222e;
+}
+
+.md-codeblock__body .hljs-string,
+.md-codeblock__body .hljs-title,
+.md-codeblock__body .hljs-section,
+.md-codeblock__body .hljs-built_in,
+.md-codeblock__body .hljs-addition {
+  color: #116329;
+}
+
+.md-codeblock__body .hljs-number,
+.md-codeblock__body .hljs-symbol,
+.md-codeblock__body .hljs-bullet {
+  color: #0550ae;
+}
+
+.md-codeblock__body .hljs-attribute,
+.md-codeblock__body .hljs-name,
+.md-codeblock__body .hljs-selector-id,
+.md-codeblock__body .hljs-selector-class {
+  color: #8250df;
+}
+
+.md-codeblock__body .hljs-type,
+.md-codeblock__body .hljs-function,
+.md-codeblock__body .hljs-title.class_,
+.md-codeblock__body .hljs-title.function_ {
+  color: #1f6feb;
+}
+
+.md-codeblock__body .hljs-variable,
+.md-codeblock__body .hljs-template-variable {
+  color: #953800;
+}
+
+/* 暗黑模式高亮配色 */
+.dark .md-codeblock__body .hljs {
+  color: #c9d1d9;
+}
+
+.dark .md-codeblock__body .hljs-comment,
+.dark .md-codeblock__body .hljs-quote {
+  color: #8b949e;
+}
+
+.dark .md-codeblock__body .hljs-keyword,
+.dark .md-codeblock__body .hljs-selector-tag,
+.dark .md-codeblock__body .hljs-literal {
+  color: #ff7b72;
+}
+
+.dark .md-codeblock__body .hljs-string,
+.dark .md-codeblock__body .hljs-title,
+.dark .md-codeblock__body .hljs-section,
+.dark .md-codeblock__body .hljs-built_in,
+.dark .md-codeblock__body .hljs-addition {
+  color: #7ee787;
+}
+
+.dark .md-codeblock__body .hljs-number,
+.dark .md-codeblock__body .hljs-symbol,
+.dark .md-codeblock__body .hljs-bullet {
+  color: #ffa657;
+}
+
+.dark .md-codeblock__body .hljs-attribute,
+.dark .md-codeblock__body .hljs-name,
+.dark .md-codeblock__body .hljs-selector-id,
+.dark .md-codeblock__body .hljs-selector-class {
+  color: #d2a8ff;
+}
+
+.dark .md-codeblock__body .hljs-type,
+.dark .dark .md-codeblock__body .hljs-function,
+.dark .md-codeblock__body .hljs-title.class_,
+.dark .md-codeblock__body .hljs-title.function_ {
+  color: #79c0ff;
+}
+
+.dark .md-codeblock__body .hljs-variable,
+.dark .md-codeblock__body .hljs-template-variable {
+  color: #ffa657;
+}
+
 
 

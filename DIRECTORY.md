@@ -63,6 +63,8 @@ Butvan Blog2.0/                                    # 📦 项目根目录
 │   │   │   │   └── not-found.tsx                  #         自定义 404 页面
 │   │   │   ├── components/                        #     🧩 组件层（按业务领域分组）
 │   │   │   │   ├── common/                        #       通用原子组件（Button、Card、Modal、Empty 等）
+│   │   │   │   │   ├── HtmlRenderer.tsx           #         通用 HTML 解析与组件拦截器
+│   │   │   │   │   └── MarkdownCodeBlock.tsx      #         通用定制化 macOS 风格代码块组件
 │   │   │   │   ├── layout/                        #       布局组件
 │   │   │   │   │   ├── Header.tsx                 #         全局顶栏（Logo、导航、搜索）
 │   │   │   │   │   ├── Footer.tsx                 #         全局底栏（备案号、社交链接）
@@ -357,6 +359,8 @@ Butvan Blog2.0/                                    # 📦 项目根目录
 | `fronted/blog-admin/src/lib/article-api.ts` | 后台-工具 | 统一封装文章、分类、标签相关 API 请求方法 |
 | `fronted/blog-client/src/app/page.tsx` | 前台-首页 | 房间场景：从 API 获取激活场景，PNG 图层叠层绝对百分比渲染、hover 物理悬空、发光避光阴影及缩放过渡 |
 | `fronted/blog-client/src/components/home/RoomScene.tsx` | 前台-组件 | 多图层渲染容器，背景图+PNG物品百分比定位叠加 |
+| `fronted/blog-client/src/components/common/HtmlRenderer.tsx` | 前台-组件 | 通用 HTML 虚拟 DOM 解析拦截器（回退 SSR 渲染） |
+| `fronted/blog-client/src/components/common/MarkdownCodeBlock.tsx` | 前台-组件 | 通用定制化 macOS 风格代码块（复制/折叠/自适应亮暗高亮） |
 | `fronted/blog-client/src/app/articles/[slug]/page.tsx` | 前台-文章 | 文章详情页（Markdown渲染、评论区、系列导航） |
 | `fronted/blog-admin/src/app/(dashboard)/articles/new/page.tsx` | 后台-文章 | Markdown 编辑器 + 分类/标签/SEO 设置 |
 | `fronted/blog-admin/src/app/(dashboard)/scenes/[id]/page.tsx` | 后台-场景 | 可视化热区编辑器（拖拽框选、百分比换算） |
