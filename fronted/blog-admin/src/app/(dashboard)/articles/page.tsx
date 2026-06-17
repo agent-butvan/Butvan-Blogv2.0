@@ -17,6 +17,8 @@ import {
   Check,
   X,
   Globe,
+  Lock,
+  Key,
   EyeOff,
   Eye,
   MessageSquare
@@ -210,14 +212,14 @@ export default function ArticlesPage() {
 
   const totalPages = Math.ceil(total / pageSize);
 
-  // 状态颜色 Tag
+  // 状态颜色 Tag (Status Dot 风格)
   const statusBadge = (item: ArticleItem) => {
     const status = item.status;
-    const map: Record<string, string> = {
-      PUBLISHED: "bg-emerald-50 text-emerald-600 dark:bg-emerald-950/25 dark:text-emerald-400 border-emerald-200/40 dark:border-emerald-800/40",
-      DRAFT: "bg-zinc-50 text-zinc-500 dark:bg-zinc-900/40 dark:text-zinc-400 border-zinc-200/40 dark:border-zinc-800/50",
-      PRIVATE: "bg-amber-50 text-amber-600 dark:bg-amber-950/25 dark:text-amber-400 border-amber-200/40 dark:border-amber-800/40",
-      ARCHIVED: "bg-sky-50 text-sky-600 dark:bg-sky-950/25 dark:text-sky-400 border-sky-200/40 dark:border-sky-800/40",
+    const dotColors: Record<string, string> = {
+      PUBLISHED: "bg-emerald-500 dark:bg-emerald-400 shadow-[0_0_8px_rgba(16,185,129,0.35)]",
+      DRAFT: "bg-zinc-400 dark:bg-zinc-650",
+      PRIVATE: "bg-rose-500 dark:bg-rose-400 shadow-[0_0_8px_rgba(244,63,94,0.35)]",
+      ARCHIVED: "bg-sky-500 dark:bg-sky-400 shadow-[0_0_8px_rgba(14,165,233,0.35)]",
     };
     const label: Record<string, string> = {
       PUBLISHED: "已发布",
@@ -233,39 +235,58 @@ export default function ArticlesPage() {
         type="button"
         disabled={isCurrentLoading}
         onClick={() => handleQuickUpdate(item, { status: status === "PUBLISHED" ? "DRAFT" : "PUBLISHED" } as any)}
-        className={cn(
-          "text-[10px] px-2 py-0.5 rounded-lg font-bold border cursor-pointer hover:opacity-85 select-none transition-all flex items-center gap-1 disabled:opacity-50",
-          map[status] || ""
-        )}
+        className="group/status inline-flex items-center gap-1.5 px-2 py-1 rounded-lg hover:bg-zinc-100 dark:hover:bg-zinc-900 border border-transparent hover:border-zinc-200/40 dark:hover:border-zinc-800/50 cursor-pointer disabled:opacity-50 select-none transition-all outline-none"
         title={status === "PUBLISHED" ? "点击快捷切换为【草稿】" : "点击快捷切换为【已发布】"}
       >
-        {isCurrentLoading && <Loader2 size={9} className="animate-spin text-zinc-400" />}
-        <span>{label[status] || status}</span>
+        {isCurrentLoading ? (
+          <Loader2 size={10} className="animate-spin text-zinc-400" />
+        ) : (
+          <span className={cn("w-1.5 h-1.5 rounded-full shrink-0 transition-transform group-hover/status:scale-110", dotColors[status] || "bg-zinc-400")} />
+        )}
+        <span className="text-[11px] font-medium text-zinc-600 dark:text-zinc-400 leading-none">
+          {label[status] || status}
+        </span>
       </button>
     );
   };
 
   // 访问权限颜色 Tag
   const visibilityBadge = (visibility: string) => {
-    const map: Record<string, string> = {
-      PUBLIC: "bg-emerald-50 text-emerald-600 dark:bg-emerald-950/25 dark:text-emerald-400 border-emerald-200/40 dark:border-emerald-800/40",
-      PRIVATE: "bg-rose-50 text-rose-600 dark:bg-rose-950/25 dark:text-rose-400 border-rose-200/40 dark:border-rose-900/40",
-      PASSWORD_PROTECTED: "bg-purple-50 text-purple-600 dark:bg-purple-950/25 dark:text-purple-400 border-purple-200/40 dark:border-purple-800/40",
+    const config: Record<string, { label: string; icon: any; styles: string }> = {
+      PUBLIC: {
+        label: "公开",
+        icon: Globe,
+        styles: "text-emerald-600 dark:text-emerald-400 border-emerald-100/60 dark:border-emerald-950/20 bg-emerald-50/30 dark:bg-emerald-950/10",
+      },
+      PRIVATE: {
+        label: "私密",
+        icon: Lock,
+        styles: "text-rose-600 dark:text-rose-400 border-rose-100/60 dark:border-rose-950/20 bg-rose-50/30 dark:bg-rose-950/10",
+      },
+      PASSWORD_PROTECTED: {
+        label: "密码保护",
+        icon: Key,
+        styles: "text-purple-600 dark:text-purple-400 border-purple-100/60 dark:border-purple-950/20 bg-purple-50/30 dark:bg-purple-950/10",
+      },
     };
-    const label: Record<string, string> = {
-      PUBLIC: "公开",
-      PRIVATE: "私密",
-      PASSWORD_PROTECTED: "密码保护",
+
+    const item = config[visibility] || {
+      label: visibility,
+      icon: Globe,
+      styles: "text-zinc-500 border-zinc-200 bg-zinc-50/30",
     };
+
+    const Icon = item.icon;
 
     return (
       <span
         className={cn(
-          "inline-flex text-[10px] px-2 py-0.5 rounded-lg font-bold border select-none transition-all items-center justify-center",
-          map[visibility] || "bg-zinc-50 text-zinc-500 border-zinc-200"
+          "inline-flex items-center gap-1.5 text-[10px] px-2 py-0.5 rounded-lg border font-bold select-none",
+          item.styles
         )}
       >
-        {label[visibility] || visibility}
+        <Icon size={10} className="shrink-0" />
+        <span>{item.label}</span>
       </span>
     );
   };
@@ -381,14 +402,14 @@ export default function ArticlesPage() {
                   className="w-3.5 h-3.5 rounded border-zinc-350 dark:border-zinc-800 text-primary focus:ring-primary/20 accent-primary cursor-pointer transition-all"
                 />
               </th>
-              <th className="px-5 py-3.5 w-[280px]">文章标题</th>
-              <th className="px-5 py-3.5 w-28">所属分类</th>
-              <th className="px-5 py-3.5 w-24 text-center">访问权限</th>
+              <th className="px-5 py-3.5">文章标题</th>
+              <th className="px-5 py-3.5 w-32">所属分类</th>
+              <th className="px-5 py-3.5 w-28 text-center">访问权限</th>
               <th className="px-5 py-3.5 w-24 text-center">发布状态</th>
               <th className="px-5 py-3.5 w-36 text-center">属性配置</th>
               <th className="px-5 py-3.5 w-20 text-center">浏览</th>
               <th className="px-5 py-3.5 w-20 text-center">评论</th>
-              <th className="px-5 py-3.5 w-32">更新日期</th>
+              <th className="px-5 py-3.5 w-36">更新日期</th>
               <th className="px-5 py-3.5 w-24 text-right">管理操作</th>
             </tr>
           </thead>
@@ -412,21 +433,17 @@ export default function ArticlesPage() {
               </tr>
             ) : (
               articles.map((article) => {
-                const isCurrentLoading = quickUpdateId === article.id;
                 const isChecked = checkedIds.includes(article.id);
-                // 热门判定：阅读量 > 1000 或者是特别推荐
-                const isHot = article.viewCount > 1000 || article.commentCount > 50;
+                const isHot = (article.viewCount || 0) > 1000 || (article.commentCount || 0) > 50;
+                const isCurrentLoading = quickUpdateId === article.id;
 
                 return (
-                  <tr 
-                    key={article.id} 
-                    className={cn(
-                      "hover:bg-zinc-50/50 dark:hover:bg-zinc-900/15 transition-all group",
-                      isChecked ? "bg-primary/3 dark:bg-primary/5" : ""
-                    )}
+                  <tr
+                    key={article.id}
+                    className="group border-b border-zinc-150 dark:border-zinc-850 hover:bg-zinc-50/50 dark:hover:bg-zinc-900/20 transition-all duration-150"
                   >
-                    {/* 复选单选框 */}
-                    <td className="px-4 py-3.5 text-center w-12">
+                    {/* 选择框 */}
+                    <td className="px-4 py-3.5 text-center">
                       <input
                         type="checkbox"
                         checked={isChecked}
@@ -435,27 +452,27 @@ export default function ArticlesPage() {
                       />
                     </td>
 
-                    {/* 标题（包含链接跳转、火苗标识） */}
-                    <td className="px-5 py-3.5 w-[280px]">
-                      <div className="flex items-center gap-1.5 max-w-full">
-                        <div 
-                          className="font-semibold text-neutral-dark dark:text-zinc-150 truncate max-w-[200px] leading-tight" 
+                    {/* 文章标题 - 中心自适应列 */}
+                    <td className="px-5 py-3.5 min-w-0">
+                      <div className="flex items-center gap-1.5 max-w-full min-w-0">
+                        <span 
+                          className="font-semibold text-neutral-dark dark:text-zinc-150 truncate flex-1 min-w-0 leading-tight group-hover:text-primary transition-colors duration-150" 
                           title={article.title}
                         >
                           {article.title}
-                        </div>
+                        </span>
                         
                         {/* 热门火苗标签 */}
                         {isHot && (
                           <span title="热门文章（标准：浏览量 > 1000 或 评论数 > 50）">
                             <Flame 
-                              size={12.5} 
+                              size={12} 
                               className="text-red-500 shrink-0 fill-red-500/10 cursor-help"
                             />
                           </span>
                         )}
 
-                        {/* 直接访问前台链接图标 */}
+                        {/* 前台预览图标 */}
                         <a
                           href={`http://localhost:3000/article/${article.slug || article.id}`}
                           target="_blank"
@@ -463,12 +480,12 @@ export default function ArticlesPage() {
                           className="opacity-0 group-hover:opacity-100 text-zinc-400 dark:text-zinc-500 hover:text-primary transition-all duration-200 shrink-0 hover:translate-x-0.5 hover:-translate-y-0.5"
                           title="在新标签页预览前台文章"
                         >
-                          <ExternalLink size={11.5} />
+                          <ExternalLink size={11} />
                         </a>
                       </div>
                       {article.summary && (
                         <div 
-                          className="text-[11px] text-zinc-450 dark:text-zinc-500 truncate max-w-[240px] mt-1 font-normal leading-normal" 
+                          className="text-[11px] text-zinc-450 dark:text-zinc-500 truncate max-w-full mt-1 font-normal leading-normal" 
                           title={article.summary}
                         >
                           {article.summary}
@@ -477,9 +494,9 @@ export default function ArticlesPage() {
                     </td>
 
                     {/* 所属分类 */}
-                    <td className="px-5 py-3.5 w-28">
+                    <td className="px-5 py-3.5 w-32">
                       {article.categoryName ? (
-                        <span className="px-2 py-0.5 rounded-lg text-[10px] font-bold bg-zinc-100/60 dark:bg-zinc-900/60 border border-zinc-200/40 dark:border-zinc-800/60 text-zinc-500 dark:text-zinc-400">
+                        <span className="px-2 py-0.5 rounded-lg text-[10px] font-bold bg-zinc-100/60 dark:bg-zinc-900/60 border border-zinc-200/40 dark:border-zinc-800/60 text-zinc-550 dark:text-zinc-400">
                           {article.categoryName}
                         </span>
                       ) : (
@@ -488,21 +505,22 @@ export default function ArticlesPage() {
                     </td>
 
                     {/* 访问权限 */}
-                    <td className="px-5 py-3.5 w-24 text-center">
-                      {visibilityBadge(article.visibility)}
+                    <td className="px-5 py-3.5 w-28 text-center">
+                      <div className="flex justify-center">
+                        {visibilityBadge(article.visibility)}
+                      </div>
                     </td>
 
-                    {/* 发布状态 (含快捷切换) */}
+                    {/* 发布状态 */}
                     <td className="px-5 py-3.5 w-24 text-center">
                       <div className="flex justify-center items-center">
                         {statusBadge(article)}
                       </div>
                     </td>
 
-                    {/* 置顶 & 推荐属性（支持快捷行内一键修改） */}
+                    {/* 属性配置 */}
                     <td className="px-5 py-3.5 w-36 text-center">
-                      <div className="flex items-center justify-center gap-2">
-                        {/* 置顶属性 */}
+                      <div className="flex items-center justify-center gap-1.5">
                         <button
                           type="button"
                           disabled={isCurrentLoading}
@@ -519,7 +537,6 @@ export default function ArticlesPage() {
                           <span>置顶</span>
                         </button>
 
-                        {/* 特别推荐属性 */}
                         <button
                           type="button"
                           disabled={isCurrentLoading}
@@ -538,7 +555,7 @@ export default function ArticlesPage() {
                       </div>
                     </td>
 
-                    {/* 浏览数 */}
+                    {/* 浏览量 */}
                     <td className="px-5 py-3.5 w-20 text-center font-mono font-medium">
                       <div className="flex items-center justify-center gap-1 text-zinc-500 dark:text-zinc-400">
                         <Eye size={12} className="opacity-60" />
@@ -555,7 +572,7 @@ export default function ArticlesPage() {
                     </td>
 
                     {/* 更新日期 */}
-                    <td className="px-5 py-3.5 w-32 text-zinc-450 dark:text-zinc-500 font-mono text-[10px] leading-tight">
+                    <td className="px-5 py-3.5 w-36 text-zinc-450 dark:text-zinc-500 font-mono text-[10px] leading-tight">
                       {article.updatedAt
                         ? new Date(article.updatedAt).toLocaleString("zh-CN", {
                             year: "numeric",
@@ -568,7 +585,7 @@ export default function ArticlesPage() {
                         : "--"}
                     </td>
 
-                    {/* 操作（编辑、删除，默认隐藏 Hover 显现） */}
+                    {/* 管理操作 */}
                     <td className="px-5 py-3.5 w-24">
                       <div className="flex items-center justify-end gap-0.5 select-none opacity-0 group-hover:opacity-100 transition-opacity duration-200">
                         <button
@@ -628,10 +645,10 @@ export default function ArticlesPage() {
       {/* 底部悬浮批量控制面板 - 经典的 Notion/Linear 交互体验 */}
       <div 
         className={cn(
-          "fixed bottom-6 left-1/2 -translate-x-1/2 z-35 flex items-center gap-4.5 px-6 py-3 rounded-2xl border bg-white/95 dark:bg-zinc-900/95 backdrop-blur-md shadow-[0_15px_30px_rgba(0,0,0,0.12)] border-zinc-200/60 dark:border-zinc-800/60 transition-all duration-300 ease-out select-none",
+          "fixed bottom-6 left-1/2 -translate-x-1/2 z-35 flex items-center gap-4.5 px-6 py-3 rounded-2xl border bg-white/80 dark:bg-zinc-900/80 backdrop-blur-md shadow-[0_12px_24px_-4px_rgba(0,0,0,0.08)] dark:shadow-[0_12px_24px_-4px_rgba(0,0,0,0.4)] border-zinc-200/50 dark:border-zinc-800/50 transition-all duration-300 ease-out select-none",
           checkedIds.length > 0 
-            ? "opacity-100 translate-y-0 scale-100 pointer-events-auto animate-[slideUp_0.25s_ease-out]" 
-            : "opacity-0 translate-y-6 scale-95 pointer-events-none"
+            ? "opacity-100 translate-y-0 scale-100 pointer-events-auto" 
+            : "opacity-0 translate-y-4 scale-95 pointer-events-none"
         )}
       >
         <div className="flex items-center gap-2 border-r border-zinc-200/60 dark:border-zinc-800/60 pr-4">
@@ -656,7 +673,7 @@ export default function ArticlesPage() {
             type="button"
             disabled={actionLoading}
             onClick={() => handleBatchStatus(false)}
-            className="h-8 px-3.5 rounded-xl bg-zinc-100 dark:bg-zinc-800 text-[10px] font-bold text-zinc-650 dark:text-zinc-350 hover:bg-zinc-200/80 dark:hover:bg-zinc-750 transition-all cursor-pointer flex items-center gap-1.5 disabled:opacity-50 disabled:cursor-not-allowed border-0 outline-none active:scale-95"
+            className="h-8 px-3.5 rounded-xl bg-zinc-150/80 dark:bg-zinc-800 text-[10px] font-bold text-zinc-650 dark:text-zinc-350 hover:bg-zinc-250/80 dark:hover:bg-zinc-700 transition-all cursor-pointer flex items-center gap-1.5 disabled:opacity-50 disabled:cursor-not-allowed border-0 outline-none active:scale-95"
           >
             <span>设为草稿</span>
           </button>
@@ -701,4 +718,3 @@ export default function ArticlesPage() {
     </div>
   );
 }
-
