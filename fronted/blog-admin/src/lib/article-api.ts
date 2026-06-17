@@ -1,6 +1,6 @@
 import apiClient from "./api";
 import type { ApiResponse, PageResult } from "@/types/common";
-import type { ArticleItem, ArticleDetail, ArticleSaveDTO, ArticleQuery } from "@/types/article";
+import type { ArticleItem, ArticleDetail, ArticleSaveDTO, ArticleQuery, CategoryItem, TagItem } from "@/types/article";
 
 /**
  * 获取文章分页列表 (GET /articles)
@@ -113,4 +113,113 @@ export async function fetchArticlesSimple(): Promise<any[]> {
   const res = await apiClient.get<ApiResponse<any[]>>("/articles/simple");
   return res.data?.data ?? [];
 }
+
+/**
+ * 获取分类完整实体列表 (GET /categories)
+ *
+ * @returns 分类实体列表
+ */
+export async function fetchCategories(): Promise<CategoryItem[]> {
+  const res = await apiClient.get<ApiResponse<CategoryItem[]>>("/categories");
+  return res.data?.data ?? [];
+}
+
+/**
+ * 新增保存分类 (POST /categories)
+ *
+ * @param category 分类数据载荷
+ * @returns 保存后的分类详情
+ */
+export async function createCategory(category: Partial<CategoryItem>): Promise<CategoryItem> {
+  const res = await apiClient.post<ApiResponse<CategoryItem>>("/categories", category);
+  if (!res.data?.data) {
+    throw new Error(res.data?.msg || "新建分类失败");
+  }
+  return res.data.data;
+}
+
+/**
+ * 更新保存分类 (PUT /categories/{id})
+ *
+ * @param id 分类主键 ID
+ * @param category 分类修改数据载荷
+ * @returns 更新后的分类详情
+ */
+export async function updateCategory(
+  id: number | string,
+  category: Partial<CategoryItem>
+): Promise<CategoryItem> {
+  const res = await apiClient.put<ApiResponse<CategoryItem>>(`/categories/${id}`, category);
+  if (!res.data?.data) {
+    throw new Error(res.data?.msg || "更新分类失败");
+  }
+  return res.data.data;
+}
+
+/**
+ * 删除分类 (DELETE /categories/{id})
+ *
+ * @param id 分类主键 ID
+ */
+export async function deleteCategory(id: number | string): Promise<void> {
+  const res = await apiClient.delete<ApiResponse<void>>(`/categories/${id}`);
+  if (res.data && res.data.code !== 200) {
+    throw new Error(res.data.msg || "删除分类失败");
+  }
+}
+
+/**
+ * 获取全部标签列表 (GET /tags)
+ *
+ * @returns 标签列表
+ */
+export async function fetchTagsList(): Promise<TagItem[]> {
+  const res = await apiClient.get<ApiResponse<TagItem[]>>("/tags");
+  return res.data?.data ?? [];
+}
+
+/**
+ * 新增标签 (POST /tags)
+ *
+ * @param tag 标签数据载荷
+ * @returns 新增后的标签数据
+ */
+export async function createTag(tag: Partial<TagItem>): Promise<TagItem> {
+  const res = await apiClient.post<ApiResponse<TagItem>>("/tags", tag);
+  if (!res.data?.data) {
+    throw new Error(res.data?.msg || "新建标签失败");
+  }
+  return res.data.data;
+}
+
+/**
+ * 编辑更新标签 (PUT /tags/{id})
+ *
+ * @param id 标签主键 ID
+ * @param tag 标签修改数据载荷
+ * @returns 修改后的标签数据
+ */
+export async function updateTag(
+  id: number | string,
+  tag: Partial<TagItem>
+): Promise<TagItem> {
+  const res = await apiClient.put<ApiResponse<TagItem>>(`/tags/${id}`, tag);
+  if (!res.data?.data) {
+    throw new Error(res.data?.msg || "更新标签失败");
+  }
+  return res.data.data;
+}
+
+/**
+ * 删除标签 (DELETE /tags/{id})
+ *
+ * @param id 标签主键 ID
+ */
+export async function deleteTag(id: number | string): Promise<void> {
+  const res = await apiClient.delete<ApiResponse<void>>(`/tags/${id}`);
+  if (res.data && res.data.code !== 200) {
+    throw new Error(res.data.msg || "删除标签失败");
+  }
+}
+
 

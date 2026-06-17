@@ -22,4 +22,19 @@ public interface TagService {
      * @return 标签极简 VO 列表
      */
     List<TagSimpleVO> listSimpleTags();
+
+    /**
+     * 新增或编辑保存标签
+     *
+     * @param tag 标签实体数据
+     * @return 保存后的标签实体
+     */
+    Tag saveTag(Tag tag);
+
+    /**
+     * 根据主键 ID 删除标签
+     *
+     * @param id 标签主键 ID
+     */
+    void deleteTag(Long id);
 }

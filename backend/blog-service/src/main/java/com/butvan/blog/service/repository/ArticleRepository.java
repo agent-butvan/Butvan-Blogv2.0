@@ -19,4 +19,20 @@ public interface ArticleRepository extends JpaRepository<Article, Long>, JpaSpec
      * @return 文章实体包装
      */
     Optional<Article> findBySlug(String slug);
+
+    /**
+     * 判断某个分类下是否存在未删除的文章
+     *
+     * @param categoryId 分类ID
+     * @return 是否存在
+     */
+    boolean existsByCategoryId(Long categoryId);
+
+    /**
+     * 判断某个标签下是否存在未删除的文章
+     *
+     * @param tagId 标签ID
+     * @return 是否存在
+     */
+    boolean existsByTagsId(Long tagId);
 }

@@ -6,9 +6,7 @@ import com.butvan.blog.pojo.vo.tag.TagSimpleVO;
 import com.butvan.blog.service.service.TagService;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
-import org.springframework.web.bind.annotation.GetMapping;
-import org.springframework.web.bind.annotation.RequestMapping;
-import org.springframework.web.bind.annotation.RestController;
+import org.springframework.web.bind.annotation.*;
 import java.util.List;
 
 /**
@@ -44,5 +42,46 @@ public class TagController {
         log.info("获取极简标签列表 API 请求");
         List<TagSimpleVO> list = tagService.listSimpleTags();
         return Result.success(list);
+    }
+
+    /**
+     * 【管理端】新建标签
+     *
+     * @param tag 标签实体数据
+     * @return 统一格式 Result 包装的新增实体数据
+     */
+    @PostMapping("/tags")
+    public Result<Tag> createTag(@RequestBody Tag tag) {
+        log.info("新建标签 API 请求: {}", tag.getName());
+        Tag saved = tagService.saveTag(tag);
+        return Result.success(saved);
+    }
+
+    /**
+     * 【管理端】更新标签
+     *
+     * @param id 标签主键 ID
+     * @param tag 标签实体数据
+     * @return 统一格式 Result 包装的修改后实体数据
+     */
+    @PutMapping("/tags/{id}")
+    public Result<Tag> updateTag(@PathVariable Long id, @RequestBody Tag tag) {
+        log.info("更新标签 API 请求: id={}, name={}", id, tag.getName());
+        tag.setId(id);
+        Tag updated = tagService.saveTag(tag);
+        return Result.success(updated);
+    }
+
+    /**
+     * 【管理端】根据 ID 删除标签
+     *
+     * @param id 待删除标签主键 ID
+     * @return 统一格式 Result 包装的空返回
+     */
+    @DeleteMapping("/tags/{id}")
+    public Result<Void> deleteTag(@PathVariable Long id) {
+        log.info("删除标签 API 请求: id={}", id);
+        tagService.deleteTag(id);
+        return Result.success();
     }
 }

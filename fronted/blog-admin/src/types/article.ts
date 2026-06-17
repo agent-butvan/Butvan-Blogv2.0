@@ -80,3 +80,27 @@ export interface ArticleQuery extends Record<string, unknown> {
   sortBy?: string;
   sortDir?: "asc" | "desc";
 }
+
+/** 分类项数据结构 */
+export interface CategoryItem {
+  id: number;
+  name: string;
+  slug: string;
+  description?: string;
+  parentId?: number | null;
+  icon?: string;
+  sortOrder: number;
+  articleCount: number;
+  isVisible: boolean;
+  createdAt: string;
+  updatedAt: string;
+}
+
+/** 标签数据结构 */
+export interface TagItem {
+  id: number;
+  name: string;
+  slug: string;
+  articleCount: number;
+  createdAt: string;
+}

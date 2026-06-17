@@ -27,4 +27,12 @@ public interface CategoryRepository extends JpaRepository<Category, Long> {
      * @return 分类实体列表
      */
     List<Category> findByIsVisibleOrderBySortOrderAsc(Boolean isVisible);
+
+    /**
+     * 判断某个分类下是否含有子级分类
+     *
+     * @param parentId 父级分类ID
+     * @return 是否存在子类
+     */
+    boolean existsByParentId(Long parentId);
 }
