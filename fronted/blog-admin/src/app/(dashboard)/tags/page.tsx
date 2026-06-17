@@ -1,13 +1,14 @@
 "use client";
 
 import { useEffect, useState, useMemo } from "react";
+import { useRouter } from "next/navigation";
 import { Plus, Search, Edit, Trash2, Loader2, X, AlertCircle } from "lucide-react";
 import { cn } from "@heroui/react";
-import { fetchTagsList, createTag, updateTag, deleteTag } from "@/lib/article-api";
+import { fetchTagsList, createTag, updateTag, deleteTag, fetchArticles as fetchArticlesApi } from "@/lib/article-api";
 import { toast } from "@/lib/toast";
 import ConfirmModal from "@/components/common/ConfirmModal";
 import Portal from "@/components/common/Portal";
-import type { TagItem } from "@/types/article";
+import type { TagItem, ArticleItem } from "@/types/article";
 
 /**
  * 标签管理工作台
@@ -16,6 +17,7 @@ import type { TagItem } from "@/types/article";
  * - 完备的错误边界捕捉与 Toast 消息通知
  */
 export default function TagsPage() {
+  const router = useRouter();
   const [tags, setTags] = useState<TagItem[]>([]);
   const [loading, setLoading] = useState(true);
   const [keyword, setKeyword] = useState("");
@@ -34,6 +36,41 @@ export default function TagsPage() {
   const [confirmDeleteId, setConfirmDeleteId] = useState<number | null>(null);
   const [deleteLoading, setDeleteLoading] = useState(false);
 
+  // 关联文章详情抽屉状态
+  const [selectedTag, setSelectedTag] = useState<TagItem | null>(null);
+  const [relatedArticles, setRelatedArticles] = useState<ArticleItem[]>([]);
+  const [loadingArticles, setLoadingArticles] = useState(false);
+
+  // 分类过滤出文章和手记
+  const articles = useMemo(() => {
+    return relatedArticles.filter((art) => art.contentType === "ARTICLE");
+  }, [relatedArticles]);
+
+  const notes = useMemo(() => {
+    return relatedArticles.filter((art) => art.contentType === "NOTE");
+  }, [relatedArticles]);
+
+
+  /** 加载某个标签关联的文章 */
+  const handleViewRelatedArticles = async (tag: TagItem) => {
+    setSelectedTag(tag);
+    setLoadingArticles(true);
+    try {
+      const res = await fetchArticlesApi({
+        page: 1,
+        size: 1000,
+        tagId: tag.id,
+      });
+      setRelatedArticles(res.records || []);
+    } catch (err) {
+      console.error("加载关联文章失败:", err);
+      toast.error("加载关联文章失败");
+      setRelatedArticles([]);
+    } finally {
+      setLoadingArticles(false);
+    }
+  };
+
   /** 获取全部标签列表 */
   const loadTags = async () => {
     setLoading(true);
@@ -49,7 +86,10 @@ export default function TagsPage() {
   };
 
   useEffect(() => {
-    loadTags();
+    const timer = setTimeout(() => {
+      loadTags();
+    }, 0);
+    return () => clearTimeout(timer);
   }, []);
 
   /** 模糊检索过滤后的标签列表 */
@@ -223,14 +263,19 @@ export default function TagsPage() {
                     </span>
                   </td>
                   <td className="px-5 py-3 text-center font-mono font-medium">
-                    <span className={cn(
-                      "inline-flex items-center justify-center px-2 py-0.5 rounded-full text-[10px] font-bold",
-                      tag.articleCount > 0 
-                        ? "bg-primary/10 text-primary dark:bg-primary/20 dark:text-[#b0a2ff]"
-                        : "bg-zinc-100 text-zinc-450 dark:bg-zinc-850 dark:text-zinc-500"
-                    )}>
+                    <button
+                      type="button"
+                      onClick={() => handleViewRelatedArticles(tag)}
+                      className={cn(
+                        "inline-flex items-center justify-center px-2.5 py-0.5 rounded-full text-[10px] font-bold transition-all duration-200 active:scale-95 cursor-pointer outline-none border-0",
+                        tag.articleCount > 0 
+                          ? "bg-primary/10 text-primary hover:bg-primary/20 dark:bg-primary/20 dark:text-[#b0a2ff] dark:hover:bg-primary/30"
+                          : "bg-zinc-100 text-zinc-400 hover:bg-zinc-200 dark:bg-zinc-850 dark:text-zinc-500 dark:hover:bg-zinc-800"
+                      )}
+                      title={`点击查看「${tag.name}」关联的文章与手记`}
+                    >
                       {tag.articleCount}
-                    </span>
+                    </button>
                   </td>
                   <td className="px-5 py-3 w-28">
                     <div className="flex items-center justify-end gap-1 select-none">
@@ -360,6 +405,139 @@ export default function TagsPage() {
         onConfirm={handleDeleteConfirm}
         onCancel={() => setConfirmDeleteId(null)}
       />
+
+      {/* 关联文章详情侧滑抽屉 */}
+      {selectedTag && (
+        <Portal>
+          <div className="fixed inset-0 z-50 overflow-hidden select-none">
+            {/* 遮罩层 */}
+            <div
+              className="absolute inset-0 bg-black/20 dark:bg-black/40 backdrop-blur-xs transition-opacity duration-300 animate-fade-in"
+              onClick={() => setSelectedTag(null)}
+            />
+            {/* 抽屉面板 */}
+            <div className="absolute inset-y-0 right-0 w-full max-w-sm bg-white/95 dark:bg-zinc-900/95 backdrop-blur-md border-l border-zinc-200/50 dark:border-zinc-800/50 shadow-2xl flex flex-col animate-slide-left">
+              {/* 顶栏 */}
+              <div className="flex items-center justify-between px-5 py-4 border-b border-zinc-150 dark:border-zinc-800/80">
+                <div className="flex flex-col">
+                  <h3 className="font-heading text-sm font-bold text-neutral-dark dark:text-zinc-100 flex items-center gap-2">
+                    <span className="inline-flex h-2 w-2 rounded-full bg-primary animate-pulse" />
+                    标签关联内容
+                  </h3>
+                  <p className="text-[10px] text-zinc-400 dark:text-zinc-500 font-mono mt-0.5">
+                    TAG: {selectedTag.name} (Slug: {selectedTag.slug})
+                  </p>
+                </div>
+                <button
+                  onClick={() => setSelectedTag(null)}
+                  className="p-1 rounded-lg text-zinc-400 hover:text-zinc-600 dark:hover:text-zinc-200 hover:bg-zinc-100 dark:hover:bg-zinc-800 transition-colors cursor-pointer"
+                >
+                  <X size={15} />
+                </button>
+              </div>
+
+              {/* 内容区域 */}
+              <div className="flex-1 overflow-y-auto p-4 space-y-4 custom-scrollbar">
+                {loadingArticles ? (
+                  <div className="flex flex-col items-center justify-center py-20 gap-2 text-zinc-400">
+                    <Loader2 size={20} className="animate-spin text-primary" />
+                    <span className="text-[11px] font-medium tracking-wide">拉取关联文章中...</span>
+                  </div>
+                ) : relatedArticles.length === 0 ? (
+                  <div className="flex flex-col items-center justify-center py-20 text-zinc-400 gap-2">
+                    <AlertCircle size={20} className="text-zinc-350 dark:text-zinc-700" />
+                    <span className="text-[11px]">该标签下暂无关联的内容</span>
+                  </div>
+                ) : (
+                  <>
+                    {/* 关联长文 */}
+                    {articles.length > 0 && (
+                      <div className="space-y-2">
+                        <div className="flex items-center justify-between pb-1 border-b border-zinc-100 dark:border-zinc-800/50">
+                          <span className="text-[11px] font-bold text-zinc-400 dark:text-zinc-500 uppercase tracking-wider">
+                            长篇文章 ({articles.length})
+                          </span>
+                        </div>
+                        <div className="space-y-1.5">
+                          {articles.map((art) => (
+                            <div
+                              key={art.id}
+                              onClick={() => {
+                                router.push(`/articles/${art.id}`);
+                                setSelectedTag(null);
+                              }}
+                              className="group p-2.5 rounded-xl border border-zinc-100 dark:border-zinc-800/40 bg-zinc-50/50 dark:bg-zinc-950/20 hover:bg-white dark:hover:bg-zinc-900 hover:border-primary/20 dark:hover:border-primary/20 hover:shadow-sm transition-all duration-200 cursor-pointer"
+                            >
+                              <div className="flex items-start justify-between gap-2">
+                                <h4 className="text-xs font-bold text-zinc-800 dark:text-zinc-200 group-hover:text-primary transition-colors line-clamp-1 flex-1 leading-normal">
+                                  {art.title}
+                                </h4>
+                                <span className={cn(
+                                  "px-1.5 py-0.5 rounded-md text-[9px] font-bold shrink-0",
+                                  art.status === "PUBLISHED"
+                                    ? "bg-emerald-50 text-emerald-600 dark:bg-emerald-950/25 dark:text-emerald-400"
+                                    : "bg-amber-50 text-amber-600 dark:bg-amber-950/25 dark:text-amber-400"
+                                )}>
+                                  {art.status === "PUBLISHED" ? "已发" : "草稿"}
+                                </span>
+                              </div>
+                              <div className="flex items-center justify-between text-[10px] text-zinc-400 dark:text-zinc-500 font-mono mt-1.5">
+                                <span>{art.categoryName || "未分类"}</span>
+                                <span>{new Date(art.createdAt).toLocaleDateString()}</span>
+                              </div>
+                            </div>
+                          ))}
+                        </div>
+                      </div>
+                    )}
+
+                    {/* 关联手记 */}
+                    {notes.length > 0 && (
+                      <div className="space-y-2">
+                        <div className="flex items-center justify-between pb-1 border-b border-zinc-100 dark:border-zinc-800/50">
+                          <span className="text-[11px] font-bold text-zinc-400 dark:text-zinc-500 uppercase tracking-wider">
+                            手记随笔 ({notes.length})
+                          </span>
+                        </div>
+                        <div className="space-y-1.5">
+                          {notes.map((art) => (
+                            <div
+                              key={art.id}
+                              onClick={() => {
+                                router.push(`/articles/${art.id}`);
+                                setSelectedTag(null);
+                              }}
+                              className="group p-2.5 rounded-xl border border-zinc-100 dark:border-zinc-800/40 bg-zinc-50/50 dark:bg-zinc-950/20 hover:bg-white dark:hover:bg-zinc-900 hover:border-primary/20 dark:hover:border-primary/20 hover:shadow-sm transition-all duration-200 cursor-pointer"
+                            >
+                              <div className="flex items-start justify-between gap-2">
+                                <h4 className="text-xs font-bold text-zinc-800 dark:text-zinc-200 group-hover:text-primary transition-colors line-clamp-1 flex-1 leading-normal">
+                                  {art.title}
+                                </h4>
+                                <span className={cn(
+                                  "px-1.5 py-0.5 rounded-md text-[9px] font-bold shrink-0",
+                                  art.status === "PUBLISHED"
+                                    ? "bg-emerald-50 text-emerald-600 dark:bg-emerald-950/25 dark:text-emerald-400"
+                                    : "bg-amber-50 text-amber-600 dark:bg-amber-950/25 dark:text-amber-400"
+                                )}>
+                                  {art.status === "PUBLISHED" ? "已发" : "草稿"}
+                                </span>
+                              </div>
+                              <div className="flex items-center justify-between text-[10px] text-zinc-400 dark:text-zinc-500 font-mono mt-1.5">
+                                <span>随笔</span>
+                                <span>{new Date(art.createdAt).toLocaleDateString()}</span>
+                              </div>
+                            </div>
+                          ))}
+                        </div>
+                      </div>
+                    )}
+                  </>
+                )}
+              </div>
+            </div>
+          </div>
+        </Portal>
+      )}
     </div>
   );
 }

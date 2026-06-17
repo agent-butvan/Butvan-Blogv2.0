@@ -1,13 +1,14 @@
 "use client";
 
 import { useEffect, useState, useMemo } from "react";
+import { useRouter } from "next/navigation";
 import { Plus, Edit, Trash2, Loader2, X, AlertCircle, Eye, EyeOff, FolderTree } from "lucide-react";
 import { cn } from "@heroui/react";
-import { fetchCategories, createCategory, updateCategory, deleteCategory } from "@/lib/article-api";
+import { fetchCategories, createCategory, updateCategory, deleteCategory, fetchArticles as fetchArticlesApi } from "@/lib/article-api";
 import { toast } from "@/lib/toast";
 import ConfirmModal from "@/components/common/ConfirmModal";
 import Portal from "@/components/common/Portal";
-import type { CategoryItem } from "@/types/article";
+import type { CategoryItem, ArticleItem } from "@/types/article";
 
 /**
  * 分类管理工作台
@@ -16,8 +17,43 @@ import type { CategoryItem } from "@/types/article";
  * - 内置新增、编辑弹窗及删除安全约束校验
  */
 export default function CategoriesPage() {
+  const router = useRouter();
   const [categories, setCategories] = useState<CategoryItem[]>([]);
   const [loading, setLoading] = useState(true);
+
+  // 关联文章详情抽屉状态
+  const [selectedCategory, setSelectedCategory] = useState<CategoryItem | null>(null);
+  const [relatedArticles, setRelatedArticles] = useState<ArticleItem[]>([]);
+  const [loadingArticles, setLoadingArticles] = useState(false);
+
+  // 分类过滤出文章和手记
+  const articles = useMemo(() => {
+    return relatedArticles.filter((art) => art.contentType === "ARTICLE");
+  }, [relatedArticles]);
+
+  const notes = useMemo(() => {
+    return relatedArticles.filter((art) => art.contentType === "NOTE");
+  }, [relatedArticles]);
+
+  /** 加载某个分类关联的文章 */
+  const handleViewRelatedArticles = async (cat: CategoryItem) => {
+    setSelectedCategory(cat);
+    setLoadingArticles(true);
+    try {
+      const res = await fetchArticlesApi({
+        page: 1,
+        size: 1000,
+        categoryId: cat.id,
+      });
+      setRelatedArticles(res.records || []);
+    } catch (err) {
+      console.error("加载关联文章失败:", err);
+      toast.error("加载关联文章失败");
+      setRelatedArticles([]);
+    } finally {
+      setLoadingArticles(false);
+    }
+  };
 
   // 弹窗与提交状态
   const [modalOpen, setModalOpen] = useState(false);
@@ -56,7 +92,10 @@ export default function CategoriesPage() {
   };
 
   useEffect(() => {
-    loadCategories();
+    const timer = setTimeout(() => {
+      loadCategories();
+    }, 0);
+    return () => clearTimeout(timer);
   }, []);
 
   /** 过滤出顶级分类列表，用作父分类下拉框选择 (防止多层级过度嵌套，最多支持两级) */
@@ -297,15 +336,20 @@ export default function CategoriesPage() {
                         )}
                       </button>
                     </td>
-                    <td className="px-5 py-3 text-center font-mono font-medium">
-                      <span className={cn(
-                        "inline-flex items-center justify-center px-2 py-0.5 rounded-full text-[10px] font-bold",
-                        cat.articleCount > 0 
-                          ? "bg-primary/10 text-primary dark:bg-primary/20 dark:text-[#b0a2ff]"
-                          : "bg-zinc-100 text-zinc-450 dark:bg-zinc-850 dark:text-zinc-500"
-                      )}>
+                     <td className="px-5 py-3 text-center font-mono font-medium">
+                      <button
+                        type="button"
+                        onClick={() => handleViewRelatedArticles(cat)}
+                        className={cn(
+                          "inline-flex items-center justify-center px-2.5 py-0.5 rounded-full text-[10px] font-bold transition-all duration-200 active:scale-95 cursor-pointer outline-none border-0",
+                          cat.articleCount > 0 
+                            ? "bg-primary/10 text-primary hover:bg-primary/20 dark:bg-primary/20 dark:text-[#b0a2ff] dark:hover:bg-primary/30"
+                            : "bg-zinc-100 text-zinc-400 hover:bg-zinc-200 dark:bg-zinc-850 dark:text-zinc-500 dark:hover:bg-zinc-800"
+                        )}
+                        title={`点击查看「${cat.name}」关联的文章与手记`}
+                      >
                         {cat.articleCount}
-                      </span>
+                      </button>
                     </td>
                     <td className="px-5 py-3 w-28">
                       <div className="flex items-center justify-end gap-1 select-none">
@@ -516,6 +560,139 @@ export default function CategoriesPage() {
         onConfirm={handleDeleteConfirm}
         onCancel={() => setConfirmDeleteId(null)}
       />
+
+      {/* 分类关联文章详情侧滑抽屉 */}
+      {selectedCategory && (
+        <Portal>
+          <div className="fixed inset-0 z-50 overflow-hidden select-none">
+            {/* 遮罩层 */}
+            <div
+              className="absolute inset-0 bg-black/20 dark:bg-black/40 backdrop-blur-xs transition-opacity duration-300 animate-fade-in"
+              onClick={() => setSelectedCategory(null)}
+            />
+            {/* 抽屉面板 */}
+            <div className="absolute inset-y-0 right-0 w-full max-w-sm bg-white/95 dark:bg-zinc-900/95 backdrop-blur-md border-l border-zinc-200/50 dark:border-zinc-800/50 shadow-2xl flex flex-col animate-slide-left">
+              {/* 顶栏 */}
+              <div className="flex items-center justify-between px-5 py-4 border-b border-zinc-150 dark:border-zinc-800/80">
+                <div className="flex flex-col">
+                  <h3 className="font-heading text-sm font-bold text-neutral-dark dark:text-zinc-100 flex items-center gap-2">
+                    <span className="inline-flex h-2 w-2 rounded-full bg-primary animate-pulse" />
+                    分类关联内容
+                  </h3>
+                  <p className="text-[10px] text-zinc-400 dark:text-zinc-500 font-mono mt-0.5">
+                    CATEGORY: {selectedCategory.name} (Slug: {selectedCategory.slug})
+                  </p>
+                </div>
+                <button
+                  onClick={() => setSelectedCategory(null)}
+                  className="p-1 rounded-lg text-zinc-400 hover:text-zinc-600 dark:hover:text-zinc-200 hover:bg-zinc-100 dark:hover:bg-zinc-800 transition-colors cursor-pointer"
+                >
+                  <X size={15} />
+                </button>
+              </div>
+
+              {/* 内容区域 */}
+              <div className="flex-1 overflow-y-auto p-4 space-y-4 custom-scrollbar">
+                {loadingArticles ? (
+                  <div className="flex flex-col items-center justify-center py-20 gap-2 text-zinc-400">
+                    <Loader2 size={20} className="animate-spin text-primary" />
+                    <span className="text-[11px] font-medium tracking-wide">拉取关联文章中...</span>
+                  </div>
+                ) : relatedArticles.length === 0 ? (
+                  <div className="flex flex-col items-center justify-center py-20 text-zinc-400 gap-2">
+                    <AlertCircle size={20} className="text-zinc-350 dark:text-zinc-700" />
+                    <span className="text-[11px]">该分类下暂无关联的内容</span>
+                  </div>
+                ) : (
+                  <>
+                    {/* 关联长文 */}
+                    {articles.length > 0 && (
+                      <div className="space-y-2">
+                        <div className="flex items-center justify-between pb-1 border-b border-zinc-100 dark:border-zinc-800/50">
+                          <span className="text-[11px] font-bold text-zinc-400 dark:text-zinc-500 uppercase tracking-wider">
+                            长篇文章 ({articles.length})
+                          </span>
+                        </div>
+                        <div className="space-y-1.5">
+                          {articles.map((art) => (
+                            <div
+                              key={art.id}
+                              onClick={() => {
+                                router.push(`/articles/${art.id}`);
+                                setSelectedCategory(null);
+                              }}
+                              className="group p-2.5 rounded-xl border border-zinc-100 dark:border-zinc-800/40 bg-zinc-50/50 dark:bg-zinc-950/20 hover:bg-white dark:hover:bg-zinc-900 hover:border-primary/20 dark:hover:border-primary/20 hover:shadow-sm transition-all duration-200 cursor-pointer"
+                            >
+                              <div className="flex items-start justify-between gap-2">
+                                <h4 className="text-xs font-bold text-zinc-800 dark:text-zinc-200 group-hover:text-primary transition-colors line-clamp-1 flex-1 leading-normal">
+                                  {art.title}
+                                </h4>
+                                <span className={cn(
+                                  "px-1.5 py-0.5 rounded-md text-[9px] font-bold shrink-0",
+                                  art.status === "PUBLISHED"
+                                    ? "bg-emerald-50 text-emerald-600 dark:bg-emerald-950/25 dark:text-emerald-400"
+                                    : "bg-amber-50 text-amber-600 dark:bg-amber-950/25 dark:text-amber-400"
+                                )}>
+                                  {art.status === "PUBLISHED" ? "已发" : "草稿"}
+                                </span>
+                              </div>
+                              <div className="flex items-center justify-between text-[10px] text-zinc-400 dark:text-zinc-500 font-mono mt-1.5">
+                                <span>{art.categoryName || "未分类"}</span>
+                                <span>{new Date(art.createdAt).toLocaleDateString()}</span>
+                              </div>
+                            </div>
+                          ))}
+                        </div>
+                      </div>
+                    )}
+
+                    {/* 关联手记 */}
+                    {notes.length > 0 && (
+                      <div className="space-y-2">
+                        <div className="flex items-center justify-between pb-1 border-b border-zinc-100 dark:border-zinc-800/50">
+                          <span className="text-[11px] font-bold text-zinc-400 dark:text-zinc-500 uppercase tracking-wider">
+                            手记随笔 ({notes.length})
+                          </span>
+                        </div>
+                        <div className="space-y-1.5">
+                          {notes.map((art) => (
+                            <div
+                              key={art.id}
+                              onClick={() => {
+                                router.push(`/articles/${art.id}`);
+                                setSelectedCategory(null);
+                              }}
+                              className="group p-2.5 rounded-xl border border-zinc-100 dark:border-zinc-800/40 bg-zinc-50/50 dark:bg-zinc-950/20 hover:bg-white dark:hover:bg-zinc-900 hover:border-primary/20 dark:hover:border-primary/20 hover:shadow-sm transition-all duration-200 cursor-pointer"
+                            >
+                              <div className="flex items-start justify-between gap-2">
+                                <h4 className="text-xs font-bold text-zinc-800 dark:text-zinc-200 group-hover:text-primary transition-colors line-clamp-1 flex-1 leading-normal">
+                                  {art.title}
+                                </h4>
+                                <span className={cn(
+                                  "px-1.5 py-0.5 rounded-md text-[9px] font-bold shrink-0",
+                                  art.status === "PUBLISHED"
+                                    ? "bg-emerald-50 text-emerald-600 dark:bg-emerald-950/25 dark:text-emerald-400"
+                                    : "bg-amber-50 text-amber-600 dark:bg-amber-950/25 dark:text-amber-400"
+                                )}>
+                                  {art.status === "PUBLISHED" ? "已发" : "草稿"}
+                                </span>
+                              </div>
+                              <div className="flex items-center justify-between text-[10px] text-zinc-400 dark:text-zinc-500 font-mono mt-1.5">
+                                <span>随笔</span>
+                                <span>{new Date(art.createdAt).toLocaleDateString()}</span>
+                              </div>
+                            </div>
+                          ))}
+                        </div>
+                      </div>
+                    )}
+                  </>
+                )}
+              </div>
+            </div>
+          </div>
+        </Portal>
+      )}
     </div>
   );
 }
