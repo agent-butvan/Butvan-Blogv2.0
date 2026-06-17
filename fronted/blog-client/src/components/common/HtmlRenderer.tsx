@@ -1,29 +1,48 @@
 'use client'
 
 import React, { useState, useEffect } from 'react'
+import { marked } from 'marked'
 import MarkdownCodeBlock from './MarkdownCodeBlock'
 
 interface HtmlRendererProps {
   html: string
 }
 
+// 基础 Markdown 解析配置
+marked.setOptions({
+  gfm: true,
+  breaks: true
+})
+
 /**
  * 通用 HTML 解析与组件拦截渲染器
  * 
- * 主要解决：
- * 1. 富文本 HTML 字符串的 React 组件化替换（如 pre/code 转 MarkdownCodeBlock）
- * 2. 避免客户端直接使用原生 DOM API 破坏 React 虚拟 DOM 结构
- * 3. 预留极佳的扩展性：如果未来需要拦截 img（做 Lightbox 灯箱大图）、a（拦截外链跳出提示）等，直接在此组件内添加拦截逻辑即可
- * 4. 兼容 SSR（服务端渲染）：首屏直接通过 dangerouslySetInnerHTML 保障 SEO，客户端加载后自动使用 DOMParser 映射为 React 树
+ * 机制：
+ * 1. 同步使用 marked 将输入的 Markdown 源文本转换为标准 HTML 富文本。
+ * 2. 在 SSR（服务端渲染）和首屏渲染期间，直接通过 dangerouslySetInnerHTML 输出标准的 HTML，这保证了极速的首屏视觉体验，并使得标题、段落、引用、列表等获得 globals.css 对应的 article-content-prose 样式。
+ * 3. 客户端激活（useClient）后，使用浏览器的 DOMParser 递归解析 HTML 树并构建 React Virtual DOM 树。
+ * 4. 在递归过程中精准拦截 <pre><code> 节点，由定制好的 React 组件 MarkdownCodeBlock 来接管，从而不破坏 React 本身的生命周期与组件状态。
  */
 export default function HtmlRenderer({ html }: HtmlRendererProps) {
   const [reactContent, setReactContent] = useState<React.ReactNode>(null)
+
+  // 同步将 Markdown / 原始 HTML 转换为标准的 HTML 富文本，保证 SSR & 客户端输入一致
+  const cleanHtml = React.useMemo(() => {
+    const rawContent = html ?? ''
+    try {
+      // 如果已经是 Markdown 或者混杂的 HTML，先使用 marked 解析成标准 HTML
+      return marked.parse(rawContent) as string
+    } catch (e) {
+      console.error('marked.parse error:', e)
+      return rawContent
+    }
+  }, [html])
 
   useEffect(() => {
     if (typeof window === 'undefined') return
 
     const parser = new DOMParser()
-    const doc = parser.parseFromString(html, 'text/html')
+    const doc = parser.parseFromString(cleanHtml, 'text/html')
 
     /**
      * 递归转换 DOM 节点为 React 元素
@@ -108,14 +127,14 @@ export default function HtmlRenderer({ html }: HtmlRendererProps) {
     const elements = childNodes.map((node, idx) => convertNode(node, idx))
     
     setReactContent(<React.Fragment>{elements}</React.Fragment>)
-  }, [html])
+  }, [cleanHtml])
 
-  // 未完成客户端解析时（即 SSR/首屏挂载前），回退到原始 HTML 以支持 SEO 和瞬间呈现
+  // 未完成客户端激活时，回退到原始 HTML 以支持 SEO 和瞬间呈现（带 globals.css 正文排版）
   if (!reactContent) {
     return (
       <div 
         className="article-content-prose max-w-none"
-        dangerouslySetInnerHTML={{ __html: html }}
+        dangerouslySetInnerHTML={{ __html: cleanHtml }}
       />
     )
   }
@@ -126,3 +145,4 @@ export default function HtmlRenderer({ html }: HtmlRendererProps) {
     </div>
   )
 }
+
