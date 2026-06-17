@@ -597,7 +597,7 @@ export default function ArticlesPage() {
 
                     {/* 管理操作 */}
                     <td className="px-5 py-3.5 w-24">
-                      <div className="flex items-center justify-end gap-0.5 select-none opacity-0 group-hover:opacity-100 transition-opacity duration-200">
+                      <div className="flex items-center justify-end gap-0.5 select-none">
                         <button
                           onClick={() => router.push(`/articles/${article.id}`)}
                           className="rounded-lg p-1.5 text-zinc-400 dark:text-zinc-500 hover:bg-zinc-100 dark:hover:bg-zinc-800 hover:text-primary transition-all cursor-pointer outline-none border-0"
