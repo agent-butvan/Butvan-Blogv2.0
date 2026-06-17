@@ -3,9 +3,8 @@
 import { useState } from "react";
 import { useRouter } from "next/navigation";
 import ArticleForm from "@/components/forms/ArticleForm";
-import apiClient from "@/lib/api";
-import type { ApiResponse } from "@/types/common";
-import type { ArticleSaveDTO, ArticleDetail } from "@/types/article";
+import { createArticle } from "@/lib/article-api";
+import type { ArticleSaveDTO } from "@/types/article";
 
 /**
  * 新建文章页面
@@ -24,8 +23,7 @@ export default function NewArticlePage() {
     setSuccessMsg(null);
 
     try {
-      const res = await apiClient.post<ApiResponse<ArticleDetail>>("/articles", data);
-      const created = res.data?.data;
+      const created = await createArticle(data);
 
       const msg =
         data.status === "PUBLISHED" ? "文章已发布！正在跳转编辑页..." : "草稿已保存！正在跳转编辑页...";

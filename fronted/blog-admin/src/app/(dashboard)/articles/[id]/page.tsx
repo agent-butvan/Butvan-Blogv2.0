@@ -4,8 +4,7 @@ import { useEffect, useState } from "react";
 import { useParams, useRouter } from "next/navigation";
 import { cn } from "@heroui/react";
 import ArticleForm from "@/components/forms/ArticleForm";
-import apiClient from "@/lib/api";
-import type { ApiResponse } from "@/types/common";
+import { fetchArticleDetail, updateArticle } from "@/lib/article-api";
 import type { ArticleDetail, ArticleSaveDTO } from "@/types/article";
 import { Loader2 } from "lucide-react";
 
@@ -27,10 +26,9 @@ export default function EditArticlePage() {
 
   // 加载文章数据
   useEffect(() => {
-    apiClient
-      .get<ApiResponse<ArticleDetail>>(`/articles/${id}`)
-      .then((res) => {
-        if (res.data?.data) setArticle(res.data.data);
+    fetchArticleDetail(id)
+      .then((data) => {
+        if (data) setArticle(data);
         else setError("文章不存在");
       })
       .catch(() => setError("加载文章数据失败"))
@@ -44,7 +42,7 @@ export default function EditArticlePage() {
     setSuccessMsg(null);
 
     try {
-      await apiClient.put<ApiResponse<ArticleDetail>>(`/articles/${id}`, data);
+      await updateArticle(id, data);
       setSuccessMsg(data.status === "PUBLISHED" ? "文章已更新并发布！" : "文章已更新！");
       // 更新本地缓存
       setArticle((prev) =>

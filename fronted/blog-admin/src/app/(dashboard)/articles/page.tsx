@@ -18,9 +18,14 @@ import {
   X
 } from "lucide-react";
 import { cn } from "@heroui/react";
-import apiClient from "@/lib/api";
+import {
+  fetchArticles as fetchArticlesApi,
+  fetchArticleDetail,
+  updateArticle,
+  deleteArticle
+} from "@/lib/article-api";
 import ConfirmModal from "@/components/common/ConfirmModal";
-import type { ApiResponse, PageResult } from "@/types/common";
+import type { PageResult } from "@/types/common";
 import type { ArticleItem } from "@/types/article";
 
 /**
@@ -57,18 +62,14 @@ export default function ArticlesPage() {
   const fetchArticles = useCallback(async () => {
     setLoading(true);
     try {
-      const res = await apiClient.get<ApiResponse<PageResult<ArticleItem>>>("/articles", {
-        params: {
-          page,
-          size: pageSize,
-          status: statusFilter || undefined,
-          keyword: keyword || undefined,
-        },
+      const data = await fetchArticlesApi({
+        page,
+        size: pageSize,
+        status: (statusFilter || undefined) as any,
+        keyword: keyword || undefined,
       });
-      if (res.data?.data) {
-        setArticles(res.data.data.records);
-        setTotal(res.data.data.total);
-      }
+      setArticles(data.records);
+      setTotal(data.total);
     } catch {
       // 后端未就绪，展示空列表
       setArticles([]);
@@ -106,9 +107,8 @@ export default function ArticlesPage() {
     setQuickUpdateId(item.id);
     try {
       // 1. 获取完整详情以确保数据完整，绕过 DTO 非空校验限制
-      const detailRes = await apiClient.get<ApiResponse<any>>(`/articles/${item.id}`);
-      if (detailRes.data?.data) {
-        const fullDetail = detailRes.data.data;
+      const fullDetail = await fetchArticleDetail(item.id);
+      if (fullDetail) {
         // 2. 合并修改后的属性
         const updatedData = {
           title: fullDetail.title,
@@ -131,7 +131,7 @@ export default function ArticlesPage() {
           seoKeywords: fullDetail.seoKeywords,
         };
         // 3. 提交更新并刷新列表
-        await apiClient.put(`/articles/${item.id}`, updatedData);
+        await updateArticle(item.id, updatedData);
         fetchArticles();
       }
     } catch (err) {
@@ -149,14 +149,13 @@ export default function ArticlesPage() {
     try {
       await Promise.all(
         checkedIds.map(async (id) => {
-          const detailRes = await apiClient.get<ApiResponse<any>>(`/articles/${id}`);
-          if (detailRes.data?.data) {
-            const fullDetail = detailRes.data.data;
+          const fullDetail = await fetchArticleDetail(id);
+          if (fullDetail) {
             const updatedData = {
               ...fullDetail,
               status: publish ? "PUBLISHED" : "DRAFT"
             };
-            await apiClient.put(`/articles/${id}`, updatedData);
+            await updateArticle(id, updatedData);
           }
         })
       );
@@ -190,10 +189,10 @@ export default function ArticlesPage() {
     setActionLoading(true);
     try {
       if (isBulkDelete) {
-        await Promise.all(checkedIds.map((id) => apiClient.delete(`/articles/${id}`)));
+        await Promise.all(checkedIds.map((id) => deleteArticle(id)));
         setCheckedIds([]);
       } else if (confirmDeleteId) {
-        await apiClient.delete(`/articles/${confirmDeleteId}`);
+        await deleteArticle(confirmDeleteId);
         setCheckedIds((prev) => prev.filter((id) => id !== confirmDeleteId));
       }
       setConfirmDeleteId(null);

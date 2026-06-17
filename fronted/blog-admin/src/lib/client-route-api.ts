@@ -1,5 +1,4 @@
-import apiClient from './api'
-import type { ApiResponse } from '@/types/common'
+import { fetchArticlesSimple as getArticlesSimple, fetchCategoriesSimple as getCategoriesSimple } from './article-api'
 import type { ClientRoute, ArticleSimple, CategorySimple } from '@/types/route'
 
 /**
@@ -33,26 +32,12 @@ export async function fetchClientRoutes(): Promise<ClientRoute[]> {
 
 /** 获取已发布文章的简化列表（仅 id / title / slug，供下拉框选择） */
 export async function fetchArticlesSimple(): Promise<ArticleSimple[]> {
-  try {
-    const res = await apiClient.get<ApiResponse<ArticleSimple[]>>('/articles/simple')
-    return res.data?.data ?? []
-  } catch {
-    // 公开接口可能不可用，返回空数组不阻断 UI
-    console.warn('获取文章简化列表失败，下拉框将为空')
-    return []
-  }
+  return getArticlesSimple();
 }
 
 // ==================== 分类简化列表 ====================
 
 /** 获取可见分类的简化列表（仅 id / name / slug，供下拉框选择） */
 export async function fetchCategoriesSimple(): Promise<CategorySimple[]> {
-  try {
-    const res = await apiClient.get<ApiResponse<CategorySimple[]>>('/categories/simple')
-    return res.data?.data ?? []
-  } catch {
-    // 公开接口可能不可用，返回空数组不阻断 UI
-    console.warn('获取分类简化列表失败，下拉框将为空')
-    return []
-  }
+  return getCategoriesSimple();
 }

@@ -21,8 +21,7 @@ import {
   MessageSquare
 } from "lucide-react";
 import MarkdownEditor from "@/components/editor/MarkdownEditor";
-import apiClient from "@/lib/api";
-import type { ApiResponse } from "@/types/common";
+import { fetchCategoriesSimple, fetchTags, fetchTagsSimple } from "@/lib/article-api";
 import type { ArticleSaveDTO } from "@/types/article";
 
 export interface ArticleFormProps {
@@ -103,10 +102,10 @@ export default function ArticleForm({ initialData, onSave, saving = false }: Art
 
   useEffect(() => {
     // 拉取分类
-    apiClient.get<ApiResponse<any[]>>("/categories/simple")
-      .then((res) => {
-        if (res.data?.data && Array.isArray(res.data.data)) {
-          setCategories(res.data.data);
+    fetchCategoriesSimple()
+      .then((data) => {
+        if (data && Array.isArray(data)) {
+          setCategories(data);
         } else {
           setCategories(MOCK_CATEGORIES);
         }
@@ -116,17 +115,17 @@ export default function ArticleForm({ initialData, onSave, saving = false }: Art
       });
 
     // 拉取标签
-    apiClient.get<ApiResponse<any>>("/tags")
-      .then((res) => {
-        const list = res.data?.data;
+    fetchTags()
+      .then((data) => {
+        const list = data;
         if (Array.isArray(list)) {
           setTags(list);
         } else if (list && Array.isArray(list.records)) {
           setTags(list.records);
         } else {
-          apiClient.get<ApiResponse<any[]>>("/tags/simple")
-            .then(r => {
-              if (Array.isArray(r.data?.data)) setTags(r.data.data);
+          fetchTagsSimple()
+            .then(simpleList => {
+              if (Array.isArray(simpleList)) setTags(simpleList);
               else setTags(MOCK_TAGS);
             })
             .catch(() => setTags(MOCK_TAGS));
