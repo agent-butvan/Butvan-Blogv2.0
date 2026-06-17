@@ -241,6 +241,31 @@ export default function ArticlesPage() {
     );
   };
 
+  // 访问权限颜色 Tag
+  const visibilityBadge = (visibility: string) => {
+    const map: Record<string, string> = {
+      PUBLIC: "bg-emerald-50 text-emerald-600 dark:bg-emerald-950/25 dark:text-emerald-400 border-emerald-200/40 dark:border-emerald-800/40",
+      PRIVATE: "bg-rose-50 text-rose-600 dark:bg-rose-950/25 dark:text-rose-400 border-rose-200/40 dark:border-rose-900/40",
+      PASSWORD_PROTECTED: "bg-purple-50 text-purple-600 dark:bg-purple-950/25 dark:text-purple-400 border-purple-200/40 dark:border-purple-800/40",
+    };
+    const label: Record<string, string> = {
+      PUBLIC: "公开",
+      PRIVATE: "私密",
+      PASSWORD_PROTECTED: "密码保护",
+    };
+
+    return (
+      <span
+        className={cn(
+          "inline-flex text-[10px] px-2 py-0.5 rounded-lg font-bold border select-none transition-all items-center justify-center",
+          map[visibility] || "bg-zinc-50 text-zinc-500 border-zinc-200"
+        )}
+      >
+        {label[visibility] || visibility}
+      </span>
+    );
+  };
+
   // 数字分页按钮渲染
   const renderPaginationButtons = () => {
     const buttons = [];
@@ -372,7 +397,7 @@ export default function ArticlesPage() {
 
       {/* 文章表格 - 极简精致大厂排版 */}
       <div className="overflow-x-auto rounded-2xl border border-zinc-200/60 dark:border-zinc-850 bg-white dark:bg-zinc-950 shadow-xs">
-        <table className="w-full text-xs text-left border-collapse min-w-[800px]">
+        <table className="w-full text-xs text-left border-collapse min-w-[900px]">
           <thead>
             <tr className="border-b border-zinc-150 dark:border-zinc-850 bg-zinc-50/70 dark:bg-zinc-900/40 text-[10px] font-bold text-zinc-400 dark:text-zinc-500 uppercase tracking-widest select-none">
               <th className="px-4 py-3 w-10 text-center">
@@ -386,11 +411,13 @@ export default function ArticlesPage() {
                   className="w-3.5 h-3.5 rounded border-zinc-350 dark:border-zinc-800 text-primary focus:ring-primary/20 accent-primary cursor-pointer"
                 />
               </th>
-              <th className="px-5 py-3">文章标题</th>
-              <th className="px-5 py-3 w-32">所属分类</th>
-              <th className="px-5 py-3 w-28 text-center">发布状态</th>
-              <th className="px-5 py-3 w-40 text-center">属性配置</th>
-              <th className="px-5 py-3 w-20 text-center">浏览数</th>
+              <th className="px-5 py-3 w-80">文章标题</th>
+              <th className="px-5 py-3 w-28">所属分类</th>
+              <th className="px-5 py-3 w-24 text-center">访问权限</th>
+              <th className="px-5 py-3 w-24 text-center">发布状态</th>
+              <th className="px-5 py-3 w-36 text-center">属性配置</th>
+              <th className="px-5 py-3 w-16 text-center">浏览</th>
+              <th className="px-5 py-3 w-16 text-center">评论</th>
               <th className="px-5 py-3 w-32">更新日期</th>
               <th className="px-5 py-3 w-24 text-right">管理操作</th>
             </tr>
@@ -398,7 +425,7 @@ export default function ArticlesPage() {
           <tbody className="divide-y divide-zinc-100 dark:divide-zinc-850 text-zinc-700 dark:text-zinc-350">
             {loading ? (
               <tr>
-                <td colSpan={8} className="px-5 py-16 text-center select-none">
+                <td colSpan={10} className="px-5 py-16 text-center select-none">
                   <div className="flex flex-col items-center justify-center gap-2 text-zinc-400">
                     <Loader2 size={20} className="animate-spin text-zinc-350 dark:text-zinc-650" />
                     <span>加载文章列表中...</span>
@@ -407,7 +434,7 @@ export default function ArticlesPage() {
               </tr>
             ) : articles.length === 0 ? (
               <tr>
-                <td colSpan={8} className="px-5 py-16 text-center text-zinc-400 select-none">
+                <td colSpan={10} className="px-5 py-16 text-center text-zinc-400 select-none">
                   <span>暂无文章，开始</span>
                   <Link href="/articles/new" className="text-primary font-bold hover:underline mx-1">写一篇新文章</Link>
                   <span>吧！</span>
@@ -429,7 +456,7 @@ export default function ArticlesPage() {
                     )}
                   >
                     {/* 复选单选框 */}
-                    <td className="px-4 py-3 text-center">
+                    <td className="px-4 py-3 text-center w-10">
                       <input
                         type="checkbox"
                         checked={isChecked}
@@ -439,9 +466,9 @@ export default function ArticlesPage() {
                     </td>
 
                     {/* 标题（包含链接跳转、火苗标识） */}
-                    <td className="px-5 py-3">
-                      <div className="flex items-center gap-1.5">
-                        <div className="font-semibold text-neutral-dark dark:text-zinc-150 truncate max-w-sm">
+                    <td className="px-5 py-3 w-80">
+                      <div className="flex items-center gap-1.5 max-w-[280px]">
+                        <div className="font-semibold text-neutral-dark dark:text-zinc-150 truncate max-w-[200px]" title={article.title}>
                           {article.title}
                         </div>
                         
@@ -457,24 +484,24 @@ export default function ArticlesPage() {
 
                         {/* 直接访问前台链接图标 */}
                         <a
-                          href={`http://localhost:3000/posts/${article.slug || article.id}`}
+                          href={`http://localhost:3000/article/${article.slug || article.id}`}
                           target="_blank"
                           rel="noreferrer"
-                          className="opacity-0 group-hover:opacity-100 text-zinc-400 dark:text-zinc-500 hover:text-primary transition-opacity"
+                          className="opacity-0 group-hover:opacity-100 text-zinc-400 dark:text-zinc-500 hover:text-primary transition-opacity shrink-0"
                           title="在新标签页预览前台文章"
                         >
                           <ExternalLink size={12} />
                         </a>
                       </div>
                       {article.summary && (
-                        <div className="text-[10px] text-zinc-400 dark:text-zinc-500 truncate max-w-xs mt-0.5 font-normal">
+                        <div className="text-[10px] text-zinc-400 dark:text-zinc-500 truncate max-w-[260px] mt-0.5 font-normal" title={article.summary}>
                           {article.summary}
                         </div>
                       )}
                     </td>
 
                     {/* 所属分类 */}
-                    <td className="px-5 py-3">
+                    <td className="px-5 py-3 w-28">
                       {article.categoryName ? (
                         <span className="px-2 py-0.5 rounded-lg text-[10px] font-bold bg-zinc-100/60 dark:bg-zinc-900/60 border border-zinc-200/40 dark:border-zinc-800/60 text-zinc-600 dark:text-zinc-400">
                           {article.categoryName}
@@ -484,14 +511,21 @@ export default function ArticlesPage() {
                       )}
                     </td>
 
+                    {/* 访问权限 */}
+                    <td className="px-5 py-3 w-24 text-center">
+                      {visibilityBadge(article.visibility)}
+                    </td>
+
                     {/* 发布状态 (含快捷切换) */}
-                    <td className="px-5 py-3 text-center flex justify-center items-center h-full">
-                      {statusBadge(article)}
+                    <td className="px-5 py-3 w-24 text-center">
+                      <div className="flex justify-center items-center h-full">
+                        {statusBadge(article)}
+                      </div>
                     </td>
 
                     {/* 置顶 & 推荐属性（支持快捷行内一键修改） */}
-                    <td className="px-5 py-3 text-center">
-                      <div className="flex items-center justify-center gap-2.5">
+                    <td className="px-5 py-3 w-36 text-center">
+                      <div className="flex items-center justify-center gap-2">
                         {/* 置顶属性 */}
                         <button
                           type="button"
@@ -528,13 +562,18 @@ export default function ArticlesPage() {
                       </div>
                     </td>
 
-                    {/* 浏览量数 */}
-                    <td className="px-5 py-3 text-center text-zinc-550 dark:text-zinc-400 font-mono font-medium">
+                    {/* 浏览数 */}
+                    <td className="px-5 py-3 w-16 text-center text-zinc-550 dark:text-zinc-400 font-mono font-medium">
                       {article.viewCount}
                     </td>
 
+                    {/* 评论数 */}
+                    <td className="px-5 py-3 w-16 text-center text-zinc-550 dark:text-zinc-400 font-mono font-medium">
+                      {article.commentCount}
+                    </td>
+
                     {/* 更新日期 */}
-                    <td className="px-5 py-3 text-zinc-500 dark:text-zinc-500 font-mono text-[10px]">
+                    <td className="px-5 py-3 w-32 text-zinc-500 dark:text-zinc-500 font-mono text-[10px]">
                       {article.updatedAt
                         ? new Date(article.updatedAt).toLocaleString("zh-CN", {
                             year: "numeric",
@@ -548,7 +587,7 @@ export default function ArticlesPage() {
                     </td>
 
                     {/* 操作（编辑、删除） */}
-                    <td className="px-5 py-3">
+                    <td className="px-5 py-3 w-24">
                       <div className="flex items-center justify-end gap-1 select-none">
                         <button
                           onClick={() => router.push(`/articles/${article.id}`)}
