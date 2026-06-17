@@ -1,0 +1,213 @@
+package com.butvan.blog.service.service.impl;
+
+import com.butvan.blog.common.exception.BusinessException;
+import com.butvan.blog.pojo.dto.comment.CommentCreateDTO;
+import com.butvan.blog.pojo.entity.Article;
+import com.butvan.blog.pojo.entity.Comment;
+import com.butvan.blog.pojo.vo.comment.CommentVO;
+import com.butvan.blog.service.repository.ArticleRepository;
+import com.butvan.blog.service.repository.CommentRepository;
+import com.butvan.blog.service.service.CommentService;
+import lombok.RequiredArgsConstructor;
+import lombok.extern.slf4j.Slf4j;
+import org.springframework.stereotype.Service;
+import org.springframework.transaction.annotation.Transactional;
+import java.security.MessageDigest;
+import java.util.ArrayList;
+import java.util.List;
+import java.util.Map;
+import java.util.stream.Collectors;
+
+/**
+ * 评论业务服务层接口实现类
+ */
+@Service
+@RequiredArgsConstructor
+@Slf4j
+public class CommentServiceImpl implements CommentService {
+
+    private final CommentRepository commentRepository;
+    private final ArticleRepository articleRepository;
+
+    @Override
+    public List<CommentVO> listCommentsByArticleId(Long articleId) {
+        log.info("查询文章评论树: articleId={}", articleId);
+        
+        // 1. 查询全部已审核通过 (APPROVED) 的评论
+        List<Comment> comments = commentRepository.findByArticleIdAndStatusOrderByCreatedAtAsc(articleId, "APPROVED");
+        
+        // 2. 将实体列表批量转化为 VO，并利用 Map 进行缓存检索
+        Map<Long, CommentVO> voMap = comments.stream()
+                .map(c -> {
+                    String nickname = c.getUser() != null ? c.getUser().getNickname() : c.getVisitorName();
+                    String avatarUrl = c.getUser() != null ? c.getUser().getAvatarUrl() : getGravatarUrl(c.getVisitorEmail());
+                    return CommentVO.builder()
+                            .id(c.getId())
+                            .articleId(c.getArticle().getId())
+                            .parentId(c.getParentId())
+                            .userId(c.getUser() != null ? c.getUser().getId() : null)
+                            .nickname(nickname)
+                            .avatarUrl(avatarUrl)
+                            .visitorWebsite(c.getVisitorWebsite())
+                            .content(c.getContent())
+                            .likeCount(c.getLikeCount())
+                            .isAuthorReplied(c.getIsAuthorReplied())
+                            .createdAt(c.getCreatedAt())
+                            .replies(new ArrayList<>())
+                            .build();
+                })
+                .collect(Collectors.toMap(CommentVO::getId, vo -> vo));
+
+        List<CommentVO> rootComments = new ArrayList<>();
+
+        // 3. 构建大厂经典清晰的两级树形回复盖楼结构 (顶级评论为一级，子孙回复全部放在顶级评论的 replies 列表里)
+        for (Comment c : comments) {
+            CommentVO vo = voMap.get(c.getId());
+            if (c.getParentId() == null) {
+                rootComments.add(vo);
+            } else {
+                CommentVO parentVO = voMap.get(c.getParentId());
+                if (parentVO != null) {
+                    // 设置被回复人的昵称
+                    vo.setReplyTo(parentVO.getNickname());
+                    // 沿着 parent 链往上追溯，找到最顶层的顶级评论
+                    CommentVO rootVO = findRootComment(vo, voMap);
+                    if (rootVO != null) {
+                        rootVO.getReplies().add(vo);
+                    } else {
+                        rootComments.add(vo); // 兜底处理
+                    }
+                } else {
+                    rootComments.add(vo); // 父级丢失，则升级为顶级评论
+                }
+            }
+        }
+
+        return rootComments;
+    }
+
+    @Transactional
+    @Override
+    public CommentVO createComment(Long articleId, CommentCreateDTO dto, String ipAddress, String userAgent) {
+        log.info("提交评论: articleId={}, visitorName={}", articleId, dto.getVisitorName());
+
+        // 1. 检验文章及是否开放评论状态
+        Article article = articleRepository.findById(articleId)
+                .orElseThrow(() -> new BusinessException("目标文章不存在"));
+        
+        if (!Boolean.TRUE.equals(article.getIsAllowComment())) {
+            throw new BusinessException("该文章目前已关闭评论模块，无法发布评论");
+        }
+
+        // 2. 字段空校验
+        if (dto.getVisitorName() == null || dto.getVisitorName().trim().isEmpty()) {
+            throw new BusinessException("评论昵称不能为空");
+        }
+        if (dto.getVisitorEmail() == null || dto.getVisitorEmail().trim().isEmpty()) {
+            throw new BusinessException("电子邮箱不能为空");
+        }
+        if (dto.getContent() == null || dto.getContent().trim().isEmpty()) {
+            throw new BusinessException("评论正文内容不能为空");
+        }
+
+        // 3. 校验 parentId 关联父评论合法性
+        if (dto.getParentId() != null) {
+            commentRepository.findById(dto.getParentId())
+                    .orElseThrow(() -> new BusinessException("被回复的目标评论不存在或已被删除"));
+        }
+
+        // 4. 构建实体类并持久化保存
+        Comment comment = Comment.builder()
+                .article(article)
+                .parentId(dto.getParentId())
+                .visitorName(dto.getVisitorName().trim())
+                .visitorEmail(dto.getVisitorEmail().trim())
+                .visitorWebsite(dto.getVisitorWebsite() != null ? dto.getVisitorWebsite().trim() : null)
+                .content(dto.getContent().trim())
+                .status("APPROVED") // 默认设置为 APPROVED 直接前台可见
+                .ipAddress(ipAddress)
+                .userAgent(userAgent)
+                .likeCount(0)
+                .isAuthorReplied(false) // 默认为 false，若未来后台登录状态下管理员回复，可在保存时设置为 true
+                .build();
+
+        Comment saved = commentRepository.save(comment);
+
+        // 5. 更新文章表的 comment_count 冗余计数字段
+        long approvedCount = commentRepository.countByArticleIdAndStatus(articleId, "APPROVED");
+        article.setCommentCount(approvedCount);
+        articleRepository.save(article);
+
+        // 6. 转换构建为当前最新保存的评论 VO 返回对象
+        String avatarUrl = getGravatarUrl(saved.getVisitorEmail());
+        String replyToName = null;
+        if (saved.getParentId() != null) {
+            Comment parent = commentRepository.findById(saved.getParentId()).orElse(null);
+            if (parent != null) {
+                replyToName = parent.getUser() != null ? parent.getUser().getNickname() : parent.getVisitorName();
+            }
+        }
+
+        return CommentVO.builder()
+                .id(saved.getId())
+                .articleId(saved.getArticle().getId())
+                .parentId(saved.getParentId())
+                .nickname(saved.getVisitorName())
+                .avatarUrl(avatarUrl)
+                .visitorWebsite(saved.getVisitorWebsite())
+                .content(saved.getContent())
+                .likeCount(saved.getLikeCount())
+                .isAuthorReplied(saved.getIsAuthorReplied())
+                .createdAt(saved.getCreatedAt())
+                .replyTo(replyToName)
+                .replies(new ArrayList<>())
+                .build();
+    }
+
+    @Transactional
+    @Override
+    public void likeComment(Long commentId) {
+        log.info("评论被点赞: id={}", commentId);
+        Comment comment = commentRepository.findById(commentId)
+                .orElseThrow(() -> new BusinessException("目标点赞评论不存在"));
+        comment.setLikeCount(comment.getLikeCount() + 1);
+        commentRepository.save(comment);
+    }
+
+    /**
+     * 辅助算法：迭代追溯最顶级的评论
+     */
+    private CommentVO findRootComment(CommentVO child, Map<Long, CommentVO> voMap) {
+        CommentVO current = child;
+        while (current.getParentId() != null) {
+            CommentVO parent = voMap.get(current.getParentId());
+            if (parent == null) {
+                break;
+            }
+            current = parent;
+        }
+        return current;
+    }
+
+    /**
+     * 辅助算法：对邮箱地址作 MD5 处理拉取 Gravatar 随机但固定的极客风头像
+     */
+    private String getGravatarUrl(String email) {
+        if (email == null || email.trim().isEmpty()) {
+            return "https://www.gravatar.com/avatar/00000000000000000000000000000000?d=mp&f=y";
+        }
+        try {
+            MessageDigest md = MessageDigest.getInstance("MD5");
+            byte[] array = md.digest(email.trim().toLowerCase().getBytes("UTF-8"));
+            StringBuilder sb = new StringBuilder();
+            for (byte b : array) {
+                sb.append(Integer.toHexString((b & 0xFF) | 0x100).substring(1, 3));
+            }
+            // 使用 identicon 生成极富美感的对称像素风格头像，极佳契合博客整体设计
+            return "https://www.gravatar.com/avatar/" + sb.toString() + "?d=identicon";
+        } catch (Exception e) {
+            log.error("Gravatar 头像哈希解析失败: {}", e.getMessage());
+            return "https://www.gravatar.com/avatar/00000000000000000000000000000000?d=mp&f=y";
+        }
+    }
+}

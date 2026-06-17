@@ -24,6 +24,7 @@ import { Button, Spinner } from '@heroui/react'
 import Navbar from '@/components/common/Navbar'
 import SidebarWidget from '@/components/common/SidebarWidget'
 import HtmlRenderer from '@/components/common/HtmlRenderer'
+import CommentSection from '@/components/comment/CommentSection'
 import { MOCK_ARTICLES } from '@/lib/mock-data'
 import { fetchProfile } from '@/lib/profile'
 import type { ProfileVO } from '@/types/profile'
@@ -513,6 +514,9 @@ export default function ArticleDetailPage() {
                   </div>
                 )}
               </nav>
+
+              {/* 5. 评论区交流讨论 */}
+              <CommentSection articleId={article.id} isAllowComment={article.isAllowComment} />
 
             </article>
 

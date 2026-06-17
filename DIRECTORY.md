@@ -230,6 +230,7 @@ Butvan Blog2.0/                                    # 📦 项目根目录
     │       └── vo/                                 #       视图对象（返回前端展示）
     │           ├── article/                        #         文章相关：ArticleDetailVO, ArticleListVO
     │           ├── home/                           #         首页相关：HomeSceneVO, HotspotVO
+    │           ├── comment/                        #         评论相关：CommentVO
     │           └── common/                         #         通用：PageVO, StatisticsVO
     │
     └── blog-service/                               #   📦 主业务服务模块（启动入口 + 业务逻辑）
