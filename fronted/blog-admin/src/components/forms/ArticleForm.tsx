@@ -1,6 +1,7 @@
 "use client";
 
 import { useState, useEffect, type FormEvent } from "react";
+import { createPortal } from "react-dom";
 import { useRouter } from "next/navigation";
 import { cn } from "@heroui/react";
 import {
@@ -60,6 +61,11 @@ export default function ArticleForm({ initialData, onSave, saving = false }: Art
 
   // 1. UI 视图交互状态
   const [showMeta, setShowMeta] = useState(false);
+  const [mounted, setMounted] = useState(false);
+
+  useEffect(() => {
+    setMounted(true);
+  }, []);
 
   // 2. 表单核心数据状态
   const [title, setTitle] = useState(initialData?.title || "");
@@ -309,288 +315,294 @@ export default function ArticleForm({ initialData, onSave, saving = false }: Art
         </div>
       </main>
 
-      {/* 遮罩层 (Drawer Backdrop) */}
-      {showMeta && (
-        <div
-          className="fixed inset-0 bg-zinc-950/20 dark:bg-zinc-950/40 backdrop-blur-xs z-30 transition-opacity animate-[fadeIn_0.2s_ease-out]"
-          onClick={() => setShowMeta(false)}
-        />
-      )}
+      {/* 仅在客户端 mounted 后使用 Portal 挂载到 body 下，彻底脱离父容器 z-index 限制以遮罩包括 Sidebar 在内的全屏区域 */}
+      {mounted && createPortal(
+        <>
+          {/* 遮罩层 (Drawer Backdrop) */}
+          {showMeta && (
+            <div
+              className="fixed inset-0 bg-zinc-950/30 dark:bg-zinc-950/50 backdrop-blur-xs z-[998] transition-opacity animate-[fadeIn_0.2s_ease-out]"
+              onClick={() => setShowMeta(false)}
+            />
+          )}
 
-      {/* 侧边滑出抽屉 (Slide Drawer Panel) */}
-      <div className={cn(
-        "fixed top-0 right-0 z-40 h-full w-88 bg-white dark:bg-zinc-950 border-l border-zinc-200/80 dark:border-zinc-900/80 shadow-2xl p-6 overflow-y-auto transition-transform duration-300 ease-out flex flex-col gap-5.5 select-none",
-        showMeta ? "translate-x-0 animate-[slideIn_0.25s_ease-out]" : "translate-x-full"
-      )}>
-        
-        {/* 抽屉头部 */}
-        <div className="flex items-center justify-between border-b border-zinc-200/50 dark:border-zinc-900/60 pb-3.5">
-          <h2 className="font-heading text-sm font-bold text-neutral-dark dark:text-zinc-200 flex items-center gap-2">
-            <Settings size={15} />
-            <span>文章设置</span>
-          </h2>
-          <button
-            type="button"
-            onClick={() => setShowMeta(false)}
-            className="p-1 rounded-full hover:bg-zinc-100 dark:hover:bg-zinc-900 text-zinc-400 hover:text-zinc-700 dark:hover:text-zinc-300 transition-colors cursor-pointer"
-          >
-            <X size={15} />
-          </button>
-        </div>
-
-        {/* 抽屉设置表单内容 */}
-        <div className="flex-1 space-y-5.5 custom-scrollbar overflow-y-auto pr-1 pb-6">
-          
-          {/* 所属分类 (Select) */}
-          <div className="space-y-1.5">
-            <label className="text-[10px] font-bold text-zinc-400 dark:text-zinc-500 uppercase tracking-widest flex items-center gap-1.5">
-              <Folder size={11} />
-              <span>分类</span>
-            </label>
-            <div className="relative">
-              <select
-                value={categoryId || ""}
-                onChange={(e) => setCategoryId(Number(e.target.value) || undefined)}
-                className="w-full rounded-xl border border-zinc-200/60 dark:border-zinc-800 bg-white dark:bg-zinc-900 px-3.5 py-2.5 text-xs text-zinc-800 dark:text-zinc-200 outline-none focus:border-primary focus:ring-2 focus:ring-primary/10 transition-all cursor-pointer appearance-none"
-              >
-                <option value="">选择分类（可空）</option>
-                {categories.map((c) => (
-                  <option key={c.id} value={c.id}>
-                    {c.name}
-                  </option>
-                ))}
-              </select>
-              <ChevronDown size={14} className="text-zinc-400 absolute right-3.5 top-3 pointer-events-none" />
-            </div>
-          </div>
-
-          {/* 标签 (Tag Chips) */}
-          <div className="space-y-2">
-            <label className="text-[10px] font-bold text-zinc-400 dark:text-zinc-500 uppercase tracking-widest flex items-center gap-1.5">
-              <Tag size={11} />
-              <span>标签</span>
-            </label>
-            <div className="flex flex-wrap gap-1.5">
-              {tags.map((t) => {
-                const isSelected = tagIds.includes(t.id);
-                return (
-                  <button
-                    key={t.id}
-                    type="button"
-                    onClick={() => {
-                      if (isSelected) {
-                        setTagIds(tagIds.filter((id) => id !== t.id));
-                      } else {
-                        setTagIds([...tagIds, t.id]);
-                      }
-                    }}
-                    className={cn(
-                      "px-2.5 py-1 text-[11px] font-semibold rounded-lg border transition-all cursor-pointer",
-                      isSelected
-                        ? "bg-primary/10 border-primary/40 text-primary"
-                        : "bg-white dark:bg-zinc-900/60 border-zinc-200/60 dark:border-zinc-800/80 text-zinc-500 dark:text-zinc-400 hover:border-zinc-300 dark:hover:border-zinc-700"
-                    )}
-                  >
-                    #{t.name}
-                  </button>
-                );
-              })}
-            </div>
-          </div>
-
-          {/* 内容类型 (content_type) & 自定义模板 (template) */}
-          <div className="grid grid-cols-2 gap-3 pt-1">
-            <div className="space-y-1.5">
-              <label className="text-[10px] font-bold text-zinc-400 dark:text-zinc-500 uppercase tracking-widest flex items-center gap-1.5">
-                <BookOpen size={11} />
-                <span>内容类型</span>
-              </label>
-              <select
-                value={contentType}
-                onChange={(e) => setContentType(e.target.value as any)}
-                className="w-full rounded-xl border border-zinc-200/60 dark:border-zinc-800 bg-white dark:bg-zinc-900 px-3.5 py-2.5 text-xs text-zinc-850 dark:text-zinc-200 outline-none transition-all cursor-pointer"
-              >
-                <option value="ARTICLE">文章</option>
-                <option value="NOTE">随笔</option>
-                <option value="GALLERY">画廊</option>
-                <option value="PROJECT">项目</option>
-              </select>
-            </div>
+          {/* 侧边滑出抽屉 (Slide Drawer Panel) */}
+          <div className={cn(
+            "fixed top-0 right-0 z-[999] h-full w-88 bg-white dark:bg-zinc-950 border-l border-zinc-200/80 dark:border-zinc-900/80 shadow-2xl p-6 overflow-y-auto transition-transform duration-300 ease-out flex flex-col gap-5.5 select-none",
+            showMeta ? "translate-x-0 animate-[slideIn_0.25s_ease-out]" : "translate-x-full"
+          )}>
             
-            <div className="space-y-1.5">
-              <label className="text-[10px] font-bold text-zinc-400 dark:text-zinc-500 uppercase tracking-widest flex items-center gap-1.5">
-                <Layout size={11} />
-                <span>自定义模板</span>
-              </label>
-              <input
-                type="text"
-                value={template}
-                onChange={(e) => setTemplate(e.target.value)}
-                placeholder="默认"
-                className="w-full rounded-xl border border-zinc-200/60 dark:border-zinc-800 bg-white dark:bg-zinc-900 px-3 py-2 text-xs text-zinc-850 dark:text-zinc-200 placeholder-zinc-400 dark:placeholder-zinc-650 outline-none focus:border-primary transition-all"
-              />
+            {/* 抽屉头部 */}
+            <div className="flex items-center justify-between border-b border-zinc-200/50 dark:border-zinc-900/60 pb-3.5">
+              <h2 className="font-heading text-sm font-bold text-neutral-dark dark:text-zinc-200 flex items-center gap-2">
+                <Settings size={15} />
+                <span>文章设置</span>
+              </h2>
+              <button
+                type="button"
+                onClick={() => setShowMeta(false)}
+                className="p-1 rounded-full hover:bg-zinc-100 dark:hover:bg-zinc-900 text-zinc-400 hover:text-zinc-700 dark:hover:text-zinc-300 transition-colors cursor-pointer"
+              >
+                <X size={15} />
+              </button>
             </div>
-          </div>
 
-          {/* 属性控制开关组 */}
-          <div className="space-y-3 pt-3 border-t border-zinc-200/50 dark:border-zinc-900/60">
-            <label className="flex items-center justify-between cursor-pointer">
-              <span className="text-xs font-semibold text-zinc-650 dark:text-zinc-400">首页置顶</span>
-              <input
-                type="checkbox"
-                checked={isPinned}
-                onChange={(e) => setIsPinned(e.target.checked)}
-                className="sr-only peer"
-              />
-              <div className="relative w-8 h-4.5 bg-zinc-200 dark:bg-zinc-800 peer-focus:outline-none rounded-full peer peer-checked:after:translate-x-full rtl:peer-checked:after:-translate-x-full peer-checked:after:border-white after:content-[''] after:absolute after:top-[2px] after:left-[2px] after:bg-white after:border-zinc-300 after:border after:rounded-full after:h-3.5 after:w-3.5 after:transition-all dark:border-zinc-650 peer-checked:bg-primary"></div>
-            </label>
-
-            <label className="flex items-center justify-between cursor-pointer">
-              <span className="text-xs font-semibold text-zinc-650 dark:text-zinc-400">特别推荐</span>
-              <input
-                type="checkbox"
-                checked={isFeatured}
-                onChange={(e) => setIsFeatured(e.target.checked)}
-                className="sr-only peer"
-              />
-              <div className="relative w-8 h-4.5 bg-zinc-200 dark:bg-zinc-800 peer-focus:outline-none rounded-full peer peer-checked:after:translate-x-full rtl:peer-checked:after:-translate-x-full peer-checked:after:border-white after:content-[''] after:absolute after:top-[2px] after:left-[2px] after:bg-white after:border-zinc-300 after:border after:rounded-full after:h-3.5 after:w-3.5 after:transition-all dark:border-zinc-650 peer-checked:bg-primary"></div>
-            </label>
-
-            <label className="flex items-center justify-between cursor-pointer">
-              <span className="text-xs font-semibold text-zinc-650 dark:text-zinc-400">允许评论</span>
-              <input
-                type="checkbox"
-                checked={isAllowComment}
-                onChange={(e) => setIsAllowComment(e.target.checked)}
-                className="sr-only peer"
-              />
-              <div className="relative w-8 h-4.5 bg-zinc-200 dark:bg-zinc-800 peer-focus:outline-none rounded-full peer peer-checked:after:translate-x-full rtl:peer-checked:after:-translate-x-full peer-checked:after:border-white after:content-[''] after:absolute after:top-[2px] after:left-[2px] after:bg-white after:border-zinc-300 after:border after:rounded-full after:h-3.5 after:w-3.5 after:transition-all dark:border-zinc-650 peer-checked:bg-primary"></div>
-            </label>
-          </div>
-
-          {/* 可见性选择 */}
-          <div className="space-y-2 pt-3 border-t border-zinc-200/50 dark:border-zinc-900/60">
-            <label className="block text-[10px] font-bold text-zinc-400 dark:text-zinc-500 uppercase tracking-widest">
-              文章可见性
-            </label>
-            <div className="grid grid-cols-3 gap-1 bg-zinc-100 dark:bg-zinc-950 p-1 rounded-xl">
-              {[
-                { key: "PUBLIC" as const, label: "公开" },
-                { key: "PRIVATE" as const, label: "私密" },
-                { key: "PASSWORD_PROTECTED" as const, label: "密码" },
-              ].map((item) => (
-                <button
-                  key={item.key}
-                  type="button"
-                  onClick={() => setVisibility(item.key)}
-                  className={cn(
-                    "py-1.5 text-[10px] font-bold rounded-lg transition-all cursor-pointer",
-                    visibility === item.key
-                      ? "bg-white dark:bg-zinc-900 shadow-xs text-primary"
-                      : "text-zinc-500 hover:text-zinc-700 dark:hover:text-zinc-300"
-                  )}
-                >
-                  {item.label}
-                </button>
-              ))}
-            </div>
-            {visibility === "PASSWORD_PROTECTED" && (
-              <div className="animate-fade-in relative mt-1.5">
-                <input
-                  type="text"
-                  value={password}
-                  onChange={(e) => setPassword(e.target.value)}
-                  placeholder="请输入访问密码"
-                  required
-                  className="w-full rounded-xl border border-zinc-200 dark:border-zinc-800 bg-white dark:bg-zinc-900 pl-3.5 pr-8 py-2 text-xs text-zinc-850 dark:text-zinc-250 outline-none focus:border-primary focus:ring-2 focus:ring-primary/10 transition-all"
-                />
-                <EyeOff size={13} className="text-zinc-400 absolute right-3 top-3" />
+            {/* 抽屉设置表单内容 */}
+            <div className="flex-1 space-y-5.5 custom-scrollbar overflow-y-auto pr-1 pb-6">
+              
+              {/* 所属分类 (Select) */}
+              <div className="space-y-1.5">
+                <label className="text-[10px] font-bold text-zinc-400 dark:text-zinc-500 uppercase tracking-widest flex items-center gap-1.5">
+                  <Folder size={11} />
+                  <span>分类</span>
+                </label>
+                <div className="relative">
+                  <select
+                    value={categoryId || ""}
+                    onChange={(e) => setCategoryId(Number(e.target.value) || undefined)}
+                    className="w-full rounded-xl border border-zinc-200/60 dark:border-zinc-800 bg-white dark:bg-zinc-900 px-3.5 py-2.5 text-xs text-zinc-880 dark:text-zinc-200 outline-none focus:border-primary focus:ring-2 focus:ring-primary/10 transition-all cursor-pointer appearance-none"
+                  >
+                    <option value="">选择分类（可空）</option>
+                    {categories.map((c) => (
+                      <option key={c.id} value={c.id}>
+                        {c.name}
+                      </option>
+                    ))}
+                  </select>
+                  <ChevronDown size={14} className="text-zinc-400 absolute right-3.5 top-3 pointer-events-none" />
+                </div>
               </div>
-            )}
-          </div>
 
-          {/* 摘要与描述 */}
-          <div className="space-y-1.5 pt-3 border-t border-zinc-200/50 dark:border-zinc-900/60">
-            <label className="block text-[10px] font-bold text-zinc-400 dark:text-zinc-500 uppercase tracking-widest flex items-center gap-1">
-              <MessageSquare size={11} />
-              <span>外显描述摘要</span>
-            </label>
-            <textarea
-              value={summary}
-              onChange={(e) => setSummary(e.target.value)}
-              placeholder="文章简要描述..."
-              rows={3}
-              className="w-full rounded-xl border border-zinc-200/60 dark:border-zinc-800 bg-white dark:bg-zinc-900 px-3 py-2 text-xs text-zinc-850 dark:text-zinc-200 placeholder-zinc-400 dark:placeholder-zinc-600 outline-none focus:border-primary focus:ring-2 focus:ring-primary/10 transition-all resize-none"
-            />
-          </div>
-
-          {/* 封面图片 */}
-          <div className="space-y-1.5">
-            <label className="block text-[10px] font-bold text-zinc-400 dark:text-zinc-500 uppercase tracking-widest">
-              封面图 URL
-            </label>
-            <input
-              type="url"
-              value={coverImageUrl}
-              onChange={(e) => setCoverImageUrl(e.target.value)}
-              placeholder="https://example.com/cover.jpg"
-              className="w-full rounded-xl border border-zinc-200/60 dark:border-zinc-800 bg-white dark:bg-zinc-900 px-3 py-2 text-xs text-zinc-850 dark:text-zinc-200 placeholder-zinc-400 dark:placeholder-zinc-650 outline-none focus:border-primary focus:ring-2 focus:ring-primary/10 transition-all"
-            />
-            {coverImageUrl && (
-              <div className="relative rounded-xl overflow-hidden border border-zinc-200 dark:border-zinc-800 mt-2">
-                <img
-                  src={coverImageUrl}
-                  alt="封面预览"
-                  className="h-24 w-full object-cover"
-                />
+              {/* 标签 (Tag Chips) */}
+              <div className="space-y-2">
+                <label className="text-[10px] font-bold text-zinc-400 dark:text-zinc-500 uppercase tracking-widest flex items-center gap-1.5">
+                  <Tag size={11} />
+                  <span>标签</span>
+                </label>
+                <div className="flex flex-wrap gap-1.5">
+                  {tags.map((t) => {
+                    const isSelected = tagIds.includes(t.id);
+                    return (
+                      <button
+                        key={t.id}
+                        type="button"
+                        onClick={() => {
+                          if (isSelected) {
+                            setTagIds(tagIds.filter((id) => id !== t.id));
+                          } else {
+                            setTagIds([...tagIds, t.id]);
+                          }
+                        }}
+                        className={cn(
+                          "px-2.5 py-1 text-[11px] font-semibold rounded-lg border transition-all cursor-pointer",
+                          isSelected
+                            ? "bg-primary/10 border-primary/40 text-primary"
+                            : "bg-white dark:bg-zinc-900/60 border-zinc-200/60 dark:border-zinc-800/80 text-zinc-500 dark:text-zinc-400 hover:border-zinc-300 dark:hover:border-zinc-700"
+                        )}
+                      >
+                        #{t.name}
+                      </button>
+                    );
+                  })}
+                </div>
               </div>
-            )}
-          </div>
 
-          {/* SEO 折叠面板 */}
-          <details className="group border border-zinc-200/50 dark:border-zinc-800/60 rounded-xl overflow-hidden bg-white/40 dark:bg-zinc-950/20">
-            <summary className="flex items-center justify-between px-3.5 py-2.5 text-[11px] font-bold text-zinc-500 dark:text-zinc-450 cursor-pointer hover:bg-zinc-50 dark:hover:bg-zinc-900/40 select-none">
-              <span>SEO 优化字段</span>
-              <span className="transition-transform group-open:rotate-180">
-                <ChevronDown size={13} />
-              </span>
-            </summary>
-            <div className="p-3 border-t border-zinc-200/50 dark:border-zinc-800/60 space-y-3">
-              <div className="space-y-1">
-                <label className="text-[9px] font-bold text-zinc-400 dark:text-zinc-500">SEO 标题</label>
-                <input
-                  type="text"
-                  value={seoTitle}
-                  onChange={(e) => setSeoTitle(e.target.value)}
-                  placeholder="默认使用文章标题"
-                  className="w-full rounded-lg border border-zinc-200 dark:border-zinc-800 bg-white dark:bg-zinc-900 px-2.5 py-1.5 text-xs text-zinc-850 dark:text-zinc-250 outline-none"
-                />
+              {/* 内容类型 (content_type) & 自定义模板 (template) */}
+              <div className="grid grid-cols-2 gap-3 pt-1">
+                <div className="space-y-1.5">
+                  <label className="text-[10px] font-bold text-zinc-400 dark:text-zinc-500 uppercase tracking-widest flex items-center gap-1.5">
+                    <BookOpen size={11} />
+                    <span>内容类型</span>
+                  </label>
+                  <select
+                    value={contentType}
+                    onChange={(e) => setContentType(e.target.value as any)}
+                    className="w-full rounded-xl border border-zinc-200/60 dark:border-zinc-800 bg-white dark:bg-zinc-900 px-3.5 py-2.5 text-xs text-zinc-850 dark:text-zinc-200 outline-none transition-all cursor-pointer"
+                  >
+                    <option value="ARTICLE">文章</option>
+                    <option value="NOTE">随笔</option>
+                    <option value="GALLERY">画廊</option>
+                    <option value="PROJECT">项目</option>
+                  </select>
+                </div>
+                
+                <div className="space-y-1.5">
+                  <label className="text-[10px] font-bold text-zinc-400 dark:text-zinc-500 uppercase tracking-widest flex items-center gap-1.5">
+                    <Layout size={11} />
+                    <span>自定义模板</span>
+                  </label>
+                  <input
+                    type="text"
+                    value={template}
+                    onChange={(e) => setTemplate(e.target.value)}
+                    placeholder="默认"
+                    className="w-full rounded-xl border border-zinc-200/60 dark:border-zinc-800 bg-white dark:bg-zinc-900 px-3 py-2 text-xs text-zinc-850 dark:text-zinc-200 placeholder-zinc-400 dark:placeholder-zinc-650 outline-none focus:border-primary transition-all"
+                  />
+                </div>
               </div>
-              <div className="space-y-1">
-                <label className="text-[9px] font-bold text-zinc-400 dark:text-zinc-500">SEO 描述</label>
+
+              {/* 属性控制开关组 */}
+              <div className="space-y-3 pt-3 border-t border-zinc-200/50 dark:border-zinc-900/60">
+                <label className="flex items-center justify-between cursor-pointer">
+                  <span className="text-xs font-semibold text-zinc-650 dark:text-zinc-400">首页置顶</span>
+                  <input
+                    type="checkbox"
+                    checked={isPinned}
+                    onChange={(e) => setIsPinned(e.target.checked)}
+                    className="sr-only peer"
+                  />
+                  <div className="relative w-8 h-4.5 bg-zinc-200 dark:bg-zinc-800 peer-focus:outline-none rounded-full peer peer-checked:after:translate-x-full rtl:peer-checked:after:-translate-x-full peer-checked:after:border-white after:content-[''] after:absolute after:top-[2px] after:left-[2px] after:bg-white after:border-zinc-300 after:border after:rounded-full after:h-3.5 after:w-3.5 after:transition-all dark:border-zinc-650 peer-checked:bg-primary"></div>
+                </label>
+
+                <label className="flex items-center justify-between cursor-pointer">
+                  <span className="text-xs font-semibold text-zinc-650 dark:text-zinc-400">特别推荐</span>
+                  <input
+                    type="checkbox"
+                    checked={isFeatured}
+                    onChange={(e) => setIsFeatured(e.target.checked)}
+                    className="sr-only peer"
+                  />
+                  <div className="relative w-8 h-4.5 bg-zinc-200 dark:bg-zinc-800 peer-focus:outline-none rounded-full peer peer-checked:after:translate-x-full rtl:peer-checked:after:-translate-x-full peer-checked:after:border-white after:content-[''] after:absolute after:top-[2px] after:left-[2px] after:bg-white after:border-zinc-300 after:border after:rounded-full after:h-3.5 after:w-3.5 after:transition-all dark:border-zinc-650 peer-checked:bg-primary"></div>
+                </label>
+
+                <label className="flex items-center justify-between cursor-pointer">
+                  <span className="text-xs font-semibold text-zinc-650 dark:text-zinc-400">允许评论</span>
+                  <input
+                    type="checkbox"
+                    checked={isAllowComment}
+                    onChange={(e) => setIsAllowComment(e.target.checked)}
+                    className="sr-only peer"
+                  />
+                  <div className="relative w-8 h-4.5 bg-zinc-200 dark:bg-zinc-800 peer-focus:outline-none rounded-full peer peer-checked:after:translate-x-full rtl:peer-checked:after:-translate-x-full peer-checked:after:border-white after:content-[''] after:absolute after:top-[2px] after:left-[2px] after:bg-white after:border-zinc-300 after:border after:rounded-full after:h-3.5 after:w-3.5 after:transition-all dark:border-zinc-650 peer-checked:bg-primary"></div>
+                </label>
+              </div>
+
+              {/* 可见性选择 */}
+              <div className="space-y-2 pt-3 border-t border-zinc-200/50 dark:border-zinc-900/60">
+                <label className="block text-[10px] font-bold text-zinc-400 dark:text-zinc-500 uppercase tracking-widest">
+                  文章可见性
+                </label>
+                <div className="grid grid-cols-3 gap-1 bg-zinc-100 dark:bg-zinc-950 p-1 rounded-xl">
+                  {[
+                    { key: "PUBLIC" as const, label: "公开" },
+                    { key: "PRIVATE" as const, label: "私密" },
+                    { key: "PASSWORD_PROTECTED" as const, label: "密码" },
+                  ].map((item) => (
+                    <button
+                      key={item.key}
+                      type="button"
+                      onClick={() => setVisibility(item.key)}
+                      className={cn(
+                        "py-1.5 text-[10px] font-bold rounded-lg transition-all cursor-pointer",
+                        visibility === item.key
+                          ? "bg-white dark:bg-zinc-900 shadow-xs text-primary"
+                          : "text-zinc-500 hover:text-zinc-700 dark:hover:text-zinc-300"
+                      )}
+                    >
+                      {item.label}
+                    </button>
+                  ))}
+                </div>
+                {visibility === "PASSWORD_PROTECTED" && (
+                  <div className="animate-fade-in relative mt-1.5">
+                    <input
+                      type="text"
+                      value={password}
+                      onChange={(e) => setPassword(e.target.value)}
+                      placeholder="请输入访问密码"
+                      required
+                      className="w-full rounded-xl border border-zinc-200 dark:border-zinc-800 bg-white dark:bg-zinc-900 pl-3.5 pr-8 py-2 text-xs text-zinc-850 dark:text-zinc-250 outline-none focus:border-primary focus:ring-2 focus:ring-primary/10 transition-all"
+                    />
+                    <EyeOff size={13} className="text-zinc-400 absolute right-3 top-3" />
+                  </div>
+                )}
+              </div>
+
+              {/* 摘要与描述 */}
+              <div className="space-y-1.5 pt-3 border-t border-zinc-200/50 dark:border-zinc-900/60">
+                <label className="block text-[10px] font-bold text-zinc-400 dark:text-zinc-500 uppercase tracking-widest flex items-center gap-1">
+                  <MessageSquare size={11} />
+                  <span>外显描述摘要</span>
+                </label>
                 <textarea
-                  value={seoDescription}
-                  onChange={(e) => setSeoDescription(e.target.value)}
-                  placeholder="默认使用文章摘要"
-                  rows={2}
-                  className="w-full rounded-lg border border-zinc-200 dark:border-zinc-800 bg-white dark:bg-zinc-900 px-2.5 py-1.5 text-xs text-zinc-850 dark:text-zinc-250 outline-none resize-none"
+                  value={summary}
+                  onChange={(e) => setSummary(e.target.value)}
+                  placeholder="文章简要描述..."
+                  rows={3}
+                  className="w-full rounded-xl border border-zinc-200/60 dark:border-zinc-800 bg-white dark:bg-zinc-900 px-3 py-2 text-xs text-zinc-850 dark:text-zinc-200 placeholder-zinc-400 dark:placeholder-zinc-600 outline-none focus:border-primary focus:ring-2 focus:ring-primary/10 transition-all resize-none"
                 />
               </div>
-              <div className="space-y-1">
-                <label className="text-[9px] font-bold text-zinc-400 dark:text-zinc-500">SEO 关键词 (逗号分割)</label>
-                <input
-                  type="text"
-                  value={seoKeywords}
-                  onChange={(e) => setSeoKeywords(e.target.value)}
-                  placeholder="react, nextjs"
-                  className="w-full rounded-lg border border-zinc-200 dark:border-zinc-800 bg-white dark:bg-zinc-900 px-2.5 py-1.5 text-xs text-zinc-850 dark:text-zinc-250 outline-none"
-                />
-              </div>
-            </div>
-          </details>
 
-        </div>
-      </div>
+              {/* 封面图片 */}
+              <div className="space-y-1.5">
+                <label className="block text-[10px] font-bold text-zinc-400 dark:text-zinc-500 uppercase tracking-widest">
+                  封面图 URL
+                </label>
+                <input
+                  type="url"
+                  value={coverImageUrl}
+                  onChange={(e) => setCoverImageUrl(e.target.value)}
+                  placeholder="https://example.com/cover.jpg"
+                  className="w-full rounded-xl border border-zinc-200/60 dark:border-zinc-800 bg-white dark:bg-zinc-900 px-3 py-2 text-xs text-zinc-850 dark:text-zinc-200 placeholder-zinc-400 dark:placeholder-zinc-650 outline-none focus:border-primary focus:ring-2 focus:ring-primary/10 transition-all"
+                />
+                {coverImageUrl && (
+                  <div className="relative rounded-xl overflow-hidden border border-zinc-200 dark:border-zinc-800 mt-2">
+                    <img
+                      src={coverImageUrl}
+                      alt="封面预览"
+                      className="h-24 w-full object-cover"
+                    />
+                  </div>
+                )}
+              </div>
+
+              {/* SEO 折叠面板 */}
+              <details className="group border border-zinc-200/50 dark:border-zinc-800/60 rounded-xl overflow-hidden bg-white/40 dark:bg-zinc-950/20">
+                <summary className="flex items-center justify-between px-3.5 py-2.5 text-[11px] font-bold text-zinc-500 dark:text-zinc-450 cursor-pointer hover:bg-zinc-50 dark:hover:bg-zinc-900/40 select-none">
+                  <span>SEO 优化字段</span>
+                  <span className="transition-transform group-open:rotate-180">
+                    <ChevronDown size={13} />
+                  </span>
+                </summary>
+                <div className="p-3 border-t border-zinc-200/50 dark:border-zinc-800/60 space-y-3">
+                  <div className="space-y-1">
+                    <label className="text-[9px] font-bold text-zinc-400 dark:text-zinc-500">SEO 标题</label>
+                    <input
+                      type="text"
+                      value={seoTitle}
+                      onChange={(e) => setSeoTitle(e.target.value)}
+                      placeholder="默认使用文章标题"
+                      className="w-full rounded-lg border border-zinc-200 dark:border-zinc-800 bg-white dark:bg-zinc-900 px-2.5 py-1.5 text-xs text-zinc-850 dark:text-zinc-250 outline-none"
+                    />
+                  </div>
+                  <div className="space-y-1">
+                    <label className="text-[9px] font-bold text-zinc-400 dark:text-zinc-500">SEO 描述</label>
+                    <textarea
+                      value={seoDescription}
+                      onChange={(e) => setSeoDescription(e.target.value)}
+                      placeholder="默认使用文章摘要"
+                      rows={2}
+                      className="w-full rounded-lg border border-zinc-200 dark:border-zinc-800 bg-white dark:bg-zinc-900 px-2.5 py-1.5 text-xs text-zinc-850 dark:text-zinc-250 outline-none resize-none"
+                    />
+                  </div>
+                  <div className="space-y-1">
+                    <label className="text-[9px] font-bold text-zinc-400 dark:text-zinc-500">SEO 关键词 (逗号分割)</label>
+                    <input
+                      type="text"
+                      value={seoKeywords}
+                      onChange={(e) => setSeoKeywords(e.target.value)}
+                      placeholder="react, nextjs"
+                      className="w-full rounded-lg border border-zinc-200 dark:border-zinc-800 bg-white dark:bg-zinc-900 px-2.5 py-1.5 text-xs text-zinc-850 dark:text-zinc-250 outline-none"
+                    />
+                  </div>
+                </div>
+              </details>
+
+            </div>
+          </div>
+        </>,
+        document.body
+      )}
 
     </form>
   );
