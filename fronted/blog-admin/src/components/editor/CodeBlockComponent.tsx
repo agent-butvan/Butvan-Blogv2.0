@@ -19,7 +19,8 @@ export default function CodeBlockComponent({
 
   // 获取文本并计算行数以渲染行号
   const textContent = node.textContent || "";
-  const lines = textContent.split("\n");
+  // Tiptap / ProseMirror codeBlock 节点文本在编辑时末尾通常会有一个额外的换行符，需要去掉以准确计算行数
+  const lines = textContent.replace(/\n$/, "").split("\n");
   // 即使内容为空也至少显示第一行行号
   const lineCount = Math.max(lines.length, 1);
 
@@ -107,10 +108,7 @@ export default function CodeBlockComponent({
         <div 
           contentEditable={false} 
           className="line-numbers-col shrink-0 select-none text-right border-r font-mono"
-          style={{ 
-            minWidth: "2.8rem",
-            padding: "1rem 0.75rem 1rem 1rem"
-          }}
+          style={{ minWidth: "2.8rem" }}
         >
           {Array.from({ length: lineCount }).map((_, i) => (
             <div key={i} className="line-number-item">{i + 1}</div>
@@ -118,10 +116,7 @@ export default function CodeBlockComponent({
         </div>
         
         {/* 代码内容编辑区 */}
-        <pre 
-          className="flex-1 m-0 overflow-x-auto bg-transparent focus:outline-none focus-visible:outline-none"
-          style={{ padding: "1rem 1rem 1rem 0.75rem" }}
-        >
+        <pre className="flex-1 m-0 overflow-x-auto bg-transparent focus:outline-none focus-visible:outline-none">
           <NodeViewContent as={"code" as any} className="focus:outline-none block" />
         </pre>
       </div>
