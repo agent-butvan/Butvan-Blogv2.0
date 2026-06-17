@@ -21,7 +21,8 @@ import {
   Key,
   EyeOff,
   Eye,
-  MessageSquare
+  MessageSquare,
+  Heart
 } from "lucide-react";
 import { cn } from "@heroui/react";
 import {
@@ -390,7 +391,7 @@ export default function ArticlesPage() {
       <div className="overflow-x-auto rounded-2xl border border-zinc-200/60 dark:border-zinc-800 bg-white dark:bg-zinc-950 shadow-xs">
         <table className="w-full text-xs text-left border-collapse min-w-[900px] table-fixed">
           <thead>
-            <tr className="border-b border-zinc-150 dark:border-zinc-800 bg-zinc-50/70 dark:bg-zinc-900/40 text-[10px] font-bold text-zinc-400 dark:text-zinc-500 uppercase tracking-widest select-none">
+            <tr className="border-b border-zinc-200/50 dark:border-zinc-800 bg-zinc-50/70 dark:bg-zinc-900/40 text-[10px] font-bold text-zinc-400 dark:text-zinc-500 uppercase tracking-widest select-none">
               <th className="px-4 py-3.5 w-12 text-center">
                 <input
                   type="checkbox"
@@ -409,6 +410,7 @@ export default function ArticlesPage() {
               <th className="px-5 py-3.5 w-36 text-center">属性配置</th>
               <th className="px-5 py-3.5 w-20 text-center">浏览</th>
               <th className="px-5 py-3.5 w-20 text-center">评论</th>
+              <th className="px-5 py-3.5 w-20 text-center">点赞</th>
               <th className="px-5 py-3.5 w-36">更新日期</th>
               <th className="px-5 py-3.5 w-24 text-right">管理操作</th>
             </tr>
@@ -416,7 +418,7 @@ export default function ArticlesPage() {
           <tbody className="divide-y divide-zinc-100 dark:divide-zinc-800/50 text-zinc-700 dark:text-zinc-350">
             {loading ? (
               <tr>
-                <td colSpan={10} className="px-5 py-16 text-center select-none">
+                <td colSpan={11} className="px-5 py-16 text-center select-none">
                   <div className="flex flex-col items-center justify-center gap-2 text-zinc-400">
                     <Loader2 size={20} className="animate-spin text-zinc-350 dark:text-zinc-650" />
                     <span className="text-[11px] font-medium tracking-wide">加载文章列表中...</span>
@@ -425,7 +427,7 @@ export default function ArticlesPage() {
               </tr>
             ) : articles.length === 0 ? (
               <tr>
-                <td colSpan={10} className="px-5 py-16 text-center text-zinc-400 select-none">
+                <td colSpan={11} className="px-5 py-16 text-center text-zinc-400 select-none">
                   <span className="text-[11px]">暂无文章，开始</span>
                   <Link href="/articles/new" className="text-primary font-bold hover:underline mx-1">写一篇新文章</Link>
                   <span className="text-[11px]">吧！</span>
@@ -440,7 +442,7 @@ export default function ArticlesPage() {
                 return (
                   <tr
                     key={article.id}
-                    className="group border-b border-zinc-150 dark:border-zinc-800 hover:bg-zinc-50/50 dark:hover:bg-zinc-900/20 transition-all duration-150"
+                    className="group border-b border-zinc-200/50 dark:border-zinc-800 hover:bg-zinc-50/50 dark:hover:bg-zinc-900/20 transition-all duration-150"
                   >
                     {/* 选择框 */}
                     <td className="px-4 py-3.5 text-center">
@@ -568,6 +570,14 @@ export default function ArticlesPage() {
                       <div className="flex items-center justify-center gap-1 text-zinc-500 dark:text-zinc-400">
                         <MessageSquare size={12} className="opacity-60" />
                         <span>{article.commentCount}</span>
+                      </div>
+                    </td>
+
+                    {/* 点赞数 */}
+                    <td className="px-5 py-3.5 w-20 text-center font-mono font-medium">
+                      <div className="flex items-center justify-center gap-1 text-zinc-500 dark:text-zinc-400">
+                        <Heart size={12} className="opacity-60 text-rose-500 fill-rose-500/10" />
+                        <span>{article.likeCount || 0}</span>
                       </div>
                     </td>
 

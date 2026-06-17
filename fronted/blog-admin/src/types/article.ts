@@ -20,6 +20,7 @@ export interface ArticleItem {
   isFeatured: boolean;
   viewCount: number;
   commentCount: number;
+  likeCount: number;
   publishedAt?: string;
   createdAt: string;
   updatedAt: string;
@@ -34,7 +35,6 @@ export interface ArticleDetail extends ArticleItem {
   tagNames: string[];
   password?: string;
   isAllowComment: boolean;
-  likeCount: number;
   wordCount: number;
   readingTime: number;
   seoTitle?: string;
