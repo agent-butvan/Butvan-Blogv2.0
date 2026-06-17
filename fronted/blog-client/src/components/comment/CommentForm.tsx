@@ -1,7 +1,7 @@
 'use client'
 
 import React, { useState, useEffect } from 'react'
-import { Button, TextArea } from '@heroui/react'
+import { Button } from '@heroui/react'
 import { Smile, Send, X, Globe, Mail, User, Eye, Edit2 } from 'lucide-react'
 import { marked } from 'marked'
 import HtmlRenderer from '@/components/common/HtmlRenderer'
@@ -265,18 +265,14 @@ export default function CommentForm({
         </div>
       ) : (
         <div className="relative">
-          <TextArea
+          <textarea
             placeholder="在此留下您的思绪... (支持 Markdown 语法)"
-            minRows={4}
-            maxRows={8}
+            rows={5}
             value={content}
             onChange={(e) => setContent(e.target.value)}
-            classNames={{
-              input: 'text-xs leading-relaxed font-sans',
-              inputWrapper: 'bg-zinc-100/50 dark:bg-zinc-950/25 border border-zinc-200/40 dark:border-zinc-800/60 rounded-xl p-4 transition-colors focus-within:!border-zinc-300 dark:focus-within:!border-zinc-700'
-            }}
+            className="w-full bg-zinc-100/50 dark:bg-zinc-950/25 border border-zinc-200/40 dark:border-zinc-800/60 rounded-xl p-4 transition-colors focus:border-zinc-300 dark:focus:border-zinc-700 outline-none text-xs leading-relaxed font-sans text-zinc-700 dark:text-zinc-300 placeholder:text-zinc-350 dark:placeholder:text-zinc-650 resize-y"
             maxLength={CONTENT_MAX_LENGTH}
-            isRequired
+            required
             disabled={submitting}
           />
         </div>
