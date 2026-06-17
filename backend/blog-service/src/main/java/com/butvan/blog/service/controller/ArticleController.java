@@ -1,0 +1,106 @@
+package com.butvan.blog.service.controller;
+
+import com.butvan.blog.common.result.PageResult;
+import com.butvan.blog.common.result.Result;
+import com.butvan.blog.pojo.dto.article.ArticleQueryDTO;
+import com.butvan.blog.pojo.dto.article.ArticleSaveDTO;
+import com.butvan.blog.pojo.vo.article.ArticleDetailVO;
+import com.butvan.blog.pojo.vo.article.ArticleItemVO;
+import com.butvan.blog.service.service.ArticleService;
+import lombok.RequiredArgsConstructor;
+import lombok.extern.slf4j.Slf4j;
+import org.springframework.web.bind.annotation.*;
+import java.security.Principal;
+import java.util.List;
+
+/**
+ * 文章业务 API 接口控制器
+ */
+@RestController
+@RequestMapping("/api")
+@RequiredArgsConstructor
+@Slf4j
+public class ArticleController {
+
+    private final ArticleService articleService;
+
+    /**
+     * 【公开/管理端】分页检索文章列表 (支持根据 keyword、status、categoryId、tagId 筛选)
+     *
+     * @param query 查询传参 DTO
+     * @return 统一格式 Result 包装的分页结果 PageResult
+     */
+    @GetMapping("/articles")
+    public Result<PageResult> pageArticles(ArticleQueryDTO query) {
+        log.info("分页查询文章列表 API 请求");
+        PageResult pageResult = articleService.pageArticles(query);
+        return Result.success(pageResult);
+    }
+
+    /**
+     * 【管理端】获取已发布文章的极简信息列表 (仅含 id, title, slug)
+     *
+     * @return 统一格式 Result 包装的极简文章列表
+     */
+    @GetMapping("/articles/simple")
+    public Result<List<ArticleItemVO>> listSimpleArticles() {
+        log.info("获取极简已发布文章列表 API 请求");
+        List<ArticleItemVO> list = articleService.listSimpleArticles();
+        return Result.success(list);
+    }
+
+    /**
+     * 【公开/管理端】获取文章完整详情信息
+     *
+     * @param id 文章唯一主键 ID
+     * @return 统一格式 Result 包装的文章详情 VO
+     */
+    @GetMapping("/articles/{id}")
+    public Result<ArticleDetailVO> getArticleDetail(@PathVariable Long id) {
+        log.info("获取文章详情 API 请求，ID: {}", id);
+        ArticleDetailVO detail = articleService.getArticleDetail(id);
+        return Result.success(detail);
+    }
+
+    /**
+     * 【管理端】新增保存一篇文章
+     *
+     * @param dto       新增文章表单 DTO
+     * @param principal 当前登录管理员认证实体，由 Spring Security 注入获取作者名
+     * @return 统一格式 Result 包装的最新文章详情 VO
+     */
+    @PostMapping("/articles")
+    public Result<ArticleDetailVO> saveArticle(@RequestBody ArticleSaveDTO dto, Principal principal) {
+        String username = principal.getName();
+        log.info("管理端新增文章 API 请求，title: {}, 操作者: {}", dto.getTitle(), username);
+        ArticleDetailVO detail = articleService.saveArticle(dto, username);
+        return Result.success(detail);
+    }
+
+    /**
+     * 【管理端】根据 ID 编辑更新已有文章
+     *
+     * @param id  待更新的文章主键 ID
+     * @param dto 修改表单数据 DTO
+     * @return 统一格式 Result 包装的最新的文章详情 VO
+     */
+    @PutMapping("/articles/{id}")
+    public Result<ArticleDetailVO> updateArticle(@PathVariable Long id, @RequestBody ArticleSaveDTO dto) {
+        log.info("管理端修改文章 API 请求，ID: {}", id);
+        ArticleDetailVO detail = articleService.updateArticle(id, dto);
+        return Result.success(detail);
+    }
+
+    /**
+     * 【管理端】根据 ID 逻辑删除文章 (移入回收站)
+     *
+     * @param id 待删除文章主键 ID
+     * @return 统一格式 Result，Void 成功标识
+     */
+    @DeleteMapping("/articles/{id}")
+    public Result<Void> deleteArticle(@PathVariable Long id) {
+        log.info("管理端逻辑删除文章 API 请求，ID: {}", id);
+        articleService.deleteArticle(id);
+        return Result.success();
+    }
+}
