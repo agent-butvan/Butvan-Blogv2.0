@@ -1,7 +1,7 @@
 'use client'
 
 import React, { useState, useEffect } from 'react'
-import { Button, Input, TextArea } from '@heroui/react'
+import { Button, TextArea } from '@heroui/react'
 import { Smile, Send, X, Globe, Mail, User, Eye, Edit2 } from 'lucide-react'
 import { marked } from 'marked'
 import HtmlRenderer from '@/components/common/HtmlRenderer'
@@ -189,48 +189,41 @@ export default function CommentForm({
 
       {/* 游客个人信息填写栅格（三列：昵称、邮箱、网址）- 重构为极简 underlined 下划线无框风格 */}
       <div className="grid grid-cols-1 sm:grid-cols-3 gap-6">
-        <Input
-          variant="underlined"
-          size="sm"
-          placeholder="称呼 *"
-          value={visitorName}
-          onChange={(e) => setVisitorName(e.target.value)}
-          startContent={<User size={13} className="text-zinc-400 dark:text-zinc-650 mr-1" />}
-          classNames={{
-            input: 'text-xs font-serif placeholder:text-zinc-350 dark:placeholder:text-zinc-650',
-            inputWrapper: 'border-b border-zinc-200 dark:border-zinc-800/80 hover:border-zinc-300 dark:hover:border-zinc-700 focus-within:!border-[#727BBA] transition-colors h-9 px-0'
-          }}
-          isRequired
-          disabled={submitting}
-        />
-        <Input
-          variant="underlined"
-          size="sm"
-          type="email"
-          placeholder="邮箱 (头像拉取) *"
-          value={visitorEmail}
-          onChange={(e) => setVisitorEmail(e.target.value)}
-          startContent={<Mail size={13} className="text-zinc-400 dark:text-zinc-650 mr-1" />}
-          classNames={{
-            input: 'text-xs font-serif placeholder:text-zinc-350 dark:placeholder:text-zinc-650',
-            inputWrapper: 'border-b border-zinc-200 dark:border-zinc-800/80 hover:border-zinc-300 dark:hover:border-zinc-700 focus-within:!border-[#727BBA] transition-colors h-9 px-0'
-          }}
-          isRequired
-          disabled={submitting}
-        />
-        <Input
-          variant="underlined"
-          size="sm"
-          placeholder="个人主页 (https://)"
-          value={visitorWebsite}
-          onChange={(e) => setVisitorWebsite(e.target.value)}
-          startContent={<Globe size={13} className="text-zinc-400 dark:text-zinc-650 mr-1" />}
-          classNames={{
-            input: 'text-xs font-serif placeholder:text-zinc-350 dark:placeholder:text-zinc-650',
-            inputWrapper: 'border-b border-zinc-200 dark:border-zinc-800/80 hover:border-zinc-300 dark:hover:border-zinc-700 focus-within:!border-[#727BBA] transition-colors h-9 px-0'
-          }}
-          disabled={submitting}
-        />
+        <div className="relative flex items-center border-b border-zinc-200 dark:border-zinc-800/80 hover:border-zinc-300 dark:hover:border-zinc-700 focus-within:border-[#727BBA] dark:focus-within:border-[#8E97D5] transition-colors h-9 px-0 gap-2">
+          <User size={13} className="text-zinc-400 dark:text-zinc-650 flex-shrink-0" />
+          <input
+            type="text"
+            placeholder="称呼 *"
+            value={visitorName}
+            onChange={(e) => setVisitorName(e.target.value)}
+            className="w-full bg-transparent border-none outline-none text-xs font-serif text-zinc-700 dark:text-zinc-350 placeholder:text-zinc-350 dark:placeholder:text-zinc-650"
+            required
+            disabled={submitting}
+          />
+        </div>
+        <div className="relative flex items-center border-b border-zinc-200 dark:border-zinc-800/80 hover:border-zinc-300 dark:hover:border-zinc-700 focus-within:border-[#727BBA] dark:focus-within:border-[#8E97D5] transition-colors h-9 px-0 gap-2">
+          <Mail size={13} className="text-zinc-400 dark:text-zinc-650 flex-shrink-0" />
+          <input
+            type="email"
+            placeholder="邮箱 (头像拉取) *"
+            value={visitorEmail}
+            onChange={(e) => setVisitorEmail(e.target.value)}
+            className="w-full bg-transparent border-none outline-none text-xs font-serif text-zinc-700 dark:text-zinc-350 placeholder:text-zinc-350 dark:placeholder:text-zinc-650"
+            required
+            disabled={submitting}
+          />
+        </div>
+        <div className="relative flex items-center border-b border-zinc-200 dark:border-zinc-800/80 hover:border-zinc-300 dark:hover:border-zinc-700 focus-within:border-[#727BBA] dark:focus-within:border-[#8E97D5] transition-colors h-9 px-0 gap-2">
+          <Globe size={13} className="text-zinc-400 dark:text-zinc-650 flex-shrink-0" />
+          <input
+            type="text"
+            placeholder="个人主页 (https://)"
+            value={visitorWebsite}
+            onChange={(e) => setVisitorWebsite(e.target.value)}
+            className="w-full bg-transparent border-none outline-none text-xs font-serif text-zinc-700 dark:text-zinc-350 placeholder:text-zinc-350 dark:placeholder:text-zinc-650"
+            disabled={submitting}
+          />
+        </div>
       </div>
 
       {/* 文本输入区上方增加：编辑/预览双模式切换小按钮 */}
