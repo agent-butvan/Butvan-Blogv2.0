@@ -1,7 +1,7 @@
 'use client'
 
 import React, { useState, useEffect } from 'react'
-import { Button, Input, Textarea } from '@heroui/react'
+import { Button, Input, TextArea } from '@heroui/react'
 import { Smile, Send, X, Globe, Mail, User } from 'lucide-react'
 
 // 支持点击快捷输入的 Emoji 列表
@@ -203,7 +203,7 @@ export default function CommentForm({
 
       {/* 文本输入框 */}
       <div className="relative">
-        <Textarea
+        <TextArea
           placeholder="既然来了，就留下你的真知灼见吧... (支持换行，遵从网络文明准则)"
           minRows={3}
           maxRows={8}
