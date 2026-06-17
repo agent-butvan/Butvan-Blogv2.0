@@ -116,10 +116,20 @@ public class ArticleServiceImpl implements ArticleService {
     }
 
     @Override
-    public ArticleDetailVO getArticleDetail(Long id) {
-        log.info("获取文章详情，ID: {}", id);
-        Article article = articleRepository.findById(id)
-                .orElseThrow(() -> new BusinessException("文章不存在或已被删除"));
+    public ArticleDetailVO getArticleDetail(String idOrSlug) {
+        log.info("获取文章详情，标识: {}", idOrSlug);
+        Article article = null;
+        try {
+            Long id = Long.parseLong(idOrSlug);
+            article = articleRepository.findById(id).orElse(null);
+        } catch (NumberFormatException e) {
+            // 忽略异常，按 slug 查找
+        }
+        
+        if (article == null) {
+            article = articleRepository.findBySlug(idOrSlug)
+                    .orElseThrow(() -> new BusinessException("文章不存在或已被删除"));
+        }
         return toDetailVO(article);
     }
 

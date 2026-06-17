@@ -21,12 +21,12 @@ public interface ArticleService {
     PageResult pageArticles(ArticleQueryDTO query);
 
     /**
-     * 根据主键 ID 查找文章详细信息
+     * 根据主键 ID 或 友好 URL slug 查找文章详细信息
      *
-     * @param id 文章唯一主键
+     * @param idOrSlug 文章唯一主键 ID 或短标识 slug
      * @return 文章完整详情 VO
      */
-    ArticleDetailVO getArticleDetail(Long id);
+    ArticleDetailVO getArticleDetail(String idOrSlug);
 
     /**
      * 保存创建新文章
