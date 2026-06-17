@@ -171,14 +171,14 @@ export default function ArticleForm({ initialData, onSave, saving = false }: Art
     <form onSubmit={handleSubmit} className="flex flex-col h-full w-full bg-transparent min-h-[calc(100vh-140px)]">
       
       {/* 顶栏吸顶 Header：集成标题与所有核心工作流控制 */}
-      <header className="sticky top-0 bg-background/80 backdrop-blur-md border-b border-zinc-200/50 dark:border-zinc-900/60 pb-5 mb-5 flex flex-col gap-4 sm:flex-row sm:items-center sm:justify-between z-20 select-none">
+      <header className="sticky top-0 bg-background/80 backdrop-blur-md border-b border-zinc-200/50 dark:border-zinc-900/60 py-3 mb-5 flex flex-col gap-4 sm:flex-row sm:items-center sm:justify-between z-20 select-none">
         
         {/* 左侧：返回列表与无框扁平大标题输入 */}
         <div className="flex flex-1 items-center gap-3">
           <button
             type="button"
             onClick={() => router.push("/articles")}
-            className="flex h-9 w-9 items-center justify-center rounded-xl border border-zinc-200 dark:border-zinc-800 bg-white dark:bg-zinc-900 text-zinc-400 hover:text-zinc-700 dark:hover:text-zinc-200 hover:border-zinc-300 dark:hover:border-zinc-750 transition-all cursor-pointer"
+            className="flex h-9 w-9 items-center justify-center rounded-xl border border-zinc-200 dark:border-zinc-800 bg-white dark:bg-zinc-900 text-zinc-400 hover:text-zinc-700 dark:hover:text-zinc-200 hover:border-zinc-300 dark:hover:border-zinc-750 transition-all cursor-pointer shrink-0"
             title="返回列表"
           >
             <ArrowLeft size={16} />
@@ -190,45 +190,45 @@ export default function ArticleForm({ initialData, onSave, saving = false }: Art
             onChange={(e) => setTitle(e.target.value)}
             placeholder="在这里开始你的写作吧..."
             required
-            className="flex-1 bg-transparent px-2 text-xl font-bold font-heading text-neutral-dark dark:text-zinc-50 placeholder-zinc-300 dark:placeholder-zinc-700 border-0 outline-none focus:ring-0 focus:outline-none transition-colors"
+            className="flex-1 bg-transparent px-2 h-9 text-lg font-bold font-heading text-neutral-dark dark:text-zinc-50 placeholder-zinc-300 dark:placeholder-zinc-700 border-0 outline-none focus:ring-0 focus:outline-none transition-colors leading-none"
           />
         </div>
 
         {/* 右侧：短链接别名、AI、预览、状态配置与保存发布 */}
-        <div className="flex flex-wrap items-center gap-3.5">
+        <div className="flex flex-wrap items-center gap-3">
           
-          {/* 行内 /posts/ 短链接别名 */}
-          <div className="flex items-center gap-1 text-[11px] text-zinc-400 font-mono">
-            <span className="opacity-80">/posts/</span>
+          {/* 行内 /posts/ 短链接别名 - 优化为高颜值胶囊输入槽 */}
+          <div className="flex h-9 items-center gap-1 px-3 py-1.5 rounded-xl bg-zinc-100/60 dark:bg-zinc-900/60 border border-zinc-200/40 dark:border-zinc-800/60 text-[11px] font-mono transition-all">
+            <span className="text-zinc-400 dark:text-zinc-550 select-none">/posts/</span>
             <input
               type="text"
               value={slug}
               onChange={(e) => setSlug(e.target.value)}
               placeholder="短别名"
-              className="w-24 border-b border-zinc-200/80 dark:border-zinc-800 p-0 pb-0.5 text-[11px] font-mono leading-none focus:border-primary focus:outline-none text-zinc-650 dark:text-zinc-350 bg-transparent transition-colors"
+              className="w-18 bg-transparent p-0 border-none outline-none focus:ring-0 text-zinc-700 dark:text-zinc-300 placeholder-zinc-300 dark:placeholder-zinc-700 leading-normal"
             />
           </div>
 
-          {/* AI 助手占位示意 */}
+          {/* AI 助手占位示意 - 对齐高度并增加温和悬停色调 */}
           <button
             type="button"
             onClick={() => alert("AI 智能修饰与标题生成即将上线，敬请期待！")}
-            className="flex items-center gap-1 py-1.5 px-3 rounded-lg text-xs font-semibold bg-zinc-100/80 dark:bg-zinc-900/80 hover:bg-primary/8 text-zinc-550 dark:text-zinc-450 hover:text-primary border border-transparent hover:border-primary/20 transition-all cursor-pointer"
+            className="flex h-9 items-center justify-center gap-1.5 py-1.5 px-3.5 rounded-xl text-xs font-bold bg-zinc-100/80 dark:bg-zinc-900/80 hover:bg-primary/10 hover:border-primary/20 text-zinc-650 dark:text-zinc-400 hover:text-primary border border-transparent transition-all cursor-pointer"
             title="AI 标题/摘要助手"
           >
-            <Sparkles size={13} />
+            <Sparkles size={13} className="text-primary/70 dark:text-primary/90" />
             <span>AI</span>
           </button>
 
-          {/* 草稿 / 发布单选组合按钮 */}
-          <div className="flex items-center bg-zinc-100 dark:bg-zinc-950 p-1 rounded-xl border border-zinc-200/30 dark:border-zinc-900/30">
+          {/* 草稿 / 发布单选组合按钮 - 优化对齐 */}
+          <div className="flex h-9 items-center bg-zinc-100 dark:bg-zinc-950 p-1 rounded-xl border border-zinc-200/30 dark:border-zinc-900/30">
             <button
               type="button"
               onClick={() => setStatus("DRAFT")}
               className={cn(
-                "py-1 px-3 text-[10px] font-bold rounded-lg transition-all cursor-pointer",
+                "h-7 px-3 text-[11px] font-bold rounded-lg transition-all cursor-pointer flex items-center justify-center",
                 status === "DRAFT"
-                  ? "bg-white dark:bg-zinc-900 shadow-xs text-primary"
+                  ? "bg-white dark:bg-zinc-900 shadow-sm text-primary"
                   : "text-zinc-500 hover:text-zinc-700 dark:hover:text-zinc-300"
               )}
             >
@@ -238,9 +238,9 @@ export default function ArticleForm({ initialData, onSave, saving = false }: Art
               type="button"
               onClick={() => setStatus("PUBLISHED")}
               className={cn(
-                "py-1 px-3 text-[10px] font-bold rounded-lg transition-all cursor-pointer",
+                "h-7 px-3 text-[11px] font-bold rounded-lg transition-all cursor-pointer flex items-center justify-center",
                 status === "PUBLISHED"
-                  ? "bg-white dark:bg-zinc-900 shadow-xs text-primary"
+                  ? "bg-white dark:bg-zinc-900 shadow-sm text-primary"
                   : "text-zinc-500 hover:text-zinc-700 dark:hover:text-zinc-300"
               )}
             >
@@ -258,12 +258,12 @@ export default function ArticleForm({ initialData, onSave, saving = false }: Art
             <SlidersHorizontal size={15} />
           </button>
 
-          {/* 保存触发按钮 */}
+          {/* 保存触发按钮 - 高度对齐至 36px 并提升触感反馈 */}
           <button
             type="button"
             onClick={handleTriggerSave}
             disabled={saving || !title.trim()}
-            className="flex items-center gap-1.5 rounded-xl bg-primary py-2 px-4.5 text-xs font-bold text-white hover:opacity-90 active:scale-95 transition-all cursor-pointer disabled:opacity-50"
+            className="flex h-9 items-center justify-center gap-1.5 rounded-xl bg-primary hover:bg-primary/95 active:scale-[0.98] py-2 px-4.5 text-xs font-bold text-white transition-all cursor-pointer disabled:opacity-50 disabled:cursor-not-allowed"
           >
             <Save size={13} />
             <span>{status === "PUBLISHED" ? "发布新版" : "保存草稿"}</span>
