@@ -29,7 +29,9 @@ Butvan Blog2.0/                                    # 📦 项目根目录
 │   ├── THINKING.md                                #   产品最初构想与「沉浸式房间」跳转逻辑
 │   └── database/
 │       ├── schema.sql                             #   完整 DDL 建表脚本（19 张表，含索引与注释，无测试数据）
-│       └── migration-v0.3.sql                     #   数据库迁移脚本 (v0.3 版本，补齐热区高度百分比字段)
+│       ├── migration-v0.3.sql                     #   数据库迁移脚本 (v0.3 版本，补齐热区高度百分比字段)
+│       ├── migration-v0.4.sql                     #   数据库迁移脚本 (v0.4 版本)
+│       └── migration-v0.5.sql                     #   数据库迁移脚本 (v0.5 版本，文章、分类与标签建表及初始化数据)
 │
 ├── fronted/                                       # 🖥️【前端】Next.js 16 + TypeScript + HeroUI v3 + Tailwind v4
 │   │
@@ -158,7 +160,8 @@ Butvan Blog2.0/                                    # 📦 项目根目录
 │       │   │   └── useUpload.ts                   #       文件上传 Hook
 │       │   ├── lib/                               #     🔧 工具库
 │       │   │   ├── api.ts                         #       API 请求封装（自动附带 JWT Token）
-│       │   │   └── auth.ts                        #       Token 存储/刷新/过期处理
+│       │   │   ├── auth.ts                        #       Token 存储/刷新/过期处理
+│       │   │   └── article-api.ts                 #       文章、分类、标签相关的 API 请求统一封装
 │       │   └── types/                             #     📐 TypeScript 类型定义（与 blog-client 共享结构）
 │       ├── next.config.ts
 │       ├── postcss.config.mjs
@@ -350,6 +353,8 @@ Butvan Blog2.0/                                    # 📦 项目根目录
 | `design-system/butvan-blog/MASTER.md` | 设计系统 | 静谧深海色彩规范、排版规则、发光/动效参数 |
 | `docx/database/schema.sql` | 数据库 | PostgreSQL 完整 DDL（19 张表，含注释与索引） |
 | `docx/database/migration-v0.3.sql` | 数据库 | PostgreSQL v0.3 迁移脚本（添加 height_percent 高度百分比字段） |
+| `docx/database/migration-v0.5.sql` | 数据库 | PostgreSQL v0.5 迁移脚本（文章分类标签建表与初始数据） |
+| `fronted/blog-admin/src/lib/article-api.ts` | 后台-工具 | 统一封装文章、分类、标签相关 API 请求方法 |
 | `fronted/blog-client/src/app/page.tsx` | 前台-首页 | 房间场景：从 API 获取激活场景，PNG 图层叠层绝对百分比渲染、hover 物理悬空、发光避光阴影及缩放过渡 |
 | `fronted/blog-client/src/components/home/RoomScene.tsx` | 前台-组件 | 多图层渲染容器，背景图+PNG物品百分比定位叠加 |
 | `fronted/blog-client/src/app/articles/[slug]/page.tsx` | 前台-文章 | 文章详情页（Markdown渲染、评论区、系列导航） |
@@ -372,4 +377,4 @@ Butvan Blog2.0/                                    # 📦 项目根目录
 
 ---
 
-*最后更新：2026-06-16*
+*最后更新：2026-06-17*
