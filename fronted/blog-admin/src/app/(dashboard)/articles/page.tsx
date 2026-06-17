@@ -453,7 +453,7 @@ export default function ArticlesPage() {
                     </td>
 
                     {/* 文章标题 - 中心自适应列 */}
-                    <td className="px-5 py-3.5 min-w-0">
+                    <td className="px-5 py-3.5 min-w-0 max-w-0">
                       <div className="flex items-center gap-1.5 max-w-full min-w-0">
                         <span 
                           className="font-semibold text-neutral-dark dark:text-zinc-150 truncate flex-1 min-w-0 leading-tight group-hover:text-primary transition-colors duration-150" 
