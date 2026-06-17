@@ -2,10 +2,13 @@
 
 import React, { useState, useEffect } from 'react'
 import { Button, Input, TextArea } from '@heroui/react'
-import { Smile, Send, X, Globe, Mail, User } from 'lucide-react'
+import { Smile, Send, X, Globe, Mail, User, Eye, Edit2 } from 'lucide-react'
+import { marked } from 'marked'
+import HtmlRenderer from '@/components/common/HtmlRenderer'
 
 // 支持点击快捷输入的 Emoji 列表
 const EMOJIS = ['😄', '🎉', '❤️', '👍', '🚀', '💻', '🤔', '👀', '🔥', '👏']
+const CONTENT_MAX_LENGTH = 500 // 限制评论最大字数
 
 interface CommentFormProps {
   articleId: number
@@ -28,10 +31,12 @@ export default function CommentForm({
   const [visitorWebsite, setVisitorWebsite] = useState('')
   const [content, setContent] = useState('')
   
-  // 提交态与提示
+  // 交互与显示模式状态
+  const [previewMode, setPreviewMode] = useState(false)
   const [submitting, setSubmitting] = useState(false)
   const [errorMsg, setErrorMsg] = useState<string | null>(null)
   const [showEmoji, setShowEmoji] = useState(false)
+  const [confirmClear, setConfirmClear] = useState(false)
 
   // 1. 组件挂载时自动从 localStorage 读取已保存的访客资料
   useEffect(() => {
@@ -50,11 +55,19 @@ export default function CommentForm({
 
   // 2. 插入表情
   const handleInsertEmoji = (emoji: string) => {
+    if (content.length + emoji.length > CONTENT_MAX_LENGTH) return
     setContent(prev => prev + emoji)
     setShowEmoji(false)
   }
 
-  // 3. 提交评论
+  // 3. 清空草稿及确认状态逻辑
+  const handleClearDraft = () => {
+    setContent('')
+    setConfirmClear(false)
+    setErrorMsg(null)
+  }
+
+  // 4. 提交评论
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault()
     setErrorMsg(null)
@@ -75,7 +88,11 @@ export default function CommentForm({
       return
     }
     if (!content.trim()) {
-      setErrorMsg('评论正文不能为空哦~')
+      setErrorMsg('评论正文内容不能为空~')
+      return
+    }
+    if (content.length > CONTENT_MAX_LENGTH) {
+      setErrorMsg(`评论内容不能超过 ${CONTENT_MAX_LENGTH} 个字~`)
       return
     }
 
@@ -112,8 +129,9 @@ export default function CommentForm({
           console.warn('缓存游客资料到 localStorage 失败', e)
         }
 
-        // 清空输入框内容
+        // 清空输入框内容与预览模式
         setContent('')
+        setPreviewMode(false)
         setErrorMsg(null)
         
         // 成功回调
@@ -129,13 +147,24 @@ export default function CommentForm({
     }
   }
 
+  // 计算预览模式下的 Markdown 解析 HTML
+  const getPreviewHtml = () => {
+    if (!content.trim()) return ''
+    try {
+      // marked 同步解析为 html
+      return marked.parse(content) as string
+    } catch {
+      return content
+    }
+  }
+
   return (
     <form 
       onSubmit={handleSubmit}
-      className={`w-full flex flex-col gap-4 p-5 rounded-2xl border transition-all duration-300 ${
+      className={`w-full flex flex-col gap-5 p-6 rounded-2xl border transition-all duration-300 ${
         parentId 
-          ? 'bg-zinc-150/40 dark:bg-zinc-900/35 border-zinc-200/50 dark:border-zinc-800/50 mt-3 shadow-inner' 
-          : 'bg-white/80 dark:bg-zinc-900/60 backdrop-blur-md border-zinc-200/60 dark:border-zinc-800/80 shadow-md shadow-zinc-200/20 dark:shadow-none'
+          ? 'bg-zinc-100/50 dark:bg-zinc-900/30 border-zinc-200/40 dark:border-zinc-800/40 mt-3 shadow-inner' 
+          : 'bg-white/80 dark:bg-zinc-900/50 backdrop-blur-md border-zinc-200/50 dark:border-zinc-800/60 shadow-md shadow-zinc-200/10 dark:shadow-none'
       }`}
     >
       {/* 头部：若是回复别人，显示提示 */}
@@ -158,118 +187,204 @@ export default function CommentForm({
         </div>
       )}
 
-      {/* 游客个人信息填写栅格（三列：昵称、邮箱、网址） */}
-      <div className="grid grid-cols-1 sm:grid-cols-3 gap-3">
+      {/* 游客个人信息填写栅格（三列：昵称、邮箱、网址）- 重构为极简 underlined 下划线无框风格 */}
+      <div className="grid grid-cols-1 sm:grid-cols-3 gap-6">
         <Input
+          variant="underlined"
           size="sm"
-          placeholder="昵称 (必填)"
+          placeholder="称呼 *"
           value={visitorName}
           onChange={(e) => setVisitorName(e.target.value)}
-          startContent={<User size={13} className="text-zinc-400" />}
+          startContent={<User size={13} className="text-zinc-400 dark:text-zinc-650 mr-1" />}
           classNames={{
-            input: 'text-xs',
-            inputWrapper: 'bg-zinc-100/50 dark:bg-zinc-950/30 border border-zinc-200/40 dark:border-zinc-800/60 rounded-xl'
+            input: 'text-xs font-serif placeholder:text-zinc-350 dark:placeholder:text-zinc-650',
+            inputWrapper: 'border-b border-zinc-200 dark:border-zinc-800/80 hover:border-zinc-300 dark:hover:border-zinc-700 focus-within:!border-[#727BBA] transition-colors h-9 px-0'
           }}
           isRequired
           disabled={submitting}
         />
         <Input
+          variant="underlined"
           size="sm"
           type="email"
-          placeholder="邮箱 (必填，头像拉取)"
+          placeholder="邮箱 (头像拉取) *"
           value={visitorEmail}
           onChange={(e) => setVisitorEmail(e.target.value)}
-          startContent={<Mail size={13} className="text-zinc-400" />}
+          startContent={<Mail size={13} className="text-zinc-400 dark:text-zinc-650 mr-1" />}
           classNames={{
-            input: 'text-xs',
-            inputWrapper: 'bg-zinc-100/50 dark:bg-zinc-950/30 border border-zinc-200/40 dark:border-zinc-800/60 rounded-xl'
+            input: 'text-xs font-serif placeholder:text-zinc-350 dark:placeholder:text-zinc-650',
+            inputWrapper: 'border-b border-zinc-200 dark:border-zinc-800/80 hover:border-zinc-300 dark:hover:border-zinc-700 focus-within:!border-[#727BBA] transition-colors h-9 px-0'
           }}
           isRequired
           disabled={submitting}
         />
         <Input
+          variant="underlined"
           size="sm"
-          placeholder="网站 (选填，https://)"
+          placeholder="个人主页 (https://)"
           value={visitorWebsite}
           onChange={(e) => setVisitorWebsite(e.target.value)}
-          startContent={<Globe size={13} className="text-zinc-400" />}
+          startContent={<Globe size={13} className="text-zinc-400 dark:text-zinc-650 mr-1" />}
           classNames={{
-            input: 'text-xs',
-            inputWrapper: 'bg-zinc-100/50 dark:bg-zinc-950/30 border border-zinc-200/40 dark:border-zinc-800/60 rounded-xl'
+            input: 'text-xs font-serif placeholder:text-zinc-350 dark:placeholder:text-zinc-650',
+            inputWrapper: 'border-b border-zinc-200 dark:border-zinc-800/80 hover:border-zinc-300 dark:hover:border-zinc-700 focus-within:!border-[#727BBA] transition-colors h-9 px-0'
           }}
           disabled={submitting}
         />
       </div>
 
-      {/* 文本输入框 */}
-      <div className="relative">
-        <TextArea
-          placeholder="既然来了，就留下你的真知灼见吧... (支持换行，遵从网络文明准则)"
-          minRows={3}
-          maxRows={8}
-          value={content}
-          onChange={(e) => setContent(e.target.value)}
-          classNames={{
-            input: 'text-xs leading-relaxed',
-            inputWrapper: 'bg-zinc-100/50 dark:bg-zinc-950/30 border border-zinc-200/40 dark:border-zinc-800/60 rounded-xl p-3'
-          }}
-          maxLength={1000}
-          isRequired
-          disabled={submitting}
-        />
+      {/* 文本输入区上方增加：编辑/预览双模式切换小按钮 */}
+      <div className="flex items-center gap-2 select-none text-[11px] font-serif">
+        <button
+          type="button"
+          onClick={() => setPreviewMode(false)}
+          className={`px-3 py-1 rounded-lg transition-all flex items-center gap-1 cursor-pointer ${
+            !previewMode 
+              ? 'bg-zinc-200/60 dark:bg-zinc-800/80 text-zinc-800 dark:text-zinc-200 font-bold' 
+              : 'text-zinc-400 dark:text-zinc-500 hover:text-zinc-600 dark:hover:text-zinc-300'
+          }`}
+        >
+          <Edit2 size={10} />
+          <span>编辑</span>
+        </button>
+        <button
+          type="button"
+          onClick={() => setPreviewMode(true)}
+          className={`px-3 py-1 rounded-lg transition-all flex items-center gap-1 cursor-pointer ${
+            previewMode 
+              ? 'bg-zinc-200/60 dark:bg-zinc-800/80 text-zinc-800 dark:text-zinc-200 font-bold' 
+              : 'text-zinc-400 dark:text-zinc-500 hover:text-zinc-600 dark:hover:text-zinc-300'
+          }`}
+        >
+          <Eye size={10} />
+          <span>预览</span>
+        </button>
       </div>
 
-      {/* 底部功能栏 (错误提示 + 表情选择 + 提交) */}
-      <div className="flex flex-wrap items-center justify-between gap-3 mt-1.5">
-        {/* 左侧错误提醒 */}
-        <div className="flex-1 min-w-0">
-          {errorMsg && (
-            <span className="text-[11px] font-mono font-medium text-rose-500 animate-headShake dark:text-rose-400 block truncate">
-              ⚠️ {errorMsg}
-            </span>
+      {/* 编辑/预览核心输入容器 */}
+      {previewMode ? (
+        <div className="min-h-[120px] rounded-xl border border-zinc-250/30 dark:border-zinc-800/40 bg-zinc-50/50 dark:bg-zinc-950/20 p-4 text-xs leading-relaxed text-zinc-700 dark:text-zinc-300 select-text overflow-y-auto">
+          {content.trim() ? (
+            <HtmlRenderer html={getPreviewHtml()} />
+          ) : (
+            <span className="text-zinc-400 dark:text-zinc-600 italic">暂无预览内容，输入一些 Markdown 文字试试吧...</span>
           )}
         </div>
+      ) : (
+        <div className="relative">
+          <TextArea
+            placeholder="在此留下您的思绪... (支持 Markdown 语法)"
+            minRows={4}
+            maxRows={8}
+            value={content}
+            onChange={(e) => setContent(e.target.value)}
+            classNames={{
+              input: 'text-xs leading-relaxed font-sans',
+              inputWrapper: 'bg-zinc-100/50 dark:bg-zinc-950/25 border border-zinc-200/40 dark:border-zinc-800/60 rounded-xl p-4 transition-colors focus-within:!border-zinc-300 dark:focus-within:!border-zinc-700'
+            }}
+            maxLength={CONTENT_MAX_LENGTH}
+            isRequired
+            disabled={submitting}
+          />
+        </div>
+      )}
 
-        {/* 右侧交互按钮 */}
-        <div className="flex items-center gap-2.5 relative select-none">
-          {/* 表情按钮 */}
-          <div className="relative">
-            <button
-              type="button"
-              onClick={() => setShowEmoji(!showEmoji)}
-              className="p-1.5 rounded-lg border border-zinc-200/40 dark:border-zinc-800/60 hover:border-[#727BBA]/40 bg-zinc-100/30 dark:bg-zinc-950/20 text-zinc-400 dark:text-zinc-500 hover:text-[#727BBA] transition-colors cursor-pointer"
-              title="插入表情"
-              disabled={submitting}
-            >
-              <Smile size={15} />
-            </button>
+      {/* 底部辅助面板 (错误提示 + 表情/清空草稿 + 提交按钮) */}
+      <div className="flex flex-col gap-3">
+        {errorMsg && (
+          <span className="text-[11px] font-mono font-medium text-rose-500 animate-headShake dark:text-rose-400 block truncate">
+            ⚠️ {errorMsg}
+          </span>
+        )}
 
-            {/* Emoji 漂浮小面板 */}
-            {showEmoji && (
-              <div className="absolute bottom-10 right-0 z-30 p-2.5 rounded-xl border border-zinc-200 dark:border-zinc-800 bg-white dark:bg-zinc-900 shadow-xl grid grid-cols-5 gap-1.5 w-44 animate-in fade-in slide-in-from-bottom-2 duration-150">
-                {EMOJIS.map(e => (
-                  <button
-                    key={e}
-                    type="button"
-                    onClick={() => handleInsertEmoji(e)}
-                    className="w-7 h-7 flex items-center justify-center rounded-lg hover:bg-zinc-100 dark:hover:bg-zinc-800 text-sm cursor-pointer transition-colors"
-                  >
-                    {e}
-                  </button>
-                ))}
+        <div className="flex flex-wrap items-end justify-between gap-4">
+          {/* 左侧说明及清空草稿 */}
+          <div className="flex flex-col items-start gap-1 text-[10px] font-serif tracking-wide text-zinc-400 dark:text-zinc-550 select-none">
+            <div className="flex items-center gap-3">
+              {/* 表情按钮 */}
+              <div className="relative">
+                <button
+                  type="button"
+                  onClick={() => setShowEmoji(!showEmoji)}
+                  className="p-1.5 rounded-lg border border-zinc-200/40 dark:border-zinc-800/60 hover:border-[#727BBA]/40 bg-zinc-100/30 dark:bg-zinc-950/20 text-zinc-400 dark:text-zinc-500 hover:text-[#727BBA] transition-colors cursor-pointer"
+                  title="插入表情"
+                  disabled={submitting}
+                >
+                  <Smile size={14} />
+                </button>
+
+                {/* Emoji 漂浮小面板 */}
+                {showEmoji && (
+                  <div className="absolute bottom-9 left-0 z-30 p-2.5 rounded-xl border border-zinc-200 dark:border-zinc-800 bg-white dark:bg-zinc-900 shadow-xl grid grid-cols-5 gap-1.5 w-44 animate-in fade-in slide-in-from-bottom-2 duration-150">
+                    {EMOJIS.map(e => (
+                      <button
+                        key={e}
+                        type="button"
+                        onClick={() => handleInsertEmoji(e)}
+                        className="w-7 h-7 flex items-center justify-center rounded-lg hover:bg-zinc-100 dark:hover:bg-zinc-800 text-sm cursor-pointer transition-colors"
+                      >
+                        {e}
+                      </button>
+                    ))}
+                  </div>
+                )}
               </div>
-            )}
+
+              {/* 清空草稿 (带防误触确认) */}
+              {confirmClear ? (
+                <span className="flex items-center gap-1.5 text-[9px]">
+                  <button
+                    type="button"
+                    onClick={handleClearDraft}
+                    className="text-rose-500 hover:text-rose-600 transition-colors font-bold cursor-pointer"
+                  >
+                    确认清空
+                  </button>
+                  <span className="text-zinc-300 dark:text-zinc-800">/</span>
+                  <button
+                    type="button"
+                    onClick={() => setConfirmClear(false)}
+                    className="text-zinc-400 hover:text-zinc-650 dark:hover:text-zinc-400 transition-colors cursor-pointer"
+                  >
+                    取消
+                  </button>
+                </span>
+              ) : (
+                content.trim() && (
+                  <button
+                    type="button"
+                    onClick={() => setConfirmClear(true)}
+                    className="text-[10px] text-zinc-400 hover:text-rose-500 transition-colors cursor-pointer"
+                  >
+                    清空草稿
+                  </button>
+                )
+              )}
+            </div>
+
+            <div className="mt-1 font-mono text-[9px] scale-95 origin-left">
+              支持 Markdown 语法，Ctrl + Enter 换行
+            </div>
           </div>
 
-          <Button
-            type="submit"
-            size="sm"
-            isLoading={submitting}
-            className="bg-[#727BBA] hover:bg-[#5E67A3] text-white font-heading font-bold rounded-xl px-4 flex items-center gap-1.5 shadow-md shadow-[#727BBA]/15 dark:shadow-none transition-all duration-300 cursor-pointer"
-          >
-            {!submitting && <Send size={12} />}
-            <span>{parentId ? '回复' : '发表评论'}</span>
-          </Button>
+          {/* 右侧字数与提交按钮 */}
+          <div className="flex items-center gap-3.5 select-none">
+            {/* 字数计数 */}
+            <span className="text-[10px] font-mono text-zinc-400 dark:text-zinc-550">
+              {content.length}/{CONTENT_MAX_LENGTH}
+            </span>
+
+            {/* 大厂极简黑色投递按钮 */}
+            <Button
+              type="submit"
+              size="sm"
+              isLoading={submitting}
+              className="bg-zinc-900 hover:bg-zinc-800 dark:bg-zinc-100 dark:hover:bg-zinc-200 text-white dark:text-zinc-950 font-heading font-extrabold rounded-xl px-5 flex items-center gap-1.5 shadow-sm hover:shadow-md transition-all duration-300 cursor-pointer"
+            >
+              <span>{submitting ? '投递中...' : '投递'}</span>
+              {!submitting && <Send size={11} />}
+            </Button>
+          </div>
         </div>
       </div>
     </form>
