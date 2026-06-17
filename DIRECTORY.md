@@ -165,7 +165,8 @@ Butvan Blog2.0/                                    # 📦 项目根目录
 │       │   ├── lib/                               #     🔧 工具库
 │       │   │   ├── api.ts                         #       API 请求封装（自动附带 JWT Token）
 │       │   │   ├── auth.ts                        #       Token 存储/刷新/过期处理
-│       │   │   └── article-api.ts                 #       文章、分类、标签相关的 API 请求统一封装
+│       │   │   ├── article-api.ts                 #       文章、分类、标签相关的 API 请求统一封装
+│       │   │   └── comments-api.ts                #       评论、审核、快捷回复相关的 API 请求统一封装
 │       │   └── types/                             #     📐 TypeScript 类型定义（与 blog-client 共享结构）
 │       ├── next.config.ts
 │       ├── postcss.config.mjs
