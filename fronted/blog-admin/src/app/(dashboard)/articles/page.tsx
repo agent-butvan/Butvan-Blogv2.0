@@ -25,7 +25,7 @@ import {
   deleteArticle
 } from "@/lib/article-api";
 import ConfirmModal from "@/components/common/ConfirmModal";
-import type { PageResult } from "@/types/common";
+import type { PageResult, ArticleStatus } from "@/types/common";
 import type { ArticleItem } from "@/types/article";
 
 /**
@@ -153,7 +153,7 @@ export default function ArticlesPage() {
           if (fullDetail) {
             const updatedData = {
               ...fullDetail,
-              status: publish ? "PUBLISHED" : "DRAFT"
+              status: (publish ? "PUBLISHED" : "DRAFT") as ArticleStatus
             };
             await updateArticle(id, updatedData);
           }
@@ -447,11 +447,12 @@ export default function ArticlesPage() {
                         
                         {/* 热门火苗标签 */}
                         {isHot && (
-                          <Flame 
-                            size={13} 
-                            className="text-red-500 shrink-0 fill-red-500/10 cursor-help"
-                            title="热门文章（标准：浏览量 > 1000 或 评论数 > 50）" 
-                          />
+                          <span title="热门文章（标准：浏览量 > 1000 或 评论数 > 50）">
+                            <Flame 
+                              size={13} 
+                              className="text-red-500 shrink-0 fill-red-500/10 cursor-help"
+                            />
+                          </span>
                         )}
 
                         {/* 直接访问前台链接图标 */}
