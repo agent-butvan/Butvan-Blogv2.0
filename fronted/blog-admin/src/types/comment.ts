@@ -16,6 +16,9 @@ export interface CommentItem {
   isAuthorReplied: boolean;
   replyTo?: string | null;
   status: CommentStatus;
+  visitorEmail?: string | null;
+  ipAddress?: string | null;
+  userAgent?: string | null;
   articleTitle?: string | null;
   articleSlug?: string | null;
   createdAt: string;

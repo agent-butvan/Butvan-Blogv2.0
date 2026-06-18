@@ -14,7 +14,12 @@ import {
   ExternalLink,
   MessageSquare,
   Globe,
-  FileText
+  FileText,
+  Mail,
+  Laptop,
+  Ban,
+  ArrowUp,
+  User
 } from "lucide-react";
 import { cn } from "@heroui/react";
 import { 
@@ -59,6 +64,29 @@ const getCommentHtml = (contentStr: string) => {
   } catch (err) {
     return sanitizeCommentHtml(contentStr);
   }
+};
+
+/**
+ * 极轻量级 UserAgent 友好名称解析器，用于从原始 UA 字符串中提炼出浏览器和操作系统
+ */
+const parseUA = (ua?: string | null): string => {
+  if (!ua) return "未知设备";
+  let browser = "Other";
+  let os = "Other";
+  
+  if (ua.includes("Firefox")) browser = "Firefox";
+  else if (ua.includes("Chrome")) browser = "Chrome";
+  else if (ua.includes("Safari")) browser = "Safari";
+  else if (ua.includes("Edge")) browser = "Edge";
+  else if (ua.includes("Opera") || ua.includes("OPR")) browser = "Opera";
+  
+  if (ua.includes("Windows")) os = "Windows";
+  else if (ua.includes("Macintosh") || ua.includes("Mac OS X")) os = "Mac OS X";
+  else if (ua.includes("Linux")) os = "Linux";
+  else if (ua.includes("Android")) os = "Android";
+  else if (ua.includes("iPhone") || ua.includes("iPad")) os = "iOS";
+  
+  return `${browser} · ${os}`;
 };
 
 /**
@@ -251,14 +279,14 @@ export default function CommentsPage() {
 
         {/* 搜索框 */}
         <form onSubmit={handleSearch} className="flex items-center gap-2">
-          <div className="flex h-8 items-center gap-2 rounded-lg border border-zinc-200/65 dark:border-zinc-800 bg-white dark:bg-zinc-955 px-2.5 flex-1 w-full sm:w-60 focus-within:ring-2 focus-within:ring-primary/20 focus-within:border-primary transition-all">
+          <div className="flex h-8 items-center gap-2 rounded-lg border border-zinc-200/65 dark:border-zinc-800 bg-white dark:bg-zinc-950 px-2.5 flex-1 w-full sm:w-60 focus-within:ring-2 focus-within:ring-primary/20 focus-within:border-primary transition-all">
             <Search size={13} className="text-zinc-400 shrink-0" />
             <input
               type="text"
               value={searchVal}
               onChange={(e) => setSearchVal(e.target.value)}
               placeholder="搜索发言人、邮箱或评论正文..."
-              className="flex-1 border-0 bg-transparent p-0 text-xs text-zinc-850 dark:text-zinc-150 outline-none placeholder-zinc-400 dark:placeholder-zinc-650 focus:ring-0 leading-normal"
+              className="flex-1 border-0 bg-transparent p-0 text-xs text-zinc-850 dark:text-zinc-150 outline-none placeholder-zinc-400 dark:placeholder-zinc-600 focus:ring-0 leading-normal"
             />
             {searchVal && (
               <button
@@ -279,243 +307,263 @@ export default function CommentsPage() {
         </form>
       </div>
 
-      {/* 评论表格 - 高信息密度, 拒绝过度模块留白 */}
-      <div className="overflow-x-auto rounded-xl border border-zinc-200/60 dark:border-zinc-800 bg-white dark:bg-zinc-950 shadow-2xs">
-        <table className="w-full text-xs text-left border-collapse min-w-[950px] table-fixed">
-          <thead>
-            <tr className="border-b border-zinc-200/50 dark:border-zinc-800/80 bg-zinc-50/70 dark:bg-zinc-900/30 text-[10px] font-bold text-zinc-400 dark:text-zinc-550 uppercase tracking-widest select-none">
-              <th className="px-5 py-3 w-52">评论发言人</th>
-              <th className="px-5 py-3">评论正文内容</th>
-              <th className="px-5 py-3 w-48">归属文章</th>
-              <th className="px-5 py-3 w-32 text-center">发布时间</th>
-              <th className="px-5 py-3 w-44 text-right">管理操作</th>
-            </tr>
-          </thead>
-          <tbody className="divide-y divide-zinc-100 dark:divide-zinc-900/40 text-zinc-700 dark:text-zinc-300">
-            {loading ? (
-              <tr>
-                <td colSpan={5} className="px-5 py-16 text-center select-none">
-                  <div className="flex flex-col items-center justify-center gap-2 text-zinc-400">
-                    <Loader2 size={18} className="animate-spin text-primary" />
-                    <span className="text-[11px] font-medium tracking-wide">正在加载评论列表...</span>
-                  </div>
-                </td>
-              </tr>
-            ) : comments.length === 0 ? (
-              <tr>
-                <td colSpan={5} className="px-5 py-16 text-center text-zinc-400 select-none">
-                  <div className="flex flex-col items-center justify-center gap-2">
-                    <MessageSquare size={20} className="text-zinc-300 dark:text-zinc-800" />
-                    <span className="text-[11px]">暂无评论数据记录</span>
-                  </div>
-                </td>
-              </tr>
-            ) : (
-              comments.map((comment) => {
-                const isPending = comment.status === "PENDING";
-                const isApproved = comment.status === "APPROVED";
-                const isSpam = comment.status === "SPAM";
-                const isTrash = comment.status === "TRASH";
-                const isActionLoading = statusLoadingMap[comment.id] || false;
+      {/* 评论列表 - 大卡片流式布局, 高度还原大厂视觉体验 */}
+      {loading ? (
+        <div className="rounded-xl border border-zinc-200/60 dark:border-zinc-800 bg-white dark:bg-zinc-955 p-16 text-center select-none shadow-2xs">
+          <div className="flex flex-col items-center justify-center gap-2 text-zinc-400">
+            <Loader2 size={18} className="animate-spin text-primary" />
+            <span className="text-[11px] font-medium tracking-wide">正在加载评论列表...</span>
+          </div>
+        </div>
+      ) : comments.length === 0 ? (
+        <div className="rounded-xl border border-zinc-200/60 dark:border-zinc-800 bg-white dark:bg-zinc-955 p-16 text-center text-zinc-400 select-none shadow-2xs">
+          <div className="flex flex-col items-center justify-center gap-2">
+            <MessageSquare size={20} className="text-zinc-300 dark:text-zinc-800" />
+            <span className="text-[11px]">暂无评论数据记录</span>
+          </div>
+        </div>
+      ) : (
+        <div className="space-y-4">
+          {comments.map((comment) => {
+            const isPending = comment.status === "PENDING";
+            const isApproved = comment.status === "APPROVED";
+            const isSpam = comment.status === "SPAM";
+            const isTrash = comment.status === "TRASH";
+            const isActionLoading = statusLoadingMap[comment.id] || false;
 
-                return (
-                  <tr
-                    key={comment.id}
-                    className="group border-b border-zinc-150/40 dark:border-zinc-900/40 hover:bg-zinc-50/40 dark:hover:bg-zinc-900/10 transition-all duration-150"
-                  >
-                    {/* 发言人栏 - 高密度合并展示头像、昵称、邮箱 */}
-                    <td className="px-5 py-3.5 align-top">
-                      <div className="flex items-start gap-2.5">
-                        <img
-                          src={comment.avatarUrl}
-                          alt="avatar"
-                          className="w-7 h-7 rounded-full bg-zinc-100 dark:bg-zinc-900 shrink-0 border border-zinc-200/40 dark:border-zinc-800 object-cover transition-all duration-300 group-hover:scale-105 group-hover:ring-2 group-hover:ring-primary/45"
-                        />
-                        <div className="space-y-0.5 min-w-0 flex-1">
-                          <div className="flex items-center gap-1.5 flex-wrap">
-                            <span className="font-semibold text-neutral-dark dark:text-zinc-200 truncate max-w-[110px] leading-snug">
-                              {comment.nickname}
-                            </span>
-                            {comment.userId && (
-                              <span className="bg-primary/10 text-primary dark:bg-primary/20 dark:text-[#b0a2ff] px-1 rounded text-[8px] font-bold select-none leading-none scale-90 origin-left">
-                                博主
-                              </span>
-                            )}
-                            {comment.visitorWebsite && (
-                              <a
-                                href={comment.visitorWebsite}
-                                target="_blank"
-                                rel="noreferrer"
-                                className="w-4 h-4 flex items-center justify-center rounded-md hover:bg-zinc-100 dark:hover:bg-zinc-800 text-zinc-400 hover:text-primary transition-colors cursor-pointer"
-                                title="访问访客网站"
-                              >
-                                <Globe size={11} />
-                              </a>
-                            )}
-                          </div>
-                          <div className="text-[10px] text-zinc-400 dark:text-zinc-500 truncate font-mono select-none leading-tight">
-                            {comment.userId ? "系统博主" : "外部访客"}
-                          </div>
-                        </div>
-                      </div>
-                    </td>
-
-                    {/* 评论内容栏 */}
-                    <td className="px-5 py-3.5 align-top">
-                      <div className="space-y-1.5">
-                        {comment.replyTo && (
-                          <div className="inline-flex items-center gap-1 text-[9px] font-bold text-zinc-400 dark:text-zinc-500 bg-zinc-100/60 dark:bg-zinc-900 border border-zinc-200/30 dark:border-zinc-850 px-1 py-0.5 rounded leading-none select-none">
-                            <span>回复 @{comment.replyTo}</span>
-                          </div>
-                        )}
-                        <div 
-                          className="comment-content-prose max-h-24 overflow-y-auto custom-scrollbar pr-1 break-words leading-relaxed font-sans"
-                          dangerouslySetInnerHTML={{ __html: getCommentHtml(comment.content) }}
-                        />
-                        {/* 状态徽章与是否已回复 */}
-                        <div className="flex items-center gap-2 pt-0.5 select-none">
-                          <span
-                            className={cn(
-                              "px-1.5 py-0.5 rounded text-[9px] font-bold leading-none scale-95 origin-left border",
-                              isApproved && "bg-emerald-50 text-emerald-600 border-emerald-200/40 dark:bg-emerald-955/15 dark:text-emerald-400 dark:border-emerald-900/30",
-                              isPending && "bg-amber-50 text-amber-600 border-amber-200/40 dark:bg-amber-955/15 dark:text-amber-400 dark:border-amber-900/30",
-                              isSpam && "bg-red-50 text-red-600 border-red-200/40 dark:bg-red-950/15 dark:text-red-400 dark:border-red-900/30",
-                              isTrash && "bg-zinc-100 text-zinc-500 border-zinc-200/40 dark:bg-zinc-850 dark:text-zinc-400 dark:border-zinc-800"
-                            )}
-                          >
-                            {isApproved && "已通过"}
-                            {isPending && "待审核"}
-                            {isSpam && "垃圾"}
-                            {isTrash && "回收站"}
+            return (
+              <div
+                key={comment.id}
+                className="group rounded-xl border border-zinc-200/60 dark:border-zinc-800 bg-white dark:bg-zinc-950 p-5 shadow-2xs hover:border-zinc-300 dark:hover:border-zinc-700 transition-all duration-200"
+              >
+                {/* 顶层：头像、姓名、状态、时间 */}
+                <div className="flex items-start justify-between gap-4">
+                  <div className="flex items-start gap-3">
+                    <img
+                      src={comment.avatarUrl}
+                      alt="avatar"
+                      className="w-10 h-10 rounded-full bg-zinc-100 dark:bg-zinc-900 border border-zinc-200/40 dark:border-zinc-800 object-cover transition-all duration-300 group-hover:scale-105 group-hover:ring-2 group-hover:ring-primary/45"
+                    />
+                    <div>
+                      <div className="flex items-center gap-2 flex-wrap">
+                        <span className="font-bold text-sm text-neutral-dark dark:text-zinc-200 leading-snug">
+                          {comment.nickname}
+                        </span>
+                        {comment.userId && (
+                          <span className="bg-primary/10 text-primary dark:bg-primary/20 dark:text-[#b0a2ff] px-1.5 py-0.5 rounded text-[9px] font-bold select-none leading-none scale-90 origin-left">
+                            博主
                           </span>
-
-                          {comment.isAuthorReplied && (
-                            <span className="inline-flex items-center bg-blue-50 text-blue-600 border border-blue-200/40 dark:bg-blue-955/15 dark:text-blue-400 dark:border-blue-900/30 px-1.5 py-0.5 rounded text-[9px] font-bold leading-none scale-95 origin-left">
-                              博主已回
-                            </span>
-                          )}
-                        </div>
+                        )}
+                        {comment.replyTo && (
+                          <span className="inline-flex items-center gap-1 text-[9px] font-bold text-zinc-450 dark:text-zinc-500 bg-zinc-105/60 dark:bg-zinc-900 border border-zinc-200/30 dark:border-zinc-850 px-1.5 py-0.5 rounded leading-none select-none">
+                            回复 @{comment.replyTo}
+                          </span>
+                        )}
+                        {comment.visitorWebsite && (
+                          <a
+                            href={comment.visitorWebsite}
+                            target="_blank"
+                            rel="noreferrer"
+                            className="w-4 h-4 flex items-center justify-center rounded-md hover:bg-zinc-100 dark:hover:bg-zinc-800 text-zinc-400 hover:text-primary transition-colors cursor-pointer"
+                            title="访问访客网站"
+                          >
+                            <Globe size={11} />
+                          </a>
+                        )}
                       </div>
-                    </td>
-
-                    {/* 所属文章栏 */}
-                    <td className="px-5 py-3.5 align-top font-medium text-zinc-500 dark:text-zinc-455">
-                      {comment.articleTitle ? (
-                        <div className="space-y-1">
-                          <div className="flex items-start gap-1">
-                            <FileText size={12} className="text-zinc-400 mt-0.5 shrink-0" />
-                            <span className="text-zinc-800 dark:text-zinc-250 font-semibold leading-tight line-clamp-2">
-                              {comment.articleTitle}
-                            </span>
-                          </div>
-                          {comment.articleSlug && (
-                            <a
-                              href={`/articles/${comment.articleId}`}
-                              target="_blank"
-                              rel="noreferrer"
-                              className="inline-flex items-center gap-0.5 text-[9px] font-mono font-bold text-primary hover:underline"
-                            >
-                              <span>跳转详情</span>
-                              <ExternalLink size={8} />
-                            </a>
-                          )}
-                        </div>
-                      ) : (
-                        <span className="text-zinc-400 font-mono">—</span>
+                      
+                      {/* 设备、IP、邮箱元数据信息 */}
+                      <div className="flex flex-wrap items-center gap-3.5 mt-1.5 text-[11px] text-zinc-400 dark:text-zinc-500 font-mono">
+                        {comment.ipAddress && (
+                          <span className="flex items-center gap-1" title="评论者 IP">
+                            <Globe size={11} className="text-zinc-450 shrink-0" />
+                            <span>{comment.ipAddress}</span>
+                          </span>
+                        )}
+                        {comment.visitorEmail && (
+                          <span className="flex items-center gap-1" title="访客电子邮箱">
+                            <Mail size={11} className="text-zinc-450 shrink-0" />
+                            <a href={`mailto:${comment.visitorEmail}`} className="hover:text-primary hover:underline">{comment.visitorEmail}</a>
+                          </span>
+                        )}
+                        {comment.userAgent && (
+                          <span className="flex items-center gap-1" title="浏览器 User Agent">
+                            <Laptop size={11} className="text-zinc-455 shrink-0" />
+                            <span>{parseUA(comment.userAgent)}</span>
+                          </span>
+                        )}
+                      </div>
+                    </div>
+                  </div>
+                  
+                  {/* 右上侧：状态 Badge 与创建时间 */}
+                  <div className="flex flex-col items-end gap-1.5 shrink-0 select-none">
+                    <span
+                      className={cn(
+                        "px-2 py-0.5 rounded text-[10px] font-bold leading-none border",
+                        isApproved && "bg-emerald-50 text-emerald-600 border-emerald-200/40 dark:bg-emerald-955/15 dark:text-emerald-400 dark:border-emerald-900/30",
+                        isPending && "bg-amber-50 text-amber-600 border-amber-200/40 dark:bg-amber-955/15 dark:text-amber-400 dark:border-amber-900/30",
+                        isSpam && "bg-red-50 text-red-600 border-red-200/40 dark:bg-red-950/15 dark:text-red-400 dark:border-red-900/30",
+                        isTrash && "bg-zinc-100 text-zinc-500 border-zinc-200/40 dark:bg-zinc-850 dark:text-zinc-400 dark:border-zinc-800"
                       )}
-                    </td>
-
-                    {/* 发布时间栏 */}
-                    <td className="px-5 py-3.5 align-top text-center font-mono text-zinc-400 dark:text-zinc-500 whitespace-nowrap">
+                    >
+                      {isApproved && "已发布"}
+                      {isPending && "待审核"}
+                      {isSpam && "垃圾/拒绝"}
+                      {isTrash && "回收站"}
+                    </span>
+                    <span className="text-[10px] font-mono text-zinc-400 dark:text-zinc-500">
                       {new Date(comment.createdAt).toLocaleString("zh-CN", {
+                        year: "numeric",
                         month: "2-digit",
                         day: "2-digit",
                         hour: "2-digit",
-                        minute: "2-digit"
+                        minute: "2-digit",
+                        second: "2-digit"
                       })}
-                    </td>
+                    </span>
+                  </div>
+                </div>
 
-                    {/* 操作栏 - 精致紧凑, 根据不同状态提供不同管理闭环 */}
-                    <td className="px-5 py-3.5 align-top">
-                      <div className="flex items-center justify-end gap-1.5 select-none">
-                        {isActionLoading ? (
-                          <Loader2 size={13} className="animate-spin text-zinc-455 mr-2" />
-                        ) : (
-                          <>
-                            {/* 回复按钮：非回收站且非垃圾评论状态可回复 */}
-                            {!isTrash && !isSpam && (
-                              <button
-                                onClick={() => handleOpenReply(comment)}
-                                className="w-7 h-7 flex items-center justify-center rounded-lg border border-zinc-200/60 dark:border-zinc-800/80 bg-zinc-50/50 dark:bg-zinc-900/50 text-zinc-400 dark:text-zinc-500 hover:bg-blue-50 dark:hover:bg-blue-955/30 hover:text-blue-500 hover:border-blue-200 dark:hover:border-blue-900/60 transition-all shadow-2xs cursor-pointer outline-none"
-                                title="快捷回复"
-                              >
-                                <Reply size={13} />
-                              </button>
-                            )}
+                {/* 评论 Markdown 内容 */}
+                <div className="mt-3.5 pl-0 pr-1">
+                  <div 
+                    className="comment-content-prose max-h-48 overflow-y-auto custom-scrollbar pr-1 break-words leading-relaxed font-sans"
+                    dangerouslySetInnerHTML={{ __html: getCommentHtml(comment.content) }}
+                  />
+                </div>
 
-                            {/* 待审核下 -> 审核通过 */}
-                            {isPending && (
-                              <button
-                                onClick={() => handleStatusChange(comment.id, "APPROVED")}
-                                className="w-7 h-7 flex items-center justify-center rounded-lg border border-zinc-200/60 dark:border-zinc-800/80 bg-zinc-50/50 dark:bg-zinc-900/50 text-zinc-400 dark:text-zinc-500 hover:bg-emerald-50 dark:hover:bg-emerald-950/35 hover:text-emerald-500 hover:border-emerald-200 dark:hover:border-emerald-900/60 transition-all shadow-2xs cursor-pointer outline-none"
-                                title="审核通过"
-                              >
-                                <Check size={13} />
-                              </button>
-                            )}
+                {/* 归属文章条状卡片 */}
+                {comment.articleTitle && (
+                  <div className="mt-4 flex items-center justify-between rounded-lg border border-zinc-150/60 dark:border-zinc-900/60 bg-zinc-50/40 dark:bg-zinc-900/10 px-3.5 py-2 text-xs">
+                    <div className="flex items-center gap-2 text-zinc-600 dark:text-zinc-300">
+                      <span className="bg-primary/10 text-primary dark:bg-primary/20 dark:text-[#b0a2ff] px-2 py-0.5 rounded text-[10px] font-bold flex items-center gap-1 select-none">
+                        <FileText size={10} />
+                        <span>文章</span>
+                      </span>
+                      <span className="font-semibold">{comment.articleTitle}</span>
+                    </div>
+                    {comment.articleSlug && (
+                      <a
+                        href={`/articles/${comment.articleId}`}
+                        target="_blank"
+                        rel="noreferrer"
+                        className="inline-flex items-center gap-0.5 font-mono font-bold text-primary hover:underline text-[10px]"
+                      >
+                        <span>详情</span>
+                        <ExternalLink size={10} />
+                      </a>
+                    )}
+                  </div>
+                )}
 
-                            {/* 待审核或已通过 -> 移到垃圾评论 */}
-                            {(isPending || isApproved) && (
-                              <button
-                                onClick={() => handleStatusChange(comment.id, "SPAM")}
-                                className="w-7 h-7 flex items-center justify-center rounded-lg border border-zinc-200/60 dark:border-zinc-800/80 bg-zinc-50/50 dark:bg-zinc-900/50 text-zinc-400 dark:text-zinc-500 hover:bg-amber-50 dark:hover:bg-amber-955/35 hover:text-amber-500 hover:border-amber-200 dark:hover:border-amber-900/60 transition-all shadow-2xs cursor-pointer outline-none"
-                                title="标记为垃圾评论"
-                              >
-                                <ShieldAlert size={13} />
-                              </button>
-                            )}
+                {/* 底栏操作项 */}
+                <div className="mt-4 pt-3 border-t border-zinc-150/60 dark:border-zinc-900/50 flex flex-wrap items-center justify-between gap-3 text-xs select-none">
+                  <div className="flex items-center gap-5">
+                    {/* 回复 */}
+                    {!isTrash && !isSpam && (
+                      <button
+                        onClick={() => handleOpenReply(comment)}
+                        className="flex items-center gap-1.5 text-zinc-500 hover:text-blue-500 transition-colors cursor-pointer outline-none border-0 bg-transparent font-medium"
+                      >
+                        <Reply size={13} />
+                        <span>回复</span>
+                      </button>
+                    )}
 
-                            {/* 非回收站 -> 移到回收站 */}
-                            {!isTrash ? (
-                              <button
-                                onClick={() => handleStatusChange(comment.id, "TRASH")}
-                                className="w-7 h-7 flex items-center justify-center rounded-lg border border-zinc-200/60 dark:border-zinc-800/80 bg-zinc-50/50 dark:bg-zinc-900/50 text-zinc-400 dark:text-zinc-500 hover:bg-zinc-150 dark:hover:bg-zinc-800 hover:text-zinc-850 dark:hover:text-zinc-200 hover:border-zinc-300 dark:hover:border-zinc-700 transition-all shadow-2xs cursor-pointer outline-none"
-                                title="移至回收站"
-                              >
-                                <Trash size={13} />
-                              </button>
-                            ) : (
-                              // 回收站下 -> 恢复到待审核
-                              <button
-                                onClick={() => handleStatusChange(comment.id, "PENDING")}
-                                className="w-7 h-7 flex items-center justify-center rounded-lg border border-zinc-200/60 dark:border-zinc-800/80 bg-zinc-50/50 dark:bg-zinc-900/50 text-zinc-400 dark:text-zinc-500 hover:bg-indigo-50 dark:hover:bg-indigo-950/30 hover:text-indigo-500 hover:border-indigo-200 dark:hover:border-indigo-900/60 transition-all shadow-2xs cursor-pointer outline-none"
-                                title="还原为待审核"
-                              >
-                                <RotateCcw size={13} />
-                              </button>
-                            )}
+                    {/* 通过 */}
+                    {isPending && (
+                      <button
+                        onClick={() => handleStatusChange(comment.id, "APPROVED")}
+                        className="flex items-center gap-1.5 text-zinc-500 hover:text-emerald-500 transition-colors cursor-pointer outline-none border-0 bg-transparent font-medium"
+                      >
+                        <Check size={13} />
+                        <span>通过</span>
+                      </button>
+                    )}
 
-                            {/* 垃圾评论或回收站下 -> 彻底物理删除 */}
-                            {(isSpam || isTrash) && (
-                              <button
-                                onClick={() => handleDeleteRequest(comment.id)}
-                                className="w-7 h-7 flex items-center justify-center rounded-lg border border-zinc-200/60 dark:border-zinc-800/80 bg-zinc-50/50 dark:bg-zinc-900/50 text-zinc-400 dark:text-zinc-500 hover:bg-rose-50 dark:hover:bg-rose-955/30 hover:text-rose-500 hover:border-rose-200 dark:hover:border-rose-900/60 transition-all shadow-2xs cursor-pointer outline-none"
-                                title="彻底物理删除"
-                              >
-                                <Trash2 size={13} />
-                              </button>
-                            )}
-                          </>
-                        )}
-                      </div>
-                    </td>
-                  </tr>
-                );
-              })
-            )}
-          </tbody>
-        </table>
-      </div>
+                    {/* 封禁 (静默绑定，UI 预置占位) */}
+                    <button
+                      onClick={() => toast.info("封禁作者功能已在 UI 预置。拉黑该用户或邮箱需要后端新增拦截策略。")}
+                      className="flex items-center gap-1.5 text-zinc-500 hover:text-red-500 transition-colors cursor-pointer outline-none border-0 bg-transparent font-medium"
+                    >
+                      <Ban size={13} />
+                      <span>封禁</span>
+                    </button>
+
+                    {/* 拒绝 */}
+                    {(isPending || isApproved) && (
+                      <button
+                        onClick={() => handleStatusChange(comment.id, "SPAM")}
+                        className="flex items-center gap-1.5 text-zinc-500 hover:text-amber-500 transition-colors cursor-pointer outline-none border-0 bg-transparent font-medium"
+                      >
+                        <ShieldAlert size={13} />
+                        <span>拒绝</span>
+                      </button>
+                    )}
+
+                    {/* 置顶 (静默绑定，UI 预置占位) */}
+                    <button
+                      onClick={() => toast.info("置顶评论功能已在 UI 预置。在数据库中排序此字段需要后续扩展。")}
+                      className="flex items-center gap-1.5 text-zinc-500 hover:text-primary transition-colors cursor-pointer outline-none border-0 bg-transparent font-medium"
+                    >
+                      <ArrowUp size={13} />
+                      <span>置顶</span>
+                    </button>
+
+                    {/* 标记本文作者 (静默绑定，UI 预置占位) */}
+                    <button
+                      onClick={() => toast.info("标记为文章作者功能已在 UI 预置。本期可在后续的 API 拓展中接入。")}
+                      className="flex items-center gap-1.5 text-zinc-500 hover:text-indigo-500 transition-colors cursor-pointer outline-none border-0 bg-transparent font-medium"
+                    >
+                      <User size={13} />
+                      <span>标记为作者</span>
+                    </button>
+
+                    {/* 移至回收站 */}
+                    {!isTrash ? (
+                      <button
+                        onClick={() => handleStatusChange(comment.id, "TRASH")}
+                        className="flex items-center gap-1.5 text-zinc-500 hover:text-zinc-800 dark:hover:text-zinc-200 transition-colors cursor-pointer outline-none border-0 bg-transparent font-medium"
+                      >
+                        <Trash size={13} />
+                        <span>移至回收站</span>
+                      </button>
+                    ) : (
+                      // 恢复为待审核
+                      <button
+                        onClick={() => handleStatusChange(comment.id, "PENDING")}
+                        className="flex items-center gap-1.5 text-zinc-500 hover:text-primary transition-colors cursor-pointer outline-none border-0 bg-transparent font-medium"
+                      >
+                        <RotateCcw size={13} />
+                        <span>还原为待审核</span>
+                      </button>
+                    )}
+
+                    {/* 彻底删除 */}
+                    {(isSpam || isTrash) && (
+                      <button
+                        onClick={() => handleDeleteRequest(comment.id)}
+                        className="flex items-center gap-1.5 text-zinc-500 hover:text-rose-500 transition-colors cursor-pointer outline-none border-0 bg-transparent font-medium"
+                      >
+                        <Trash2 size={13} />
+                        <span>删除</span>
+                      </button>
+                    )}
+                  </div>
+
+                  {isActionLoading && (
+                    <div className="flex items-center gap-1.5 text-zinc-400 font-mono text-[10px]">
+                      <Loader2 size={11} className="animate-spin text-primary" />
+                      <span>正在处理中...</span>
+                    </div>
+                  )}
+                </div>
+              </div>
+            );
+          })}
+        </div>
+      )}
 
       {/* 分页控制区 */}
       {totalPages > 1 && (

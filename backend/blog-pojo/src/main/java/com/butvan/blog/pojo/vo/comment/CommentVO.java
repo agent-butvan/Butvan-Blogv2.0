@@ -47,5 +47,11 @@ public class CommentVO {
 
     private LocalDateTime createdAt; // 评论发表的创建时间
 
+    private String visitorEmail; // 访客邮箱
+
+    private String ipAddress; // 评论者 IP
+
+    private String userAgent; // 浏览器 UA
+
     private List<CommentVO> replies; // 递归嵌套的二级及后代子评论回复列表 (树状支持)
 }

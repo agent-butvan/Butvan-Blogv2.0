@@ -287,6 +287,9 @@ public class CommentServiceImpl implements CommentService {
                             .articleTitle(c.getArticle().getTitle())
                             .articleSlug(c.getArticle().getSlug())
                             .createdAt(c.getCreatedAt())
+                            .visitorEmail(c.getVisitorEmail())
+                            .ipAddress(c.getIpAddress())
+                            .userAgent(c.getUserAgent())
                             .build();
                 })
                 .collect(Collectors.toList());
