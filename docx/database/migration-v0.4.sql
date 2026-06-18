@@ -28,7 +28,8 @@ BEGIN
     VALUES 
     (v_content_id, '文章列表', 'PAGE', '/articles', 'BookOpen', 'ADMIN_SIDEBAR', 1, TRUE),
     (v_content_id, '分类管理', 'PAGE', '/categories', 'FolderOpen', 'ADMIN_SIDEBAR', 2, TRUE),
-    (v_content_id, '标签管理', 'PAGE', '/tags', 'Tag', 'ADMIN_SIDEBAR', 3, TRUE);
+    (v_content_id, '标签管理', 'PAGE', '/tags', 'Tag', 'ADMIN_SIDEBAR', 3, TRUE),
+    (v_content_id, '评论管理', 'PAGE', '/comments', 'MessageSquare', 'ADMIN_SIDEBAR', 4, TRUE);
 
     -- 4. 场景空间（一级分组夹）
     INSERT INTO blog_navigation (title, link_type, icon, position, sort_order, is_visible)
