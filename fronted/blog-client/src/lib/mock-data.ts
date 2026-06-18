@@ -19,6 +19,7 @@ export interface Article {
   tags?: Array<{ id: number; name: string }>
   wordCount: number        // 字数
   readTime: number         // 预计阅读时间（分钟）
+  isAllowComment?: boolean // 是否开放评论
 }
 
 export interface Category {

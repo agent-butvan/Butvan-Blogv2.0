@@ -516,7 +516,7 @@ export default function ArticleDetailPage() {
               </nav>
 
               {/* 5. 评论区交流讨论 */}
-              <CommentSection articleId={article.id} isAllowComment={article.isAllowComment} />
+              <CommentSection articleId={article.id} isAllowComment={article.isAllowComment ?? true} />
 
             </article>
 

@@ -161,10 +161,10 @@ export default function CommentForm({
   return (
     <form 
       onSubmit={handleSubmit}
-      className={`w-full flex flex-col gap-5 p-6 rounded-2xl border transition-all duration-300 ${
+      className={`w-full flex flex-col gap-5 transition-all duration-300 ${
         parentId 
-          ? 'bg-zinc-100/50 dark:bg-zinc-900/30 border-zinc-200/40 dark:border-zinc-800/40 mt-3 shadow-inner' 
-          : 'bg-white/80 dark:bg-zinc-900/50 backdrop-blur-md border-zinc-200/50 dark:border-zinc-800/60 shadow-md shadow-zinc-200/10 dark:shadow-none'
+          ? 'border-t border-zinc-200/40 dark:border-zinc-900/50 mt-4 pt-4' 
+          : 'bg-transparent border-none p-0'
       }`}
     >
       {/* 头部：若是回复别人，显示提示 */}
@@ -256,7 +256,7 @@ export default function CommentForm({
 
       {/* 编辑/预览核心输入容器 */}
       {previewMode ? (
-        <div className="min-h-[120px] rounded-xl border border-zinc-250/30 dark:border-zinc-800/40 bg-zinc-50/50 dark:bg-zinc-950/20 p-4 text-xs leading-relaxed text-zinc-700 dark:text-zinc-300 select-text overflow-y-auto">
+        <div className="min-h-[120px] rounded-xl border border-zinc-200/50 dark:border-zinc-800/60 bg-white/40 dark:bg-zinc-900/20 p-4 text-xs leading-relaxed text-zinc-700 dark:text-zinc-300 select-text overflow-y-auto">
           {content.trim() ? (
             <HtmlRenderer html={getPreviewHtml()} />
           ) : (
@@ -270,7 +270,7 @@ export default function CommentForm({
             rows={5}
             value={content}
             onChange={(e) => setContent(e.target.value)}
-            className="w-full bg-zinc-100/50 dark:bg-zinc-950/25 border border-zinc-200/40 dark:border-zinc-800/60 rounded-xl p-4 transition-colors focus:border-zinc-300 dark:focus:border-zinc-700 outline-none text-xs leading-relaxed font-sans text-zinc-700 dark:text-zinc-300 placeholder:text-zinc-350 dark:placeholder:text-zinc-650 resize-y"
+            className="w-full bg-white/80 dark:bg-zinc-900/30 border border-zinc-200/65 dark:border-zinc-800/80 rounded-xl p-4 transition-colors focus:border-zinc-300 dark:focus:border-zinc-700 outline-none text-xs leading-relaxed font-sans text-zinc-700 dark:text-zinc-300 placeholder:text-zinc-350 dark:placeholder:text-zinc-650 resize-y"
             maxLength={CONTENT_MAX_LENGTH}
             required
             disabled={submitting}
@@ -364,15 +364,15 @@ export default function CommentForm({
             </span>
 
             {/* 大厂极简黑色投递按钮 */}
-            <Button
+            <button
               type="submit"
-              size="sm"
-              isLoading={submitting}
-              className="bg-zinc-900 hover:bg-zinc-800 dark:bg-zinc-100 dark:hover:bg-zinc-200 text-white dark:text-zinc-950 font-heading font-extrabold rounded-xl px-5 flex items-center gap-1.5 shadow-sm hover:shadow-md transition-all duration-300 cursor-pointer"
+              disabled={submitting}
+              className="bg-zinc-900 hover:bg-zinc-800 dark:bg-zinc-100 dark:hover:bg-zinc-200 text-white dark:text-zinc-950 font-heading font-extrabold rounded-xl h-8 px-5 flex items-center gap-1.5 shadow-sm hover:shadow-md transition-all duration-300 cursor-pointer disabled:opacity-50"
             >
+              {submitting && <div className="w-3 h-3 border-2 border-current border-t-transparent rounded-full animate-spin"></div>}
               <span>{submitting ? '投递中...' : '投递'}</span>
               {!submitting && <Send size={11} />}
-            </Button>
+            </button>
           </div>
         </div>
       </div>

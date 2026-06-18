@@ -214,7 +214,7 @@ export default function CommentSection({
           {comments.map((comment, idx) => (
             <div 
               key={comment.id}
-              className="group relative flex gap-4 p-5 rounded-2xl border border-transparent bg-white/40 dark:bg-zinc-900/10 hover:bg-zinc-150/45 dark:hover:bg-zinc-900/25 hover:border-zinc-200/50 dark:hover:border-zinc-800/60 shadow-xs hover:shadow-md transition-all duration-300"
+              className="group relative flex gap-4 py-5 border-b border-zinc-200/45 dark:border-zinc-900/50 last:border-b-0 transition-all duration-300"
             >
               {/* 一级头像 */}
               <div className="flex-shrink-0 select-none">
