@@ -52,10 +52,27 @@ public class CommentController {
             HttpServletRequest request) {
         log.info("前台提交文章评论 API 请求: articleId={}, visitorName={}", articleId, dto.getVisitorName());
         
-        // 解析真实 IP，考虑代理层情况
+        // 解析真实 IP，依次穿透多层反向代理 Header
         String ipAddress = request.getHeader("X-Forwarded-For");
+        if (ipAddress != null && !ipAddress.isEmpty() && !"unknown".equalsIgnoreCase(ipAddress)) {
+            // X-Forwarded-For 可能包含多个 IP（逗号分隔），取第一个真实客户端 IP
+            ipAddress = ipAddress.split(",")[0].trim();
+        }
+        if (ipAddress == null || ipAddress.isEmpty() || "unknown".equalsIgnoreCase(ipAddress)) {
+            ipAddress = request.getHeader("X-Real-IP");
+        }
+        if (ipAddress == null || ipAddress.isEmpty() || "unknown".equalsIgnoreCase(ipAddress)) {
+            ipAddress = request.getHeader("Proxy-Client-IP");
+        }
+        if (ipAddress == null || ipAddress.isEmpty() || "unknown".equalsIgnoreCase(ipAddress)) {
+            ipAddress = request.getHeader("WL-Proxy-Client-IP");
+        }
         if (ipAddress == null || ipAddress.isEmpty() || "unknown".equalsIgnoreCase(ipAddress)) {
             ipAddress = request.getRemoteAddr();
+        }
+        // 将 IPv6 本机回环地址统一转换为 IPv4 格式
+        if ("0:0:0:0:0:0:0:1".equals(ipAddress) || "::1".equals(ipAddress)) {
+            ipAddress = "127.0.0.1";
         }
         String userAgent = request.getHeader("User-Agent");
 

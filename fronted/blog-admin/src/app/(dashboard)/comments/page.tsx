@@ -90,6 +90,17 @@ const parseUA = (ua?: string | null): string => {
 };
 
 /**
+ * IP 地址友好化显示：将 IPv6 本机回环地址转为可读格式
+ */
+const formatIP = (ip?: string | null): string => {
+  if (!ip) return "未知";
+  if (ip === "0:0:0:0:0:0:0:1" || ip === "::1") return "127.0.0.1";
+  // 如果包含逗号（多级代理），只取第一个
+  if (ip.includes(",")) return ip.split(",")[0].trim();
+  return ip;
+};
+
+/**
  * 评论状态 Tab 定义
  */
 const STATUS_TABS = [
@@ -377,7 +388,7 @@ export default function CommentsPage() {
                         {comment.ipAddress && (
                           <span className="flex items-center gap-1" title="评论者 IP">
                             <Globe size={11} className="text-zinc-450 shrink-0" />
-                            <span>{comment.ipAddress}</span>
+                            <span>{formatIP(comment.ipAddress)}</span>
                           </span>
                         )}
                         {comment.visitorEmail && (
@@ -435,7 +446,7 @@ export default function CommentsPage() {
 
                 {/* 归属文章条状卡片 */}
                 {comment.articleTitle && (
-                  <div className="mt-4 flex items-center justify-between rounded-lg border border-zinc-150/60 dark:border-zinc-900/60 bg-zinc-50/40 dark:bg-zinc-900/10 px-3.5 py-2 text-xs">
+                  <div className="mt-4 flex items-center justify-between rounded-lg bg-zinc-50/50 dark:bg-zinc-900/15 px-3.5 py-2 text-xs">
                     <div className="flex items-center gap-2 text-zinc-600 dark:text-zinc-300">
                       <span className="bg-primary/10 text-primary dark:bg-primary/20 dark:text-[#b0a2ff] px-2 py-0.5 rounded text-[10px] font-bold flex items-center gap-1 select-none">
                         <FileText size={10} />
@@ -458,13 +469,13 @@ export default function CommentsPage() {
                 )}
 
                 {/* 底栏操作项 */}
-                <div className="mt-4 pt-3 border-t border-zinc-150/60 dark:border-zinc-900/50 flex flex-wrap items-center justify-between gap-3 text-xs select-none">
+                <div className="mt-3.5 pt-0 flex flex-wrap items-center justify-between gap-3 text-xs select-none">
                   <div className="flex items-center gap-5">
                     {/* 回复 */}
                     {!isTrash && !isSpam && (
                       <button
                         onClick={() => handleOpenReply(comment)}
-                        className="flex items-center gap-1.5 text-zinc-500 hover:text-blue-500 transition-colors cursor-pointer outline-none border-0 bg-transparent font-medium"
+                        className="flex items-center gap-1.5 text-blue-400/80 hover:text-blue-500 transition-colors cursor-pointer outline-none border-0 bg-transparent font-medium"
                       >
                         <Reply size={13} />
                         <span>回复</span>
@@ -475,7 +486,7 @@ export default function CommentsPage() {
                     {isPending && (
                       <button
                         onClick={() => handleStatusChange(comment.id, "APPROVED")}
-                        className="flex items-center gap-1.5 text-zinc-500 hover:text-emerald-500 transition-colors cursor-pointer outline-none border-0 bg-transparent font-medium"
+                        className="flex items-center gap-1.5 text-emerald-400/80 hover:text-emerald-500 transition-colors cursor-pointer outline-none border-0 bg-transparent font-medium"
                       >
                         <Check size={13} />
                         <span>通过</span>
@@ -485,7 +496,7 @@ export default function CommentsPage() {
                     {/* 封禁 (静默绑定，UI 预置占位) */}
                     <button
                       onClick={() => toast.info("封禁作者功能已在 UI 预置。拉黑该用户或邮箱需要后端新增拦截策略。")}
-                      className="flex items-center gap-1.5 text-zinc-500 hover:text-red-500 transition-colors cursor-pointer outline-none border-0 bg-transparent font-medium"
+                      className="flex items-center gap-1.5 text-red-400/70 hover:text-red-500 transition-colors cursor-pointer outline-none border-0 bg-transparent font-medium"
                     >
                       <Ban size={13} />
                       <span>封禁</span>
@@ -495,7 +506,7 @@ export default function CommentsPage() {
                     {(isPending || isApproved) && (
                       <button
                         onClick={() => handleStatusChange(comment.id, "SPAM")}
-                        className="flex items-center gap-1.5 text-zinc-500 hover:text-amber-500 transition-colors cursor-pointer outline-none border-0 bg-transparent font-medium"
+                        className="flex items-center gap-1.5 text-amber-400/80 hover:text-amber-500 transition-colors cursor-pointer outline-none border-0 bg-transparent font-medium"
                       >
                         <ShieldAlert size={13} />
                         <span>拒绝</span>
@@ -505,7 +516,7 @@ export default function CommentsPage() {
                     {/* 置顶 (静默绑定，UI 预置占位) */}
                     <button
                       onClick={() => toast.info("置顶评论功能已在 UI 预置。在数据库中排序此字段需要后续扩展。")}
-                      className="flex items-center gap-1.5 text-zinc-500 hover:text-primary transition-colors cursor-pointer outline-none border-0 bg-transparent font-medium"
+                      className="flex items-center gap-1.5 text-violet-400/80 hover:text-violet-500 transition-colors cursor-pointer outline-none border-0 bg-transparent font-medium"
                     >
                       <ArrowUp size={13} />
                       <span>置顶</span>
@@ -514,7 +525,7 @@ export default function CommentsPage() {
                     {/* 标记本文作者 (静默绑定，UI 预置占位) */}
                     <button
                       onClick={() => toast.info("标记为文章作者功能已在 UI 预置。本期可在后续的 API 拓展中接入。")}
-                      className="flex items-center gap-1.5 text-zinc-500 hover:text-indigo-500 transition-colors cursor-pointer outline-none border-0 bg-transparent font-medium"
+                      className="flex items-center gap-1.5 text-indigo-400/80 hover:text-indigo-500 transition-colors cursor-pointer outline-none border-0 bg-transparent font-medium"
                     >
                       <User size={13} />
                       <span>标记为作者</span>
@@ -524,7 +535,7 @@ export default function CommentsPage() {
                     {!isTrash ? (
                       <button
                         onClick={() => handleStatusChange(comment.id, "TRASH")}
-                        className="flex items-center gap-1.5 text-zinc-500 hover:text-zinc-800 dark:hover:text-zinc-200 transition-colors cursor-pointer outline-none border-0 bg-transparent font-medium"
+                        className="flex items-center gap-1.5 text-zinc-400 hover:text-zinc-600 dark:hover:text-zinc-300 transition-colors cursor-pointer outline-none border-0 bg-transparent font-medium"
                       >
                         <Trash size={13} />
                         <span>移至回收站</span>
@@ -533,7 +544,7 @@ export default function CommentsPage() {
                       // 恢复为待审核
                       <button
                         onClick={() => handleStatusChange(comment.id, "PENDING")}
-                        className="flex items-center gap-1.5 text-zinc-500 hover:text-primary transition-colors cursor-pointer outline-none border-0 bg-transparent font-medium"
+                        className="flex items-center gap-1.5 text-sky-400/80 hover:text-sky-500 transition-colors cursor-pointer outline-none border-0 bg-transparent font-medium"
                       >
                         <RotateCcw size={13} />
                         <span>还原为待审核</span>
@@ -544,7 +555,7 @@ export default function CommentsPage() {
                     {(isSpam || isTrash) && (
                       <button
                         onClick={() => handleDeleteRequest(comment.id)}
-                        className="flex items-center gap-1.5 text-zinc-500 hover:text-rose-500 transition-colors cursor-pointer outline-none border-0 bg-transparent font-medium"
+                        className="flex items-center gap-1.5 text-rose-400/80 hover:text-rose-500 transition-colors cursor-pointer outline-none border-0 bg-transparent font-medium"
                       >
                         <Trash2 size={13} />
                         <span>删除</span>
