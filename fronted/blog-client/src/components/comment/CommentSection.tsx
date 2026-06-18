@@ -154,13 +154,31 @@ export default function CommentSection({
     }
   }
 
-  // 计算 Markdown 解析 HTML
+  // 极轻量级、无依赖的前端 HTML XSS 注入净化过滤器，拦截危险标签、事件和伪协议
+  const sanitizeCommentHtml = (htmlStr: string): string => {
+    if (!htmlStr) return ''
+    return htmlStr
+      // 1. 移去 <script> 标签及其中间的内容
+      .replace(/<script\b[^<]*(?:(?!<\/script>)<[^<]*)*<\/script>/gi, '')
+      // 2. 移去 <iframe>, <object>, <embed>, <form>, <style>, <link>, <meta> 标签及其中间内容
+      .replace(/<(iframe|object|embed|form|link|meta|style)\b[^>]*>([\s\S]*?)<\/\1>/gi, '')
+      .replace(/<(iframe|object|embed|form|link|meta|style)\b[^>]*>/gi, '')
+      // 3. 移去任何 on 开头的事件属性，例如 onload, onerror, onclick
+      .replace(/\bon\w+\s*=\s*(['"][^'"]*['"]|[^\s>]+)/gi, '')
+      // 4. 移去 javascript: 伪协议链接，例如 href="javascript:..."
+      .replace(/\bhref\s*=\s*(['"]\s*javascript:[^'"]*['"]|javascript:[^\s>]+)/gi, 'href="#"')
+      // 5. 移去 src="javascript:..." 伪协议
+      .replace(/\bsrc\s*=\s*(['"]\s*javascript:[^'"]*['"]|javascript:[^\s>]+)/gi, 'src=""')
+  }
+
+  // 计算 Markdown 解析 HTML，并全数通过 XSS 过滤器进行安全净化
   const getCommentHtml = (contentStr: string) => {
     if (!contentStr) return ''
     try {
-      return marked.parse(contentStr) as string
+      const rawHtml = marked.parse(contentStr) as string
+      return sanitizeCommentHtml(rawHtml)
     } catch {
-      return contentStr
+      return sanitizeCommentHtml(contentStr)
     }
   }
 
@@ -266,7 +284,7 @@ export default function CommentSection({
 
                 {/* 评论 Markdown 正文渲染区 */}
                 <div className="text-xs font-serif text-zinc-700 dark:text-zinc-300 leading-relaxed break-words whitespace-normal select-text">
-                  <HtmlRenderer html={getCommentHtml(comment.content)} />
+                  <HtmlRenderer html={getCommentHtml(comment.content)} proseClass="comment-content-prose" />
                 </div>
 
                 {/* 元数据及 UA 浏览器标识 + 操作行 */}
@@ -386,7 +404,7 @@ export default function CommentSection({
 
                           {/* 二级正文 Markdown */}
                           <div className="font-serif text-zinc-650 dark:text-zinc-350 leading-relaxed break-words whitespace-normal select-text">
-                            <HtmlRenderer html={getCommentHtml(reply.content)} />
+                            <HtmlRenderer html={getCommentHtml(reply.content)} proseClass="comment-content-prose" />
                           </div>
 
                           {/* 二级底部及 UA/功能行 */}

@@ -6,6 +6,7 @@ import MarkdownCodeBlock from './MarkdownCodeBlock'
 
 interface HtmlRendererProps {
   html: string
+  proseClass?: string
 }
 
 // 基础 Markdown 解析配置
@@ -23,7 +24,7 @@ marked.setOptions({
  * 3. 客户端激活（useClient）后，使用浏览器的 DOMParser 递归解析 HTML 树并构建 React Virtual DOM 树。
  * 4. 在递归过程中精准拦截 <pre><code> 节点，由定制好的 React 组件 MarkdownCodeBlock 来接管，从而不破坏 React 本身的生命周期与组件状态。
  */
-export default function HtmlRenderer({ html }: HtmlRendererProps) {
+export default function HtmlRenderer({ html, proseClass = 'article-content-prose' }: HtmlRendererProps) {
   const [reactContent, setReactContent] = useState<React.ReactNode>(null)
 
   // 同步将 Markdown / 原始 HTML 转换为标准的 HTML 富文本，保证 SSR & 客户端输入一致
@@ -133,14 +134,14 @@ export default function HtmlRenderer({ html }: HtmlRendererProps) {
   if (!reactContent) {
     return (
       <div 
-        className="article-content-prose max-w-none"
+        className={`${proseClass} max-w-none`}
         dangerouslySetInnerHTML={{ __html: cleanHtml }}
       />
     )
   }
 
   return (
-    <div className="article-content-prose max-w-none">
+    <div className={`${proseClass} max-w-none`}>
       {reactContent}
     </div>
   )
