@@ -235,11 +235,14 @@ export default function CommentSection({
               className="group relative flex gap-4 py-5 border-b border-zinc-200/45 dark:border-zinc-900/50 last:border-b-0 transition-all duration-300"
             >
               {/* 一级头像 */}
-              <div className="flex-shrink-0 select-none">
+              <div className="flex-shrink-0 select-none relative">
+                {comment.userId && (
+                  <span className="absolute -left-1 top-0.5 w-[3px] h-8 rounded-full bg-[#727BBA]" title="站长" />
+                )}
                 <img
                   src={comment.avatarUrl}
                   alt={comment.nickname}
-                  className="w-10 h-10 rounded-xl bg-zinc-100 dark:bg-zinc-900 border border-zinc-200/50 dark:border-zinc-850 shadow-inner"
+                  className={`w-10 h-10 rounded-xl bg-zinc-100 dark:bg-zinc-900 border shadow-inner ${comment.userId ? 'border-[#727BBA]/50 ring-1 ring-[#727BBA]/20' : 'border-zinc-200/50 dark:border-zinc-850'}`}
                   loading="lazy"
                 />
               </div>
@@ -264,11 +267,11 @@ export default function CommentSection({
                       </span>
                     )}
 
-                    {/* 博主徽章 */}
-                    {comment.isAuthorReplied && (
+                    {/* 博主/站长徽章 */}
+                    {comment.userId && (
                       <span className="inline-flex items-center gap-0.5 px-1.5 py-0.5 bg-[#727BBA]/15 text-[#727BBA] dark:text-[#8E97D5] border border-[#727BBA]/25 text-[9px] font-extrabold rounded scale-90">
                         <CheckCircle size={8} className="text-[#727BBA] dark:text-[#8E97D5]" />
-                        博主
+                        站长
                       </span>
                     )}
                   </div>
@@ -355,11 +358,14 @@ export default function CommentSection({
                         className="group/reply flex gap-3.5 text-xs"
                       >
                         {/* 二级头像 */}
-                        <div className="flex-shrink-0 select-none">
+                        <div className="flex-shrink-0 select-none relative">
+                          {reply.userId && (
+                            <span className="absolute -left-0.5 top-0.5 w-[2.5px] h-6 rounded-full bg-[#727BBA]" title="站长" />
+                          )}
                           <img
                             src={reply.avatarUrl}
                             alt={reply.nickname}
-                            className="w-8 h-8 rounded-lg bg-zinc-150 dark:bg-zinc-900 border border-zinc-200/40 dark:border-zinc-850 shadow-inner"
+                            className={`w-8 h-8 rounded-lg bg-zinc-150 dark:bg-zinc-900 border shadow-inner ${reply.userId ? 'border-[#727BBA]/50 ring-1 ring-[#727BBA]/20' : 'border-zinc-200/40 dark:border-zinc-850'}`}
                             loading="lazy"
                           />
                         </div>
@@ -384,9 +390,9 @@ export default function CommentSection({
                                 </span>
                               )}
 
-                              {reply.isAuthorReplied && (
+                              {reply.userId && (
                                 <span className="inline-flex items-center gap-0.5 px-1.5 py-0.5 bg-[#727BBA]/15 text-[#727BBA] dark:text-[#8E97D5] border border-[#727BBA]/25 text-[8px] font-extrabold rounded scale-90">
-                                  博主
+                                  站长
                                 </span>
                               )}
 

@@ -617,7 +617,7 @@ export default function CommentsPage() {
             {/* 弹窗面板 */}
             <div className="relative z-10 w-full max-w-md mx-4 rounded-xl bg-white dark:bg-zinc-900 border border-zinc-200/50 dark:border-zinc-800 shadow-xl animate-slide-up">
               <div className="p-6">
-                <div className="flex items-center justify-between pb-3 border-b border-zinc-150/80 dark:border-zinc-800">
+                <div className="flex items-center justify-between pb-3">
                   <h3 className="font-heading text-base font-bold text-neutral-dark dark:text-zinc-150 flex items-center gap-1.5">
                     <Reply size={16} className="text-primary" />
                     <span>快捷回复评论</span>
@@ -633,7 +633,7 @@ export default function CommentsPage() {
 
                 <form onSubmit={handleReplySubmit} className="mt-4 space-y-4">
                   {/* 原评论预览 - Markdown 渲染 */}
-                  <div className="rounded-xl bg-zinc-50/80 dark:bg-zinc-955/40 border border-zinc-150/60 dark:border-zinc-850 p-3.5 space-y-1.5">
+                  <div className="rounded-xl bg-zinc-50/80 dark:bg-zinc-955/40 p-3.5 space-y-1.5">
                     <div className="flex items-center gap-1.5 text-[10px] font-bold text-zinc-400 dark:text-zinc-500">
                       <span>评论人: {targetComment.nickname}</span>
                       <span>•</span>
@@ -661,7 +661,7 @@ export default function CommentsPage() {
                   </div>
 
                   {/* 底栏按钮 */}
-                  <div className="flex items-center gap-3 pt-3 border-t border-zinc-150/80 dark:border-zinc-800">
+                  <div className="flex items-center gap-3 pt-3">
                     <button
                       type="button"
                       disabled={replySubmitting}
