@@ -32,7 +32,8 @@ const BREADCRUMB_MAP: Record<string, string> = {
   "series": "专栏管理",
   "subscribers": "订阅管理",
   "navigation": "导航管理",
-  "pages": "单页管理"
+  "pages": "单页管理",
+  "profile": "个人中心"
 };
 
 /**
@@ -267,7 +268,7 @@ export default function TopBar() {
               
               {/* 功能操作项 */}
               <button
-                onClick={() => { router.push("/settings"); setMenuOpen(false); }}
+                onClick={() => { router.push("/profile"); setMenuOpen(false); }}
                 className="flex w-full items-center gap-2 px-3 py-2 text-xs text-zinc-600 dark:text-zinc-400 hover:bg-zinc-50 dark:hover:bg-zinc-800 transition-colors"
               >
                 <Settings size={12} /> 个人设置

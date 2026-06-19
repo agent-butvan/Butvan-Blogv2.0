@@ -6,6 +6,7 @@ import { cn } from "@heroui/react";
 import * as Icons from "lucide-react";
 import { ChevronLeft, ChevronRight, AlertCircle, RefreshCw, HelpCircle, ChevronDown, X } from "lucide-react";
 import apiClient from "@/lib/api";
+import AccountSummary from "./AccountSummary";
 import type { ApiResponse } from "@/types/common";
 import type { NavigationItem } from "@/types/navigation";
 
@@ -313,12 +314,8 @@ export default function Sidebar({ isMobile = false, isOpen = false, onClose }: S
         })}
       </nav>
 
-      {/* 底部版权信息 (极简) */}
-      {!collapsed && (
-        <div className="px-3.5 py-2.5 border-t border-zinc-200/50 dark:border-zinc-800/40 shrink-0 text-left bg-white/10 dark:bg-zinc-900/5">
-          <p className="text-[9px] text-zinc-400 dark:text-zinc-500 tracking-wider font-mono">VB CONSOLE 2.0</p>
-        </div>
-      )}
+      {/* 底部账号信息与快捷操作 */}
+      <AccountSummary collapsed={collapsed} isMobile={isMobile} onNavigate={onClose} />
     </aside>
   );
 }

@@ -29,6 +29,7 @@ public class LoginVO implements Serializable {
         private Long id;          // 用户唯一ID
         private String username;  // 用户名
         private String nickname;  // 用户展示昵称
+        private String email;     // 用户绑定邮箱
         private String avatarUrl; // 用户头像URL
         private String role;      // 用户身份角色：ADMIN | AUTHOR
     }

@@ -1,9 +1,12 @@
 package com.butvan.blog.service.service.impl;
 
 import com.butvan.blog.common.exception.BusinessException;
+import com.butvan.blog.pojo.dto.auth.CurrentUserUpdateDTO;
 import com.butvan.blog.pojo.dto.auth.LoginDTO;
+import com.butvan.blog.pojo.dto.auth.PasswordChangeDTO;
 import com.butvan.blog.pojo.dto.auth.RegisterDTO;
 import com.butvan.blog.pojo.entity.User;
+import com.butvan.blog.pojo.vo.auth.CurrentUserVO;
 import com.butvan.blog.pojo.vo.auth.LoginVO;
 import com.butvan.blog.service.repository.UserRepository;
 import com.butvan.blog.service.security.JwtUtil;
@@ -13,6 +16,7 @@ import lombok.extern.slf4j.Slf4j;
 import org.springframework.security.crypto.password.PasswordEncoder;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
+import java.time.LocalDateTime;
 
 /**
  * 账号认证与权限业务逻辑层实现类
@@ -82,6 +86,7 @@ public class AuthServiceImpl implements AuthService {
      * @return 登录结果视图对象
      */
     @Override
+    @Transactional
     public LoginVO login(LoginDTO loginDTO) {
         log.info("开始处理用户登录请求，用户名: {}", loginDTO.getUsername());
 
@@ -103,6 +108,8 @@ public class AuthServiceImpl implements AuthService {
 
         // 4. 签发 JWT
         String token = jwtUtil.generateToken(user.getUsername());
+        user.setLastLoginAt(LocalDateTime.now());
+        userRepository.save(user);
         log.info("用户 [{}] 登录成功，JWT 签发完毕", user.getUsername());
 
         // 5. 组装 LoginVO 响应体
@@ -112,9 +119,125 @@ public class AuthServiceImpl implements AuthService {
                         .id(user.getId())
                         .username(user.getUsername())
                         .nickname(user.getNickname())
+                        .email(user.getEmail())
                         .avatarUrl(user.getAvatarUrl())
                         .role(user.getRole())
                         .build())
+                .build();
+    }
+
+    /**
+     * 查询当前登录账号的个人中心资料
+     *
+     * @param username 当前登录用户名
+     * @return 当前账号资料视图对象
+     */
+    @Override
+    public CurrentUserVO getCurrentUser(String username) {
+        User user = findActiveUser(username);
+        return toCurrentUserVO(user);
+    }
+
+    /**
+     * 更新当前登录账号的基础资料
+     *
+     * @param username 当前登录用户名
+     * @param dto      基础资料更新请求
+     * @return 更新后的当前账号资料视图对象
+     */
+    @Override
+    @Transactional
+    public CurrentUserVO updateCurrentUser(String username, CurrentUserUpdateDTO dto) {
+        User user = findActiveUser(username);
+
+        if (dto.getEmail() != null && !dto.getEmail().trim().isEmpty()) {
+            userRepository.findByEmail(dto.getEmail().trim())
+                    .filter(existing -> !existing.getId().equals(user.getId()))
+                    .ifPresent(existing -> {
+                        throw new BusinessException(400, "该电子邮箱已被其它账号绑定");
+                    });
+            user.setEmail(dto.getEmail().trim());
+        } else {
+            user.setEmail(null);
+        }
+
+        user.setNickname(dto.getNickname().trim());
+        user.setAvatarUrl(normalizeBlank(dto.getAvatarUrl()));
+        user.setBio(normalizeBlank(dto.getBio()));
+
+        User savedUser = userRepository.save(user);
+        log.info("用户 [{}] 已更新个人中心基础资料", username);
+        return toCurrentUserVO(savedUser);
+    }
+
+    /**
+     * 修改当前登录账号密码
+     *
+     * @param username 当前登录用户名
+     * @param dto      密码修改请求
+     */
+    @Override
+    @Transactional
+    public void changePassword(String username, PasswordChangeDTO dto) {
+        User user = findActiveUser(username);
+        if (!passwordEncoder.matches(dto.getCurrentPassword(), user.getPasswordHash())) {
+            throw new BusinessException(400, "当前密码不正确");
+        }
+        if (passwordEncoder.matches(dto.getNewPassword(), user.getPasswordHash())) {
+            throw new BusinessException(400, "新密码不能与当前密码相同");
+        }
+        user.setPasswordHash(passwordEncoder.encode(dto.getNewPassword()));
+        userRepository.save(user);
+        log.info("用户 [{}] 已完成密码更新", username);
+    }
+
+    /**
+     * 按用户名查询处于启用状态的用户实体
+     *
+     * @param username 当前登录用户名
+     * @return 用户实体
+     */
+    private User findActiveUser(String username) {
+        User user = userRepository.findByUsername(username)
+                .orElseThrow(() -> new BusinessException(404, "当前登录账号不存在"));
+        if (!"ACTIVE".equalsIgnoreCase(user.getStatus())) {
+            throw new BusinessException(403, "该账号已被停用，请联系管理员");
+        }
+        return user;
+    }
+
+    /**
+     * 将空白字符串规整为 null，避免数据库写入无意义空字符串
+     *
+     * @param value 待规整的文本值
+     * @return 规整后的文本值
+     */
+    private String normalizeBlank(String value) {
+        if (value == null || value.trim().isEmpty()) {
+            return null;
+        }
+        return value.trim();
+    }
+
+    /**
+     * 将用户实体转换为当前账号个人中心视图对象
+     *
+     * @param user 用户实体
+     * @return 当前账号资料视图对象
+     */
+    private CurrentUserVO toCurrentUserVO(User user) {
+        return CurrentUserVO.builder()
+                .id(user.getId())
+                .username(user.getUsername())
+                .nickname(user.getNickname())
+                .email(user.getEmail())
+                .avatarUrl(user.getAvatarUrl())
+                .bio(user.getBio())
+                .role(user.getRole())
+                .status(user.getStatus())
+                .lastLoginAt(user.getLastLoginAt())
+                .createdAt(user.getCreatedAt())
+                .updatedAt(user.getUpdatedAt())
                 .build();
     }
 }

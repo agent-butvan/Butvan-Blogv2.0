@@ -139,6 +139,8 @@ Butvan Blog2.0/                                    # 📦 项目根目录
 │       │   │   │   │   └── page.tsx               #           系列CRUD + 文章拖入排序
 │       │   │   │   ├── subscribers/               #         订阅者管理
 │       │   │   │   │   └── page.tsx               #           订阅列表、邮件群发入口
+│       │   │   │   ├── profile/                   #         个人中心
+│       │   │   │   │   └── page.tsx               #           当前账号资料、安全改密、邮箱与第三方绑定状态
 │       │   │   │   └── settings/                  #         系统设置
 │       │   │   │       └── page.tsx               #           站点配置、友链管理、操作日志查看
 │       │   │   ├── layout.tsx                     #         全局根布局
@@ -149,6 +151,7 @@ Butvan Blog2.0/                                    # 📦 项目根目录
 │       │   │   ├── layout/                        #       后台布局组件
 │       │   │   │   ├── AdminLayout.tsx            #         后台整体布局壳（侧边栏+页签栏+内容区）
 │       │   │   │   ├── Sidebar.tsx                #         可折叠侧边栏菜单
+│       │   │   │   ├── AccountSummary.tsx         #         侧边栏底部当前账号摘要、个人中心入口与安全登出
 │       │   │   │   ├── TopBar.tsx                 #         顶栏（面包屑、全屏、深色切换、用户登出）
 │       │   │   │   ├── TabManager.tsx             #         多标签页签管理器（持久化缓存、页签关闭/切换）
 │       │   │   │   ├── MobileHeader.tsx           #         移动端专属顶栏（Logo、滑动菜单触发、页面标题）
@@ -166,6 +169,7 @@ Butvan Blog2.0/                                    # 📦 项目根目录
 │       │   ├── lib/                               #     🔧 工具库
 │       │   │   ├── api.ts                         #       API 请求封装（自动附带 JWT Token）
 │       │   │   ├── auth.ts                        #       Token 存储/刷新/过期处理
+│       │   │   ├── account-api.ts                 #       当前登录账号资料、改密、个人中心相关 API 封装
 │       │   │   ├── article-api.ts                 #       文章、分类、标签相关的 API 请求统一封装
 │       │   │   └── comments-api.ts                #       评论、审核、快捷回复相关的 API 请求统一封装
 │       │   └── types/                             #     📐 TypeScript 类型定义（与 blog-client 共享结构）
@@ -225,7 +229,7 @@ Butvan Blog2.0/                                    # 📦 项目根目录
     │       ├── dto/                                #       数据传输对象（接收前端请求体）
     │       │   ├── article/                        #         文章相关：ArticleCreateDTO, ArticleUpdateDTO, ArticleQueryDTO
     │       │   ├── comment/                        #         评论相关：CommentCreateDTO, CommentAuditDTO
-    │       │   ├── auth/                           #         认证相关：LoginDTO, RegisterDTO, PasswordResetDTO
+    │       │   ├── auth/                           #         认证相关：LoginDTO, RegisterDTO, CurrentUserUpdateDTO, PasswordChangeDTO
     │       │   ├── scene/                          #         场景相关：SceneSaveDTO, HotspotSaveDTO
     │       │   ├── page/                           #         独立页相关：PageSaveDTO
     │       │   └── common/                         #         通用：PageQueryDTO, BatchDeleteDTO
@@ -233,6 +237,7 @@ Butvan Blog2.0/                                    # 📦 项目根目录
     │           ├── article/                        #         文章相关：ArticleDetailVO, ArticleListVO
     │           ├── home/                           #         首页相关：HomeSceneVO, HotspotVO
     │           ├── comment/                        #         评论相关：CommentVO
+    │           ├── auth/                           #         认证相关：LoginVO, CurrentUserVO
     │           └── common/                         #         通用：PageVO, StatisticsVO
     │
     └── blog-service/                               #   📦 主业务服务模块（启动入口 + 业务逻辑）
@@ -254,7 +259,7 @@ Butvan Blog2.0/                                    # 📦 项目根目录
             │   │   │   ├── PageController.java     #         独立页面管理接口
             │   │   │   ├── NavigationController.java #       导航菜单管理接口
             │   │   │   ├── SeriesController.java   #         系列/专题管理接口
-            │   │   │   ├── AuthController.java      #         登录/登出/Token 刷新接口
+            │   │   │   ├── AuthController.java      #         登录注册、当前账号资料、个人中心资料保存与密码修改接口
             │   │   │   ├── SiteConfigController.java #       站点配置管理接口
             │   │   │   ├── FriendLinkController.java #       友链管理接口
             │   │   │   └── SubscriberController.java #      订阅管理接口
@@ -286,7 +291,7 @@ Butvan Blog2.0/                                    # 📦 项目根目录
             │   │   │   ├── PageService.java        #         独立页业务接口
             │   │   │   ├── NavigationService.java  #         导航业务接口
             │   │   │   ├── SeriesService.java      #         系列业务接口
-            │   │   │   ├── AuthService.java         #         认证业务接口
+            │   │   │   ├── AuthService.java         #         认证与当前账号个人中心业务接口
             │   │   │   ├── SiteConfigService.java  #         配置业务接口
             │   │   │   ├── FriendLinkService.java  #         友链业务接口
             │   │   │   ├── SubscriberService.java  #         订阅业务接口

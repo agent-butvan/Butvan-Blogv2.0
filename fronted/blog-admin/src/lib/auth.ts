@@ -11,8 +11,14 @@ export interface AuthUser {
   id: number;
   username: string;
   nickname: string;
+  email?: string;
   avatarUrl?: string;
+  bio?: string;
   role: "ADMIN" | "AUTHOR";
+  status?: "ACTIVE" | "DISABLED";
+  lastLoginAt?: string;
+  createdAt?: string;
+  updatedAt?: string;
 }
 
 /**

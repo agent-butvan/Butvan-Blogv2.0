@@ -84,7 +84,7 @@ export default function MobileRightPanel({ isOpen, onClose }: MobileRightPanelPr
   };
 
   const handleGoSettings = () => {
-    router.push("/settings");
+    router.push("/profile");
     onClose();
   };
 
