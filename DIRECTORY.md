@@ -27,6 +27,8 @@ Butvan Blog2.0/                                    # 📦 项目根目录
 ├── docx/                                          # 📝 项目文档与资料
 │   ├── COLORS.md                                  #   配色参考方案（9 种冷暖主题色）
 │   ├── THINKING.md                                #   产品最初构想与「沉浸式房间」跳转逻辑
+│   ├── reviews/                                   #   Code Review 审查记录
+│   │   └── auth-profile-code-review.md            #     个人中心（feat/auth）代码审查报告：问题清单、测试缺口、修复优先级
 │   └── database/
 │       ├── schema.sql                             #   完整 DDL 建表脚本（19 张表，含索引与注释，无测试数据）
 │       ├── migration-v0.3.sql                     #   数据库迁移脚本 (v0.3 版本，补齐热区高度百分比字段)
