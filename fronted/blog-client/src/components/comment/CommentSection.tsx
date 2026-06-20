@@ -1,7 +1,7 @@
 'use client'
 
 import React, { useState, useEffect } from 'react'
-import { MessageSquare, Heart, CornerDownRight, CheckCircle, Monitor, ShieldAlert } from 'lucide-react'
+import { MessageSquare, Heart, CornerDownRight, CheckCircle, Monitor, ShieldAlert, Pin } from 'lucide-react'
 import { Spinner } from '@heroui/react'
 import { marked } from 'marked'
 import CommentForm from './CommentForm'
@@ -20,7 +20,9 @@ interface CommentVO {
   likeCount: number
   isAuthorReplied: boolean
   isAuthor?: boolean | null
+  isPinned?: boolean | null
   replyTo: string | null
+  status?: string | null
   createdAt: string
   userAgent?: string | null
   replies: CommentVO[]
@@ -64,8 +66,8 @@ const VerifiedBadge = ({ type }: { type: 'admin' | 'author' }) => {
       className="w-3.5 h-3.5 shrink-0 inline-block align-middle select-none ml-1" 
       aria-hidden="true" 
       style={{ verticalAlign: 'sub', fill: color }}
-      title={title}
     >
+      <title>{title}</title>
       <g>
         <path d="M22.5 12.5c0-1.58-.875-2.95-2.148-3.6.154-.435.238-.905.238-1.4 0-2.21-1.71-3.99-3.818-3.99-.48 0-.94.1-1.348.27C14.825 2.515 13.512 1.5 12 1.5s-2.825 1.015-3.422 2.28c-.407-.17-.867-.27-1.348-.27-2.108 0-3.818 1.78-3.818 3.99 0 .495.084.965.238 1.4-1.273.65-2.148 2.02-2.148 3.6 0 1.58.875 2.95 2.148 3.6-.154.435-.238.905-.238 1.4 0 2.21 1.71 3.99 3.818 3.99.48 0 .94-.1 1.348-.27.597 1.265 1.91 2.27 3.422 2.27s2.825-1.015 3.422-2.27c.407.17.867.27 1.348.27 2.108 0 3.818-1.78 3.818-3.99 0-.495-.084-.965-.238-1.4 1.273-.65 2.148-2.02 2.148-3.6zm-12.72 4.03l-3.85-3.85 1.43-1.4 2.42 2.42 6.25-6.25 1.43 1.42-7.68 7.66z" />
       </g>
@@ -92,7 +94,21 @@ export default function CommentSection({
   // 1. 获取评论列表并递归计算总数
   const fetchComments = async () => {
     try {
-      const res = await fetch(`${API_BASE}/articles/${articleId}/comments`, { cache: 'no-store' })
+      let name = ''
+      let email = ''
+      try {
+        name = localStorage.getItem('comment_visitor_name') || ''
+        email = localStorage.getItem('comment_visitor_email') || ''
+      } catch (e) {
+        console.warn('读取 localStorage 缓存的游客资料失败', e)
+      }
+
+      const params = new URLSearchParams()
+      if (name) params.append('viewerName', name)
+      if (email) params.append('viewerEmail', email)
+      const queryString = params.toString() ? `?${params.toString()}` : ''
+
+      const res = await fetch(`${API_BASE}/articles/${articleId}/comments${queryString}`, { cache: 'no-store' })
       if (!res.ok) throw new Error(`HTTP_${res.status}`)
       
       const json = await res.json()
@@ -300,10 +316,26 @@ export default function CommentSection({
                         ) : null}
                       </span>
                     )}
+                    {comment.status === 'PENDING' && (
+                      <span className="bg-amber-100/70 dark:bg-amber-950/30 border border-amber-200/50 dark:border-amber-900/30 text-amber-600 dark:text-amber-400 text-[9px] px-1.5 py-0.5 rounded font-medium select-none ml-1 shrink-0 animate-pulse">
+                        待审核，仅自己可见
+                      </span>
+                    )}
+                    {comment.status === 'SPAM' && (
+                      <span className="bg-amber-100/70 dark:bg-amber-950/30 border border-amber-200/50 dark:border-amber-900/30 text-amber-600 dark:text-amber-400 text-[9px] px-1.5 py-0.5 rounded font-medium select-none ml-1 shrink-0">
+                        未通过，仅自己可见
+                      </span>
+                    )}
                   </div>
 
                   {/* 楼层与相对发布时间 */}
                   <span className="text-[10px] font-mono text-zinc-400 dark:text-zinc-550 flex items-center gap-2 flex-shrink-0">
+                    {comment.isPinned && (
+                      <span className="flex items-center gap-0.5 text-rose-500 font-bold select-none border border-rose-200/50 dark:border-rose-950/50 bg-rose-50/80 dark:bg-rose-950/20 px-1 py-0.5 rounded text-[9px] shrink-0 animate-fade-in">
+                        <Pin size={8} className="rotate-45" />
+                        <span>置顶</span>
+                      </span>
+                    )}
                     <span className="opacity-0 group-hover:opacity-100 transition-opacity text-zinc-350 dark:text-zinc-700 select-none">
                       #{idx + 1} 楼
                     </span>
@@ -426,6 +458,16 @@ export default function CommentSection({
                                   ) : reply.isAuthor ? (
                                     <VerifiedBadge type="author" />
                                   ) : null}
+                                </span>
+                              )}
+                              {reply.status === 'PENDING' && (
+                                <span className="bg-amber-100/70 dark:bg-amber-950/30 border border-amber-200/50 dark:border-amber-900/30 text-amber-600 dark:text-amber-400 text-[9px] px-1.5 py-0.5 rounded font-medium select-none ml-1 shrink-0 animate-pulse">
+                                  待审核，仅自己可见
+                                </span>
+                              )}
+                              {reply.status === 'SPAM' && (
+                                <span className="bg-amber-100/70 dark:bg-amber-950/30 border border-amber-200/50 dark:border-amber-900/30 text-amber-600 dark:text-amber-400 text-[9px] px-1.5 py-0.5 rounded font-medium select-none ml-1 shrink-0">
+                                  未通过，仅自己可见
                                 </span>
                               )}
 
