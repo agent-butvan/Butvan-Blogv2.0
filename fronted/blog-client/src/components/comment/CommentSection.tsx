@@ -19,6 +19,7 @@ interface CommentVO {
   content: string
   likeCount: number
   isAuthorReplied: boolean
+  isAuthor?: boolean | null
   replyTo: string | null
   createdAt: string
   userAgent?: string | null
@@ -249,7 +250,7 @@ export default function CommentSection({
                 <img
                   src={resolveImageUrl(comment.avatarUrl)}
                   alt={comment.nickname}
-                  className={`w-10 h-10 rounded-full bg-zinc-100 dark:bg-zinc-900 border shadow-inner ${comment.userId ? 'border-[#727BBA]/50 ring-1 ring-[#727BBA]/20' : 'border-zinc-200/50 dark:border-zinc-850'}`}
+                  className={`w-10 h-10 rounded-full bg-zinc-100 dark:bg-zinc-900 border shadow-inner ${comment.isAuthor ? 'border-[#727BBA]/50 ring-1 ring-[#727BBA]/20' : 'border-zinc-200/50 dark:border-zinc-850'}`}
                   loading="lazy"
                 />
               </div>
@@ -267,12 +268,12 @@ export default function CommentSection({
                         className="text-xs font-heading font-extrabold text-zinc-700 dark:text-zinc-350 hover:text-[#727BBA] dark:hover:text-[#8E97D5] transition-colors truncate hover:underline flex items-center"
                       >
                         <span>{comment.nickname}</span>
-                        {comment.userId && <VerifiedBadge />}
+                        {comment.isAuthor && <VerifiedBadge />}
                       </a>
                     ) : (
                       <span className="text-xs font-heading font-extrabold text-zinc-700 dark:text-zinc-350 truncate flex items-center">
                         <span>{comment.nickname}</span>
-                        {comment.userId && <VerifiedBadge />}
+                        {comment.isAuthor && <VerifiedBadge />}
                       </span>
                     )}
                   </div>
@@ -329,7 +330,7 @@ export default function CommentSection({
                   )}
 
                   {/* UA 浏览器 & 系统标识 */}
-                  {comment.userAgent && !comment.userId && (
+                  {comment.userAgent && !comment.isAuthor && (
                     <span className="flex items-center gap-1.5 opacity-85 text-[9px]">
                       <Monitor size={10} strokeWidth={1.5} />
                       <span>{parseUA(comment.userAgent)}</span>
@@ -363,7 +364,7 @@ export default function CommentSection({
                           <img
                             src={resolveImageUrl(reply.avatarUrl)}
                             alt={reply.nickname}
-                            className={`w-8 h-8 rounded-full bg-zinc-150 dark:bg-zinc-900 border shadow-inner ${reply.userId ? 'border-[#727BBA]/50 ring-1 ring-[#727BBA]/20' : 'border-zinc-200/40 dark:border-zinc-850'}`}
+                            className={`w-8 h-8 rounded-full bg-zinc-155 dark:bg-zinc-900 border shadow-inner ${reply.isAuthor ? 'border-[#727BBA]/50 ring-1 ring-[#727BBA]/20' : 'border-zinc-200/40 dark:border-zinc-850'}`}
                             loading="lazy"
                           />
                         </div>
@@ -381,12 +382,12 @@ export default function CommentSection({
                                   className="font-heading font-extrabold text-zinc-700 dark:text-zinc-350 hover:text-[#727BBA] dark:hover:text-[#8E97D5] transition-colors truncate hover:underline flex items-center"
                                 >
                                   <span>{reply.nickname}</span>
-                                  {reply.userId && <VerifiedBadge />}
+                                  {reply.isAuthor && <VerifiedBadge />}
                                 </a>
                               ) : (
                                 <span className="font-heading font-extrabold text-zinc-700 dark:text-zinc-350 truncate flex items-center">
                                   <span>{reply.nickname}</span>
-                                  {reply.userId && <VerifiedBadge />}
+                                  {reply.isAuthor && <VerifiedBadge />}
                                 </span>
                               )}
 
@@ -444,7 +445,7 @@ export default function CommentSection({
                             )}
 
                             {/* UA 浏览器 & 系统标识 */}
-                            {reply.userAgent && !reply.userId && (
+                            {reply.userAgent && !reply.isAuthor && (
                               <span className="flex items-center gap-1 opacity-80 text-[8px] scale-95 origin-right">
                                 <Monitor size={9} strokeWidth={1.5} />
                                 <span>{parseUA(reply.userAgent)}</span>

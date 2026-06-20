@@ -64,6 +64,9 @@ public class Comment {
     @Column(name = "is_author_replied")
     private Boolean isAuthorReplied; // 标识文章原作者是否已经答复了该条评论
 
+    @Column(name = "is_author")
+    private Boolean isAuthor; // 标识该评论是否由作者/站长发表或被后台标记为作者发表
+
     @Column(name = "created_at", nullable = false, updatable = false)
     private LocalDateTime createdAt; // 评论生成创建时间
 
@@ -88,6 +91,9 @@ public class Comment {
         }
         if (this.isAuthorReplied == null) {
             this.isAuthorReplied = false;
+        }
+        if (this.isAuthor == null) {
+            this.isAuthor = this.user != null;
         }
     }
 

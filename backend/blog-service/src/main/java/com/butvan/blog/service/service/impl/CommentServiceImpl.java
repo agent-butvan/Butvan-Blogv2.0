@@ -60,6 +60,7 @@ public class CommentServiceImpl implements CommentService {
                     } else {
                         avatarUrl = getGravatarUrl(c.getVisitorEmail());
                     }
+                    boolean isAuthor = (c.getIsAuthor() != null && c.getIsAuthor()) || (c.getUser() != null);
                     return CommentVO.builder()
                             .id(c.getId())
                             .articleId(c.getArticle().getId())
@@ -71,6 +72,7 @@ public class CommentServiceImpl implements CommentService {
                             .content(c.getContent())
                             .likeCount(c.getLikeCount())
                             .isAuthorReplied(c.getIsAuthorReplied())
+                            .isAuthor(isAuthor)
                             .userAgent(c.getUserAgent())
                             .createdAt(c.getCreatedAt())
                             .replies(new ArrayList<>())
@@ -183,6 +185,7 @@ public class CommentServiceImpl implements CommentService {
             }
         }
 
+        boolean isAuthor = (saved.getIsAuthor() != null && saved.getIsAuthor()) || (saved.getUser() != null);
         return CommentVO.builder()
                 .id(saved.getId())
                 .articleId(saved.getArticle().getId())
@@ -194,6 +197,7 @@ public class CommentServiceImpl implements CommentService {
                 .content(saved.getContent())
                 .likeCount(saved.getLikeCount())
                 .isAuthorReplied(saved.getIsAuthorReplied())
+                .isAuthor(isAuthor)
                 .userAgent(saved.getUserAgent())
                 .createdAt(saved.getCreatedAt())
                 .replyTo(replyToName)
@@ -304,6 +308,7 @@ public class CommentServiceImpl implements CommentService {
                             replyTo = parent.getUser() != null ? parent.getUser().getNickname() : parent.getVisitorName();
                         }
                     }
+                    boolean isAuthor = (c.getIsAuthor() != null && c.getIsAuthor()) || (c.getUser() != null);
 
                     return CommentVO.builder()
                             .id(c.getId())
@@ -316,6 +321,7 @@ public class CommentServiceImpl implements CommentService {
                             .content(c.getContent())
                             .likeCount(c.getLikeCount())
                             .isAuthorReplied(c.getIsAuthorReplied())
+                            .isAuthor(isAuthor)
                             .replyTo(replyTo)
                             .status(c.getStatus())
                             .articleTitle(c.getArticle().getTitle())
@@ -390,6 +396,7 @@ public class CommentServiceImpl implements CommentService {
         article.setCommentCount(approvedCount);
         articleRepository.save(article);
 
+        boolean isAuthor = (savedReply.getIsAuthor() != null && savedReply.getIsAuthor()) || (savedReply.getUser() != null);
         return CommentVO.builder()
                 .id(savedReply.getId())
                 .articleId(savedReply.getArticle().getId())
@@ -400,6 +407,7 @@ public class CommentServiceImpl implements CommentService {
                 .content(savedReply.getContent())
                 .likeCount(savedReply.getLikeCount())
                 .isAuthorReplied(savedReply.getIsAuthorReplied())
+                .isAuthor(isAuthor)
                 .replyTo(parent.getUser() != null ? parent.getUser().getNickname() : parent.getVisitorName())
                 .status(savedReply.getStatus())
                 .articleTitle(article.getTitle())
@@ -415,12 +423,7 @@ public class CommentServiceImpl implements CommentService {
         Comment comment = commentRepository.findById(id)
                 .orElseThrow(() -> new BusinessException("目标评论不存在"));
         
-        User admin = userRepository.findByUsername(username)
-                .orElseThrow(() -> new BusinessException("当前登录管理员账户异常"));
-        
-        comment.setUser(admin);
-        comment.setVisitorName(admin.getNickname());
-        comment.setVisitorEmail(admin.getEmail());
+        comment.setIsAuthor(true);
         // 如果此评论是回复他人的（即有 parentId），则把原评论标记为作者已回复
         if (comment.getParentId() != null) {
             commentRepository.findById(comment.getParentId())

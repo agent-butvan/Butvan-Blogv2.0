@@ -399,7 +399,7 @@ export default function CommentsPage() {
                       <div className="flex items-center gap-2 flex-wrap">
                         <span className="font-bold text-sm text-neutral-dark dark:text-zinc-200 leading-snug flex items-center">
                           <span>{comment.nickname}</span>
-                          {comment.userId && <VerifiedBadge />}
+                          {comment.isAuthor && <VerifiedBadge />}
                         </span>
                         {comment.replyTo && (
                           <span className="inline-flex items-center gap-1 text-[9px] font-bold text-zinc-450 dark:text-zinc-500 bg-zinc-105/60 dark:bg-zinc-900 border border-zinc-200/30 dark:border-zinc-850 px-1.5 py-0.5 rounded leading-none select-none">
@@ -559,7 +559,7 @@ export default function CommentsPage() {
                     </button>
 
                     {/* 标记为作者 */}
-                    {!comment.userId && !isTrash && !isSpam && (
+                    {!comment.isAuthor && !isTrash && !isSpam && (
                       <button
                         onClick={() => handleMarkAsAuthor(comment.id)}
                         className="flex items-center gap-1.5 text-indigo-400/80 hover:text-indigo-500 transition-colors cursor-pointer outline-none border-0 bg-transparent font-medium"

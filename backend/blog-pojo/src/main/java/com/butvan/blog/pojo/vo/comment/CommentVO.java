@@ -37,6 +37,8 @@ public class CommentVO {
 
     private Boolean isAuthorReplied; // 文章创作者（博主）是否对本条评论做出过回复
 
+    private Boolean isAuthor; // 该评论是否为作者/站长本人所写或被后台标记为作者发表
+
     private String replyTo; // 当前评论所回复的上一级被回复者昵称名称（如：“张三 回复 @李四”，这里为“李四”）
 
     private String status; // 评论的审核状态

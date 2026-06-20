@@ -22,6 +22,7 @@ export interface CommentItem {
   articleTitle?: string | null;
   articleSlug?: string | null;
   createdAt: string;
+  isAuthor?: boolean;
 }
 
 /**
