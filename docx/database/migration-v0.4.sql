@@ -3,12 +3,12 @@
 -- 目的: 支持评论标记为作者、评论置顶、以及封禁评论者邮箱与 IP 的拦截功能
 -- ============================================================================
 
--- 1. 在 blog_comment 表中新增 is_author 列
-ALTER TABLE blog_comment ADD COLUMN is_author BOOLEAN NOT NULL DEFAULT FALSE;
+-- 1. 在 blog_comment 表中新增 is_author 列 (防御性添加)
+ALTER TABLE blog_comment ADD COLUMN IF NOT EXISTS is_author BOOLEAN NOT NULL DEFAULT FALSE;
 COMMENT ON COLUMN blog_comment.is_author IS '标识该评论是否由作者/站长本身发表或被后台标记为作者发表';
 
--- 2. 在 blog_comment 表中新增 is_pinned 列 (用于评论置顶)
-ALTER TABLE blog_comment ADD COLUMN is_pinned BOOLEAN NOT NULL DEFAULT FALSE;
+-- 2. 在 blog_comment 表中新增 is_pinned 列 (用于评论置顶，防御性添加)
+ALTER TABLE blog_comment ADD COLUMN IF NOT EXISTS is_pinned BOOLEAN NOT NULL DEFAULT FALSE;
 COMMENT ON COLUMN blog_comment.is_pinned IS '是否置顶该评论';
 
 -- 3. 创建 blog_comment_ban 评论封禁拦截表
