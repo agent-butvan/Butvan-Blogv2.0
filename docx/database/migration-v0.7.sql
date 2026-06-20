@@ -32,6 +32,22 @@ DECLARE
     v_exists_parent BOOLEAN;
     v_exists_child BOOLEAN;
 BEGIN
+    -- 0. 彻底清理之前残留或误插入的旧“媒体管理”菜单，防止与新的“媒体内容管理”菜单冲突
+    DELETE FROM blog_navigation 
+    WHERE position = 'ADMIN_SIDEBAR' 
+      AND (
+        title = '媒体管理' 
+        OR (
+          link_url = '/media' 
+          AND parent_id = (
+              SELECT id 
+              FROM blog_navigation 
+              WHERE position = 'ADMIN_SIDEBAR' AND title = '内容管理' AND link_type = 'NONE' 
+              LIMIT 1
+          )
+        )
+      );
+
     -- 1. 检查一级菜单 '资源管理' 是否已存在
     SELECT EXISTS (
         SELECT 1 
