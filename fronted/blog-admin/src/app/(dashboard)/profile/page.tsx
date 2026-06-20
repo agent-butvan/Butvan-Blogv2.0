@@ -187,6 +187,8 @@ export default function ProfilePage() {
     try {
       const formData = new FormData();
       formData.append("file", file);
+      formData.append("sourceType", "USER_AVATAR");
+      formData.append("sourceDetail", "用户头像");
       const res = await apiClient.post("/admin/media/upload", formData, {
         headers: { "Content-Type": "multipart/form-data" },
       });

@@ -21,4 +21,6 @@ public class MediaQueryDTO {
     private String fileType; // 文件类型大类：IMAGE | VIDEO | DOCUMENT | OTHER
 
     private String keyword; // 文件名模糊检索关键词
+
+    private String sourceType; // 来源类型过滤: ARTICLE | SCENE | USER_AVATAR | SYSTEM_CONFIG | MANUAL
 }

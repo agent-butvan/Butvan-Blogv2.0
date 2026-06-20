@@ -11,12 +11,15 @@ import org.springframework.web.multipart.MultipartFile;
 public interface MediaService {
 
     /**
-     * 上传单个媒体文件并保存到本地存储，写入数据库
+     * 上传单个媒体文件并保存到本地存储，写入数据库（包含引用来源自动标记）
      *
      * @param file 前端表单上传的多部分文件
+     * @param sourceType 来源类型/归属模块
+     * @param sourceId 来源关联ID
+     * @param sourceDetail 详细描述说明
      * @return 保存成功后的 Media 实体
      */
-    Media uploadFile(MultipartFile file);
+    Media uploadFile(MultipartFile file, String sourceType, Long sourceId, String sourceDetail);
 
     /**
      * 分页多条件检索媒体资源列表

@@ -232,6 +232,9 @@ export default function SceneEditorPage() {
       try {
         const formData = new FormData()
         formData.append('file', file)
+        formData.append('sourceType', 'SCENE')
+        formData.append('sourceId', sceneId)
+        formData.append('sourceDetail', `房间场景 - ${scene?.title || ''} - 替换物品: ${activeHotspot.itemName}`)
         const res = await apiClient.post('/admin/media/upload', formData, {
           headers: { 'Content-Type': 'multipart/form-data' },
         })
@@ -267,6 +270,9 @@ export default function SceneEditorPage() {
       try {
         const formData = new FormData()
         formData.append('file', file)
+        formData.append('sourceType', 'SCENE')
+        formData.append('sourceId', sceneId)
+        formData.append('sourceDetail', `房间场景 - ${scene?.title || ''} - 新建物品`)
         const res = await apiClient.post('/admin/media/upload', formData, {
           headers: { 'Content-Type': 'multipart/form-data' },
         })
@@ -291,6 +297,9 @@ export default function SceneEditorPage() {
     try {
       const formData = new FormData()
       formData.append('file', file)
+      formData.append('sourceType', 'SCENE')
+      formData.append('sourceId', sceneId)
+      formData.append('sourceDetail', `房间场景 - ${scene?.title || ''} - 属性面板替换图片: ${activeHotspot.itemName}`)
       const res = await apiClient.post('/admin/media/upload', formData, {
         headers: { 'Content-Type': 'multipart/form-data' },
       })
@@ -508,6 +517,9 @@ export default function SceneEditorPage() {
       // 3. 上传最终的物品图
       const formData = new FormData()
       formData.append('file', finalBlob, `crop-${Date.now()}.png`)
+      formData.append('sourceType', 'SCENE')
+      formData.append('sourceId', sceneId)
+      formData.append('sourceDetail', `房间场景 - ${scene?.title || ''} - 框选自动裁剪物品`)
       const uploadRes = await apiClient.post('/admin/media/upload', formData, {
         headers: { 'Content-Type': 'multipart/form-data' },
       })

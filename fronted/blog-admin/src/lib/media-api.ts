@@ -5,6 +5,7 @@ export interface MediaQuery {
   size?: number;
   fileType?: string;
   keyword?: string;
+  sourceType?: string;
 }
 
 export interface MediaItem {
@@ -20,6 +21,9 @@ export interface MediaItem {
   altText?: string;
   bucketName: string;
   uploaderId?: number;
+  sourceType?: string;
+  sourceId?: number;
+  sourceDetail?: string;
   createdAt: string;
 }
 
@@ -32,6 +36,7 @@ export async function fetchMediaList(params: MediaQuery) {
   if (params.size) query.append("size", String(params.size));
   if (params.fileType) query.append("fileType", params.fileType);
   if (params.keyword) query.append("keyword", params.keyword);
+  if (params.sourceType) query.append("sourceType", params.sourceType);
 
   const res = await apiClient.get(`/admin/media?${query.toString()}`);
   return res.data.data;
@@ -46,11 +51,15 @@ export async function deleteMediaItem(id: number) {
 }
 
 /**
- * 上传单条媒体图片或文件
+ * 上传单条媒体图片或文件（含来源模块标记）
  */
-export async function uploadMediaFile(file: File) {
+export async function uploadMediaFile(file: File, sourceType?: string, sourceId?: number, sourceDetail?: string) {
   const formData = new FormData();
   formData.append("file", file);
+  if (sourceType) formData.append("sourceType", sourceType);
+  if (sourceId) formData.append("sourceId", String(sourceId));
+  if (sourceDetail) formData.append("sourceDetail", sourceDetail);
+
   const res = await apiClient.post("/admin/media/upload", formData, {
     headers: { "Content-Type": "multipart/form-data" },
   });

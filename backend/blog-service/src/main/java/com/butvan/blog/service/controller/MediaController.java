@@ -34,9 +34,15 @@ public class MediaController {
      * @return 统一格式 Result，携带 Media 实体
      */
     @PostMapping("/admin/media/upload")
-    public Result<Media> uploadMedia(@RequestParam("file") MultipartFile file) {
-        log.info("管理后台上传媒体资源，原始文件名: {}, 大小: {} 字节", file.getOriginalFilename(), file.getSize());
-        Media media = mediaService.uploadFile(file);
+    public Result<Media> uploadMedia(
+            @RequestParam("file") MultipartFile file,
+            @RequestParam(value = "sourceType", required = false) String sourceType,
+            @RequestParam(value = "sourceId", required = false) Long sourceId,
+            @RequestParam(value = "sourceDetail", required = false) String sourceDetail
+    ) {
+        log.info("管理后台上传媒体资源，原始文件名: {}, 大小: {} 字节, 来源: {}, 关联ID: {}, 详情: {}", 
+                file.getOriginalFilename(), file.getSize(), sourceType, sourceId, sourceDetail);
+        Media media = mediaService.uploadFile(file, sourceType, sourceId, sourceDetail);
         return Result.success(media);
     }
 

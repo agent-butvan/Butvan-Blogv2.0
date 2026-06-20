@@ -56,6 +56,15 @@ public class Media {
     @Column(name = "uploader_id")
     private Long uploaderId; // 上传者的用户主键ID
 
+    @Column(name = "source_type", nullable = false, length = 50)
+    private String sourceType; // 来源类型/归属模块: ARTICLE|SCENE|USER_AVATAR|SYSTEM_CONFIG|MANUAL
+
+    @Column(name = "source_id")
+    private Long sourceId; // 来源实体唯一ID
+
+    @Column(name = "source_detail", length = 255)
+    private String sourceDetail; // 详细来源说明文本（如：文章《xxx》的插图）
+
     @Column(name = "created_at", nullable = false, updatable = false)
     private LocalDateTime createdAt; // 文件的上传完成时间戳
 
@@ -67,6 +76,9 @@ public class Media {
         this.createdAt = LocalDateTime.now();
         if (this.bucketName == null) {
             this.bucketName = "local";
+        }
+        if (this.sourceType == null) {
+            this.sourceType = "MANUAL";
         }
     }
 }

@@ -12,7 +12,8 @@ import {
   Loader2, 
   Image as ImageIcon,
   Check,
-  ExternalLink
+  ExternalLink,
+  Filter
 } from "lucide-react";
 import { cn } from "@heroui/react";
 import { fetchMediaList, deleteMediaItem, uploadMediaFile, type MediaItem } from "@/lib/media-api";
@@ -22,10 +23,10 @@ import Portal from "@/components/common/Portal";
 
 /**
  * 大厂精致数据表格媒体资源管理器工作台
- * - 紧密排版，以高实用性的表格形态代替卡片平铺形态
- * - 新增 "存储来源" (bucketName) 列，清晰显示文件的物理存储位置 (本地/第三方云)
+ * - 紧密排版，以高实用性的表格形态呈现全站媒体文件
+ * - 支持 "应用归属"（文章、场景、头像、独立上传）和 "存储器"（本地/云）双列区分展示，清晰明确
+ * - 顶部增加 "引用来源" 选项过滤，对接后端动态 Specification 检索
  * - 支持批量选择并物理级联删除文件
- * - 表格首列支持小图直观预览，非图片智能降级展示对应文件扩展名图标
  */
 export default function MediaPage() {
   const [mediaList, setMediaList] = useState<MediaItem[]>([]);
@@ -33,8 +34,9 @@ export default function MediaPage() {
   const [page, setPage] = useState(1);
   const [loading, setLoading] = useState(true);
 
-  // 检索条件
+  // 检索过滤条件
   const [fileType, setFileType] = useState<string>("");
+  const [sourceTypeFilter, setSourceTypeFilter] = useState<string>("");
   const [keyword, setKeyword] = useState<string>("");
   const [searchVal, setSearchVal] = useState<string>("");
 
@@ -83,7 +85,8 @@ export default function MediaPage() {
         page,
         size: pageSize,
         fileType: fileType || undefined,
-        keyword: keyword || undefined
+        keyword: keyword || undefined,
+        sourceType: sourceTypeFilter || undefined
       });
       setMediaList(data.records || []);
       setTotal(data.total || 0);
@@ -98,7 +101,7 @@ export default function MediaPage() {
 
   useEffect(() => {
     loadMedia();
-  }, [page, fileType, keyword]);
+  }, [page, fileType, keyword, sourceTypeFilter]);
 
   /** 提交检索 */
   const handleSearchSubmit = (e: React.FormEvent) => {
@@ -126,7 +129,7 @@ export default function MediaPage() {
 
     setUploading(true);
     try {
-      await uploadMediaFile(file);
+      await uploadMediaFile(file, "MANUAL", undefined, "手动在媒体中心直接上传");
       toast.success(`媒体文件「${file.name}」已上传成功`);
       setPage(1);
       loadMedia();
@@ -214,30 +217,64 @@ export default function MediaPage() {
     }
   };
 
-  // 存储来源 Badge 样式映射
+  // 引用来源 Badge 样式映射
+  const renderSourceBadge = (item: MediaItem) => {
+    const sourceType = item.sourceType || "MANUAL";
+    const configs: Record<string, { label: string; styles: string }> = {
+      ARTICLE: {
+        label: "文章插图",
+        styles: "text-purple-655 dark:text-purple-400 border-purple-100/60 dark:border-purple-950/20 bg-purple-50/30 dark:bg-purple-950/10",
+      },
+      SCENE: {
+        label: "场景空间",
+        styles: "text-sky-655 dark:text-sky-400 border-sky-100/60 dark:border-sky-950/20 bg-sky-50/30 dark:bg-sky-950/10",
+      },
+      USER_AVATAR: {
+        label: "用户头像",
+        styles: "text-teal-655 dark:text-teal-400 border-teal-100/60 dark:border-teal-950/20 bg-teal-50/30 dark:bg-teal-950/10",
+      },
+      SYSTEM_CONFIG: {
+        label: "系统配置",
+        styles: "text-zinc-650 dark:text-zinc-400 border-zinc-200 dark:border-zinc-800 bg-zinc-50/30 dark:bg-zinc-950/10",
+      },
+      MANUAL: {
+        label: "独立上传",
+        styles: "text-zinc-500 border-zinc-200 bg-zinc-50/30 dark:text-zinc-400 dark:border-zinc-800 dark:bg-zinc-950/10",
+      },
+    };
+
+    const config = configs[sourceType] || configs.MANUAL;
+
+    return (
+      <span 
+        className={cn("inline-flex items-center text-[10px] px-2 py-0.5 rounded-lg border font-bold select-none cursor-help whitespace-nowrap", config.styles)}
+        title={item.sourceDetail || `${config.label} (关联ID: ${item.sourceId || "N/A"})`}
+      >
+        {config.label}
+      </span>
+    );
+  };
+
+  // 存储器/驱动位置 Badge
   const renderBucketBadge = (bucketName: string) => {
     const configs: Record<string, { label: string; styles: string }> = {
       local: {
         label: "本地存储",
-        styles: "text-indigo-600 dark:text-indigo-400 border-indigo-100/60 dark:border-indigo-950/20 bg-indigo-50/30 dark:bg-indigo-950/10",
+        styles: "text-indigo-600 dark:text-indigo-400 border-indigo-100/40 dark:border-indigo-950/10 bg-indigo-50/10 dark:bg-indigo-950/5",
       },
       "aliyun-oss": {
         label: "阿里云 OSS",
-        styles: "text-amber-600 dark:text-amber-400 border-amber-100/60 dark:border-amber-950/20 bg-amber-50/30 dark:bg-amber-950/10",
-      },
-      tencent_cos: {
-        label: "腾讯云 COS",
-        styles: "text-sky-600 dark:text-sky-400 border-sky-100/60 dark:border-sky-950/20 bg-sky-50/30 dark:bg-sky-950/10",
+        styles: "text-amber-600 dark:text-amber-400 border-amber-100/40 dark:border-amber-950/10 bg-amber-50/10 dark:bg-amber-950/5",
       },
     };
 
     const item = configs[bucketName] || {
       label: bucketName || "未指定",
-      styles: "text-zinc-500 border-zinc-200 bg-zinc-50/30 dark:text-zinc-400 dark:border-zinc-800 dark:bg-zinc-950/10",
+      styles: "text-zinc-550 border-zinc-200 bg-zinc-50/10 dark:text-zinc-400 dark:border-zinc-850",
     };
 
     return (
-      <span className={cn("inline-flex items-center text-[10px] px-2 py-0.5 rounded-lg border font-bold select-none whitespace-nowrap", item.styles)}>
+      <span className={cn("inline-flex items-center text-[9.5px] px-1.5 py-0.5 rounded border font-medium select-none whitespace-nowrap font-mono", item.styles)}>
         {item.label}
       </span>
     );
@@ -324,7 +361,8 @@ export default function MediaPage() {
 
       {/* 检索及筛选 Tabs Bar */}
       <div className="flex flex-col md:flex-row md:items-center justify-between gap-3 bg-zinc-50/50 dark:bg-zinc-900/10 p-2 rounded-xl border border-zinc-200/40 dark:border-zinc-850/50 select-none">
-        {/* 分类 Tabs */}
+        
+        {/* 左侧：文件大类 Tabs */}
         <div className="flex items-center gap-1.5 overflow-x-auto no-scrollbar">
           <button
             onClick={() => { setFileType(""); setPage(1); }}
@@ -361,34 +399,54 @@ export default function MediaPage() {
           </button>
         </div>
 
-        {/* 搜索框 */}
-        <form onSubmit={handleSearchSubmit} className="flex items-center gap-2">
-          <div className="flex h-8 items-center gap-2 rounded-lg border border-zinc-200/65 dark:border-zinc-800 bg-white dark:bg-zinc-950 px-2.5 flex-1 w-full md:w-60 focus-within:ring-2 focus-within:ring-primary/20 focus-within:border-primary transition-all">
-            <Search size={13} className="text-zinc-400 shrink-0" />
-            <input
-              type="text"
-              value={searchVal}
-              onChange={(e) => setSearchVal(e.target.value)}
-              placeholder="按文件名模糊匹配..."
-              className="flex-1 border-0 bg-transparent p-0 text-xs text-zinc-850 dark:text-zinc-150 outline-none placeholder-zinc-400 dark:placeholder-zinc-650 focus:ring-0 leading-normal"
-            />
-            {searchVal && (
-              <button
-                type="button"
-                onClick={handleClearSearch}
-                className="text-zinc-400 hover:text-zinc-655 cursor-pointer"
-              >
-                <X size={12} />
-              </button>
-            )}
+        {/* 右侧：多重条件检索 */}
+        <div className="flex items-center gap-2 flex-wrap">
+          {/* 引用来源下拉过滤 */}
+          <div className="flex h-8 items-center gap-1 px-2.5 rounded-lg border border-zinc-200/65 dark:border-zinc-800 bg-white dark:bg-zinc-950 text-xs text-zinc-600 dark:text-zinc-400">
+            <Filter size={11} className="text-zinc-400 dark:text-zinc-550 shrink-0" />
+            <select
+              value={sourceTypeFilter}
+              onChange={(e) => { setSourceTypeFilter(e.target.value); setPage(1); }}
+              className="border-none bg-transparent p-0 pr-1 text-[11px] font-bold text-zinc-700 dark:text-zinc-350 outline-none cursor-pointer focus:ring-0 leading-normal"
+            >
+              <option value="">全部引用来源</option>
+              <option value="ARTICLE">博客文章插图</option>
+              <option value="SCENE">场景空间资源</option>
+              <option value="USER_AVATAR">用户个人头像</option>
+              <option value="SYSTEM_CONFIG">系统配置资料</option>
+              <option value="MANUAL">手动独立上传</option>
+            </select>
           </div>
-          <button
-            type="submit"
-            className="h-8 px-3.5 rounded-lg bg-zinc-850 hover:bg-zinc-800 dark:bg-zinc-800 dark:hover:bg-zinc-750 text-white text-xs font-bold transition-colors cursor-pointer"
-          >
-            搜索
-          </button>
-        </form>
+
+          {/* 模糊名称搜索 */}
+          <form onSubmit={handleSearchSubmit} className="flex items-center gap-2">
+            <div className="flex h-8 items-center gap-2 rounded-lg border border-zinc-200/65 dark:border-zinc-800 bg-white dark:bg-zinc-950 px-2.5 w-48 md:w-56 focus-within:ring-2 focus-within:ring-primary/20 focus-within:border-primary transition-all">
+              <Search size={13} className="text-zinc-400 shrink-0" />
+              <input
+                type="text"
+                value={searchVal}
+                onChange={(e) => setSearchVal(e.target.value)}
+                placeholder="按文件名模糊匹配..."
+                className="flex-1 border-0 bg-transparent p-0 text-xs text-zinc-850 dark:text-zinc-150 outline-none placeholder-zinc-400 dark:placeholder-zinc-650 focus:ring-0 leading-normal"
+              />
+              {searchVal && (
+                <button
+                  type="button"
+                  onClick={handleClearSearch}
+                  className="text-zinc-400 hover:text-zinc-655 cursor-pointer"
+                >
+                  <X size={12} />
+                </button>
+              )}
+            </div>
+            <button
+              type="submit"
+              className="h-8 px-3.5 rounded-lg bg-zinc-850 hover:bg-zinc-800 dark:bg-zinc-800 dark:hover:bg-zinc-750 text-white text-xs font-bold transition-colors cursor-pointer"
+            >
+              搜索
+            </button>
+          </form>
+        </div>
       </div>
 
       {/* 媒体列表表格 - 极简精致大厂排版 */}
@@ -408,17 +466,18 @@ export default function MediaPage() {
                 />
               </th>
               <th className="px-5 py-3.5">预览 / 文件名称</th>
-              <th className="px-5 py-3.5 w-36">存储来源</th>
-              <th className="px-5 py-3.5 w-40">文件属性/分辨率</th>
-              <th className="px-5 py-3.5 w-60">物理存储路径</th>
-              <th className="px-5 py-3.5 w-36">上传日期</th>
-              <th className="px-5 py-3.5 w-32 text-right">管理操作</th>
+              <th className="px-5 py-3.5 w-32">应用归属</th>
+              <th className="px-5 py-3.5 w-28">存储器</th>
+              <th className="px-5 py-3.5 w-36">文件属性/分辨率</th>
+              <th className="px-5 py-3.5 w-48">物理存储路径</th>
+              <th className="px-5 py-3.5 w-28">上传日期</th>
+              <th className="px-5 py-3.5 w-28 text-right">管理操作</th>
             </tr>
           </thead>
           <tbody className="divide-y divide-zinc-100 dark:divide-zinc-800/50 text-zinc-700 dark:text-zinc-350">
             {loading ? (
               <tr>
-                <td colSpan={7} className="px-5 py-16 text-center select-none">
+                <td colSpan={8} className="px-5 py-16 text-center select-none">
                   <div className="flex flex-col items-center justify-center gap-2 text-zinc-400">
                     <Loader2 size={20} className="animate-spin text-zinc-350 dark:text-zinc-650" />
                     <span className="text-[11px] font-medium tracking-wide">加载媒体资源中...</span>
@@ -427,7 +486,7 @@ export default function MediaPage() {
               </tr>
             ) : mediaList.length === 0 ? (
               <tr>
-                <td colSpan={7} className="px-5 py-16 text-center text-zinc-400 select-none">
+                <td colSpan={8} className="px-5 py-16 text-center text-zinc-400 select-none">
                   <div className="flex flex-col items-center justify-center gap-2">
                     <ImageIcon size={24} className="text-zinc-300 dark:text-zinc-700" />
                     <span className="text-[11px]">暂无媒体资源，开始上传您的第一个文件吧！</span>
@@ -488,7 +547,12 @@ export default function MediaPage() {
                       </div>
                     </td>
 
-                    {/* 存储来源（来源Bucket） */}
+                    {/* 应用归属 */}
+                    <td className="px-5 py-3.5">
+                      {renderSourceBadge(item)}
+                    </td>
+
+                    {/* 存储器 (存储桶) */}
                     <td className="px-5 py-3.5">
                       {renderBucketBadge(item.bucketName)}
                     </td>
@@ -512,7 +576,7 @@ export default function MediaPage() {
                     {/* 物理存储绝对路径 */}
                     <td className="px-5 py-3.5 min-w-0 max-w-0">
                       <code
-                        className="font-mono text-[10px] text-zinc-500 dark:text-zinc-500 truncate block bg-zinc-50 dark:bg-zinc-950/40 px-1.5 py-0.5 rounded border border-zinc-200/40 dark:border-zinc-850/30 select-all"
+                        className="font-mono text-[10px] text-zinc-500 dark:text-zinc-500 truncate block bg-zinc-50 dark:bg-zinc-950/40 px-1.5 py-0.5 rounded border border-zinc-200/40 dark:border-zinc-850/30 select-all font-light"
                         title={item.filePath}
                       >
                         {item.filePath}
@@ -644,15 +708,22 @@ export default function MediaPage() {
                       <span className="font-bold text-zinc-800 dark:text-zinc-250 font-mono">{selectedMedia.fileType}</span>
                     </div>
                     <div className="flex flex-col gap-1">
-                      <span className="text-[10px] font-bold text-zinc-400 dark:text-zinc-550 uppercase tracking-wide">存储来源 (Bucket)</span>
+                      <span className="text-[10px] font-bold text-zinc-400 dark:text-zinc-550 uppercase tracking-wide">存储提供商 (Bucket)</span>
                       <span className="font-bold text-zinc-800 dark:text-zinc-250 font-mono">{selectedMedia.bucketName || "local"}</span>
                     </div>
                   </div>
 
                   <div className="grid grid-cols-2 gap-4">
                     <div className="flex flex-col gap-1">
-                      <span className="text-[10px] font-bold text-zinc-400 dark:text-zinc-550 uppercase tracking-wide">文件大小</span>
-                      <span className="font-medium text-zinc-800 dark:text-zinc-250 font-mono">{formatBytes(selectedMedia.fileSize)}</span>
+                      <span className="text-[10px] font-bold text-zinc-400 dark:text-zinc-550 uppercase tracking-wide">应用归属 / 引用来源</span>
+                      <span className="font-bold text-zinc-800 dark:text-zinc-250 font-mono">
+                        {selectedMedia.sourceType === "ARTICLE" && "博客文章插图"}
+                        {selectedMedia.sourceType === "SCENE" && "场景空间资源"}
+                        {selectedMedia.sourceType === "USER_AVATAR" && "用户个人头像"}
+                        {selectedMedia.sourceType === "SYSTEM_CONFIG" && "系统配置资料"}
+                        {selectedMedia.sourceType === "MANUAL" && "手动独立上传"}
+                        {!selectedMedia.sourceType && "手动独立上传"}
+                      </span>
                     </div>
                     <div className="flex flex-col gap-1">
                       <span className="text-[10px] font-bold text-zinc-400 dark:text-zinc-550 uppercase tracking-wide">上传时间</span>
@@ -661,6 +732,13 @@ export default function MediaPage() {
                       </span>
                     </div>
                   </div>
+
+                  {selectedMedia.sourceDetail && (
+                    <div className="flex flex-col gap-1">
+                      <span className="text-[10px] font-bold text-zinc-400 dark:text-zinc-550 uppercase tracking-wide">引用来源详细描述</span>
+                      <span className="font-medium text-zinc-800 dark:text-zinc-250 leading-relaxed font-sans">{selectedMedia.sourceDetail}</span>
+                    </div>
+                  )}
 
                   <div className="flex flex-col gap-1">
                     <span className="text-[10px] font-bold text-zinc-400 dark:text-zinc-550 uppercase tracking-wide">外部访问 URL 链接</span>

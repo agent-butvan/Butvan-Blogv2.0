@@ -37,7 +37,7 @@ public class MediaServiceImpl implements MediaService {
 
     @Override
     @Transactional
-    public Media uploadFile(MultipartFile file) {
+    public Media uploadFile(MultipartFile file, String sourceType, Long sourceId, String sourceDetail) {
         if (file.isEmpty()) {
             throw new BusinessException("上传的文件不能为空");
         }
@@ -93,6 +93,9 @@ public class MediaServiceImpl implements MediaService {
                 .mimeType(file.getContentType())
                 .fileSize(file.getSize())
                 .bucketName("local")
+                .sourceType(org.springframework.util.StringUtils.hasText(sourceType) ? sourceType : "MANUAL")
+                .sourceId(sourceId)
+                .sourceDetail(sourceDetail)
                 .build();
 
         return mediaRepository.save(media);
@@ -119,6 +122,11 @@ public class MediaServiceImpl implements MediaService {
             // 文件名称模糊过滤
             if (org.springframework.util.StringUtils.hasText(queryDTO.getKeyword())) {
                 predicates.add(cb.like(root.get("fileName"), "%" + queryDTO.getKeyword() + "%"));
+            }
+
+            // 来源大类过滤
+            if (org.springframework.util.StringUtils.hasText(queryDTO.getSourceType())) {
+                predicates.add(cb.equal(root.get("sourceType"), queryDTO.getSourceType()));
             }
 
             return cb.and(predicates.toArray(new jakarta.persistence.criteria.Predicate[0]));

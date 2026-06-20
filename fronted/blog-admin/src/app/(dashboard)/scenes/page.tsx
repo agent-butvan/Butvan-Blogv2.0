@@ -65,6 +65,8 @@ export default function ScenesPage() {
     const file = files[0]
     const formData = new FormData()
     formData.append('file', file)
+    formData.append('sourceType', 'SCENE')
+    formData.append('sourceDetail', '房间场景背景图')
     setUploading(true)
     try {
       const res = await apiClient.post('/admin/media/upload', formData, {

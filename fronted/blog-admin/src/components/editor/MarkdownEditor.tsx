@@ -133,6 +133,8 @@ export default function MarkdownEditor({
   const handleImageUpload = async (file: File): Promise<string> => {
     const formData = new FormData();
     formData.append("file", file);
+    formData.append("sourceType", "ARTICLE");
+    formData.append("sourceDetail", "文章正文插图");
     const res = await apiClient.post("/admin/media/upload", formData, {
       headers: { "Content-Type": "multipart/form-data" },
     });
