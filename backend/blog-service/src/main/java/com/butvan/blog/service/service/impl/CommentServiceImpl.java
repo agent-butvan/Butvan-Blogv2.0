@@ -71,6 +71,7 @@ public class CommentServiceImpl implements CommentService {
                             .content(c.getContent())
                             .likeCount(c.getLikeCount())
                             .isAuthorReplied(c.getIsAuthorReplied())
+                            .userAgent(c.getUserAgent())
                             .createdAt(c.getCreatedAt())
                             .replies(new ArrayList<>())
                             .build();
@@ -193,6 +194,7 @@ public class CommentServiceImpl implements CommentService {
                 .content(saved.getContent())
                 .likeCount(saved.getLikeCount())
                 .isAuthorReplied(saved.getIsAuthorReplied())
+                .userAgent(saved.getUserAgent())
                 .createdAt(saved.getCreatedAt())
                 .replyTo(replyToName)
                 .replies(new ArrayList<>())
