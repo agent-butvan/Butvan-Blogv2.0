@@ -61,6 +61,25 @@ export default function ArticleDetailPage() {
   const [toc, setToc] = useState<TocItem[]>([])
   const [activeTocId, setActiveTocId] = useState<string>('')
 
+  // 从 localStorage 检查点赞状态
+  useEffect(() => {
+    if (article?.id && typeof window !== 'undefined') {
+      const likedListStr = localStorage.getItem('liked_articles')
+      if (likedListStr) {
+        try {
+          const likedList = JSON.parse(likedListStr)
+          if (Array.isArray(likedList) && likedList.includes(article.id)) {
+            setLiked(true)
+          } else {
+            setLiked(false)
+          }
+        } catch (e) {
+          console.error('加载本地点赞状态失败:', e)
+        }
+      }
+    }
+  }, [article])
+
   // Ref 定义
   const articleContentRef = useRef<HTMLDivElement>(null)
   const heartRef = useRef<HTMLButtonElement>(null)
@@ -229,23 +248,95 @@ export default function ArticleDetailPage() {
     }
   }, [article])
 
-  // GSAP 点赞比心微动效
-  const handleLike = () => {
+  // 比心弹性缩放和晃动动效
+  const playHeartAnim = () => {
+    if (heartRef.current) {
+      gsap.timeline()
+        .to(heartRef.current, { scale: 1.35, rotation: -12, duration: 0.15, ease: 'power1.out' })
+        .to(heartRef.current, { scale: 0.9, rotation: 8, duration: 0.1 })
+        .to(heartRef.current, { scale: 1.15, rotation: -4, duration: 0.1 })
+        .to(heartRef.current, { scale: 1, rotation: 0, duration: 0.15, ease: 'power2.out' })
+    }
+  }
+
+  // 游客点赞核心操作接口对接
+  const handleLike = async () => {
+    if (!article?.id) return
+
+    // 1. 如果本地已经标记过已点赞，拦截点击并提示
     if (liked) {
-      setLiked(false)
-      setLikeCount(prev => prev - 1)
-    } else {
+      alert('您最近已对本文进行过点赞啦！感谢您的赞同～')
+      return
+    }
+
+    // 2. Mock 本地模拟环境下的降级点赞处理
+    if (isMocked) {
       setLiked(true)
       setLikeCount(prev => prev + 1)
-
-      // 比心弹性缩放和晃动
-      if (heartRef.current) {
-        gsap.timeline()
-          .to(heartRef.current, { scale: 1.35, rotation: -12, duration: 0.15, ease: 'power1.out' })
-          .to(heartRef.current, { scale: 0.9, rotation: 8, duration: 0.1 })
-          .to(heartRef.current, { scale: 1.15, rotation: -4, duration: 0.1 })
-          .to(heartRef.current, { scale: 1, rotation: 0, duration: 0.15, ease: 'power2.out' })
+      if (typeof window !== 'undefined') {
+        const likedListStr = localStorage.getItem('liked_articles') || '[]'
+        try {
+          const likedList = JSON.parse(likedListStr)
+          if (Array.isArray(likedList) && !likedList.includes(article.id)) {
+            likedList.push(article.id)
+            localStorage.setItem('liked_articles', JSON.stringify(likedList))
+          }
+        } catch (e) {
+          console.error('更新本地 Mock 点赞列表失败:', e)
+        }
       }
+      playHeartAnim()
+      return
+    }
+
+    // 3. 真实后端 API 请求对接
+    try {
+      const res = await fetch(`${API_BASE}/articles/${article.id}/like`, {
+        method: 'POST'
+      })
+      const json = await res.json()
+      
+      if (json.code === 200 || json.code === 0) {
+        // 点赞成功，更新数据
+        const newCount = typeof json.data === 'number' ? json.data : (likeCount + 1)
+        setLikeCount(newCount)
+        setLiked(true)
+
+        // 写入 localStorage
+        if (typeof window !== 'undefined') {
+          const likedListStr = localStorage.getItem('liked_articles') || '[]'
+          try {
+            const likedList = JSON.parse(likedListStr)
+            if (Array.isArray(likedList) && !likedList.includes(article.id)) {
+              likedList.push(article.id)
+              localStorage.setItem('liked_articles', JSON.stringify(likedList))
+            }
+          } catch (e) {
+            console.error('缓存本地点赞状态失败:', e)
+          }
+        }
+        
+        playHeartAnim()
+      } else {
+        // 后端 24 小时 IP 限制返回报错信息
+        alert(json.msg || '点赞失败')
+        
+        // 标记已点赞，防止反复点击发起请求
+        setLiked(true)
+        if (typeof window !== 'undefined') {
+          const likedListStr = localStorage.getItem('liked_articles') || '[]'
+          try {
+            const likedList = JSON.parse(likedListStr)
+            if (Array.isArray(likedList) && !likedList.includes(article.id)) {
+              likedList.push(article.id)
+              localStorage.setItem('liked_articles', JSON.stringify(likedList))
+            }
+          } catch (e) {}
+        }
+      }
+    } catch (err) {
+      console.error('点赞接口网络请求失败:', err)
+      alert('网络繁忙，点赞暂时失败，请稍后重试。')
     }
   }
 
