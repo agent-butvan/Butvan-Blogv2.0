@@ -390,14 +390,14 @@ public class ArticleServiceImpl implements ArticleService {
     @Override
     @Transactional
     public Long likeArticle(Long id, String ipAddress, String userAgent, Long userId) {
-        log.info("游客或用户点赞文章，文章ID: {}, IP: {}, UA: {}, 用户ID: {}", id, ipAddress, userAgent, userId);
+        log.info("游客或用户尝试切换点赞状态，文章ID: {}, IP: {}, UA: {}, 用户ID: {}", id, ipAddress, userAgent, userId);
         
         // 1. 查找文章
         Article article = articleRepository.findById(id)
                 .orElseThrow(() -> new BusinessException("文章不存在或已被删除"));
         
         if (!"PUBLISHED".equalsIgnoreCase(article.getStatus())) {
-            throw new BusinessException("只能对已发布的文章进行点赞");
+            throw new BusinessException("只能对已发布的文章进行点赞操作");
         }
         
         // 2. UA 截断以适配数据库字段长度限制
@@ -408,39 +408,44 @@ public class ArticleServiceImpl implements ArticleService {
         
         // 3. 校验 24 小时内同一设备/用户账号是否已经点赞过 (以当前时间减去 24 小时为界限)
         LocalDateTime limitTime = LocalDateTime.now().minusHours(24);
-        boolean hasLiked = false;
+        Optional<ArticleLike> existingLike = Optional.empty();
         if (userId != null) {
-            // 已登录用户：优先通过用户ID校验
-            hasLiked = articleLikeRepository.existsByArticleIdAndUserIdAndCreatedAtAfter(id, userId, limitTime);
+            // 已登录用户：优先通过用户ID检索
+            existingLike = articleLikeRepository.findFirstByArticleIdAndUserIdAndCreatedAtAfter(id, userId, limitTime);
         } else {
-            // 游客：通过 IP & UA 联合校验
-            hasLiked = articleLikeRepository.existsByArticleIdAndIpAddressAndUserAgentAndCreatedAtAfter(
+            // 游客：通过 IP & UA 联合检索
+            existingLike = articleLikeRepository.findFirstByArticleIdAndIpAddressAndUserAgentAndCreatedAtAfter(
                     id, ipAddress, truncatedUa, limitTime
             );
         }
         
-        if (hasLiked) {
-            throw new BusinessException("您在24小时内已对本文点赞过啦，请勿重复点赞");
-        }
-        
-        // 4. 记录点赞流水
-        ArticleLike articleLike = ArticleLike.builder()
-                .articleId(id)
-                .ipAddress(ipAddress)
-                .userAgent(truncatedUa)
-                .userId(userId)
-                .build();
-        articleLikeRepository.save(articleLike);
-        
-        // 5. 递增点赞数
+        // 4. 双向切换（Toggle）逻辑
         Long currentLikes = article.getLikeCount();
         if (currentLikes == null) {
             currentLikes = 0L;
         }
-        article.setLikeCount(currentLikes + 1);
-        articleRepository.save(article);
+
+        if (existingLike.isPresent()) {
+            // 已点过赞，执行取消点赞逻辑
+            articleLikeRepository.delete(existingLike.get());
+            article.setLikeCount(currentLikes > 0 ? currentLikes - 1 : 0L);
+            articleRepository.save(article);
+            log.info("文章点赞取消成功，当前最新点赞数: {}", article.getLikeCount());
+        } else {
+            // 未点过赞，执行点赞逻辑
+            ArticleLike articleLike = ArticleLike.builder()
+                    .articleId(id)
+                    .ipAddress(ipAddress)
+                    .userAgent(truncatedUa)
+                    .userId(userId)
+                    .build();
+            articleLikeRepository.save(articleLike);
+            
+            article.setLikeCount(currentLikes + 1);
+            articleRepository.save(article);
+            log.info("文章点赞成功，当前最新点赞数: {}", article.getLikeCount());
+        }
         
-        log.info("文章点赞成功，当前最新点赞数: {}", article.getLikeCount());
         return article.getLikeCount();
     }
 
