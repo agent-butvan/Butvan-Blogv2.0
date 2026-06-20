@@ -13,9 +13,11 @@ public interface CommentService {
      * 根据文章 ID 查询并组装两级树形结构评论列表 (顶级评论 + replies)
      *
      * @param articleId 文章唯一主键 ID
+     * @param viewerName 当前访客的昵称
+     * @param viewerEmail 当前访客的邮箱
      * @return 组装树形化包装的评论 VO 列表
      */
-    List<CommentVO> listCommentsByArticleId(Long articleId);
+    List<CommentVO> listCommentsByArticleId(Long articleId, String viewerName, String viewerEmail);
 
     /**
      * 前台访客/注册用户提交新评论接口
@@ -71,6 +73,20 @@ public interface CommentService {
      * @param username 当前登录的管理员用户名
      */
     void markAsAuthor(Long id, String username);
+
+    /**
+     * 后台管理 - 置顶或取消置顶指定评论
+     *
+     * @param id 评论 ID
+     */
+    void togglePinComment(Long id);
+
+    /**
+     * 后台管理 - 封禁评论的作者（IP 及其 邮箱）
+     *
+     * @param id 评论 ID
+     */
+    void banCommentAuthor(Long id);
 
     /**
      * 后台管理 - 物理彻底删除一条评论记录

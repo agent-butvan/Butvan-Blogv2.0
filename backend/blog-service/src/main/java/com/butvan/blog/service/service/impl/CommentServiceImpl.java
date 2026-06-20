@@ -4,9 +4,11 @@ import com.butvan.blog.common.exception.BusinessException;
 import com.butvan.blog.pojo.dto.comment.CommentCreateDTO;
 import com.butvan.blog.pojo.entity.Article;
 import com.butvan.blog.pojo.entity.Comment;
+import com.butvan.blog.pojo.entity.CommentBan;
 import com.butvan.blog.pojo.vo.comment.CommentVO;
 import com.butvan.blog.pojo.entity.User;
 import com.butvan.blog.service.repository.UserRepository;
+import com.butvan.blog.service.repository.CommentBanRepository;
 import org.springframework.data.domain.Page;
 import org.springframework.data.domain.PageImpl;
 import org.springframework.data.domain.Pageable;
@@ -39,13 +41,35 @@ public class CommentServiceImpl implements CommentService {
     private final CommentRepository commentRepository;
     private final ArticleRepository articleRepository;
     private final UserRepository userRepository;
+    private final CommentBanRepository commentBanRepository;
 
     @Override
-    public List<CommentVO> listCommentsByArticleId(Long articleId) {
-        log.info("查询文章评论树: articleId={}", articleId);
+    public List<CommentVO> listCommentsByArticleId(Long articleId, String viewerName, String viewerEmail) {
+        log.info("查询文章评论树: articleId={}, viewerName={}, viewerEmail={}", articleId, viewerName, viewerEmail);
         
-        // 1. 查询全部已审核通过 (APPROVED) 的评论
-        List<Comment> comments = commentRepository.findByArticleIdAndStatusOrderByCreatedAtAsc(articleId, "APPROVED");
+        // 1. 查询全部已审核通过 (APPROVED) 的评论，或者虽未通过但属于当前浏览者的评论
+        Specification<Comment> spec = (root, query, cb) -> {
+            Predicate isApproved = cb.equal(root.get("status"), "APPROVED");
+            
+            Predicate isViewerComment = cb.and(
+                cb.notEqual(root.get("status"), "APPROVED"),
+                cb.equal(root.get("article").get("id"), articleId)
+            );
+            
+            if (viewerEmail != null && !viewerEmail.trim().isEmpty()) {
+                Predicate emailMatch = cb.equal(root.get("visitorEmail"), viewerEmail.trim());
+                isViewerComment = cb.and(isViewerComment, emailMatch);
+            } else {
+                isViewerComment = cb.disjunction(); // 相当于 false
+            }
+            
+            return cb.and(
+                cb.equal(root.get("article").get("id"), articleId),
+                cb.or(isApproved, isViewerComment)
+            );
+        };
+
+        List<Comment> comments = commentRepository.findAll(spec, Sort.by(Sort.Direction.ASC, "createdAt"));
         
         // 2. 将实体列表批量转化为 VO，并利用 Map 进行缓存检索
         Map<Long, CommentVO> voMap = comments.stream()
@@ -73,6 +97,8 @@ public class CommentServiceImpl implements CommentService {
                             .likeCount(c.getLikeCount())
                             .isAuthorReplied(c.getIsAuthorReplied())
                             .isAuthor(isAuthor)
+                            .isPinned(c.getIsPinned() != null && c.getIsPinned())
+                            .status(c.getStatus())
                             .userAgent(c.getUserAgent())
                             .createdAt(c.getCreatedAt())
                             .replies(new ArrayList<>())
@@ -105,6 +131,15 @@ public class CommentServiceImpl implements CommentService {
             }
         }
 
+        // 4. 对顶级评论进行排序：置顶的排最前，其次时间升序
+        rootComments.sort((c1, c2) -> {
+            boolean p1 = c1.getIsPinned() != null && c1.getIsPinned();
+            boolean p2 = c2.getIsPinned() != null && c2.getIsPinned();
+            if (p1 && !p2) return -1;
+            if (!p1 && p2) return 1;
+            return c1.getCreatedAt().compareTo(c2.getCreatedAt());
+        });
+
         return rootComments;
     }
 
@@ -112,6 +147,14 @@ public class CommentServiceImpl implements CommentService {
     @Override
     public CommentVO createComment(Long articleId, CommentCreateDTO dto, String ipAddress, String userAgent) {
         log.info("提交评论: articleId={}, visitorName={}", articleId, dto.getVisitorName());
+
+        // 0. 检验发表人邮箱或 IP 是否在封禁黑名单中
+        if (dto.getVisitorEmail() != null && commentBanRepository.existsByEmail(dto.getVisitorEmail().trim())) {
+            throw new BusinessException("您的邮箱已在本站的封禁黑名单中，无法发表评论");
+        }
+        if (ipAddress != null && commentBanRepository.existsByIpAddress(ipAddress.trim())) {
+            throw new BusinessException("您的 IP 地址已在本站的封禁黑名单中，无法发表评论");
+        }
 
         // 1. 检验文章及是否开放评论状态
         Article article = articleRepository.findById(articleId)
@@ -153,11 +196,11 @@ public class CommentServiceImpl implements CommentService {
                 .visitorEmail(dto.getVisitorEmail().trim())
                 .visitorWebsite(dto.getVisitorWebsite() != null ? dto.getVisitorWebsite().trim() : null)
                 .content(dto.getContent().trim())
-                .status("APPROVED") // 默认设置为 APPROVED 直接前台可见
+                .status("APPROVED") // 默认直接通过
                 .ipAddress(ipAddress)
                 .userAgent(userAgent)
                 .likeCount(0)
-                .isAuthorReplied(matchedUser != null && ("ADMIN".equalsIgnoreCase(matchedUser.getRole()) || "AUTHOR".equalsIgnoreCase(matchedUser.getRole())))
+                .isAuthorReplied(false)
                 .build();
 
         Comment saved = commentRepository.save(comment);
@@ -322,6 +365,7 @@ public class CommentServiceImpl implements CommentService {
                             .likeCount(c.getLikeCount())
                             .isAuthorReplied(c.getIsAuthorReplied())
                             .isAuthor(isAuthor)
+                            .isPinned(c.getIsPinned() != null && c.getIsPinned())
                             .replyTo(replyTo)
                             .status(c.getStatus())
                             .articleTitle(c.getArticle().getTitle())
@@ -408,6 +452,7 @@ public class CommentServiceImpl implements CommentService {
                 .likeCount(savedReply.getLikeCount())
                 .isAuthorReplied(savedReply.getIsAuthorReplied())
                 .isAuthor(isAuthor)
+                .isPinned(savedReply.getIsPinned() != null && savedReply.getIsPinned())
                 .replyTo(parent.getUser() != null ? parent.getUser().getNickname() : parent.getVisitorName())
                 .status(savedReply.getStatus())
                 .articleTitle(article.getTitle())
@@ -433,6 +478,64 @@ public class CommentServiceImpl implements CommentService {
                     });
         }
         commentRepository.save(comment);
+    }
+
+    @Transactional
+    @Override
+    public void togglePinComment(Long id) {
+        log.info("置顶或取消置顶评论: id={}", id);
+        Comment comment = commentRepository.findById(id)
+                .orElseThrow(() -> new BusinessException("目标评论不存在"));
+        
+        // 置顶状态取反，且目前只允许顶级评论置顶
+        if (comment.getParentId() != null) {
+            throw new BusinessException("只允许对顶级的一级评论执行置顶操作");
+        }
+        comment.setIsPinned(comment.getIsPinned() == null ? true : !comment.getIsPinned());
+        commentRepository.save(comment);
+    }
+
+    @Transactional
+    @Override
+    public void banCommentAuthor(Long id) {
+        log.info("封禁该评论的作者: id={}", id);
+        Comment comment = commentRepository.findById(id)
+                .orElseThrow(() -> new BusinessException("目标评论不存在"));
+
+        String email = comment.getVisitorEmail();
+        String ipAddress = comment.getIpAddress();
+
+        // 1. 如果有邮箱，进行封禁拦截记录
+        if (email != null && !email.trim().isEmpty()) {
+            String trimmedEmail = email.trim();
+            if (!commentBanRepository.existsByEmail(trimmedEmail)) {
+                commentBanRepository.save(CommentBan.builder().email(trimmedEmail).build());
+            }
+            // 将同邮箱的所有评论状态一并更新为 SPAM
+            List<Comment> emailComments = commentRepository.findAll((root, query, cb) -> 
+                cb.equal(root.get("visitorEmail"), trimmedEmail)
+            );
+            for (Comment c : emailComments) {
+                c.setStatus("SPAM");
+                commentRepository.save(c);
+            }
+        }
+
+        // 2. 如果有 IP，进行封禁拦截记录 (跳过本机回环地址)
+        if (ipAddress != null && !ipAddress.trim().isEmpty() && !ipAddress.equals("127.0.0.1") && !ipAddress.equals("0:0:0:0:0:0:0:1")) {
+            String trimmedIp = ipAddress.trim();
+            if (!commentBanRepository.existsByIpAddress(trimmedIp)) {
+                commentBanRepository.save(CommentBan.builder().ipAddress(trimmedIp).build());
+            }
+            // 将同 IP 的所有评论状态一并更新为 SPAM
+            List<Comment> ipComments = commentRepository.findAll((root, query, cb) -> 
+                cb.equal(root.get("ipAddress"), trimmedIp)
+            );
+            for (Comment c : ipComments) {
+                c.setStatus("SPAM");
+                commentRepository.save(c);
+            }
+        }
     }
 
     @Transactional

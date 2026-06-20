@@ -32,9 +32,12 @@ public class CommentController {
      * @return 统一格式 Result 包装的树形评论 VO 列表
      */
     @GetMapping("/articles/{articleId}/comments")
-    public Result<List<CommentVO>> getCommentsByArticleId(@PathVariable Long articleId) {
-        log.info("前台获取文章评论树 API 请求: articleId={}", articleId);
-        List<CommentVO> comments = commentService.listCommentsByArticleId(articleId);
+    public Result<List<CommentVO>> getCommentsByArticleId(
+            @PathVariable Long articleId,
+            @RequestParam(required = false) String viewerName,
+            @RequestParam(required = false) String viewerEmail) {
+        log.info("前台获取文章评论树 API 请求: articleId={}, viewerName={}, viewerEmail={}", articleId, viewerName, viewerEmail);
+        List<CommentVO> comments = commentService.listCommentsByArticleId(articleId, viewerName, viewerEmail);
         return Result.success(comments);
     }
 
@@ -158,6 +161,26 @@ public class CommentController {
     public Result<Void> deleteComment(@PathVariable Long id) {
         log.info("后台物理彻底删除评论: id={}", id);
         commentService.deleteComment(id);
+        return Result.success();
+    }
+
+    /**
+     * 【受保护后台】切换评论置顶状态
+     */
+    @PutMapping("/admin/comments/{id}/pin")
+    public Result<Void> togglePinComment(@PathVariable Long id) {
+        log.info("后台切换评论置顶: id={}", id);
+        commentService.togglePinComment(id);
+        return Result.success();
+    }
+
+    /**
+     * 【受保护后台】封禁该评论的作者（IP 及其 邮箱）
+     */
+    @PutMapping("/admin/comments/{id}/ban")
+    public Result<Void> banCommentAuthor(@PathVariable Long id) {
+        log.info("后台封禁评论作者: id={}", id);
+        commentService.banCommentAuthor(id);
         return Result.success();
     }
 }
