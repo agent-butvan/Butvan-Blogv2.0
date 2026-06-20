@@ -7,6 +7,7 @@ import ArticleForm from "@/components/forms/ArticleForm";
 import { fetchArticleDetail, updateArticle } from "@/lib/article-api";
 import type { ArticleDetail, ArticleSaveDTO } from "@/types/article";
 import { Loader2 } from "lucide-react";
+import { toast } from "@/lib/toast";
 
 /**
  * 编辑文章页面
@@ -22,7 +23,6 @@ export default function EditArticlePage() {
   const [loading, setLoading] = useState(true);
   const [saving, setSaving] = useState(false);
   const [error, setError] = useState<string | null>(null);
-  const [successMsg, setSuccessMsg] = useState<string | null>(null);
 
   // 加载文章数据
   useEffect(() => {
@@ -39,18 +39,19 @@ export default function EditArticlePage() {
   const handleSave = async (data: ArticleSaveDTO) => {
     setSaving(true);
     setError(null);
-    setSuccessMsg(null);
 
     try {
       await updateArticle(id, data);
-      setSuccessMsg(data.status === "PUBLISHED" ? "文章已更新并发布！" : "文章已更新！");
+      const msg = data.status === "PUBLISHED" ? "文章已更新并发布！" : "文章已更新！";
+      toast.success(msg);
       // 更新本地缓存
       setArticle((prev) =>
         prev ? { ...prev, ...data } : null
       );
     } catch (err: unknown) {
       const axiosErr = err as { response?: { data?: { msg?: string } } };
-      setError(axiosErr?.response?.data?.msg || "保存失败，请重试");
+      const errMsg = axiosErr?.response?.data?.msg || "保存失败，请重试";
+      toast.error(errMsg);
     } finally {
       setSaving(false);
     }
@@ -60,7 +61,7 @@ export default function EditArticlePage() {
   if (loading) {
     return (
       <div className="flex items-center justify-center py-32 select-none">
-        <Loader2 size={28} className="animate-spin text-zinc-350 dark:text-zinc-650" />
+        <Loader2 size={28} className="animate-spin text-zinc-350 dark:text-zinc-655" />
       </div>
     );
   }
@@ -103,18 +104,6 @@ export default function EditArticlePage() {
 
   return (
     <div className="max-w-6xl mx-auto space-y-6">
-      {/* 提示信息 */}
-      {error && (
-        <div className="rounded-xl bg-red-50 dark:bg-red-950/20 border border-red-200/60 dark:border-red-900/35 p-4 text-xs font-medium text-red-700 dark:text-red-400 animate-fade-in">
-          {error}
-        </div>
-      )}
-      {successMsg && (
-        <div className="rounded-xl bg-green-50 dark:bg-green-950/20 border border-green-200/60 dark:border-green-900/35 p-4 text-xs font-medium text-green-700 dark:text-green-400 animate-fade-in">
-          {successMsg}
-        </div>
-      )}
-
       {/* 双栏表单 */}
       <ArticleForm initialData={initialData} onSave={handleSave} saving={saving} />
     </div>
