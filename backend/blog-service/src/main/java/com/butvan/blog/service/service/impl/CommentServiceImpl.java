@@ -464,16 +464,17 @@ public class CommentServiceImpl implements CommentService {
     @Transactional
     @Override
     public void markAsAuthor(Long id, String username) {
-        log.info("标记评论为博主本人所写: id={}, username={}", id, username);
+        log.info("切换评论的博主作者身份标记: id={}, username={}", id, username);
         Comment comment = commentRepository.findById(id)
                 .orElseThrow(() -> new BusinessException("目标评论不存在"));
         
-        comment.setIsAuthor(true);
-        // 如果此评论是回复他人的（即有 parentId），则把原评论标记为作者已回复
+        boolean nextState = comment.getIsAuthor() == null ? true : !comment.getIsAuthor();
+        comment.setIsAuthor(nextState);
+        // 如果此评论是回复他人的（即有 parentId），则把原评论标记为作者已回复状态
         if (comment.getParentId() != null) {
             commentRepository.findById(comment.getParentId())
                     .ifPresent(parent -> {
-                        parent.setIsAuthorReplied(true);
+                        parent.setIsAuthorReplied(nextState);
                         commentRepository.save(parent);
                     });
         }
