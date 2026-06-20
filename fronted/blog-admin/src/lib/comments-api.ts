@@ -78,3 +78,27 @@ export async function deleteComment(id: number | string): Promise<void> {
     throw new Error(res.data.msg || "删除评论失败");
   }
 }
+
+/**
+ * 后台将某条评论置顶或取消置顶 (PUT /admin/comments/{id}/pin)
+ *
+ * @param id 评论的主键 ID
+ */
+export async function togglePinComment(id: number | string): Promise<void> {
+  const res = await apiClient.put<ApiResponse<void>>(`/admin/comments/${id}/pin`);
+  if (res.data && res.data.code !== 200) {
+    throw new Error(res.data.msg || "置顶状态切换失败");
+  }
+}
+
+/**
+ * 后台封禁某条评论的作者 (PUT /admin/comments/{id}/ban)
+ *
+ * @param id 评论的主键 ID
+ */
+export async function banCommentAuthor(id: number | string): Promise<void> {
+  const res = await apiClient.put<ApiResponse<void>>(`/admin/comments/${id}/ban`);
+  if (res.data && res.data.code !== 200) {
+    throw new Error(res.data.msg || "封禁该评论作者失败");
+  }
+}

@@ -27,7 +27,9 @@ import {
   updateCommentStatus, 
   replyComment, 
   deleteComment,
-  markCommentAsAuthor
+  markCommentAsAuthor,
+  togglePinComment,
+  banCommentAuthor
 } from "@/lib/comments-api";
 import { toast } from "@/lib/toast";
 import ConfirmModal from "@/components/common/ConfirmModal";
@@ -126,8 +128,8 @@ const VerifiedBadge = ({ type }: { type: "admin" | "author" }) => {
       className="w-3.5 h-3.5 shrink-0 inline-block align-middle select-none ml-1" 
       aria-hidden="true" 
       style={{ verticalAlign: 'sub', fill: color }}
-      title={title}
     >
+      <title>{title}</title>
       <g>
         <path d="M22.5 12.5c0-1.58-.875-2.95-2.148-3.6.154-.435.238-.905.238-1.4 0-2.21-1.71-3.99-3.818-3.99-.48 0-.94.1-1.348.27C14.825 2.515 13.512 1.5 12 1.5s-2.825 1.015-3.422 2.28c-.407-.17-.867-.27-1.348-.27-2.108 0-3.818 1.78-3.818 3.99 0 .495.084.965.238 1.4-1.273.65-2.148 2.02-2.148 3.6 0 1.58.875 2.95 2.148 3.6-.154.435-.238.905-.238 1.4 0 2.21 1.71 3.99 3.818 3.99.48 0 .94-.1 1.348-.27.597 1.265 1.91 2.27 3.422 2.27s2.825-1.015 3.422-2.27c.407.17.867.27 1.348.27 2.108 0 3.818-1.78 3.818-3.99 0-.495-.084-.965-.238-1.4 1.273-.65 2.148-2.02 2.148-3.6zm-12.72 4.03l-3.85-3.85 1.43-1.4 2.42 2.42 6.25-6.25 1.43 1.42-7.68 7.66z" />
       </g>
@@ -168,6 +170,10 @@ export default function CommentsPage() {
   // 彻底删除确认 Modal 状态
   const [confirmDeleteId, setConfirmDeleteId] = useState<number | null>(null);
   const [deleteLoading, setDeleteLoading] = useState(false);
+
+  // 封禁作者确认 Modal 状态
+  const [confirmBanId, setConfirmBanId] = useState<number | null>(null);
+  const [banLoading, setBanLoading] = useState(false);
 
   // 状态流转加载状态 (防抖/防重点击)
   const [statusLoadingMap, setStatusLoadingMap] = useState<Record<number, boolean>>({});
@@ -298,6 +304,38 @@ export default function CommentsPage() {
     } catch (err: any) {
       console.error("标记为作者失败:", err);
       toast.error(err.message || "标记为作者失败");
+    } finally {
+      setStatusLoadingMap(prev => ({ ...prev, [id]: false }));
+    }
+  };
+
+  /** 确认封禁作者 */
+  const handleBanConfirm = async () => {
+    if (!confirmBanId) return;
+    setBanLoading(true);
+    try {
+      await banCommentAuthor(confirmBanId);
+      toast.success("该评论作者已成功封禁，历史发言已变更为拒绝状态");
+      setConfirmBanId(null);
+      loadComments(page, currentTab, keyword);
+    } catch (err: any) {
+      console.error("封禁作者失败:", err);
+      toast.error(err.message || "封禁作者失败");
+    } finally {
+      setBanLoading(false);
+    }
+  };
+
+  /** 切换置顶状态 */
+  const handleTogglePin = async (id: number) => {
+    setStatusLoadingMap(prev => ({ ...prev, [id]: true }));
+    try {
+      await togglePinComment(id);
+      toast.success("置顶状态已更新");
+      loadComments(page, currentTab, keyword);
+    } catch (err: any) {
+      console.error("切换置顶状态失败:", err);
+      toast.error(err.message || "切换置顶状态失败");
     } finally {
       setStatusLoadingMap(prev => ({ ...prev, [id]: false }));
     }
@@ -459,6 +497,11 @@ export default function CommentsPage() {
                   
                   {/* 右上侧：状态 Badge 与创建时间 */}
                   <div className="flex flex-col items-end gap-1.5 shrink-0 select-none">
+                    {comment.isPinned && (
+                      <span className="px-2 py-0.5 rounded text-[10px] font-bold leading-none bg-violet-50 text-violet-600 border border-violet-200/40 dark:bg-violet-955/15 dark:text-violet-400 dark:border-violet-900/30">
+                        置顶
+                      </span>
+                    )}
                     <span
                       className={cn(
                         "px-2 py-0.5 rounded text-[10px] font-bold leading-none border",
@@ -543,14 +586,16 @@ export default function CommentsPage() {
                       </button>
                     )}
 
-                    {/* 封禁 (静默绑定，UI 预置占位) */}
-                    <button
-                      onClick={() => toast.info("封禁作者功能已在 UI 预置。拉黑该用户或邮箱需要后端新增拦截策略。")}
-                      className="flex items-center gap-1.5 text-red-400/70 hover:text-red-500 transition-colors cursor-pointer outline-none border-0 bg-transparent font-medium"
-                    >
-                      <Ban size={13} />
-                      <span>封禁</span>
-                    </button>
+                    {/* 封禁 */}
+                    {!isTrash && !isSpam && (
+                      <button
+                        onClick={() => setConfirmBanId(comment.id)}
+                        className="flex items-center gap-1.5 text-red-400/70 hover:text-red-500 transition-colors cursor-pointer outline-none border-0 bg-transparent font-medium"
+                      >
+                        <Ban size={13} />
+                        <span>封禁</span>
+                      </button>
+                    )}
 
                     {/* 拒绝 */}
                     {(isPending || isApproved) && (
@@ -563,14 +608,19 @@ export default function CommentsPage() {
                       </button>
                     )}
 
-                    {/* 置顶 (静默绑定，UI 预置占位) */}
-                    <button
-                      onClick={() => toast.info("置顶评论功能已在 UI 预置。在数据库中排序此字段需要后续扩展。")}
-                      className="flex items-center gap-1.5 text-violet-400/80 hover:text-violet-500 transition-colors cursor-pointer outline-none border-0 bg-transparent font-medium"
-                    >
-                      <ArrowUp size={13} />
-                      <span>置顶</span>
-                    </button>
+                    {/* 置顶 */}
+                    {!comment.parentId && !isTrash && !isSpam && (
+                      <button
+                        onClick={() => handleTogglePin(comment.id)}
+                        className={cn(
+                          "flex items-center gap-1.5 transition-colors cursor-pointer outline-none border-0 bg-transparent font-medium",
+                          comment.isPinned ? "text-violet-500 hover:text-violet-600" : "text-violet-400/80 hover:text-violet-500"
+                        )}
+                      >
+                        <ArrowUp size={13} className={cn(comment.isPinned && "stroke-[2.5px]")} />
+                        <span>{comment.isPinned ? "取消置顶" : "置顶"}</span>
+                      </button>
+                    )}
 
                     {/* 标记为作者 */}
                     {!comment.isAuthor && !isTrash && !isSpam && (
@@ -749,6 +799,19 @@ export default function CommentsPage() {
         loading={deleteLoading}
         onConfirm={handleDeleteConfirm}
         onCancel={() => setConfirmDeleteId(null)}
+      />
+
+      {/* 封禁作者二次确认 Modal */}
+      <ConfirmModal
+        open={confirmBanId !== null}
+        title="确认封禁该评论的作者吗？"
+        description="确定封禁该评论的作者吗？封禁后将不再接受同一用户或邮箱地址的后续评论"
+        confirmLabel="确认封禁"
+        cancelLabel="取消"
+        variant="danger"
+        loading={banLoading}
+        onConfirm={handleBanConfirm}
+        onCancel={() => setConfirmBanId(null)}
       />
     </div>
   );

@@ -23,6 +23,7 @@ export interface CommentItem {
   articleSlug?: string | null;
   createdAt: string;
   isAuthor?: boolean;
+  isPinned?: boolean;
 }
 
 /**
