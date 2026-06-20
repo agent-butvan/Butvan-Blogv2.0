@@ -62,7 +62,7 @@ export default function ArticleDetailPage() {
   const [activeTocId, setActiveTocId] = useState<string>('')
 
   // 从 localStorage 检查点赞状态
-  useEffect(() => {
+  const checkLikeStatus = () => {
     if (article?.id && typeof window !== 'undefined') {
       const likedListStr = localStorage.getItem('liked_articles')
       if (likedListStr) {
@@ -76,7 +76,19 @@ export default function ArticleDetailPage() {
         } catch (e) {
           console.error('加载本地点赞状态失败:', e)
         }
+      } else {
+        setLiked(false)
       }
+    }
+  }
+
+  useEffect(() => {
+    checkLikeStatus()
+    
+    // 监听全局登录态切换事件以刷新点赞态
+    window.addEventListener('auth-change', checkLikeStatus)
+    return () => {
+      window.removeEventListener('auth-change', checkLikeStatus)
     }
   }, [article])
 
@@ -291,8 +303,15 @@ export default function ArticleDetailPage() {
 
     // 3. 真实后端 API 请求对接
     try {
+      const token = typeof window !== 'undefined' ? localStorage.getItem('token') : null
+      const headers: Record<string, string> = {}
+      if (token) {
+        headers['Authorization'] = `Bearer ${token}`
+      }
+
       const res = await fetch(`${API_BASE}/articles/${article.id}/like`, {
-        method: 'POST'
+        method: 'POST',
+        headers
       })
       const json = await res.json()
       
