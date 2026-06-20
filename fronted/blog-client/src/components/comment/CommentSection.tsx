@@ -53,6 +53,15 @@ const parseUA = (uaString: string | null | undefined) => {
   return `${os} · ${browser}`
 }
 
+// 站长打勾大V认证徽章组件
+const VerifiedBadge = () => (
+  <svg viewBox="0 0 24 24" className="w-3.5 h-3.5 fill-[#1d9bf0] shrink-0 inline-block align-middle select-none ml-1" aria-hidden="true" style={{ verticalAlign: 'sub' }}>
+    <g>
+      <path d="M22.5 12.5c0-1.58-.875-2.95-2.148-3.6.154-.435.238-.905.238-1.4 0-2.21-1.71-3.99-3.818-3.99-.48 0-.94.1-1.348.27C14.825 2.515 13.512 1.5 12 1.5s-2.825 1.015-3.422 2.28c-.407-.17-.867-.27-1.348-.27-2.108 0-3.818 1.78-3.818 3.99 0 .495.084.965.238 1.4-1.273.65-2.148 2.02-2.148 3.6 0 1.58.875 2.95 2.148 3.6-.154.435-.238.905-.238 1.4 0 2.21 1.71 3.99 3.818 3.99.48 0 .94-.1 1.348-.27.597 1.265 1.91 2.27 3.422 2.27s2.825-1.015 3.422-2.27c.407.17.867.27 1.348.27 2.108 0 3.818-1.78 3.818-3.99 0-.495-.084-.965-.238-1.4 1.273-.65 2.148-2.02 2.148-3.6zm-12.72 4.03l-3.85-3.85 1.43-1.4 2.42 2.42 6.25-6.25 1.43 1.42-7.68 7.66z" />
+    </g>
+  </svg>
+);
+
 export default function CommentSection({
   articleId,
   isAllowComment = true
@@ -237,13 +246,10 @@ export default function CommentSection({
             >
               {/* 一级头像 */}
               <div className="flex-shrink-0 select-none relative">
-                {comment.userId && (
-                  <span className="absolute -left-1 top-0.5 w-[3px] h-8 rounded-full bg-[#727BBA]" title="站长" />
-                )}
                 <img
                   src={resolveImageUrl(comment.avatarUrl)}
                   alt={comment.nickname}
-                  className={`w-10 h-10 rounded-xl bg-zinc-100 dark:bg-zinc-900 border shadow-inner ${comment.userId ? 'border-[#727BBA]/50 ring-1 ring-[#727BBA]/20' : 'border-zinc-200/50 dark:border-zinc-850'}`}
+                  className={`w-10 h-10 rounded-full bg-zinc-100 dark:bg-zinc-900 border shadow-inner ${comment.userId ? 'border-[#727BBA]/50 ring-1 ring-[#727BBA]/20' : 'border-zinc-200/50 dark:border-zinc-850'}`}
                   loading="lazy"
                 />
               </div>
@@ -258,21 +264,15 @@ export default function CommentSection({
                         href={comment.visitorWebsite.startsWith('http') ? comment.visitorWebsite : `https://${comment.visitorWebsite}`}
                         target="_blank"
                         rel="noopener noreferrer nofollow ugc"
-                        className="text-xs font-heading font-extrabold text-zinc-700 dark:text-zinc-300 hover:text-[#727BBA] dark:hover:text-[#8E97D5] transition-colors truncate hover:underline"
+                        className="text-xs font-heading font-extrabold text-zinc-700 dark:text-zinc-350 hover:text-[#727BBA] dark:hover:text-[#8E97D5] transition-colors truncate hover:underline flex items-center"
                       >
-                        {comment.nickname}
+                        <span>{comment.nickname}</span>
+                        {comment.userId && <VerifiedBadge />}
                       </a>
                     ) : (
-                      <span className="text-xs font-heading font-extrabold text-zinc-700 dark:text-zinc-300 truncate">
-                        {comment.nickname}
-                      </span>
-                    )}
-
-                    {/* 博主/站长徽章 */}
-                    {comment.userId && (
-                      <span className="inline-flex items-center gap-0.5 px-1.5 py-0.5 bg-[#727BBA]/15 text-[#727BBA] dark:text-[#8E97D5] border border-[#727BBA]/25 text-[9px] font-extrabold rounded scale-90">
-                        <CheckCircle size={8} className="text-[#727BBA] dark:text-[#8E97D5]" />
-                        站长
+                      <span className="text-xs font-heading font-extrabold text-zinc-700 dark:text-zinc-350 truncate flex items-center">
+                        <span>{comment.nickname}</span>
+                        {comment.userId && <VerifiedBadge />}
                       </span>
                     )}
                   </div>
@@ -360,13 +360,10 @@ export default function CommentSection({
                       >
                         {/* 二级头像 */}
                         <div className="flex-shrink-0 select-none relative">
-                          {reply.userId && (
-                            <span className="absolute -left-0.5 top-0.5 w-[2.5px] h-6 rounded-full bg-[#727BBA]" title="站长" />
-                          )}
                           <img
                             src={resolveImageUrl(reply.avatarUrl)}
                             alt={reply.nickname}
-                            className={`w-8 h-8 rounded-lg bg-zinc-150 dark:bg-zinc-900 border shadow-inner ${reply.userId ? 'border-[#727BBA]/50 ring-1 ring-[#727BBA]/20' : 'border-zinc-200/40 dark:border-zinc-850'}`}
+                            className={`w-8 h-8 rounded-full bg-zinc-150 dark:bg-zinc-900 border shadow-inner ${reply.userId ? 'border-[#727BBA]/50 ring-1 ring-[#727BBA]/20' : 'border-zinc-200/40 dark:border-zinc-850'}`}
                             loading="lazy"
                           />
                         </div>
@@ -381,19 +378,15 @@ export default function CommentSection({
                                   href={reply.visitorWebsite.startsWith('http') ? reply.visitorWebsite : `https://${reply.visitorWebsite}`}
                                   target="_blank"
                                   rel="noopener noreferrer nofollow ugc"
-                                  className="font-heading font-extrabold text-zinc-700 dark:text-zinc-350 hover:text-[#727BBA] dark:hover:text-[#8E97D5] transition-colors truncate hover:underline"
+                                  className="font-heading font-extrabold text-zinc-700 dark:text-zinc-350 hover:text-[#727BBA] dark:hover:text-[#8E97D5] transition-colors truncate hover:underline flex items-center"
                                 >
-                                  {reply.nickname}
+                                  <span>{reply.nickname}</span>
+                                  {reply.userId && <VerifiedBadge />}
                                 </a>
                               ) : (
-                                <span className="font-heading font-extrabold text-zinc-700 dark:text-zinc-350 truncate">
-                                  {reply.nickname}
-                                </span>
-                              )}
-
-                              {reply.userId && (
-                                <span className="inline-flex items-center gap-0.5 px-1.5 py-0.5 bg-[#727BBA]/15 text-[#727BBA] dark:text-[#8E97D5] border border-[#727BBA]/25 text-[8px] font-extrabold rounded scale-90">
-                                  站长
+                                <span className="font-heading font-extrabold text-zinc-700 dark:text-zinc-350 truncate flex items-center">
+                                  <span>{reply.nickname}</span>
+                                  {reply.userId && <VerifiedBadge />}
                                 </span>
                               )}
 
