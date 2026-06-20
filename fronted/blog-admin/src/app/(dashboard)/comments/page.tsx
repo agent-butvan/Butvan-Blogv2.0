@@ -114,6 +114,17 @@ const resolveAvatarUrl = (avatarUrl?: string | null): string => {
 };
 
 /**
+ * 站长打勾大V认证徽章组件
+ */
+const VerifiedBadge = () => (
+  <svg viewBox="0 0 24 24" className="w-3.5 h-3.5 fill-[#1d9bf0] shrink-0 inline-block align-middle select-none ml-1" aria-hidden="true" style={{ verticalAlign: 'sub' }}>
+    <g>
+      <path d="M22.5 12.5c0-1.58-.875-2.95-2.148-3.6.154-.435.238-.905.238-1.4 0-2.21-1.71-3.99-3.818-3.99-.48 0-.94.1-1.348.27C14.825 2.515 13.512 1.5 12 1.5s-2.825 1.015-3.422 2.28c-.407-.17-.867-.27-1.348-.27-2.108 0-3.818 1.78-3.818 3.99 0 .495.084.965.238 1.4-1.273.65-2.148 2.02-2.148 3.6 0 1.58.875 2.95 2.148 3.6-.154.435-.238.905-.238 1.4 0 2.21 1.71 3.99 3.818 3.99.48 0 .94-.1 1.348-.27.597 1.265 1.91 2.27 3.422 2.27s2.825-1.015 3.422-2.27c.407.17.867.27 1.348.27 2.108 0 3.818-1.78 3.818-3.99 0-.495-.084-.965-.238-1.4 1.273-.65 2.148-2.02 2.148-3.6zm-12.72 4.03l-3.85-3.85 1.43-1.4 2.42 2.42 6.25-6.25 1.43 1.42-7.68 7.66z" />
+    </g>
+  </svg>
+);
+
+/**
  * 评论状态 Tab 定义
  */
 const STATUS_TABS = [
@@ -370,14 +381,10 @@ export default function CommentsPage() {
                     />
                     <div>
                       <div className="flex items-center gap-2 flex-wrap">
-                        <span className="font-bold text-sm text-neutral-dark dark:text-zinc-200 leading-snug">
-                          {comment.nickname}
+                        <span className="font-bold text-sm text-neutral-dark dark:text-zinc-200 leading-snug flex items-center">
+                          <span>{comment.nickname}</span>
+                          {comment.userId && <VerifiedBadge />}
                         </span>
-                        {comment.userId && (
-                          <span className="bg-primary/10 text-primary dark:bg-primary/20 dark:text-[#b0a2ff] px-1.5 py-0.5 rounded text-[9px] font-bold select-none leading-none scale-90 origin-left">
-                            博主
-                          </span>
-                        )}
                         {comment.replyTo && (
                           <span className="inline-flex items-center gap-1 text-[9px] font-bold text-zinc-450 dark:text-zinc-500 bg-zinc-105/60 dark:bg-zinc-900 border border-zinc-200/30 dark:border-zinc-850 px-1.5 py-0.5 rounded leading-none select-none">
                             回复 @{comment.replyTo}
