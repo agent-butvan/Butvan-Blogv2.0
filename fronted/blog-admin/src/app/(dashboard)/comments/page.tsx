@@ -167,13 +167,22 @@ export default function CommentsPage() {
   const [replyContent, setReplyContent] = useState("");
   const [replySubmitting, setReplySubmitting] = useState(false);
 
-  // 彻底删除确认 Modal 状态
-  const [confirmDeleteId, setConfirmDeleteId] = useState<number | null>(null);
-  const [deleteLoading, setDeleteLoading] = useState(false);
+  // 气泡确认框状态
+  const [activeConfirm, setActiveConfirm] = useState<{
+    commentId: number;
+    type: 'approve' | 'ban' | 'reject' | 'pin' | 'unpin' | 'markAuthor' | 'unmarkAuthor' | 'trash' | 'pending' | 'delete';
+  } | null>(null);
 
-  // 封禁作者确认 Modal 状态
-  const [confirmBanId, setConfirmBanId] = useState<number | null>(null);
-  const [banLoading, setBanLoading] = useState(false);
+  // 监听全局点击以关闭气泡确认框
+  useEffect(() => {
+    const handleGlobalClick = () => {
+      setActiveConfirm(null);
+    };
+    document.addEventListener("click", handleGlobalClick);
+    return () => {
+      document.removeEventListener("click", handleGlobalClick);
+    };
+  }, []);
 
   // 状态流转加载状态 (防抖/防重点击)
   const [statusLoadingMap, setStatusLoadingMap] = useState<Record<number, boolean>>({});
@@ -268,61 +277,52 @@ export default function CommentsPage() {
     }
   };
 
-  /** 触发彻底物理删除请求 */
-  const handleDeleteRequest = (id: number) => {
-    setConfirmDeleteId(id);
-  };
-
   /** 确认物理删除评论 */
-  const handleDeleteConfirm = async () => {
-    if (!confirmDeleteId) return;
-    setDeleteLoading(true);
+  const handleDeleteConfirm = async (id: number) => {
+    setStatusLoadingMap(prev => ({ ...prev, [id]: true }));
     try {
-      await deleteComment(confirmDeleteId);
-      toast.success("评论已永久删除");
-      setConfirmDeleteId(null);
+      await deleteComment(id);
+      toast.success("该评论已从数据库中彻底物理删除");
       if (comments.length === 1 && page > 1) {
         setPage(prev => prev - 1);
       } else {
         loadComments(page, currentTab, keyword);
       }
     } catch (err: any) {
-      console.error("删除评论失败:", err);
+      console.error("物理删除评论失败:", err);
       toast.error(err.message || "删除评论失败");
     } finally {
-      setDeleteLoading(false);
+      setStatusLoadingMap(prev => ({ ...prev, [id]: false }));
     }
   };
 
-  /** 标记为博主作者 */
+  /** 标记或取消标记博主作者 */
   const handleMarkAsAuthor = async (id: number) => {
     setStatusLoadingMap(prev => ({ ...prev, [id]: true }));
     try {
       await markCommentAsAuthor(id);
-      toast.success("标记为作者成功");
+      toast.success("作者身份标记状态更新成功");
       loadComments(page, currentTab, keyword);
     } catch (err: any) {
-      console.error("标记为作者失败:", err);
-      toast.error(err.message || "标记为作者失败");
+      console.error("更新作者标记失败:", err);
+      toast.error(err.message || "更新作者标记失败");
     } finally {
       setStatusLoadingMap(prev => ({ ...prev, [id]: false }));
     }
   };
 
   /** 确认封禁作者 */
-  const handleBanConfirm = async () => {
-    if (!confirmBanId) return;
-    setBanLoading(true);
+  const handleBanConfirm = async (id: number) => {
+    setStatusLoadingMap(prev => ({ ...prev, [id]: true }));
     try {
-      await banCommentAuthor(confirmBanId);
+      await banCommentAuthor(id);
       toast.success("该评论作者已成功封禁，历史发言已变更为拒绝状态");
-      setConfirmBanId(null);
       loadComments(page, currentTab, keyword);
     } catch (err: any) {
       console.error("封禁作者失败:", err);
       toast.error(err.message || "封禁作者失败");
     } finally {
-      setBanLoading(false);
+      setStatusLoadingMap(prev => ({ ...prev, [id]: false }));
     }
   };
 
@@ -577,91 +577,202 @@ export default function CommentsPage() {
 
                     {/* 通过 */}
                     {isPending && (
-                      <button
-                        onClick={() => handleStatusChange(comment.id, "APPROVED")}
-                        className="flex items-center gap-1.5 text-emerald-400/80 hover:text-emerald-500 transition-colors cursor-pointer outline-none border-0 bg-transparent font-medium"
-                      >
-                        <Check size={13} />
-                        <span>通过</span>
-                      </button>
+                      <div className="relative inline-block">
+                        <button
+                          onClick={(e) => {
+                            e.stopPropagation();
+                            setActiveConfirm({ commentId: comment.id, type: "approve" });
+                          }}
+                          className="flex items-center gap-1.5 text-emerald-400/80 hover:text-emerald-500 transition-colors cursor-pointer outline-none border-0 bg-transparent font-medium"
+                        >
+                          <Check size={13} />
+                          <span>通过</span>
+                        </button>
+                        {activeConfirm?.commentId === comment.id && activeConfirm?.type === "approve" && (
+                          <ConfirmPopover 
+                            title="确定通过这条评论吗？"
+                            onConfirm={() => handleStatusChange(comment.id, "APPROVED")}
+                            onCancel={() => setActiveConfirm(null)}
+                          />
+                        )}
+                      </div>
                     )}
 
                     {/* 封禁 */}
                     {!isTrash && !isSpam && (
-                      <button
-                        onClick={() => setConfirmBanId(comment.id)}
-                        className="flex items-center gap-1.5 text-red-400/70 hover:text-red-500 transition-colors cursor-pointer outline-none border-0 bg-transparent font-medium"
-                      >
-                        <Ban size={13} />
-                        <span>封禁</span>
-                      </button>
+                      <div className="relative inline-block">
+                        <button
+                          onClick={(e) => {
+                            e.stopPropagation();
+                            setActiveConfirm({ commentId: comment.id, type: "ban" });
+                          }}
+                          className="flex items-center gap-1.5 text-red-400/70 hover:text-red-500 transition-colors cursor-pointer outline-none border-0 bg-transparent font-medium"
+                        >
+                          <Ban size={13} />
+                          <span>封禁</span>
+                        </button>
+                        {activeConfirm?.commentId === comment.id && activeConfirm?.type === "ban" && (
+                          <ConfirmPopover 
+                            title="确定封禁该评论的作者吗？"
+                            description="封禁后将不再接受同一用户或邮箱地址的后续评论，并关联历史评论全部拒绝"
+                            onConfirm={() => handleBanConfirm(comment.id)}
+                            onCancel={() => setActiveConfirm(null)}
+                          />
+                        )}
+                      </div>
                     )}
 
                     {/* 拒绝 */}
                     {(isPending || isApproved) && (
-                      <button
-                        onClick={() => handleStatusChange(comment.id, "SPAM")}
-                        className="flex items-center gap-1.5 text-amber-400/80 hover:text-amber-500 transition-colors cursor-pointer outline-none border-0 bg-transparent font-medium"
-                      >
-                        <ShieldAlert size={13} />
-                        <span>拒绝</span>
-                      </button>
+                      <div className="relative inline-block">
+                        <button
+                          onClick={(e) => {
+                            e.stopPropagation();
+                            setActiveConfirm({ commentId: comment.id, type: "reject" });
+                          }}
+                          className="flex items-center gap-1.5 text-amber-400/80 hover:text-amber-500 transition-colors cursor-pointer outline-none border-0 bg-transparent font-medium"
+                        >
+                          <ShieldAlert size={13} />
+                          <span>拒绝</span>
+                        </button>
+                        {activeConfirm?.commentId === comment.id && activeConfirm?.type === "reject" && (
+                          <ConfirmPopover 
+                            title="确定拒绝这条评论吗？"
+                            onConfirm={() => handleStatusChange(comment.id, "SPAM")}
+                            onCancel={() => setActiveConfirm(null)}
+                          />
+                        )}
+                      </div>
                     )}
 
                     {/* 置顶 */}
                     {!comment.parentId && !isTrash && !isSpam && (
-                      <button
-                        onClick={() => handleTogglePin(comment.id)}
-                        className={cn(
-                          "flex items-center gap-1.5 transition-colors cursor-pointer outline-none border-0 bg-transparent font-medium",
-                          comment.isPinned ? "text-violet-500 hover:text-violet-600" : "text-violet-400/80 hover:text-violet-500"
+                      <div className="relative inline-block">
+                        <button
+                          onClick={(e) => {
+                            e.stopPropagation();
+                            setActiveConfirm({ commentId: comment.id, type: comment.isPinned ? "unpin" : "pin" });
+                          }}
+                          className={cn(
+                            "flex items-center gap-1.5 transition-colors cursor-pointer outline-none border-0 bg-transparent font-medium",
+                            comment.isPinned ? "text-violet-500 hover:text-violet-600" : "text-violet-400/80 hover:text-violet-500"
+                          )}
+                        >
+                          <ArrowUp size={13} className={cn(comment.isPinned && "stroke-[2.5px]")} />
+                          <span>{comment.isPinned ? "取消置顶" : "置顶"}</span>
+                        </button>
+                        {activeConfirm?.commentId === comment.id && (activeConfirm?.type === "pin" || activeConfirm?.type === "unpin") && (
+                          <ConfirmPopover 
+                            title={comment.isPinned ? "确定取消置顶这条评论吗？" : "确定置顶这条评论吗？"}
+                            onConfirm={() => handleTogglePin(comment.id)}
+                            onCancel={() => setActiveConfirm(null)}
+                          />
                         )}
-                      >
-                        <ArrowUp size={13} className={cn(comment.isPinned && "stroke-[2.5px]")} />
-                        <span>{comment.isPinned ? "取消置顶" : "置顶"}</span>
-                      </button>
+                      </div>
                     )}
 
-                    {/* 标记为作者 */}
-                    {!comment.isAuthor && !isTrash && !isSpam && (
-                      <button
-                        onClick={() => handleMarkAsAuthor(comment.id)}
-                        className="flex items-center gap-1.5 text-indigo-400/80 hover:text-indigo-500 transition-colors cursor-pointer outline-none border-0 bg-transparent font-medium"
-                      >
-                        <User size={13} />
-                        <span>标记为作者</span>
-                      </button>
+                    {/* 标记/取消标记作者 */}
+                    {!isTrash && !isSpam && (
+                      <div className="relative inline-block">
+                        {comment.isAuthor ? (
+                          <button
+                            onClick={(e) => {
+                              e.stopPropagation();
+                              setActiveConfirm({ commentId: comment.id, type: "unmarkAuthor" });
+                            }}
+                            className="flex items-center gap-1.5 text-indigo-400/80 hover:text-indigo-500 transition-colors cursor-pointer outline-none border-0 bg-transparent font-medium"
+                          >
+                            <User size={13} />
+                            <span>取消作者标记</span>
+                          </button>
+                        ) : (
+                          <button
+                            onClick={(e) => {
+                              e.stopPropagation();
+                              setActiveConfirm({ commentId: comment.id, type: "markAuthor" });
+                            }}
+                            className="flex items-center gap-1.5 text-indigo-400/80 hover:text-indigo-500 transition-colors cursor-pointer outline-none border-0 bg-transparent font-medium"
+                          >
+                            <User size={13} />
+                            <span>标记为作者</span>
+                          </button>
+                        )}
+                        {activeConfirm?.commentId === comment.id && (activeConfirm?.type === "markAuthor" || activeConfirm?.type === "unmarkAuthor") && (
+                          <ConfirmPopover 
+                            title={comment.isAuthor ? "确定取消该评论的作者标记吗？" : "确定将该评论标记为作者发表吗？"}
+                            onConfirm={() => handleMarkAsAuthor(comment.id)}
+                            onCancel={() => setActiveConfirm(null)}
+                          />
+                        )}
+                      </div>
                     )}
 
                     {/* 移至回收站 */}
                     {!isTrash ? (
-                      <button
-                        onClick={() => handleStatusChange(comment.id, "TRASH")}
-                        className="flex items-center gap-1.5 text-zinc-400 hover:text-zinc-600 dark:hover:text-zinc-300 transition-colors cursor-pointer outline-none border-0 bg-transparent font-medium"
-                      >
-                        <Trash size={13} />
-                        <span>移至回收站</span>
-                      </button>
+                      <div className="relative inline-block">
+                        <button
+                          onClick={(e) => {
+                            e.stopPropagation();
+                            setActiveConfirm({ commentId: comment.id, type: "trash" });
+                          }}
+                          className="flex items-center gap-1.5 text-zinc-400 hover:text-zinc-600 dark:hover:text-zinc-300 transition-colors cursor-pointer outline-none border-0 bg-transparent font-medium"
+                        >
+                          <Trash size={13} />
+                          <span>移至回收站</span>
+                        </button>
+                        {activeConfirm?.commentId === comment.id && activeConfirm?.type === "trash" && (
+                          <ConfirmPopover 
+                            title="确定将这条评论移至回收站吗？"
+                            onConfirm={() => handleStatusChange(comment.id, "TRASH")}
+                            onCancel={() => setActiveConfirm(null)}
+                          />
+                        )}
+                      </div>
                     ) : (
                       // 恢复为待审核
-                      <button
-                        onClick={() => handleStatusChange(comment.id, "PENDING")}
-                        className="flex items-center gap-1.5 text-sky-400/80 hover:text-sky-500 transition-colors cursor-pointer outline-none border-0 bg-transparent font-medium"
-                      >
-                        <RotateCcw size={13} />
-                        <span>还原为待审核</span>
-                      </button>
+                      <div className="relative inline-block">
+                        <button
+                          onClick={(e) => {
+                            e.stopPropagation();
+                            setActiveConfirm({ commentId: comment.id, type: "pending" });
+                          }}
+                          className="flex items-center gap-1.5 text-sky-400/80 hover:text-sky-500 transition-colors cursor-pointer outline-none border-0 bg-transparent font-medium"
+                        >
+                          <RotateCcw size={13} />
+                          <span>还原为待审核</span>
+                        </button>
+                        {activeConfirm?.commentId === comment.id && activeConfirm?.type === "pending" && (
+                          <ConfirmPopover 
+                            title="确定将这条评论还原为待审核吗？"
+                            onConfirm={() => handleStatusChange(comment.id, "PENDING")}
+                            onCancel={() => setActiveConfirm(null)}
+                          />
+                        )}
+                      </div>
                     )}
 
                     {/* 彻底删除 */}
                     {(isSpam || isTrash) && (
-                      <button
-                        onClick={() => handleDeleteRequest(comment.id)}
-                        className="flex items-center gap-1.5 text-rose-400/80 hover:text-rose-500 transition-colors cursor-pointer outline-none border-0 bg-transparent font-medium"
-                      >
-                        <Trash2 size={13} />
-                        <span>删除</span>
-                      </button>
+                      <div className="relative inline-block">
+                        <button
+                          onClick={(e) => {
+                            e.stopPropagation();
+                            setActiveConfirm({ commentId: comment.id, type: "delete" });
+                          }}
+                          className="flex items-center gap-1.5 text-rose-400/80 hover:text-rose-500 transition-colors cursor-pointer outline-none border-0 bg-transparent font-medium"
+                        >
+                          <Trash2 size={13} />
+                          <span>删除</span>
+                        </button>
+                        {activeConfirm?.commentId === comment.id && activeConfirm?.type === "delete" && (
+                          <ConfirmPopover 
+                            title="确定要彻底删除这条评论吗？"
+                            description="此操作属于敏感的不可逆行为，数据一旦丢失将永久无法恢复"
+                            onConfirm={() => handleDeleteConfirm(comment.id)}
+                            onCancel={() => setActiveConfirm(null)}
+                          />
+                        )}
+                      </div>
                     )}
                   </div>
 
@@ -788,31 +899,73 @@ export default function CommentsPage() {
         </Portal>
       )}
 
-      {/* 彻底物理删除二次确认 Modal */}
-      <ConfirmModal
-        open={confirmDeleteId !== null}
-        title="确认彻底删除评论"
-        description="确定要彻底物理删除这条评论吗？此操作属于敏感的不可逆行为，一旦在数据库中执行，其所有数据及与前台对应的展示关系都将永久丢失且无法恢复。"
-        confirmLabel="彻底删除"
-        cancelLabel="取消"
-        variant="danger"
-        loading={deleteLoading}
-        onConfirm={handleDeleteConfirm}
-        onCancel={() => setConfirmDeleteId(null)}
-      />
-
-      {/* 封禁作者二次确认 Modal */}
-      <ConfirmModal
-        open={confirmBanId !== null}
-        title="确认封禁该评论的作者吗？"
-        description="确定封禁该评论的作者吗？封禁后将不再接受同一用户或邮箱地址的后续评论"
-        confirmLabel="确认封禁"
-        cancelLabel="取消"
-        variant="danger"
-        loading={banLoading}
-        onConfirm={handleBanConfirm}
-        onCancel={() => setConfirmBanId(null)}
-      />
     </div>
   );
 }
+
+/**
+ * 评论管理气泡悬浮确认框组件 (Popover)
+ */
+interface ConfirmPopoverProps {
+  title: string;
+  description?: string;
+  onConfirm: () => void;
+  onCancel: () => void;
+}
+
+const ConfirmPopover = ({ title, description, onConfirm, onCancel }: ConfirmPopoverProps) => {
+  return (
+    <div 
+      className="absolute bottom-[calc(100%+10px)] left-1/2 -translate-x-1/2 z-50 w-64 bg-white dark:bg-zinc-900 border border-zinc-200 dark:border-zinc-850 p-3.5 rounded-xl shadow-xl flex flex-col gap-3 animate-in fade-in slide-in-from-bottom-2 duration-150 cursor-default"
+      onClick={(e) => e.stopPropagation()}
+    >
+      {/* 45度旋转的小正方形作为气泡三角 */}
+      <div className="absolute -bottom-1.5 left-1/2 -translate-x-1/2 w-2.5 h-2.5 bg-white dark:bg-zinc-900 border-r border-b border-zinc-200 dark:border-zinc-850 rotate-45"></div>
+      
+      {/* 警告图标与标题描述 */}
+      <div className="flex gap-2 items-start">
+        {/* 黄色警告三角形 SVG */}
+        <svg 
+          viewBox="0 0 24 24" 
+          className="w-4 h-4 text-amber-500 shrink-0 mt-0.5" 
+          fill="none" 
+          stroke="currentColor" 
+          strokeWidth="2.5" 
+          strokeLinecap="round" 
+          strokeLinejoin="round"
+        >
+          <path d="m21.73 18-8-14a2 2 0 0 0-3.48 0l-8 14A2 2 0 0 0 4 21h16a2 2 0 0 0 1.73-3Z"/>
+          <line x1="12" y1="9" x2="12" y2="13"/>
+          <line x1="12" y1="17" x2="12.01" y2="17"/>
+        </svg>
+        <div className="flex flex-col gap-0.5 text-left">
+          <span className="text-zinc-800 dark:text-zinc-200 text-xs font-bold leading-normal">{title}</span>
+          {description && (
+            <span className="text-[10px] text-zinc-400 dark:text-zinc-550 leading-normal">{description}</span>
+          )}
+        </div>
+      </div>
+      
+      {/* 操作按钮 */}
+      <div className="flex justify-end gap-1.5 text-[11px] font-medium select-none mt-0.5">
+        <button
+          type="button"
+          onClick={onCancel}
+          className="px-2.5 py-1 border border-zinc-200 dark:border-zinc-800 hover:bg-zinc-50 dark:hover:bg-zinc-950 text-zinc-600 dark:text-zinc-450 rounded-md transition-colors cursor-pointer"
+        >
+          取消
+        </button>
+        <button
+          type="button"
+          onClick={() => {
+            onConfirm();
+            onCancel();
+          }}
+          className="px-2.5 py-1 bg-[#8247e5] hover:bg-[#723fd3] text-white rounded-md transition-colors cursor-pointer"
+        >
+          确认
+        </button>
+      </div>
+    </div>
+  );
+};
