@@ -20,7 +20,7 @@ import {
   X,
   Lock
 } from 'lucide-react'
-import { Button, Spinner } from '@heroui/react'
+import { Button, Spinner, toast } from '@heroui/react'
 import Navbar from '@/components/common/Navbar'
 import SidebarWidget from '@/components/common/SidebarWidget'
 import HtmlRenderer from '@/components/common/HtmlRenderer'
@@ -271,33 +271,43 @@ export default function ArticleDetailPage() {
     }
   }
 
-  // 游客点赞核心操作接口对接
+  // 游客点赞核心操作接口对接 (Toggle 机制)
   const handleLike = async () => {
     if (!article?.id) return
 
-    // 1. 如果本地已经标记过已点赞，拦截点击并提示
-    if (liked) {
-      alert('您最近已对本文进行过点赞啦！感谢您的赞同～')
-      return
-    }
-
     // 2. Mock 本地模拟环境下的降级点赞处理
     if (isMocked) {
-      setLiked(true)
-      setLikeCount(prev => prev + 1)
-      if (typeof window !== 'undefined') {
-        const likedListStr = localStorage.getItem('liked_articles') || '[]'
-        try {
-          const likedList = JSON.parse(likedListStr)
-          if (Array.isArray(likedList) && !likedList.includes(article.id)) {
-            likedList.push(article.id)
-            localStorage.setItem('liked_articles', JSON.stringify(likedList))
-          }
-        } catch (e) {
-          console.error('更新本地 Mock 点赞列表失败:', e)
+      if (liked) {
+        setLiked(false)
+        setLikeCount(prev => (prev > 0 ? prev - 1 : 0))
+        if (typeof window !== 'undefined') {
+          const likedListStr = localStorage.getItem('liked_articles') || '[]'
+          try {
+            const likedList = JSON.parse(likedListStr)
+            if (Array.isArray(likedList)) {
+              localStorage.setItem('liked_articles', JSON.stringify(likedList.filter(id => id !== article.id)))
+            }
+          } catch (e) {}
         }
+        toast.success('点赞已取消')
+      } else {
+        setLiked(true)
+        setLikeCount(prev => prev + 1)
+        if (typeof window !== 'undefined') {
+          const likedListStr = localStorage.getItem('liked_articles') || '[]'
+          try {
+            const likedList = JSON.parse(likedListStr)
+            if (Array.isArray(likedList) && !likedList.includes(article.id)) {
+              likedList.push(article.id)
+              localStorage.setItem('liked_articles', JSON.stringify(likedList))
+            }
+          } catch (e) {
+            console.error('更新本地 Mock 点赞列表失败:', e)
+          }
+        }
+        toast.success('点赞成功，感谢您的赞同！')
+        playHeartAnim()
       }
-      playHeartAnim()
       return
     }
 
@@ -316,46 +326,46 @@ export default function ArticleDetailPage() {
       const json = await res.json()
       
       if (json.code === 200 || json.code === 0) {
-        // 点赞成功，更新数据
-        const newCount = typeof json.data === 'number' ? json.data : (likeCount + 1)
+        const newCount = typeof json.data === 'number' ? json.data : (liked ? likeCount - 1 : likeCount + 1)
         setLikeCount(newCount)
-        setLiked(true)
 
-        // 写入 localStorage
-        if (typeof window !== 'undefined') {
-          const likedListStr = localStorage.getItem('liked_articles') || '[]'
-          try {
-            const likedList = JSON.parse(likedListStr)
-            if (Array.isArray(likedList) && !likedList.includes(article.id)) {
-              likedList.push(article.id)
-              localStorage.setItem('liked_articles', JSON.stringify(likedList))
-            }
-          } catch (e) {
-            console.error('缓存本地点赞状态失败:', e)
+        if (liked) {
+          // 取消点赞成功
+          setLiked(false)
+          if (typeof window !== 'undefined') {
+            const likedListStr = localStorage.getItem('liked_articles') || '[]'
+            try {
+              const likedList = JSON.parse(likedListStr)
+              if (Array.isArray(likedList)) {
+                localStorage.setItem('liked_articles', JSON.stringify(likedList.filter(id => id !== article.id)))
+              }
+            } catch (e) {}
           }
-        }
-        
-        playHeartAnim()
-      } else {
-        // 后端 24 小时 IP 限制返回报错信息
-        alert(json.msg || '点赞失败')
-        
-        // 标记已点赞，防止反复点击发起请求
-        setLiked(true)
-        if (typeof window !== 'undefined') {
-          const likedListStr = localStorage.getItem('liked_articles') || '[]'
-          try {
-            const likedList = JSON.parse(likedListStr)
-            if (Array.isArray(likedList) && !likedList.includes(article.id)) {
-              likedList.push(article.id)
-              localStorage.setItem('liked_articles', JSON.stringify(likedList))
+          toast.success('点赞已取消')
+        } else {
+          // 点赞成功
+          setLiked(true)
+          if (typeof window !== 'undefined') {
+            const likedListStr = localStorage.getItem('liked_articles') || '[]'
+            try {
+              const likedList = JSON.parse(likedListStr)
+              if (Array.isArray(likedList) && !likedList.includes(article.id)) {
+                likedList.push(article.id)
+                localStorage.setItem('liked_articles', JSON.stringify(likedList))
+              }
+            } catch (e) {
+              console.error('缓存本地点赞状态失败:', e)
             }
-          } catch (e) {}
+          }
+          toast.success('点赞成功，感谢您的赞同！')
+          playHeartAnim()
         }
+      } else {
+        toast.danger(json.msg || '操作失败')
       }
     } catch (err) {
       console.error('点赞接口网络请求失败:', err)
-      alert('网络繁忙，点赞暂时失败，请稍后重试。')
+      toast.danger('网络繁忙，点赞暂时失败，请稍后重试。')
     }
   }
 
@@ -389,9 +399,10 @@ export default function ArticleDetailPage() {
   const handleShare = async () => {
     try {
       await navigator.clipboard.writeText(window.location.href)
-      alert('文章链接已成功复制到剪贴板，快去分享给朋友吧！')
+      toast.success('文章链接已成功复制到剪贴板，快去分享给朋友吧！')
     } catch (err) {
       console.error('链接分享复制失败', err)
+      toast.danger('复制链接失败，请手动复制浏览器地址栏分享')
     }
   }
 
