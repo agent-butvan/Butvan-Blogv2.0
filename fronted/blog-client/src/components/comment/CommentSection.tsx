@@ -264,9 +264,8 @@ export default function CommentSection({
           <span className="text-[10px] text-zinc-400 dark:text-zinc-600 tracking-wider">正在投递讨论列表...</span>
         </div>
       ) : comments.length === 0 ? (
-        /* 优雅极简空状态卡片 */
-        <div className="py-16 flex flex-col items-center justify-center text-center border border-dashed border-zinc-250/30 dark:border-zinc-800/40 bg-white/20 dark:bg-zinc-900/5 rounded-2xl p-6 select-none">
-          <MessageSquare size={28} className="text-zinc-300 dark:text-zinc-800 mb-3" />
+        /* 优雅极简空状态 */
+        <div className="py-12 flex flex-col items-center justify-center text-center select-none">
           <p className="text-xs text-zinc-500 dark:text-zinc-500 font-serif italic mb-1">这里依然寂静无声</p>
           <p className="text-[10px] text-zinc-400 dark:text-zinc-600">留下你的第一笔回响，划破这片寂静吧~</p>
         </div>
