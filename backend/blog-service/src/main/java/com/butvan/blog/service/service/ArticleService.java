@@ -61,13 +61,31 @@ public interface ArticleService {
     List<ArticleItemVO> listSimpleArticles();
 
     /**
-     * 对文章进行点赞操作（支持游客）
-     * 自动记录 IP & 设备信息进行 24 小时防重复刷赞保护
+     * 对文章进行点赞操作（支持游客与已登录用户）
+     * 自动记录 IP & 设备及登录用户进行 24 小时防重复刷赞保护
      *
      * @param id        文章唯一主键 ID
      * @param ipAddress 访客客户端真实 IP 地址
      * @param userAgent 访客设备浏览器指纹（User-Agent）信息
+     * @param userId    当前登录的用户唯一 ID（游客则为 NULL）
      * @return 递增更新后的文章总点赞赞许数
      */
-    Long likeArticle(Long id, String ipAddress, String userAgent);
+    Long likeArticle(Long id, String ipAddress, String userAgent, Long userId);
+
+    /**
+     * 管理后台：条件分页查询点赞记录流水
+     *
+     * @param page    查询页码
+     * @param size    每页容量
+     * @param keyword 检索关键字（支持 IP 地址、文章标题检索）
+     * @return 分页结果封装 PageResult
+     */
+    PageResult pageLikes(Integer page, Integer size, String keyword);
+
+    /**
+     * 管理后台：批量/物理删除点赞记录
+     *
+     * @param ids 待删除的点赞记录 ID 集合
+     */
+    void deleteLikes(List<Long> ids);
 }

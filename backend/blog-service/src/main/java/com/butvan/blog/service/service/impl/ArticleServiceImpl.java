@@ -12,6 +12,7 @@ import com.butvan.blog.pojo.entity.Tag;
 import com.butvan.blog.pojo.entity.User;
 import com.butvan.blog.pojo.vo.article.ArticleDetailVO;
 import com.butvan.blog.pojo.vo.article.ArticleItemVO;
+import com.butvan.blog.pojo.vo.article.ArticleLikeVO;
 import com.butvan.blog.service.repository.ArticleLikeRepository;
 import com.butvan.blog.service.repository.ArticleRepository;
 import com.butvan.blog.service.repository.CategoryRepository;
@@ -388,8 +389,8 @@ public class ArticleServiceImpl implements ArticleService {
 
     @Override
     @Transactional
-    public Long likeArticle(Long id, String ipAddress, String userAgent) {
-        log.info("游客点赞文章，文章ID: {}, IP: {}, UA: {}", id, ipAddress, userAgent);
+    public Long likeArticle(Long id, String ipAddress, String userAgent, Long userId) {
+        log.info("游客或用户点赞文章，文章ID: {}, IP: {}, UA: {}, 用户ID: {}", id, ipAddress, userAgent, userId);
         
         // 1. 查找文章
         Article article = articleRepository.findById(id)
@@ -405,11 +406,18 @@ public class ArticleServiceImpl implements ArticleService {
             truncatedUa = truncatedUa.substring(0, 500);
         }
         
-        // 3. 校验 24 小时内同一设备是否已经点赞过 (以当前时间减去 24 小时为界限)
+        // 3. 校验 24 小时内同一设备/用户账号是否已经点赞过 (以当前时间减去 24 小时为界限)
         LocalDateTime limitTime = LocalDateTime.now().minusHours(24);
-        boolean hasLiked = articleLikeRepository.existsByArticleIdAndIpAddressAndUserAgentAndCreatedAtAfter(
-                id, ipAddress, truncatedUa, limitTime
-        );
+        boolean hasLiked = false;
+        if (userId != null) {
+            // 已登录用户：优先通过用户ID校验
+            hasLiked = articleLikeRepository.existsByArticleIdAndUserIdAndCreatedAtAfter(id, userId, limitTime);
+        } else {
+            // 游客：通过 IP & UA 联合校验
+            hasLiked = articleLikeRepository.existsByArticleIdAndIpAddressAndUserAgentAndCreatedAtAfter(
+                    id, ipAddress, truncatedUa, limitTime
+            );
+        }
         
         if (hasLiked) {
             throw new BusinessException("您在24小时内已对本文点赞过啦，请勿重复点赞");
@@ -420,6 +428,7 @@ public class ArticleServiceImpl implements ArticleService {
                 .articleId(id)
                 .ipAddress(ipAddress)
                 .userAgent(truncatedUa)
+                .userId(userId)
                 .build();
         articleLikeRepository.save(articleLike);
         
@@ -433,5 +442,96 @@ public class ArticleServiceImpl implements ArticleService {
         
         log.info("文章点赞成功，当前最新点赞数: {}", article.getLikeCount());
         return article.getLikeCount();
+    }
+
+    @Override
+    public PageResult pageLikes(Integer page, Integer size, String keyword) {
+        log.info("分页查询点赞流水记录，page: {}, size: {}, keyword: {}", page, size, keyword);
+        
+        int pageIndex = page != null && page > 0 ? page - 1 : 0;
+        int pageSize = size != null && size > 0 ? size : 10;
+        
+        Pageable pageable = PageRequest.of(pageIndex, pageSize, Sort.by(Sort.Order.desc("createdAt")));
+        
+        Specification<ArticleLike> spec = (root, query, cb) -> {
+            List<Predicate> predicates = new ArrayList<>();
+            
+            if (StringUtils.hasText(keyword)) {
+                String likeKeyword = "%" + keyword + "%";
+                
+                // 1. 通过文章标题模糊查询符合条件的文章 ID 列表
+                List<Long> matchedArticleIds = new ArrayList<>();
+                Specification<Article> artSpec = (aRoot, aQuery, aCb) -> aCb.like(aRoot.get("title"), likeKeyword);
+                List<Article> matchedArticles = articleRepository.findAll(artSpec);
+                for (Article art : matchedArticles) {
+                    matchedArticleIds.add(art.getId());
+                }
+                
+                // 2. 构建 Predicate: IP 模糊匹配 OR 文章 ID 属于匹配列表
+                Predicate ipPredicate = cb.like(root.get("ipAddress"), likeKeyword);
+                if (!matchedArticleIds.isEmpty()) {
+                    Predicate articlePredicate = root.get("articleId").in(matchedArticleIds);
+                    predicates.add(cb.or(ipPredicate, articlePredicate));
+                } else {
+                    predicates.add(ipPredicate);
+                }
+            }
+            
+            return cb.and(predicates.toArray(new Predicate[0]));
+        };
+        
+        Page<ArticleLike> result = articleLikeRepository.findAll(spec, pageable);
+        
+        // 转换 VO 并装配关联属性
+        List<ArticleLikeVO> list = result.getContent().stream().map(like -> {
+            // 获取文章标题与 slug
+            String articleTitle = "未知文章";
+            String articleSlug = "";
+            Article article = articleRepository.findById(like.getArticleId()).orElse(null);
+            if (article != null) {
+                articleTitle = article.getTitle();
+                articleSlug = article.getSlug();
+            }
+            
+            // 获取点赞用户昵称和头像
+            String userNickname = "游客";
+            String userAvatar = null;
+            if (like.getUserId() != null) {
+                User user = userRepository.findById(like.getUserId()).orElse(null);
+                if (user != null) {
+                    userNickname = user.getNickname();
+                    userAvatar = user.getAvatarUrl();
+                }
+            }
+            
+            return ArticleLikeVO.builder()
+                    .id(like.getId())
+                    .articleId(like.getArticleId())
+                    .articleTitle(articleTitle)
+                    .articleSlug(articleSlug)
+                    .ipAddress(like.getIpAddress())
+                    .userAgent(like.getUserAgent())
+                    .userId(like.getUserId())
+                    .userNickname(userNickname)
+                    .userAvatar(userAvatar)
+                    .createdAt(like.getCreatedAt())
+                    .build();
+        }).collect(Collectors.toList());
+        
+        return PageResult.builder()
+                .total(result.getTotalElements())
+                .page(pageIndex + 1)
+                .size(pageSize)
+                .records(list)
+                .build();
+    }
+
+    @Override
+    @Transactional
+    public void deleteLikes(List<Long> ids) {
+        log.info("管理端批量物理删除点赞记录，IDs: {}", ids);
+        if (ids != null && !ids.isEmpty()) {
+            articleLikeRepository.deleteAllByIdInBatch(ids);
+        }
     }
 }

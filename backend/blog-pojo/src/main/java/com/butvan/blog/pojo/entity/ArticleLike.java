@@ -33,6 +33,9 @@ public class ArticleLike {
     @Column(name = "user_agent", length = 500)
     private String userAgent; // 访客的设备浏览器指纹（User-Agent）信息
 
+    @Column(name = "user_id")
+    private Long userId; // 点赞绑定的用户 ID（游客点赞则为 NULL）
+
     @Column(name = "created_at", nullable = false, updatable = false)
     private LocalDateTime createdAt; // 记录创建/点赞时间
 

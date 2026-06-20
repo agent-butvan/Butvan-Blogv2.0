@@ -7,6 +7,7 @@ import com.butvan.blog.pojo.dto.article.ArticleSaveDTO;
 import com.butvan.blog.pojo.vo.article.ArticleDetailVO;
 import com.butvan.blog.pojo.vo.article.ArticleItemVO;
 import com.butvan.blog.common.utils.IpUtils;
+import com.butvan.blog.service.repository.UserRepository;
 import com.butvan.blog.service.service.ArticleService;
 import jakarta.servlet.http.HttpServletRequest;
 import lombok.RequiredArgsConstructor;
@@ -25,6 +26,7 @@ import java.util.List;
 public class ArticleController {
 
     private final ArticleService articleService;
+    private final UserRepository userRepository;
 
     /**
      * 【公开/管理端】分页检索文章列表 (支持根据 keyword、status、categoryId、tagId 筛选)
@@ -107,7 +109,7 @@ public class ArticleController {
     }
 
     /**
-     * 【公开端】对文章进行点赞 (支持游客，防刷赞)
+     * 【公开端】对文章进行点赞 (支持游客，防刷赞，记录登录用户)
      *
      * @param id      文章唯一主键 ID
      * @param request HttpServletRequest 请求实体
@@ -117,8 +119,53 @@ public class ArticleController {
     public Result<Long> likeArticle(@PathVariable Long id, HttpServletRequest request) {
         String ipAddress = IpUtils.getClientIp(request);
         String userAgent = request.getHeader("User-Agent");
-        log.info("公开端点赞文章请求，文章ID: {}, 客户端IP: {}, UA: {}", id, ipAddress, userAgent);
-        Long newLikeCount = articleService.likeArticle(id, ipAddress, userAgent);
+        
+        // 尝试从 Security 上下文中提取当前登录用户信息
+        Long userId = null;
+        org.springframework.security.core.Authentication auth = 
+                org.springframework.security.core.context.SecurityContextHolder.getContext().getAuthentication();
+        if (auth != null && auth.isAuthenticated() && !"anonymousUser".equals(auth.getPrincipal())) {
+            String username = auth.getName();
+            com.butvan.blog.pojo.entity.User user = userRepository.findByUsername(username).orElse(null);
+            if (user != null) {
+                userId = user.getId();
+            }
+        }
+        
+        log.info("公开端点赞文章请求，文章ID: {}, 客户端IP: {}, UA: {}, 登录用户ID: {}", id, ipAddress, userAgent, userId);
+        Long newLikeCount = articleService.likeArticle(id, ipAddress, userAgent, userId);
         return Result.success(newLikeCount);
+    }
+
+    /**
+     * 【管理端】分页检索点赞记录列表 (支持 IP 或文章标题模糊搜索)
+     *
+     * @param page    分页页码
+     * @param size    每页数量
+     * @param keyword 检索过滤字
+     * @return 分页列表
+     */
+    @GetMapping("/admin/likes")
+    public Result<PageResult> pageLikes(
+            @RequestParam(defaultValue = "1") Integer page,
+            @RequestParam(defaultValue = "10") Integer size,
+            @RequestParam(required = false) String keyword
+    ) {
+        log.info("管理端分页获取点赞记录，page: {}, size: {}, keyword: {}", page, size, keyword);
+        PageResult pageResult = articleService.pageLikes(page, size, keyword);
+        return Result.success(pageResult);
+    }
+
+    /**
+     * 【管理端】批量删除点赞流水记录 (物理删除)
+     *
+     * @param ids 点赞记录 ID 集合
+     * @return 成功标识
+     */
+    @DeleteMapping("/admin/likes")
+    public Result<Void> deleteLikes(@RequestBody List<Long> ids) {
+        log.info("管理端批量删除点赞记录，待删除数: {}", ids != null ? ids.size() : 0);
+        articleService.deleteLikes(ids);
+        return Result.success();
     }
 }

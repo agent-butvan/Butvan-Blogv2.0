@@ -2,6 +2,7 @@ package com.butvan.blog.service.repository;
 
 import com.butvan.blog.pojo.entity.ArticleLike;
 import org.springframework.data.jpa.repository.JpaRepository;
+import org.springframework.data.jpa.repository.JpaSpecificationExecutor;
 import org.springframework.stereotype.Repository;
 import java.time.LocalDateTime;
 
@@ -9,7 +10,7 @@ import java.time.LocalDateTime;
  * 文章点赞记录表 JPA 持久化仓储数据层接口
  */
 @Repository
-public interface ArticleLikeRepository extends JpaRepository<ArticleLike, Long> {
+public interface ArticleLikeRepository extends JpaRepository<ArticleLike, Long>, JpaSpecificationExecutor<ArticleLike> {
 
     /**
      * 判断某个 IP 地址与特定 UA（设备标识）在指定时间段之后是否已对某篇文章进行了点赞
@@ -24,4 +25,15 @@ public interface ArticleLikeRepository extends JpaRepository<ArticleLike, Long> 
     boolean existsByArticleIdAndIpAddressAndUserAgentAndCreatedAtAfter(
             Long articleId, String ipAddress, String userAgent, LocalDateTime time
     );
+
+    /**
+     * 判断某个已登录用户在指定时间段之后是否已对特定文章进行了点赞
+     * 用于登录状态下的 24 小时防刷赞策略校验
+     *
+     * @param articleId 文章 ID
+     * @param userId    点赞绑定的用户 ID
+     * @param time      起始过滤限制时间
+     * @return 是否已存在点赞记录
+     */
+    boolean existsByArticleIdAndUserIdAndCreatedAtAfter(Long articleId, Long userId, LocalDateTime time);
 }
