@@ -222,6 +222,13 @@ export default function ArticleDetailPage() {
     return () => ctx.revert()
   }, [loading, article])
 
+  // 动态更新网页标题 (Title)
+  useEffect(() => {
+    if (article?.title) {
+      document.title = `${article.title} | 可梵的个人博客`
+    }
+  }, [article])
+
   // GSAP 点赞比心微动效
   const handleLike = () => {
     if (liked) {
