@@ -1,11 +1,16 @@
 package com.butvan.blog.service.controller;
 
 import com.butvan.blog.common.result.Result;
+import com.butvan.blog.common.result.PageResult;
+import com.butvan.blog.pojo.dto.media.MediaQueryDTO;
 import com.butvan.blog.pojo.entity.Media;
 import com.butvan.blog.service.service.MediaService;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
 import org.springframework.web.bind.annotation.PostMapping;
+import org.springframework.web.bind.annotation.GetMapping;
+import org.springframework.web.bind.annotation.DeleteMapping;
+import org.springframework.web.bind.annotation.PathVariable;
 import org.springframework.web.bind.annotation.RequestMapping;
 import org.springframework.web.bind.annotation.RequestParam;
 import org.springframework.web.bind.annotation.RestController;
@@ -25,7 +30,7 @@ public class MediaController {
     /**
      * 【管理后台】上传图片或透明 PNG 切片，返回保存后的媒体对象及可供前端预览的 URL
      *
-     * @param file 上传的二进制文件
+     * @param file 上传的二进制 file 对象
      * @return 统一格式 Result，携带 Media 实体
      */
     @PostMapping("/admin/media/upload")
@@ -33,5 +38,31 @@ public class MediaController {
         log.info("管理后台上传媒体资源，原始文件名: {}, 大小: {} 字节", file.getOriginalFilename(), file.getSize());
         Media media = mediaService.uploadFile(file);
         return Result.success(media);
+    }
+
+    /**
+     * 【管理后台】多条件分页获取已上传媒体资源列表
+     *
+     * @param queryDTO 包含搜索、分类及页码参数
+     * @return 分页列表统一响应
+     */
+    @GetMapping("/admin/media")
+    public Result<PageResult> pageMedia(MediaQueryDTO queryDTO) {
+        log.info("管理后台分页获取媒体资源列表，检索参数: {}", queryDTO);
+        PageResult pageResult = mediaService.pageMedia(queryDTO);
+        return Result.success(pageResult);
+    }
+
+    /**
+     * 【管理后台】彻底删除单条媒体资源（级联清理物理磁盘文件）
+     *
+     * @param id 媒体唯一ID
+     * @return 成功状态
+     */
+    @DeleteMapping("/admin/media/{id}")
+    public Result<Void> deleteMedia(@PathVariable("id") Long id) {
+        log.info("管理后台彻底物理删除媒体资源，ID: {}", id);
+        mediaService.deleteMedia(id);
+        return Result.success();
     }
 }

@@ -1,6 +1,8 @@
 package com.butvan.blog.service.service.impl;
 
 import com.butvan.blog.common.exception.BusinessException;
+import com.butvan.blog.common.result.PageResult;
+import com.butvan.blog.pojo.dto.media.MediaQueryDTO;
 import com.butvan.blog.pojo.entity.Media;
 import com.butvan.blog.service.repository.MediaRepository;
 import com.butvan.blog.service.service.MediaService;
@@ -9,8 +11,14 @@ import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 import org.springframework.web.multipart.MultipartFile;
+import org.springframework.data.domain.Page;
+import org.springframework.data.domain.PageRequest;
+import org.springframework.data.domain.Pageable;
+import org.springframework.data.domain.Sort;
+import org.springframework.data.jpa.domain.Specification;
 import java.io.File;
 import java.io.IOException;
+import java.util.ArrayList;
 import java.util.Arrays;
 import java.util.List;
 import java.util.UUID;
@@ -88,5 +96,66 @@ public class MediaServiceImpl implements MediaService {
                 .build();
 
         return mediaRepository.save(media);
+    }
+
+    @Override
+    public PageResult pageMedia(MediaQueryDTO queryDTO) {
+        log.info("分页检索媒体资源列表，参数: {}", queryDTO);
+
+        int pageIndex = queryDTO.getPage() != null && queryDTO.getPage() > 0 ? queryDTO.getPage() - 1 : 0;
+        int pageSize = queryDTO.getSize() != null && queryDTO.getSize() > 0 ? queryDTO.getSize() : 12;
+
+        Sort sort = Sort.by(Sort.Order.desc("id")); // 按上传主键倒序
+        Pageable pageable = PageRequest.of(pageIndex, pageSize, sort);
+
+        Specification<Media> spec = (root, query, cb) -> {
+            List<jakarta.persistence.criteria.Predicate> predicates = new ArrayList<>();
+
+            // 类型大类过滤
+            if (org.springframework.util.StringUtils.hasText(queryDTO.getFileType())) {
+                predicates.add(cb.equal(root.get("fileType"), queryDTO.getFileType()));
+            }
+
+            // 文件名称模糊过滤
+            if (org.springframework.util.StringUtils.hasText(queryDTO.getKeyword())) {
+                predicates.add(cb.like(root.get("fileName"), "%" + queryDTO.getKeyword() + "%"));
+            }
+
+            return cb.and(predicates.toArray(new jakarta.persistence.criteria.Predicate[0]));
+        };
+
+        Page<Media> pageResult = mediaRepository.findAll(spec, pageable);
+
+        return PageResult.builder()
+                .total(pageResult.getTotalElements())
+                .page(pageIndex + 1)
+                .size(pageSize)
+                .records(pageResult.getContent())
+                .build();
+    }
+
+    @Override
+    @Transactional
+    public void deleteMedia(Long id) {
+        log.info("物理删除媒体文件，ID: {}", id);
+        Media media = mediaRepository.findById(id)
+                .orElseThrow(() -> new BusinessException("媒体资源不存在或已被删除"));
+
+        // 1. 尝试物理清除本地存储中的文件，防垃圾冗余
+        String absolutePath = media.getFilePath();
+        if (org.springframework.util.StringUtils.hasText(absolutePath)) {
+            File diskFile = new File(absolutePath);
+            if (diskFile.exists() && diskFile.isFile()) {
+                boolean isDeleted = diskFile.delete();
+                if (isDeleted) {
+                    log.info("本地磁盘物理媒体文件成功删除: {}", absolutePath);
+                } else {
+                    log.warn("本地磁盘物理媒体文件删除失败: {}", absolutePath);
+                }
+            }
+        }
+
+        // 2. 从数据库删除记录
+        mediaRepository.delete(media);
     }
 }
