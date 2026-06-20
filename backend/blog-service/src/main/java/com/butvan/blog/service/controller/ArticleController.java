@@ -6,7 +6,9 @@ import com.butvan.blog.pojo.dto.article.ArticleQueryDTO;
 import com.butvan.blog.pojo.dto.article.ArticleSaveDTO;
 import com.butvan.blog.pojo.vo.article.ArticleDetailVO;
 import com.butvan.blog.pojo.vo.article.ArticleItemVO;
+import com.butvan.blog.common.utils.IpUtils;
 import com.butvan.blog.service.service.ArticleService;
+import jakarta.servlet.http.HttpServletRequest;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
 import org.springframework.web.bind.annotation.*;
@@ -102,5 +104,21 @@ public class ArticleController {
         log.info("管理端逻辑删除文章 API 请求，ID: {}", id);
         articleService.deleteArticle(id);
         return Result.success();
+    }
+
+    /**
+     * 【公开端】对文章进行点赞 (支持游客，防刷赞)
+     *
+     * @param id      文章唯一主键 ID
+     * @param request HttpServletRequest 请求实体
+     * @return 统一格式 Result 包装的最新点赞总数
+     */
+    @PostMapping("/articles/{id}/like")
+    public Result<Long> likeArticle(@PathVariable Long id, HttpServletRequest request) {
+        String ipAddress = IpUtils.getClientIp(request);
+        String userAgent = request.getHeader("User-Agent");
+        log.info("公开端点赞文章请求，文章ID: {}, 客户端IP: {}, UA: {}", id, ipAddress, userAgent);
+        Long newLikeCount = articleService.likeArticle(id, ipAddress, userAgent);
+        return Result.success(newLikeCount);
     }
 }

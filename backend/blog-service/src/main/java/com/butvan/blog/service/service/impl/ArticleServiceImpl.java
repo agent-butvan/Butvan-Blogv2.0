@@ -6,11 +6,13 @@ import com.butvan.blog.common.utils.SlugUtils;
 import com.butvan.blog.pojo.dto.article.ArticleQueryDTO;
 import com.butvan.blog.pojo.dto.article.ArticleSaveDTO;
 import com.butvan.blog.pojo.entity.Article;
+import com.butvan.blog.pojo.entity.ArticleLike;
 import com.butvan.blog.pojo.entity.Category;
 import com.butvan.blog.pojo.entity.Tag;
 import com.butvan.blog.pojo.entity.User;
 import com.butvan.blog.pojo.vo.article.ArticleDetailVO;
 import com.butvan.blog.pojo.vo.article.ArticleItemVO;
+import com.butvan.blog.service.repository.ArticleLikeRepository;
 import com.butvan.blog.service.repository.ArticleRepository;
 import com.butvan.blog.service.repository.CategoryRepository;
 import com.butvan.blog.service.repository.TagRepository;
@@ -44,6 +46,7 @@ public class ArticleServiceImpl implements ArticleService {
     private final CategoryRepository categoryRepository;
     private final TagRepository tagRepository;
     private final UserRepository userRepository;
+    private final ArticleLikeRepository articleLikeRepository;
 
     @Override
     public PageResult pageArticles(ArticleQueryDTO queryDTO) {
@@ -381,5 +384,54 @@ public class ArticleServiceImpl implements ArticleService {
         } catch (Exception e) {
             log.error("刷新文章冗余计数失败", e);
         }
+    }
+
+    @Override
+    @Transactional
+    public Long likeArticle(Long id, String ipAddress, String userAgent) {
+        log.info("游客点赞文章，文章ID: {}, IP: {}, UA: {}", id, ipAddress, userAgent);
+        
+        // 1. 查找文章
+        Article article = articleRepository.findById(id)
+                .orElseThrow(() -> new BusinessException("文章不存在或已被删除"));
+        
+        if (!"PUBLISHED".equalsIgnoreCase(article.getStatus())) {
+            throw new BusinessException("只能对已发布的文章进行点赞");
+        }
+        
+        // 2. UA 截断以适配数据库字段长度限制
+        String truncatedUa = userAgent;
+        if (truncatedUa != null && truncatedUa.length() > 500) {
+            truncatedUa = truncatedUa.substring(0, 500);
+        }
+        
+        // 3. 校验 24 小时内同一设备是否已经点赞过 (以当前时间减去 24 小时为界限)
+        LocalDateTime limitTime = LocalDateTime.now().minusHours(24);
+        boolean hasLiked = articleLikeRepository.existsByArticleIdAndIpAddressAndUserAgentAndCreatedAtAfter(
+                id, ipAddress, truncatedUa, limitTime
+        );
+        
+        if (hasLiked) {
+            throw new BusinessException("您在24小时内已对本文点赞过啦，请勿重复点赞");
+        }
+        
+        // 4. 记录点赞流水
+        ArticleLike articleLike = ArticleLike.builder()
+                .articleId(id)
+                .ipAddress(ipAddress)
+                .userAgent(truncatedUa)
+                .build();
+        articleLikeRepository.save(articleLike);
+        
+        // 5. 递增点赞数
+        Long currentLikes = article.getLikeCount();
+        if (currentLikes == null) {
+            currentLikes = 0L;
+        }
+        article.setLikeCount(currentLikes + 1);
+        articleRepository.save(article);
+        
+        log.info("文章点赞成功，当前最新点赞数: {}", article.getLikeCount());
+        return article.getLikeCount();
     }
 }

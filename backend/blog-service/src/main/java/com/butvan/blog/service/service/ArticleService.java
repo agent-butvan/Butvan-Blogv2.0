@@ -59,4 +59,15 @@ public interface ArticleService {
      * @return 文章极简 VO 列表
      */
     List<ArticleItemVO> listSimpleArticles();
+
+    /**
+     * 对文章进行点赞操作（支持游客）
+     * 自动记录 IP & 设备信息进行 24 小时防重复刷赞保护
+     *
+     * @param id        文章唯一主键 ID
+     * @param ipAddress 访客客户端真实 IP 地址
+     * @param userAgent 访客设备浏览器指纹（User-Agent）信息
+     * @return 递增更新后的文章总点赞赞许数
+     */
+    Long likeArticle(Long id, String ipAddress, String userAgent);
 }

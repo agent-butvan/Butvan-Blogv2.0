@@ -107,6 +107,7 @@ public class SecurityConfig {
                     // 放行前台评论相关的提交和点赞接口
                     .requestMatchers(HttpMethod.POST, "/api/articles/*/comments").permitAll()
                     .requestMatchers(HttpMethod.POST, "/api/comments/*/like").permitAll()
+                    .requestMatchers(HttpMethod.POST, "/api/articles/*/like").permitAll()
                     // 放行本地静态图片映射路径
                     .requestMatchers("/uploads/**").permitAll()
                     // 其它任何后台 API 均需校验 Bearer Token 权限身份
