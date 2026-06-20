@@ -63,7 +63,9 @@ function resolveAvatarUrl(avatarUrl?: string): string {
   if (avatarUrl.startsWith("http://") || avatarUrl.startsWith("https://")) {
     return avatarUrl;
   }
-  return avatarUrl.startsWith("/") ? `http://localhost:8080${avatarUrl}` : avatarUrl;
+  const apiBase = process.env.NEXT_PUBLIC_API_BASE_URL || "http://localhost:8080/api";
+  const host = apiBase.replace(/\/api$/, "");
+  return avatarUrl.startsWith("/") ? `${host}${avatarUrl}` : avatarUrl;
 }
 
 /**

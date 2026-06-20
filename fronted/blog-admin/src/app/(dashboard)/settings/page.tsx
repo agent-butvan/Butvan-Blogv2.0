@@ -53,7 +53,12 @@ export default function SettingsPage() {
   // --- 解析后端图片相对 URL 路径 ---
   const resolveUrl = (url: string) => {
     if (!url) return "";
-    return url.startsWith("/") ? `http://localhost:8080${url}` : url;
+    if (url.startsWith("http://") || url.startsWith("https://")) {
+      return url;
+    }
+    const apiBase = process.env.NEXT_PUBLIC_API_BASE_URL || "http://localhost:8080/api";
+    const host = apiBase.replace(/\/api$/, "");
+    return url.startsWith("/") ? `${host}${url}` : url;
   };
 
   // --- 获取初始博主资料 ---
