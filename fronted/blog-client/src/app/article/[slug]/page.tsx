@@ -526,7 +526,7 @@ export default function ArticleDetailPage() {
                 <span>文章目录</span>
               </div>
               {toc.length > 0 ? (
-                <div className="flex flex-col gap-2 max-h-[calc(100vh-180px)] overflow-y-auto pr-1">
+                <div className="flex flex-col gap-2 max-h-[calc(100vh-180px)] overflow-y-auto overflow-x-hidden pr-1">
                   {toc.map((item) => (
                     <a
                       key={item.id}
