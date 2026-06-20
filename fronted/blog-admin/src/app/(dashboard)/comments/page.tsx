@@ -675,8 +675,8 @@ export default function CommentsPage() {
                       </div>
                     )}
 
-                    {/* 标记/取消标记作者 */}
-                    {!isTrash && !isSpam && (
+                    {/* 标记/取消标记作者 (仅针对普通游客评论提供此功能) */}
+                    {!comment.userId && !isTrash && !isSpam && (
                       <div className="relative inline-block action-popover-container">
                         {comment.isAuthor ? (
                           <button
