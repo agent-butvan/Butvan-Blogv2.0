@@ -175,12 +175,16 @@ export default function CommentsPage() {
 
   // 监听全局点击以关闭气泡确认框
   useEffect(() => {
-    const handleGlobalClick = () => {
+    const handleGlobalClick = (e: MouseEvent) => {
+      const target = e.target as HTMLElement;
+      if (target.closest(".action-popover-container")) {
+        return;
+      }
       setActiveConfirm(null);
     };
-    document.addEventListener("click", handleGlobalClick);
+    document.addEventListener("click", handleGlobalClick, true); // 使用捕获阶段以获得最精确的全局判断
     return () => {
-      document.removeEventListener("click", handleGlobalClick);
+      document.removeEventListener("click", handleGlobalClick, true);
     };
   }, []);
 
@@ -577,7 +581,7 @@ export default function CommentsPage() {
 
                     {/* 通过 */}
                     {isPending && (
-                      <div className="relative inline-block">
+                      <div className="relative inline-block action-popover-container">
                         <button
                           onClick={(e) => {
                             e.stopPropagation();
@@ -600,7 +604,7 @@ export default function CommentsPage() {
 
                     {/* 封禁 */}
                     {!isTrash && !isSpam && (
-                      <div className="relative inline-block">
+                      <div className="relative inline-block action-popover-container">
                         <button
                           onClick={(e) => {
                             e.stopPropagation();
@@ -624,7 +628,7 @@ export default function CommentsPage() {
 
                     {/* 拒绝 */}
                     {(isPending || isApproved) && (
-                      <div className="relative inline-block">
+                      <div className="relative inline-block action-popover-container">
                         <button
                           onClick={(e) => {
                             e.stopPropagation();
@@ -647,7 +651,7 @@ export default function CommentsPage() {
 
                     {/* 置顶 */}
                     {!comment.parentId && !isTrash && !isSpam && (
-                      <div className="relative inline-block">
+                      <div className="relative inline-block action-popover-container">
                         <button
                           onClick={(e) => {
                             e.stopPropagation();
@@ -673,7 +677,7 @@ export default function CommentsPage() {
 
                     {/* 标记/取消标记作者 */}
                     {!isTrash && !isSpam && (
-                      <div className="relative inline-block">
+                      <div className="relative inline-block action-popover-container">
                         {comment.isAuthor ? (
                           <button
                             onClick={(e) => {
@@ -709,7 +713,7 @@ export default function CommentsPage() {
 
                     {/* 移至回收站 */}
                     {!isTrash ? (
-                      <div className="relative inline-block">
+                      <div className="relative inline-block action-popover-container">
                         <button
                           onClick={(e) => {
                             e.stopPropagation();
@@ -730,7 +734,7 @@ export default function CommentsPage() {
                       </div>
                     ) : (
                       // 恢复为待审核
-                      <div className="relative inline-block">
+                      <div className="relative inline-block action-popover-container">
                         <button
                           onClick={(e) => {
                             e.stopPropagation();
@@ -753,7 +757,7 @@ export default function CommentsPage() {
 
                     {/* 彻底删除 */}
                     {(isSpam || isTrash) && (
-                      <div className="relative inline-block">
+                      <div className="relative inline-block action-popover-container">
                         <button
                           onClick={(e) => {
                             e.stopPropagation();
