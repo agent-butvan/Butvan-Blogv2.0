@@ -26,7 +26,8 @@ import {
   fetchAdminComments, 
   updateCommentStatus, 
   replyComment, 
-  deleteComment 
+  deleteComment,
+  markCommentAsAuthor
 } from "@/lib/comments-api";
 import { toast } from "@/lib/toast";
 import ConfirmModal from "@/components/common/ConfirmModal";
@@ -274,6 +275,21 @@ export default function CommentsPage() {
       toast.error(err.message || "删除评论失败");
     } finally {
       setDeleteLoading(false);
+    }
+  };
+
+  /** 标记为博主作者 */
+  const handleMarkAsAuthor = async (id: number) => {
+    setStatusLoadingMap(prev => ({ ...prev, [id]: true }));
+    try {
+      await markCommentAsAuthor(id);
+      toast.success("标记为作者成功");
+      loadComments(page, currentTab, keyword);
+    } catch (err: any) {
+      console.error("标记为作者失败:", err);
+      toast.error(err.message || "标记为作者失败");
+    } finally {
+      setStatusLoadingMap(prev => ({ ...prev, [id]: false }));
     }
   };
 
@@ -542,14 +558,16 @@ export default function CommentsPage() {
                       <span>置顶</span>
                     </button>
 
-                    {/* 标记本文作者 (静默绑定，UI 预置占位) */}
-                    <button
-                      onClick={() => toast.info("标记为文章作者功能已在 UI 预置。本期可在后续的 API 拓展中接入。")}
-                      className="flex items-center gap-1.5 text-indigo-400/80 hover:text-indigo-500 transition-colors cursor-pointer outline-none border-0 bg-transparent font-medium"
-                    >
-                      <User size={13} />
-                      <span>标记为作者</span>
-                    </button>
+                    {/* 标记为作者 */}
+                    {!comment.userId && !isTrash && !isSpam && (
+                      <button
+                        onClick={() => handleMarkAsAuthor(comment.id)}
+                        className="flex items-center gap-1.5 text-indigo-400/80 hover:text-indigo-500 transition-colors cursor-pointer outline-none border-0 bg-transparent font-medium"
+                      >
+                        <User size={13} />
+                        <span>标记为作者</span>
+                      </button>
+                    )}
 
                     {/* 移至回收站 */}
                     {!isTrash ? (

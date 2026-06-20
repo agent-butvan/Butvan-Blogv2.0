@@ -132,6 +132,23 @@ public class CommentController {
     }
 
     /**
+     * 【受保护后台】将指定评论标记为博主本人所写
+     *
+     * @param id 评论 ID
+     * @param principal 登录人安全凭证
+     * @return 空成功 Result 响应
+     */
+    @PutMapping("/admin/comments/{id}/author")
+    public Result<Void> markAsAuthor(
+            @PathVariable Long id,
+            Principal principal) {
+        String username = principal.getName();
+        log.info("后台标记评论为作者: id={}, admin={}", id, username);
+        commentService.markAsAuthor(id, username);
+        return Result.success();
+    }
+
+    /**
      * 【受保护后台】彻底物理删除一条评论
      *
      * @param id 评论 ID

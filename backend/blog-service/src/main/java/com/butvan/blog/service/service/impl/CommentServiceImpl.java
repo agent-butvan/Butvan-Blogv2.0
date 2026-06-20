@@ -410,6 +410,30 @@ public class CommentServiceImpl implements CommentService {
 
     @Transactional
     @Override
+    public void markAsAuthor(Long id, String username) {
+        log.info("标记评论为博主本人所写: id={}, username={}", id, username);
+        Comment comment = commentRepository.findById(id)
+                .orElseThrow(() -> new BusinessException("目标评论不存在"));
+        
+        User admin = userRepository.findByUsername(username)
+                .orElseThrow(() -> new BusinessException("当前登录管理员账户异常"));
+        
+        comment.setUser(admin);
+        comment.setVisitorName(admin.getNickname());
+        comment.setVisitorEmail(admin.getEmail());
+        // 如果此评论是回复他人的（即有 parentId），则把原评论标记为作者已回复
+        if (comment.getParentId() != null) {
+            commentRepository.findById(comment.getParentId())
+                    .ifPresent(parent -> {
+                        parent.setIsAuthorReplied(true);
+                        commentRepository.save(parent);
+                    });
+        }
+        commentRepository.save(comment);
+    }
+
+    @Transactional
+    @Override
     public void deleteComment(Long id) {
         log.info("物理删除评论: id={}", id);
         Comment comment = commentRepository.findById(id)

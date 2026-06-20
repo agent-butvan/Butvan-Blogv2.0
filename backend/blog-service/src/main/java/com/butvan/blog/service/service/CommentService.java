@@ -65,6 +65,14 @@ public interface CommentService {
     CommentVO replyComment(Long id, String content, String username);
 
     /**
+     * 后台管理 - 将指定评论标记为博主本人所写
+     *
+     * @param id 评论 ID
+     * @param username 当前登录的管理员用户名
+     */
+    void markAsAuthor(Long id, String username);
+
+    /**
      * 后台管理 - 物理彻底删除一条评论记录
      *
      * @param id 评论 ID

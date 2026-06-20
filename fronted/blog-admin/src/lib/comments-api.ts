@@ -56,6 +56,18 @@ export async function replyComment(
 }
 
 /**
+ * 后台将某条评论标记为博主本人所写 (PUT /admin/comments/{id}/author)
+ *
+ * @param id 评论的主键 ID
+ */
+export async function markCommentAsAuthor(id: number | string): Promise<void> {
+  const res = await apiClient.put<ApiResponse<void>>(`/admin/comments/${id}/author`);
+  if (res.data && res.data.code !== 200) {
+    throw new Error(res.data.msg || "标记为作者失败");
+  }
+}
+
+/**
  * 后台物理彻底删除评论记录 (DELETE /admin/comments/{id})
  *
  * @param id 待删除评论的主键 ID
