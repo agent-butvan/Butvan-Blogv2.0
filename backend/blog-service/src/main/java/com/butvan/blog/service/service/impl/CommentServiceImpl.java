@@ -51,7 +51,15 @@ public class CommentServiceImpl implements CommentService {
         Map<Long, CommentVO> voMap = comments.stream()
                 .map(c -> {
                     String nickname = c.getUser() != null ? c.getUser().getNickname() : c.getVisitorName();
-                    String avatarUrl = c.getUser() != null ? c.getUser().getAvatarUrl() : getGravatarUrl(c.getVisitorEmail());
+                    String avatarUrl = null;
+                    if (c.getUser() != null) {
+                        avatarUrl = c.getUser().getAvatarUrl();
+                        if (avatarUrl == null || avatarUrl.trim().isEmpty()) {
+                            avatarUrl = getGravatarUrl(c.getUser().getEmail());
+                        }
+                    } else {
+                        avatarUrl = getGravatarUrl(c.getVisitorEmail());
+                    }
                     return CommentVO.builder()
                             .id(c.getId())
                             .articleId(c.getArticle().getId())
@@ -127,10 +135,17 @@ public class CommentServiceImpl implements CommentService {
                     .orElseThrow(() -> new BusinessException("被回复的目标评论不存在或已被删除"));
         }
 
+        // 查询是否有绑定的 User，如果邮箱匹配，则自动关联为注册用户评论
+        User matchedUser = null;
+        if (dto.getVisitorEmail() != null && !dto.getVisitorEmail().trim().isEmpty()) {
+            matchedUser = userRepository.findByEmail(dto.getVisitorEmail().trim()).orElse(null);
+        }
+
         // 4. 构建实体类并持久化保存
         Comment comment = Comment.builder()
                 .article(article)
                 .parentId(dto.getParentId())
+                .user(matchedUser)
                 .visitorName(dto.getVisitorName().trim())
                 .visitorEmail(dto.getVisitorEmail().trim())
                 .visitorWebsite(dto.getVisitorWebsite() != null ? dto.getVisitorWebsite().trim() : null)
@@ -139,7 +154,7 @@ public class CommentServiceImpl implements CommentService {
                 .ipAddress(ipAddress)
                 .userAgent(userAgent)
                 .likeCount(0)
-                .isAuthorReplied(false) // 默认为 false，若未来后台登录状态下管理员回复，可在保存时设置为 true
+                .isAuthorReplied(matchedUser != null && ("ADMIN".equalsIgnoreCase(matchedUser.getRole()) || "AUTHOR".equalsIgnoreCase(matchedUser.getRole())))
                 .build();
 
         Comment saved = commentRepository.save(comment);
@@ -150,7 +165,15 @@ public class CommentServiceImpl implements CommentService {
         articleRepository.save(article);
 
         // 6. 转换构建为当前最新保存的评论 VO 返回对象
-        String avatarUrl = getGravatarUrl(saved.getVisitorEmail());
+        String avatarUrl = null;
+        if (saved.getUser() != null) {
+            avatarUrl = saved.getUser().getAvatarUrl();
+            if (avatarUrl == null || avatarUrl.trim().isEmpty()) {
+                avatarUrl = getGravatarUrl(saved.getUser().getEmail());
+            }
+        } else {
+            avatarUrl = getGravatarUrl(saved.getVisitorEmail());
+        }
         String replyToName = null;
         if (saved.getParentId() != null) {
             Comment parent = commentRepository.findById(saved.getParentId()).orElse(null);
@@ -163,6 +186,7 @@ public class CommentServiceImpl implements CommentService {
                 .id(saved.getId())
                 .articleId(saved.getArticle().getId())
                 .parentId(saved.getParentId())
+                .userId(saved.getUser() != null ? saved.getUser().getId() : null)
                 .nickname(saved.getVisitorName())
                 .avatarUrl(avatarUrl)
                 .visitorWebsite(saved.getVisitorWebsite())
@@ -261,7 +285,15 @@ public class CommentServiceImpl implements CommentService {
         List<CommentVO> voList = commentPage.getContent().stream()
                 .map(c -> {
                     String nickname = c.getUser() != null ? c.getUser().getNickname() : c.getVisitorName();
-                    String avatarUrl = c.getUser() != null ? c.getUser().getAvatarUrl() : getGravatarUrl(c.getVisitorEmail());
+                    String avatarUrl = null;
+                    if (c.getUser() != null) {
+                        avatarUrl = c.getUser().getAvatarUrl();
+                        if (avatarUrl == null || avatarUrl.trim().isEmpty()) {
+                            avatarUrl = getGravatarUrl(c.getUser().getEmail());
+                        }
+                    } else {
+                        avatarUrl = getGravatarUrl(c.getVisitorEmail());
+                    }
                     
                     String replyTo = null;
                     if (c.getParentId() != null) {
