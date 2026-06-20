@@ -9,7 +9,6 @@ import {
   Eye, 
   X, 
   FileText, 
-  AlertCircle, 
   Loader2, 
   Image as ImageIcon,
   Check,
@@ -22,11 +21,11 @@ import ConfirmModal from "@/components/common/ConfirmModal";
 import Portal from "@/components/common/Portal";
 
 /**
- * 大厂视觉风格媒体资源管理器工作台
- * - 拒绝多余大留白，支持极其紧凑与信息饱满的列表形态
- * - 左上角分类 Tabs（全部、图片、其他文件）
- * - 支持拖入或点击一键多类型文件上传
- * - 卡片悬停显示 Notion 风格的快捷管理面板（复制外链、模态详情预览、物理安全删除）
+ * 大厂精致数据表格媒体资源管理器工作台
+ * - 紧密排版，以高实用性的表格形态代替卡片平铺形态
+ * - 新增 "存储来源" (bucketName) 列，清晰显示文件的物理存储位置 (本地/第三方云)
+ * - 支持批量选择并物理级联删除文件
+ * - 表格首列支持小图直观预览，非图片智能降级展示对应文件扩展名图标
  */
 export default function MediaPage() {
   const [mediaList, setMediaList] = useState<MediaItem[]>([]);
@@ -46,12 +45,16 @@ export default function MediaPage() {
   // 预览模态框状态
   const [selectedMedia, setSelectedMedia] = useState<MediaItem | null>(null);
 
+  // 多选与批量操作
+  const [checkedIds, setCheckedIds] = useState<number[]>([]);
+  const [isBulkDelete, setIsBulkDelete] = useState(false);
+
   // 物理删除确认状态
   const [confirmDeleteId, setConfirmDeleteId] = useState<number | null>(null);
   const [deleteLoading, setDeleteLoading] = useState(false);
 
   const fileInputRef = useRef<HTMLInputElement>(null);
-  const pageSize = 12; // 一页展示 12 个文件
+  const pageSize = 10; // 表格每页展示 10 条
 
   // 资源服务器基础 URL
   const API_BASE_URL = process.env.NEXT_PUBLIC_API_BASE_URL || "http://localhost:8080/api";
@@ -72,7 +75,7 @@ export default function MediaPage() {
     return parseFloat((bytes / Math.pow(k, i)).toFixed(2)) + " " + sizes[i];
   };
 
-  /** 获取列表 */
+  /** 加载媒体列表 */
   const loadMedia = async () => {
     setLoading(true);
     try {
@@ -84,6 +87,7 @@ export default function MediaPage() {
       });
       setMediaList(data.records || []);
       setTotal(data.total || 0);
+      setCheckedIds([]); // 重新加载后清空勾选状态
     } catch (err: any) {
       console.error("加载媒体资源失败:", err);
       toast.error("加载媒体库失败，请确认后端服务已启动");
@@ -141,7 +145,7 @@ export default function MediaPage() {
     try {
       await navigator.clipboard.writeText(absoluteUrl);
       setCopiedId(item.id);
-      toast.success("资源外链已成功复制到剪贴板，可直接贴入 Markdown中");
+      toast.success("外链已复制到剪贴板");
       setTimeout(() => setCopiedId(null), 2000);
     } catch (err) {
       console.error("复制失败:", err);
@@ -149,40 +153,98 @@ export default function MediaPage() {
     }
   };
 
-  /** 触发删除确认 */
+  // 全选/单选逻辑
+  const handleCheckAll = (checked: boolean) => {
+    if (checked) {
+      setCheckedIds(mediaList.map((m) => m.id));
+    } else {
+      setCheckedIds([]);
+    }
+  };
+
+  const handleCheckOne = (id: number, checked: boolean) => {
+    if (checked) {
+      setCheckedIds((prev) => [...prev, id]);
+    } else {
+      setCheckedIds((prev) => prev.filter((item) => item !== id));
+    }
+  };
+
+  /** 触发单条删除确认 */
   const handleDeleteRequest = (id: number) => {
+    setIsBulkDelete(false);
     setConfirmDeleteId(id);
   };
 
-  /** 执行物理删除 */
+  /** 触发批量删除确认 */
+  const handleBulkDeleteRequest = () => {
+    if (checkedIds.length === 0) return;
+    setIsBulkDelete(true);
+    setConfirmDeleteId(checkedIds[0]); // 借用状态触发弹窗
+  };
+
+  /** 执行物理级联删除 */
   const handleDeleteConfirm = async () => {
-    if (!confirmDeleteId) return;
+    if (!confirmDeleteId && !isBulkDelete) return;
     setDeleteLoading(true);
     try {
-      await deleteMediaItem(confirmDeleteId);
-      toast.success("该文件已从硬盘物理清理，且数据库记录已删除");
+      if (isBulkDelete) {
+        // 循环批量物理删除
+        await Promise.all(checkedIds.map((id) => deleteMediaItem(id)));
+        toast.success(`成功从硬盘物理清理选中的 ${checkedIds.length} 个文件`);
+        setCheckedIds([]);
+      } else {
+        await deleteMediaItem(confirmDeleteId!);
+        toast.success("该文件已从硬盘物理清理，且数据库记录已删除");
+      }
       setConfirmDeleteId(null);
-      // 如果当前页最后一条被删，且页码大于 1，则往前翻页
-      if (mediaList.length === 1 && page > 1) {
+      
+      // 如果当前页数据全被删光，且页码大于 1，则往前翻页
+      const deletedCount = isBulkDelete ? checkedIds.length : 1;
+      if (mediaList.length <= deletedCount && page > 1) {
         setPage((p) => p - 1);
       } else {
         loadMedia();
       }
     } catch (err: any) {
       console.error("删除媒体资源失败:", err);
-      toast.error(err.response?.data?.msg || "删除接口异常");
+      toast.error(err.response?.data?.msg || "部分文件删除接口异常");
     } finally {
       setDeleteLoading(false);
     }
   };
 
-  // 分类 Tabs 配置
-  const TABS = [
-    { label: "全部资源", value: "" },
-    { label: "图片大类", value: "IMAGE" },
-    { label: "其他文件", value: "OTHER" }
-  ];
+  // 存储来源 Badge 样式映射
+  const renderBucketBadge = (bucketName: string) => {
+    const configs: Record<string, { label: string; styles: string }> = {
+      local: {
+        label: "本地存储",
+        styles: "text-indigo-600 dark:text-indigo-400 border-indigo-100/60 dark:border-indigo-950/20 bg-indigo-50/30 dark:bg-indigo-950/10",
+      },
+      "aliyun-oss": {
+        label: "阿里云 OSS",
+        styles: "text-amber-600 dark:text-amber-400 border-amber-100/60 dark:border-amber-950/20 bg-amber-50/30 dark:bg-amber-950/10",
+      },
+      tencent_cos: {
+        label: "腾讯云 COS",
+        styles: "text-sky-600 dark:text-sky-400 border-sky-100/60 dark:border-sky-950/20 bg-sky-50/30 dark:bg-sky-950/10",
+      },
+    };
 
+    const item = configs[bucketName] || {
+      label: bucketName || "未指定",
+      styles: "text-zinc-500 border-zinc-200 bg-zinc-50/30 dark:text-zinc-400 dark:border-zinc-800 dark:bg-zinc-950/10",
+    };
+
+    return (
+      <span className={cn("inline-flex items-center text-[10px] px-2 py-0.5 rounded-lg border font-bold select-none whitespace-nowrap", item.styles)}>
+        {item.label}
+      </span>
+    );
+  };
+
+  const isAllChecked = mediaList.length > 0 && checkedIds.length === mediaList.length;
+  const isSomeChecked = checkedIds.length > 0 && checkedIds.length < mediaList.length;
   const totalPages = Math.ceil(total / pageSize) || 1;
 
   // 渲染分页按钮
@@ -220,9 +282,9 @@ export default function MediaPage() {
       {/* 顶部标题区 */}
       <div className="flex items-center justify-between pb-3 border-b border-zinc-200/50 dark:border-zinc-900/60 shrink-0 select-none">
         <div>
-          <h1 className="font-heading text-xl font-bold text-neutral-dark dark:text-zinc-55">媒体库管理</h1>
+          <h1 className="font-heading text-xl font-bold text-neutral-dark dark:text-zinc-55">媒体内容管理</h1>
           <p className="text-[11px] font-medium text-zinc-400 dark:text-zinc-500 mt-1 font-mono">
-            WORKSPACE / MEDIA (共 {total} 个已保存资源)
+            RESOURCES / MEDIA (共 {total} 个已归档媒体资源)
           </p>
         </div>
 
@@ -233,6 +295,18 @@ export default function MediaPage() {
             onChange={handleFileChange}
             className="hidden"
           />
+          
+          {/* 批量操作控制 */}
+          {checkedIds.length > 0 && (
+            <button
+              onClick={handleBulkDeleteRequest}
+              className="flex h-9 items-center justify-center gap-1.5 rounded-xl border border-rose-200 hover:bg-rose-50 dark:border-rose-900/30 dark:hover:bg-rose-950/20 text-rose-600 dark:text-rose-400 py-2 px-4 text-xs font-bold transition-all cursor-pointer animate-fade-in"
+            >
+              <Trash2 size={13} />
+              <span>批量删除 ({checkedIds.length})</span>
+            </button>
+          )}
+
           <button
             onClick={handleUploadClick}
             disabled={uploading}
@@ -251,24 +325,40 @@ export default function MediaPage() {
       {/* 检索及筛选 Tabs Bar */}
       <div className="flex flex-col md:flex-row md:items-center justify-between gap-3 bg-zinc-50/50 dark:bg-zinc-900/10 p-2 rounded-xl border border-zinc-200/40 dark:border-zinc-850/50 select-none">
         {/* 分类 Tabs */}
-        <div className="flex items-center gap-1 overflow-x-auto no-scrollbar">
-          {TABS.map((tab) => (
-            <button
-              key={tab.value}
-              onClick={() => {
-                setFileType(tab.value);
-                setPage(1);
-              }}
-              className={cn(
-                "h-8 px-3.5 rounded-lg text-xs font-bold transition-all cursor-pointer whitespace-nowrap outline-none border-0",
-                fileType === tab.value
-                  ? "bg-primary text-white shadow-xs"
-                  : "text-zinc-500 dark:text-zinc-450 hover:bg-zinc-150/60 dark:hover:bg-zinc-800/60 hover:text-zinc-800 dark:hover:text-zinc-200"
-              )}
-            >
-              {tab.label}
-            </button>
-          ))}
+        <div className="flex items-center gap-1.5 overflow-x-auto no-scrollbar">
+          <button
+            onClick={() => { setFileType(""); setPage(1); }}
+            className={cn(
+              "h-8 px-4 rounded-lg text-xs font-bold transition-all cursor-pointer whitespace-nowrap outline-none border-0",
+              fileType === ""
+                ? "bg-primary text-white shadow-xs"
+                : "text-zinc-500 dark:text-zinc-450 hover:bg-zinc-150/60 dark:hover:bg-zinc-800/60 hover:text-zinc-800 dark:hover:text-zinc-200"
+            )}
+          >
+            全部资源
+          </button>
+          <button
+            onClick={() => { setFileType("IMAGE"); setPage(1); }}
+            className={cn(
+              "h-8 px-4 rounded-lg text-xs font-bold transition-all cursor-pointer whitespace-nowrap outline-none border-0",
+              fileType === "IMAGE"
+                ? "bg-primary text-white shadow-xs"
+                : "text-zinc-500 dark:text-zinc-450 hover:bg-zinc-150/60 dark:hover:bg-zinc-800/60 hover:text-zinc-800 dark:hover:text-zinc-200"
+            )}
+          >
+            图片资源
+          </button>
+          <button
+            onClick={() => { setFileType("OTHER"); setPage(1); }}
+            className={cn(
+              "h-8 px-4 rounded-lg text-xs font-bold transition-all cursor-pointer whitespace-nowrap outline-none border-0",
+              fileType === "OTHER"
+                ? "bg-primary text-white shadow-xs"
+                : "text-zinc-500 dark:text-zinc-450 hover:bg-zinc-150/60 dark:hover:bg-zinc-800/60 hover:text-zinc-800 dark:hover:text-zinc-200"
+            )}
+          >
+            其他文件
+          </button>
         </div>
 
         {/* 搜索框 */}
@@ -279,7 +369,7 @@ export default function MediaPage() {
               type="text"
               value={searchVal}
               onChange={(e) => setSearchVal(e.target.value)}
-              placeholder="搜索原始文件名称..."
+              placeholder="按文件名模糊匹配..."
               className="flex-1 border-0 bg-transparent p-0 text-xs text-zinc-850 dark:text-zinc-150 outline-none placeholder-zinc-400 dark:placeholder-zinc-650 focus:ring-0 leading-normal"
             />
             {searchVal && (
@@ -294,107 +384,187 @@ export default function MediaPage() {
           </div>
           <button
             type="submit"
-            className="h-8 px-3 rounded-lg bg-zinc-850 hover:bg-zinc-800 dark:bg-zinc-800 dark:hover:bg-zinc-750 text-white text-xs font-bold transition-colors cursor-pointer"
+            className="h-8 px-3.5 rounded-lg bg-zinc-850 hover:bg-zinc-800 dark:bg-zinc-800 dark:hover:bg-zinc-750 text-white text-xs font-bold transition-colors cursor-pointer"
           >
             搜索
           </button>
         </form>
       </div>
 
-      {/* 媒体卡片网格列表 */}
-      {loading ? (
-        <div className="py-24 border border-zinc-200/50 dark:border-zinc-800/60 bg-white dark:bg-zinc-950 rounded-2xl flex flex-col items-center justify-center gap-2 text-zinc-400 shadow-2xs select-none">
-          <Loader2 size={24} className="animate-spin text-primary" />
-          <span className="text-[11px] font-medium tracking-wide">正在加载资源列表，请稍候...</span>
-        </div>
-      ) : mediaList.length === 0 ? (
-        <div className="py-24 border border-dashed border-zinc-200 dark:border-zinc-800 bg-white dark:bg-zinc-950/20 rounded-2xl flex flex-col items-center justify-center gap-3 text-zinc-400 shadow-2xs select-none">
-          <ImageIcon size={32} className="text-zinc-300 dark:text-zinc-850" />
-          <span className="text-[11px] font-bold">媒体库空空如也，快去上传您的第一个文件吧！</span>
-        </div>
-      ) : (
-        <div className="grid grid-cols-2 sm:grid-cols-3 md:grid-cols-4 gap-4">
-          {mediaList.map((item) => {
-            const isImage = item.fileType === "IMAGE";
-            const fileLink = resolveUrl(item.fileUrl);
-            const ext = item.fileName.split(".").pop()?.toUpperCase() || "FILE";
+      {/* 媒体列表表格 - 极简精致大厂排版 */}
+      <div className="overflow-x-auto rounded-2xl border border-zinc-200/60 dark:border-zinc-800 bg-white dark:bg-zinc-950 shadow-xs">
+        <table className="w-full text-xs text-left border-collapse min-w-[900px] table-fixed">
+          <thead>
+            <tr className="border-b border-zinc-200/50 dark:border-zinc-800 bg-zinc-50/70 dark:bg-zinc-900/40 text-[10px] font-bold text-zinc-400 dark:text-zinc-500 uppercase tracking-widest select-none">
+              <th className="px-4 py-3.5 w-12 text-center">
+                <input
+                  type="checkbox"
+                  checked={isAllChecked}
+                  ref={(input) => {
+                    if (input) input.indeterminate = isSomeChecked;
+                  }}
+                  onChange={(e) => handleCheckAll(e.target.checked)}
+                  className="w-3.5 h-3.5 rounded border-zinc-350 dark:border-zinc-800 text-primary focus:ring-primary/20 accent-primary cursor-pointer transition-all"
+                />
+              </th>
+              <th className="px-5 py-3.5">预览 / 文件名称</th>
+              <th className="px-5 py-3.5 w-36">存储来源</th>
+              <th className="px-5 py-3.5 w-40">文件属性/分辨率</th>
+              <th className="px-5 py-3.5 w-60">物理存储路径</th>
+              <th className="px-5 py-3.5 w-36">上传日期</th>
+              <th className="px-5 py-3.5 w-32 text-right">管理操作</th>
+            </tr>
+          </thead>
+          <tbody className="divide-y divide-zinc-100 dark:divide-zinc-800/50 text-zinc-700 dark:text-zinc-350">
+            {loading ? (
+              <tr>
+                <td colSpan={7} className="px-5 py-16 text-center select-none">
+                  <div className="flex flex-col items-center justify-center gap-2 text-zinc-400">
+                    <Loader2 size={20} className="animate-spin text-zinc-350 dark:text-zinc-650" />
+                    <span className="text-[11px] font-medium tracking-wide">加载媒体资源中...</span>
+                  </div>
+                </td>
+              </tr>
+            ) : mediaList.length === 0 ? (
+              <tr>
+                <td colSpan={7} className="px-5 py-16 text-center text-zinc-400 select-none">
+                  <div className="flex flex-col items-center justify-center gap-2">
+                    <ImageIcon size={24} className="text-zinc-300 dark:text-zinc-700" />
+                    <span className="text-[11px]">暂无媒体资源，开始上传您的第一个文件吧！</span>
+                  </div>
+                </td>
+              </tr>
+            ) : (
+              mediaList.map((item) => {
+                const isImage = item.fileType === "IMAGE";
+                const fileLink = resolveUrl(item.fileUrl);
+                const isChecked = checkedIds.includes(item.id);
+                const ext = item.fileName.split(".").pop()?.toUpperCase() || "FILE";
 
-            return (
-              <div
-                key={item.id}
-                className="group relative bg-white dark:bg-zinc-900 border border-zinc-200 dark:border-zinc-800 rounded-2xl overflow-hidden shadow-2xs hover:shadow-md transition-all duration-200 flex flex-col select-none"
-              >
-                {/* 预览容器 */}
-                <div className="relative aspect-square w-full bg-zinc-50 dark:bg-zinc-950 flex items-center justify-center overflow-hidden border-b border-zinc-150 dark:border-zinc-850">
-                  {isImage ? (
-                    <img
-                      src={fileLink}
-                      alt={item.fileName}
-                      className="w-full h-full object-cover transition-transform duration-300 group-hover:scale-105"
-                      loading="lazy"
-                    />
-                  ) : (
-                    <div className="flex flex-col items-center justify-center gap-2 p-4 text-center">
-                      <div className="w-12 h-12 rounded-2xl bg-zinc-100 dark:bg-zinc-900 border border-zinc-200/50 dark:border-zinc-800 flex items-center justify-center text-zinc-400 group-hover:scale-105 transition-transform">
-                        <FileText size={20} />
+                return (
+                  <tr
+                    key={item.id}
+                    className="group border-b border-zinc-200/50 dark:border-zinc-800 hover:bg-zinc-50/50 dark:hover:bg-zinc-900/20 transition-all duration-150"
+                  >
+                    {/* 多选框 */}
+                    <td className="px-4 py-3.5 text-center">
+                      <input
+                        type="checkbox"
+                        checked={isChecked}
+                        onChange={(e) => handleCheckOne(item.id, e.target.checked)}
+                        className="w-3.5 h-3.5 rounded border-zinc-350 dark:border-zinc-800 text-primary focus:ring-primary/20 accent-primary cursor-pointer transition-all"
+                      />
+                    </td>
+
+                    {/* 预览与文件名 */}
+                    <td className="px-5 py-3 select-none">
+                      <div className="flex items-center gap-3">
+                        {/* 图像缩略图或类型图标 */}
+                        <div className="relative w-9 h-9 shrink-0 bg-zinc-50 dark:bg-zinc-950 border border-zinc-200/80 dark:border-zinc-850 rounded-lg overflow-hidden flex items-center justify-center">
+                          {isImage ? (
+                            <img
+                              src={fileLink}
+                              alt={item.fileName}
+                              className="w-full h-full object-cover transition-transform duration-200 group-hover:scale-110"
+                            />
+                          ) : (
+                            <FileText size={15} className="text-zinc-400" />
+                          )}
+                        </div>
+
+                        {/* 文件名称 */}
+                        <div className="min-w-0 max-w-full">
+                          <span
+                            className="font-semibold text-neutral-dark dark:text-zinc-150 block truncate group-hover:text-primary transition-colors cursor-pointer"
+                            title={item.fileName}
+                            onClick={() => setSelectedMedia(item)}
+                          >
+                            {item.fileName}
+                          </span>
+                          <span className="text-[10px] text-zinc-400 dark:text-zinc-500 font-mono tracking-tight mt-0.5 block">
+                            MIME: {item.mimeType || "unknown"}
+                          </span>
+                        </div>
                       </div>
-                      <span className="px-2 py-0.5 rounded-md bg-zinc-200/60 dark:bg-zinc-800 text-[9px] font-bold text-zinc-600 dark:text-zinc-400 font-mono tracking-wide">
-                        {ext}
-                      </span>
-                    </div>
-                  )}
+                    </td>
 
-                  {/* Notion 风格卡片悬浮遮罩面板 */}
-                  <div className="absolute inset-0 bg-black/45 backdrop-blur-xs flex items-center justify-center gap-2.5 opacity-0 group-hover:opacity-100 transition-all duration-200 ease-out z-10">
-                    {/* 一键复制链接 */}
-                    <button
-                      onClick={() => handleCopyLink(item)}
-                      className="w-8 h-8 rounded-xl bg-white text-zinc-850 hover:bg-primary hover:text-white transition-colors cursor-pointer flex items-center justify-center shadow-md border-0"
-                      title="复制访问直链"
-                    >
-                      {copiedId === item.id ? <Check size={14} className="text-emerald-500" /> : <Copy size={13} />}
-                    </button>
+                    {/* 存储来源（来源Bucket） */}
+                    <td className="px-5 py-3.5">
+                      {renderBucketBadge(item.bucketName)}
+                    </td>
 
-                    {/* 详情与预览 */}
-                    <button
-                      onClick={() => setSelectedMedia(item)}
-                      className="w-8 h-8 rounded-xl bg-white text-zinc-850 hover:bg-primary hover:text-white transition-colors cursor-pointer flex items-center justify-center shadow-md border-0"
-                      title="查看详情"
-                    >
-                      <Eye size={13} />
-                    </button>
+                    {/* 属性与分辨率 */}
+                    <td className="px-5 py-3.5 font-mono text-[10.5px]">
+                      <div className="flex flex-col">
+                        <span className="font-semibold text-zinc-700 dark:text-zinc-350">{formatBytes(item.fileSize)}</span>
+                        {isImage && item.width && item.height ? (
+                          <span className="text-[9.5px] text-zinc-450 dark:text-zinc-500 mt-0.5">
+                            {item.width} × {item.height} px
+                          </span>
+                        ) : (
+                          <span className="text-[9.5px] text-zinc-450 dark:text-zinc-550 mt-0.5">
+                            {ext} 文件
+                          </span>
+                        )}
+                      </div>
+                    </td>
 
-                    {/* 安全物理删除 */}
-                    <button
-                      onClick={() => handleDeleteRequest(item.id)}
-                      className="w-8 h-8 rounded-xl bg-white text-zinc-850 hover:bg-rose-500 hover:text-white transition-colors cursor-pointer flex items-center justify-center shadow-md border-0"
-                      title="物理删除文件"
-                    >
-                      <Trash2 size={13} />
-                    </button>
-                  </div>
-                </div>
+                    {/* 物理存储绝对路径 */}
+                    <td className="px-5 py-3.5 min-w-0 max-w-0">
+                      <code
+                        className="font-mono text-[10px] text-zinc-500 dark:text-zinc-500 truncate block bg-zinc-50 dark:bg-zinc-950/40 px-1.5 py-0.5 rounded border border-zinc-200/40 dark:border-zinc-850/30 select-all"
+                        title={item.filePath}
+                      >
+                        {item.filePath}
+                      </code>
+                    </td>
 
-                {/* 底部文案介绍 */}
-                <div className="p-3 text-left flex flex-col justify-between flex-grow bg-white dark:bg-zinc-900/60">
-                  <div className="min-w-0">
-                    <p
-                      className="text-xs font-semibold text-zinc-800 dark:text-zinc-150 truncate leading-snug"
-                      title={item.fileName}
-                    >
-                      {item.fileName}
-                    </p>
-                  </div>
-                  <div className="flex items-center justify-between text-[9px] text-zinc-400 dark:text-zinc-550 font-mono mt-1.5">
-                    <span>{formatBytes(item.fileSize)}</span>
-                    <span>{new Date(item.createdAt).toLocaleDateString()}</span>
-                  </div>
-                </div>
-              </div>
-            );
-          })}
-        </div>
-      )}
+                    {/* 上传时间 */}
+                    <td className="px-5 py-3.5 text-zinc-500 dark:text-zinc-500 font-mono">
+                      {new Date(item.createdAt).toLocaleDateString()}
+                    </td>
+
+                    {/* 管理操作 */}
+                    <td className="px-5 py-3 text-right select-none">
+                      <div className="flex items-center justify-end gap-2">
+                        {/* 复制直链 */}
+                        <button
+                          onClick={() => handleCopyLink(item)}
+                          className={cn(
+                            "w-7 h-7 rounded-lg hover:bg-zinc-100 dark:hover:bg-zinc-900 transition-colors flex items-center justify-center cursor-pointer border border-transparent hover:border-zinc-200/50 dark:hover:border-zinc-800",
+                            copiedId === item.id ? "text-emerald-500 hover:text-emerald-600" : "text-zinc-400 dark:text-zinc-500 hover:text-zinc-750 dark:hover:text-zinc-300"
+                          )}
+                          title="复制访问直链 URL"
+                        >
+                          {copiedId === item.id ? <Check size={13.5} /> : <Copy size={12} />}
+                        </button>
+
+                        {/* 查看详情 */}
+                        <button
+                          onClick={() => setSelectedMedia(item)}
+                          className="w-7 h-7 rounded-lg text-zinc-400 hover:text-primary hover:bg-zinc-100 dark:hover:bg-zinc-900 transition-colors flex items-center justify-center cursor-pointer border border-transparent hover:border-zinc-200/50 dark:hover:border-zinc-800"
+                          title="查看元数据详情"
+                        >
+                          <Eye size={12} />
+                        </button>
+
+                        {/* 二次确认级联物理删除 */}
+                        <button
+                          onClick={() => handleDeleteRequest(item.id)}
+                          className="w-7 h-7 rounded-lg text-zinc-400 hover:text-rose-500 hover:bg-zinc-100 dark:hover:bg-zinc-900 transition-colors flex items-center justify-center cursor-pointer border border-transparent hover:border-zinc-200/50 dark:hover:border-zinc-800"
+                          title="删除并从硬盘擦除"
+                        >
+                          <Trash2 size={12} />
+                        </button>
+                      </div>
+                    </td>
+                  </tr>
+                );
+              })
+            )}
+          </tbody>
+        </table>
+      </div>
 
       {/* 分页控制栏 */}
       {totalPages > 1 && (
@@ -474,8 +644,8 @@ export default function MediaPage() {
                       <span className="font-bold text-zinc-800 dark:text-zinc-250 font-mono">{selectedMedia.fileType}</span>
                     </div>
                     <div className="flex flex-col gap-1">
-                      <span className="text-[10px] font-bold text-zinc-400 dark:text-zinc-550 uppercase tracking-wide">MIME 类型</span>
-                      <span className="font-medium text-zinc-800 dark:text-zinc-250 font-mono">{selectedMedia.mimeType}</span>
+                      <span className="text-[10px] font-bold text-zinc-400 dark:text-zinc-550 uppercase tracking-wide">存储来源 (Bucket)</span>
+                      <span className="font-bold text-zinc-800 dark:text-zinc-250 font-mono">{selectedMedia.bucketName || "local"}</span>
                     </div>
                   </div>
 
@@ -537,8 +707,12 @@ export default function MediaPage() {
       <ConfirmModal
         open={confirmDeleteId !== null}
         variant="danger"
-        title="确认彻底删除媒体资源"
-        description="确定要彻底删除该媒体资源吗？此操作将同时从本地物理磁盘目录中永久抹除对应文件，删除后关联该图片的文章排版可能失效且操作不可撤销。"
+        title={isBulkDelete ? "确认批量彻底删除媒体" : "确认彻底删除媒体资源"}
+        description={
+          isBulkDelete
+            ? `确定要批量彻底删除选中的 ${checkedIds.length} 个媒体资源吗？此操作将同时从本地物理磁盘目录中永久抹除对应文件，且不可撤销！`
+            : "确定要彻底删除该媒体资源吗？此操作将同时从本地物理磁盘目录中永久抹除对应文件，删除后关联该图片的文章排版可能失效且操作不可撤销。"
+        }
         confirmLabel="删除"
         cancelLabel="取消"
         loading={deleteLoading}
