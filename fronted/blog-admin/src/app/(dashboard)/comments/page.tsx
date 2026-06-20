@@ -101,6 +101,19 @@ const formatIP = (ip?: string | null): string => {
 };
 
 /**
+ * 解析头像地址，兼容后端返回的相对上传路径
+ */
+const resolveAvatarUrl = (avatarUrl?: string | null): string => {
+  if (!avatarUrl) return "";
+  if (avatarUrl.startsWith("http://") || avatarUrl.startsWith("https://")) {
+    return avatarUrl;
+  }
+  const apiBase = process.env.NEXT_PUBLIC_API_BASE_URL || "http://localhost:8080/api";
+  const host = apiBase.replace(/\/api$/, "");
+  return avatarUrl.startsWith("/") ? `${host}${avatarUrl}` : avatarUrl;
+};
+
+/**
  * 评论状态 Tab 定义
  */
 const STATUS_TABS = [
@@ -351,7 +364,7 @@ export default function CommentsPage() {
                 <div className="flex items-start justify-between gap-4">
                   <div className="flex items-start gap-3">
                     <img
-                      src={comment.avatarUrl}
+                      src={resolveAvatarUrl(comment.avatarUrl)}
                       alt="avatar"
                       className="w-10 h-10 rounded-full bg-zinc-100 dark:bg-zinc-900 border border-zinc-200/40 dark:border-zinc-800 object-cover transition-all duration-300 group-hover:scale-105 group-hover:ring-2 group-hover:ring-primary/45"
                     />
