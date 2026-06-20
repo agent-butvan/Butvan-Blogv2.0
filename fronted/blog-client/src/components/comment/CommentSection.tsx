@@ -6,6 +6,7 @@ import { Spinner } from '@heroui/react'
 import { marked } from 'marked'
 import CommentForm from './CommentForm'
 import HtmlRenderer from '@/components/common/HtmlRenderer'
+import { resolveImageUrl } from '@/lib/image-url'
 
 interface CommentVO {
   id: number
@@ -240,7 +241,7 @@ export default function CommentSection({
                   <span className="absolute -left-1 top-0.5 w-[3px] h-8 rounded-full bg-[#727BBA]" title="站长" />
                 )}
                 <img
-                  src={comment.avatarUrl}
+                  src={resolveImageUrl(comment.avatarUrl)}
                   alt={comment.nickname}
                   className={`w-10 h-10 rounded-xl bg-zinc-100 dark:bg-zinc-900 border shadow-inner ${comment.userId ? 'border-[#727BBA]/50 ring-1 ring-[#727BBA]/20' : 'border-zinc-200/50 dark:border-zinc-850'}`}
                   loading="lazy"
@@ -363,7 +364,7 @@ export default function CommentSection({
                             <span className="absolute -left-0.5 top-0.5 w-[2.5px] h-6 rounded-full bg-[#727BBA]" title="站长" />
                           )}
                           <img
-                            src={reply.avatarUrl}
+                            src={resolveImageUrl(reply.avatarUrl)}
                             alt={reply.nickname}
                             className={`w-8 h-8 rounded-lg bg-zinc-150 dark:bg-zinc-900 border shadow-inner ${reply.userId ? 'border-[#727BBA]/50 ring-1 ring-[#727BBA]/20' : 'border-zinc-200/40 dark:border-zinc-850'}`}
                             loading="lazy"
