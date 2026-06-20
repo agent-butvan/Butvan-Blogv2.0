@@ -329,7 +329,7 @@ export default function CommentSection({
                   )}
 
                   {/* UA 浏览器 & 系统标识 */}
-                  {comment.userAgent && (
+                  {comment.userAgent && !comment.userId && (
                     <span className="flex items-center gap-1.5 opacity-85 text-[9px]">
                       <Monitor size={10} strokeWidth={1.5} />
                       <span>{parseUA(comment.userAgent)}</span>
@@ -444,7 +444,7 @@ export default function CommentSection({
                             )}
 
                             {/* UA 浏览器 & 系统标识 */}
-                            {reply.userAgent && (
+                            {reply.userAgent && !reply.userId && (
                               <span className="flex items-center gap-1 opacity-80 text-[8px] scale-95 origin-right">
                                 <Monitor size={9} strokeWidth={1.5} />
                                 <span>{parseUA(reply.userAgent)}</span>
