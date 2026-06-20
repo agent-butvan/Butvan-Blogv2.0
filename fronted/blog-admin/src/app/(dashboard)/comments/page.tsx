@@ -920,11 +920,11 @@ interface ConfirmPopoverProps {
 const ConfirmPopover = ({ title, description, onConfirm, onCancel }: ConfirmPopoverProps) => {
   return (
     <div 
-      className="absolute bottom-[calc(100%+10px)] left-1/2 -translate-x-1/2 z-50 w-64 bg-white dark:bg-zinc-900 border border-zinc-200 dark:border-zinc-850 p-3.5 rounded-xl shadow-xl flex flex-col gap-3 animate-in fade-in slide-in-from-bottom-2 duration-150 cursor-default"
+      className="absolute bottom-[calc(100%+10px)] left-[-12px] z-50 w-60 bg-white dark:bg-zinc-900 border border-zinc-200 dark:border-zinc-850 p-3.5 rounded-xl shadow-xl flex flex-col gap-3 animate-in fade-in slide-in-from-bottom-2 duration-150 cursor-default"
       onClick={(e) => e.stopPropagation()}
     >
-      {/* 45度旋转的小正方形作为气泡三角 */}
-      <div className="absolute -bottom-1.5 left-1/2 -translate-x-1/2 w-2.5 h-2.5 bg-white dark:bg-zinc-900 border-r border-b border-zinc-200 dark:border-zinc-850 rotate-45"></div>
+      {/* 45度旋转的小正方形作为气泡三角，指向按钮图标 */}
+      <div className="absolute -bottom-1.5 left-5 w-2.5 h-2.5 bg-white dark:bg-zinc-900 border-r border-b border-zinc-200 dark:border-zinc-850 rotate-45"></div>
       
       {/* 警告图标与标题描述 */}
       <div className="flex gap-2 items-start">
