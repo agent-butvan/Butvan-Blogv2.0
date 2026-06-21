@@ -21,6 +21,7 @@ import { cn } from "@heroui/react";
 import { fetchAdminLikes, deleteLikes, LikeItem } from "@/lib/likes-api";
 import { toast } from "@/lib/toast";
 import ConfirmModal from "@/components/common/ConfirmModal";
+import Portal from "@/components/common/Portal";
 
 /**
  * 极轻量级 UserAgent 提取友好设备和系统表示
@@ -95,8 +96,8 @@ export default function LikesPage() {
   const [batchModalOpen, setBatchModalOpen] = useState(false);
   const [deleting, setDeleting] = useState(false);
 
-  // 悬浮展现 UA 的 Tooltip 状态控制
-  const [hoveredUaId, setHoveredUaId] = useState<number | null>(null);
+  // 悬停设备环境 UA 定位及内容控制
+  const [uaTooltipPos, setUaTooltipPos] = useState<{ top: number; left: number; text: string } | null>(null);
 
   const loadLikes = async (pageNum: number, searchKey: string) => {
     setLoading(true);
@@ -418,10 +419,17 @@ export default function LikesPage() {
                       </td>
 
                       {/* 设备环境 */}
-                      <td className="px-4 py-3 relative">
+                      <td className="px-4 py-3">
                         <div
-                          onMouseEnter={() => setHoveredUaId(item.id)}
-                          onMouseLeave={() => setHoveredUaId(null)}
+                          onMouseEnter={(e) => {
+                            const rect = e.currentTarget.getBoundingClientRect();
+                            setUaTooltipPos({
+                              top: rect.top - 8,
+                              left: rect.left + rect.width / 2,
+                              text: item.userAgent
+                            });
+                          }}
+                          onMouseLeave={() => setUaTooltipPos(null)}
                           className="inline-flex items-center gap-1.5 cursor-help"
                         >
                           {uaInfo.deviceType === "mobile" ? (
@@ -436,19 +444,6 @@ export default function LikesPage() {
                             </span>
                           )}
                           <span className="text-[11px] text-zinc-400 dark:text-zinc-500 font-mono">({uaInfo.browser})</span>
-
-                          {/* 悬停详情 Tooltip（升级为圆角毛玻璃微卡片） */}
-                          {hoveredUaId === item.id && (
-                            <div className="absolute left-1/2 -translate-x-1/2 bottom-8 z-50 w-72 bg-zinc-950/95 dark:bg-zinc-950/95 backdrop-blur-md text-zinc-200 text-[10px] p-2.5 rounded-xl break-all font-mono leading-relaxed shadow-xl border border-zinc-800 animate-[fadeIn_0.12s_ease-out] select-text">
-                              <div className="font-bold text-rose-400 mb-1.5 border-b border-zinc-800 pb-1 flex items-center justify-between">
-                                <span>完整 User-Agent</span>
-                                <span className="text-[9px] text-zinc-500 font-normal">设备指纹</span>
-                              </div>
-                              <div className="text-zinc-350 leading-relaxed font-mono">{item.userAgent}</div>
-                              {/* 气泡指向小尖角 */}
-                              <div className="absolute top-full left-1/2 -translate-x-1/2 w-0 h-0 border-[5px] border-transparent border-t-zinc-950/95 dark:border-t-zinc-950/95"></div>
-                            </div>
-                          )}
                         </div>
                       </td>
 
@@ -503,6 +498,29 @@ export default function LikesPage() {
         variant="danger"
         loading={deleting}
       />
+
+      {/* 设备 UA 悬浮详情（借助 Portal 全局无遮挡挂载） */}
+      {uaTooltipPos && (
+        <Portal>
+          <div 
+            style={{ 
+              position: 'fixed', 
+              top: `${uaTooltipPos.top}px`, 
+              left: `${uaTooltipPos.left}px`,
+              transform: 'translate(-50%, -100%)' 
+            }}
+            className="z-50 w-72 bg-zinc-950/95 dark:bg-zinc-955/95 backdrop-blur-md text-zinc-200 text-[10px] p-2.5 rounded-xl break-all font-mono leading-relaxed shadow-xl border border-zinc-850 dark:border-zinc-800 animate-[fadeIn_0.12s_ease-out] pointer-events-none select-text animate-[fadeIn_0.1s_ease-out]"
+          >
+            <div className="font-bold text-rose-400 mb-1.5 border-b border-zinc-800/80 pb-1 flex items-center justify-between">
+              <span>完整 User-Agent</span>
+              <span className="text-[9px] text-zinc-500 font-normal font-sans">设备指纹</span>
+            </div>
+            <div className="text-zinc-350 leading-relaxed font-mono">{uaTooltipPos.text}</div>
+            {/* 气泡指向小尖角 */}
+            <div className="absolute top-full left-1/2 -translate-x-1/2 w-0 h-0 border-[5px] border-transparent border-t-zinc-950/95 dark:border-t-zinc-950/95"></div>
+          </div>
+        </Portal>
+      )}
     </div>
   );
 }
