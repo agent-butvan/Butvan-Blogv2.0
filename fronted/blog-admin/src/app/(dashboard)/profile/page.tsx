@@ -17,6 +17,7 @@ import {
   User,
 } from "lucide-react";
 import { cn } from "@heroui/react";
+import QRCode from "qrcode";
 import apiClient from "@/lib/api";
 import { setUser } from "@/lib/auth";
 import { toast } from "@/lib/toast";
@@ -134,6 +135,7 @@ export default function ProfilePage() {
   const [showTwoFactorModal, setShowTwoFactorModal] = useState(false);
   const [twoFactorStep, setTwoFactorStep] = useState<"enable" | "disable">("enable");
   const [twoFactorSecretData, setTwoFactorSecretData] = useState<{ secret: string; otpauthUri: string } | null>(null);
+  const [qrCodeDataUrl, setQrCodeDataUrl] = useState("");
   const [totpCodeInput, setTotpCodeInput] = useState("");
   const [submittingTotp, setSubmittingTotp] = useState(false);
 
@@ -341,15 +343,20 @@ export default function ProfilePage() {
     }
   };
 
-  /**
-   * 开始配置 2FA
-   */
   const handleStartEnableTwoFactor = async () => {
     setTotpCodeInput("");
     setSubmittingTotp(true);
     try {
       const data = await initTwoFactor();
       setTwoFactorSecretData(data);
+      
+      // 本地生成二维码的 Base64 编码
+      const qrDataUrl = await QRCode.toDataURL(data.otpauthUri, {
+        width: 180,
+        margin: 1,
+      });
+      setQrCodeDataUrl(qrDataUrl);
+
       setTwoFactorStep("enable");
       setShowTwoFactorModal(true);
     } catch (error) {
@@ -767,9 +774,7 @@ export default function ProfilePage() {
                   <div className="flex flex-col items-center justify-center py-2 bg-zinc-50 dark:bg-zinc-900 rounded-lg">
                     {/* eslint-disable-next-line @next/next/no-img-element */}
                     <img
-                      src={`https://api.qrserver.com/v1/create-qr-code/?size=160x160&data=${encodeURIComponent(
-                        twoFactorSecretData.otpauthUri
-                      )}`}
+                      src={qrCodeDataUrl}
                       alt="2FA QR Code"
                       className="h-40 w-40 border border-zinc-200 bg-white p-1 rounded"
                     />
