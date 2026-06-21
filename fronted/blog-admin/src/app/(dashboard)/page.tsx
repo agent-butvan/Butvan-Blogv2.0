@@ -29,6 +29,18 @@ interface DashboardStats {
   }>;
 }
 
+// 经典人文与极客名言语录库
+const INSIGHT_QUOTES = [
+  { text: "你的选择，毫无意义。", author: "TOBY FOX", source: "《DELTARUNE》" },
+  { text: "世界上只有一种真正的英雄主义，那就是在认清生活真相之后依然热爱生活。", author: "罗曼·罗兰", source: "《米开朗基罗传》" },
+  { text: "Stay Hungry, Stay Foolish.", author: "STEVE JOBS", source: "Stanford Speech" },
+  { text: "所有的伟大，都源于一个勇敢的开始。", author: "凯文·凯利", source: "《失控》" },
+  { text: "人生的终极价值在于觉醒和思考的能力，而不只在于生存。", author: "亚里士多德", source: "《形而上学》" },
+  { text: "每一个不曾起舞的日子，都是对生命的辜负。", author: "尼采", source: "《查拉图斯特拉如是说》" },
+  { text: "给时光以生命，而不是给生命以时光。", author: "帕斯卡", source: "《思想录》" },
+  { text: "代码就是诗歌，需要用心去雕琢。", author: "WordPress", source: "Slogan" }
+];
+
 /**
  * 仪表盘主页
  * - 遵循“去卡片化”设计逻辑，全站统一高密度集成控制台画布
@@ -39,6 +51,39 @@ interface DashboardStats {
 export default function DashboardPage() {
   const [stats, setStats] = useState<DashboardStats | null>(null);
   const [loading, setLoading] = useState(true);
+
+  const [formattedDate, setFormattedDate] = useState("");
+  const [greeting, setGreeting] = useState("");
+  const [quote, setQuote] = useState({ text: "你的选择，毫无意义。", author: "TOBY FOX", source: "《DELTARUNE》" });
+
+  useEffect(() => {
+    // 动态生成日期
+    const now = new Date();
+    const month = now.getMonth() + 1;
+    const date = now.getDate();
+    const dayNames = ["星期日", "星期一", "星期二", "星期三", "星期四", "星期五", "星期六"];
+    const dayOfWeek = dayNames[now.getDay()];
+    setFormattedDate(`今天是${month}月${date}日${dayOfWeek}`);
+
+    // 动态生成问候语
+    const hour = now.getHours();
+    let greet = "你好";
+    if (hour >= 5 && hour < 9) greet = "早上好";
+    else if (hour >= 9 && hour < 11.5) greet = "上午好";
+    else if (hour >= 11.5 && hour < 13.5) greet = "中午好";
+    else if (hour >= 13.5 && hour < 18) greet = "下午好";
+    else if (hour >= 18 && hour < 23) greet = "晚上好";
+    else greet = "深夜好";
+    setGreeting(greet);
+
+    // 随机名言语录
+    try {
+      const randomIndex = Math.floor(Math.random() * INSIGHT_QUOTES.length);
+      setQuote(INSIGHT_QUOTES[randomIndex] || INSIGHT_QUOTES[0]);
+    } catch {
+      // 优雅防崩
+    }
+  }, []);
 
   useEffect(() => {
     // 从后端获取统计数据（后端未就绪时使用默认值进行优雅兜底）
@@ -104,19 +149,44 @@ export default function DashboardPage() {
     <div className="space-y-4 font-body text-zinc-800 dark:text-zinc-200 text-left">
       
       {/* 顶部欢迎横幅 (扁平贴合背景) */}
-      <div className="flex flex-col sm:flex-row sm:items-center justify-between pb-3 border-b border-zinc-200 dark:border-zinc-800 gap-2">
-        <div>
-          <h1 className="font-heading text-base font-bold text-zinc-900 dark:text-zinc-100 tracking-tight flex items-center gap-2">
-            <span>控制台主页</span>
-            <span className="w-1.5 h-1.5 rounded-full bg-emerald-500 animate-pulse" title="服务就绪" />
-          </h1>
-          <p className="text-[11px] text-zinc-550 dark:text-zinc-400">欢迎回来管理您的个人博客与创作空间，以下是本站今日运行概要。</p>
+      <div className="flex flex-col md:flex-row md:items-end justify-between pb-3 border-b border-zinc-200 dark:border-zinc-800 gap-4">
+        <div className="flex flex-col gap-0.5 text-left">
+          {/* 日期小字 */}
+          <span className="text-[10px] font-medium text-zinc-400 dark:text-zinc-500 tracking-wider">
+            {formattedDate || "今天是6月21日星期日"}
+          </span>
+          
+          {/* 主欢迎词与金句并排 */}
+          <div className="flex flex-col sm:flex-row sm:items-end gap-3 sm:gap-5 mt-1">
+            {/* 欢迎语 */}
+            <div className="relative pb-1 shrink-0">
+              <h1 className="font-heading text-xl font-bold text-zinc-900 dark:text-zinc-100 tracking-tight leading-none">
+                {greeting || "上午好"}，可梵
+              </h1>
+              {/* 优雅极简的装饰底线 */}
+              <span className="absolute bottom-0 left-0 w-1/2 h-[2px] bg-primary rounded-full" />
+            </div>
+            
+            {/* 文艺金句栏 */}
+            <div className="flex items-center gap-1.5 pl-3 sm:pl-0 sm:border-l border-zinc-200 dark:border-zinc-850 sm:h-4.5 mt-0.5 sm:mt-0">
+              {/* 大双引号装饰图 */}
+              <div className="relative select-none opacity-20 shrink-0 ml-1">
+                <span className="font-serif text-2xl leading-none absolute -top-3.5 -left-1 text-zinc-400 dark:text-zinc-600">“</span>
+              </div>
+              <p className="text-xs text-zinc-600 dark:text-zinc-400 font-normal pl-3 flex items-center flex-wrap gap-1">
+                <span>{quote.text}</span>
+                <span className="text-[10px] text-zinc-400 dark:text-zinc-500 font-medium tracking-wide">
+                  —— {quote.author} {quote.source}
+                </span>
+              </p>
+            </div>
+          </div>
         </div>
         
         {/* 系统实时微件状态 (提高数据功能密集度) */}
-        <div className="flex items-center gap-3 text-[10px] text-zinc-400 dark:text-zinc-500 font-mono bg-white dark:bg-zinc-900 px-2.5 py-1.25 rounded-md border border-zinc-200 dark:border-zinc-800 shadow-xs">
+        <div className="flex items-center gap-3 text-[10px] text-zinc-400 dark:text-zinc-500 font-mono bg-white dark:bg-zinc-900/50 px-2.5 py-1.25 rounded-md border border-zinc-200 dark:border-zinc-800 shadow-xs shrink-0 self-start md:self-end">
           <div className="flex items-center gap-1">
-            <span className="w-1.5 h-1.5 rounded-full bg-emerald-500" />
+            <span className="w-1.5 h-1.5 rounded-full bg-emerald-500 animate-pulse" />
             <span>API: 正常 (14ms)</span>
           </div>
           <div className="h-3 w-px bg-zinc-200 dark:bg-zinc-800" />
