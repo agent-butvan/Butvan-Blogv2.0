@@ -20,4 +20,6 @@ public class LoginDTO {
 
     @NotBlank(message = "登录密码不能为空")
     private String password; // 密码
+
+    private String twoFactorCode; // 2FA 验证码（如果已开启双重验证，则必填）
 }

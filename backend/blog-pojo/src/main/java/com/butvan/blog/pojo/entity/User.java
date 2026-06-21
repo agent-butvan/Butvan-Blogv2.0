@@ -48,6 +48,19 @@ public class User {
     @Column(name = "social_links", columnDefinition = "jsonb")
     private Map<String, Object> socialLinks; // 用户的社交网络主页链接扩展字段（例如 github/twitter）
 
+    @Column(name = "github_id", length = 100)
+    private String githubId; // 绑定的 GitHub 用户唯一标识 ID
+
+    @Column(name = "github_username", length = 100)
+    private String githubUsername; // 绑定的 GitHub 用户名
+
+    @Column(name = "two_factor_secret", length = 100)
+    private String twoFactorSecret; // 双重验证 TOTP 密钥 (Base32)
+
+    @Builder.Default
+    @Column(name = "two_factor_enabled", nullable = false)
+    private Boolean twoFactorEnabled = false; // 是否启用双重验证
+
     @Column(name = "role", nullable = false, length = 20)
     private String role; // 用户的安全角色身份枚举：ADMIN（管理员）| AUTHOR（作者）
 

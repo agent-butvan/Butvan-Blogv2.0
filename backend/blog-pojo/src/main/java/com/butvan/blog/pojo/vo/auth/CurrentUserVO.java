@@ -22,6 +22,8 @@ public class CurrentUserVO implements Serializable {
     private String email; // 绑定邮箱
     private String avatarUrl; // 头像 URL
     private String bio; // 个人简介
+    private String githubUsername; // 绑定的 GitHub 用户名
+    private Boolean twoFactorEnabled; // 是否开启了双重验证
     private String role; // 用户角色
     private String status; // 账号状态
     private LocalDateTime lastLoginAt; // 最近登录时间

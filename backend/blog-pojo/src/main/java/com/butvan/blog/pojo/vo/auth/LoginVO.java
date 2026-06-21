@@ -31,6 +31,8 @@ public class LoginVO implements Serializable {
         private String nickname;  // 用户展示昵称
         private String email;     // 用户绑定邮箱
         private String avatarUrl; // 用户头像URL
+        private String githubUsername; // 绑定的 GitHub 用户名
+        private Boolean twoFactorEnabled; // 是否开启了双重验证
         private String role;      // 用户身份角色：ADMIN | AUTHOR
     }
 }

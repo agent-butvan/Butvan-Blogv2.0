@@ -5,11 +5,15 @@ import com.butvan.blog.pojo.dto.auth.CurrentUserUpdateDTO;
 import com.butvan.blog.pojo.dto.auth.LoginDTO;
 import com.butvan.blog.pojo.dto.auth.PasswordChangeDTO;
 import com.butvan.blog.pojo.dto.auth.RegisterDTO;
+import com.butvan.blog.pojo.dto.auth.TwoFactorEnableDTO;
+import com.butvan.blog.pojo.dto.auth.TwoFactorDisableDTO;
+import com.butvan.blog.pojo.dto.auth.GithubBindDTO;
 import com.butvan.blog.pojo.entity.User;
 import com.butvan.blog.pojo.vo.auth.CurrentUserVO;
 import com.butvan.blog.pojo.vo.auth.LoginVO;
 import com.butvan.blog.service.repository.UserRepository;
 import com.butvan.blog.service.security.JwtUtil;
+import com.butvan.blog.service.security.TotpUtil;
 import com.butvan.blog.service.service.AuthService;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
@@ -17,6 +21,8 @@ import org.springframework.security.crypto.password.PasswordEncoder;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 import java.time.LocalDateTime;
+import java.util.Map;
+import java.util.HashMap;
 
 /**
  * 账号认证与权限业务逻辑层实现类
@@ -106,6 +112,19 @@ public class AuthServiceImpl implements AuthService {
             throw new BusinessException(400, "用户名或密码错误");
         }
 
+        // 3.5. 2FA (双重验证) 安全检查校验
+        if (Boolean.TRUE.equals(user.getTwoFactorEnabled())) {
+            String code = loginDTO.getTwoFactorCode();
+            if (code == null || code.trim().isEmpty()) {
+                log.warn("用户 [{}] 已启用双重验证，但登录未传入验证码，返回 NEED_2FA 拦截", user.getUsername());
+                throw new BusinessException(400, "NEED_2FA");
+            }
+            if (!TotpUtil.verifyCode(user.getTwoFactorSecret(), code)) {
+                log.warn("用户 [{}] 双重验证码输入错误: {}", user.getUsername(), code);
+                throw new BusinessException(400, "双重验证码错误，请重新输入");
+            }
+        }
+
         // 4. 签发 JWT
         String token = jwtUtil.generateToken(user.getUsername());
         user.setLastLoginAt(LocalDateTime.now());
@@ -121,6 +140,8 @@ public class AuthServiceImpl implements AuthService {
                         .nickname(user.getNickname())
                         .email(user.getEmail())
                         .avatarUrl(user.getAvatarUrl())
+                        .githubUsername(user.getGithubUsername())
+                        .twoFactorEnabled(user.getTwoFactorEnabled())
                         .role(user.getRole())
                         .build())
                 .build();
@@ -233,11 +254,74 @@ public class AuthServiceImpl implements AuthService {
                 .email(user.getEmail())
                 .avatarUrl(user.getAvatarUrl())
                 .bio(user.getBio())
+                .githubUsername(user.getGithubUsername())
+                .twoFactorEnabled(user.getTwoFactorEnabled())
                 .role(user.getRole())
                 .status(user.getStatus())
                 .lastLoginAt(user.getLastLoginAt())
                 .createdAt(user.getCreatedAt())
                 .updatedAt(user.getUpdatedAt())
                 .build();
+    }
+
+    @Override
+    public Map<String, String> initTwoFactor(String username) {
+        User user = findActiveUser(username);
+        String secret = TotpUtil.generateSecret();
+        String otpauthUri = String.format("otpauth://totp/ButvanBlog:%s?secret=%s&issuer=ButvanBlog", user.getUsername(), secret);
+
+        Map<String, String> result = new HashMap<>();
+        result.put("secret", secret);
+        result.put("otpauthUri", otpauthUri);
+        return result;
+    }
+
+    @Override
+    @Transactional
+    public void enableTwoFactor(String username, TwoFactorEnableDTO dto) {
+        User user = findActiveUser(username);
+        if (!TotpUtil.verifyCode(dto.getSecret(), dto.getCode())) {
+            throw new BusinessException(400, "2FA验证码校验失败，请重新扫码验证");
+        }
+        user.setTwoFactorSecret(dto.getSecret());
+        user.setTwoFactorEnabled(true);
+        userRepository.save(user);
+        log.info("用户 [{}] 成功开启双重验证 2FA", username);
+    }
+
+    @Override
+    @Transactional
+    public void disableTwoFactor(String username, TwoFactorDisableDTO dto) {
+        User user = findActiveUser(username);
+        if (!Boolean.TRUE.equals(user.getTwoFactorEnabled())) {
+            throw new BusinessException(400, "当前未开启双重验证，无需关闭");
+        }
+        if (!TotpUtil.verifyCode(user.getTwoFactorSecret(), dto.getCode())) {
+            throw new BusinessException(400, "2FA验证码校验失败，无法关闭双重验证");
+        }
+        user.setTwoFactorSecret(null);
+        user.setTwoFactorEnabled(false);
+        userRepository.save(user);
+        log.info("用户 [{}] 成功关闭双重验证 2FA", username);
+    }
+
+    @Override
+    @Transactional
+    public void bindGithub(String username, GithubBindDTO dto) {
+        User user = findActiveUser(username);
+        user.setGithubId(dto.getGithubId());
+        user.setGithubUsername(dto.getGithubUsername());
+        userRepository.save(user);
+        log.info("用户 [{}] 成功绑定 GitHub 账号 [{} ({})]", username, dto.getGithubUsername(), dto.getGithubId());
+    }
+
+    @Override
+    @Transactional
+    public void unbindGithub(String username) {
+        User user = findActiveUser(username);
+        user.setGithubId(null);
+        user.setGithubUsername(null);
+        userRepository.save(user);
+        log.info("用户 [{}] 成功解绑 GitHub 账号", username);
     }
 }

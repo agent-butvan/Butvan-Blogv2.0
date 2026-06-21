@@ -4,8 +4,12 @@ import com.butvan.blog.pojo.dto.auth.LoginDTO;
 import com.butvan.blog.pojo.dto.auth.CurrentUserUpdateDTO;
 import com.butvan.blog.pojo.dto.auth.PasswordChangeDTO;
 import com.butvan.blog.pojo.dto.auth.RegisterDTO;
+import com.butvan.blog.pojo.dto.auth.TwoFactorEnableDTO;
+import com.butvan.blog.pojo.dto.auth.TwoFactorDisableDTO;
+import com.butvan.blog.pojo.dto.auth.GithubBindDTO;
 import com.butvan.blog.pojo.vo.auth.CurrentUserVO;
 import com.butvan.blog.pojo.vo.auth.LoginVO;
+import java.util.Map;
 
 /**
  * 账号认证与权限业务逻辑层接口
@@ -51,4 +55,43 @@ public interface AuthService {
      * @param dto      密码修改请求
      */
     void changePassword(String username, PasswordChangeDTO dto);
+
+    /**
+     * 初始化双重认证 (2FA) 配置
+     *
+     * @param username 当前登录用户名
+     * @return 包含 secret 密钥与 otpauthUri 字符串的键值对 Map
+     */
+    Map<String, String> initTwoFactor(String username);
+
+    /**
+     * 验证并启用双重认证 (2FA)
+     *
+     * @param username 当前登录用户名
+     * @param dto      2FA 启用参数表单
+     */
+    void enableTwoFactor(String username, TwoFactorEnableDTO dto);
+
+    /**
+     * 校验并关闭双重认证 (2FA)
+     *
+     * @param username 当前登录用户名
+     * @param dto      2FA 关闭参数表单
+     */
+    void disableTwoFactor(String username, TwoFactorDisableDTO dto);
+
+    /**
+     * 绑定 GitHub 账号
+     *
+     * @param username 当前登录用户名
+     * @param dto      GitHub 绑定参数表单
+     */
+    void bindGithub(String username, GithubBindDTO dto);
+
+    /**
+     * 解绑 GitHub 账号
+     *
+     * @param username 当前登录用户名
+     */
+    void unbindGithub(String username);
 }

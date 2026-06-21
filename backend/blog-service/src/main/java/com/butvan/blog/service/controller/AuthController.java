@@ -5,6 +5,9 @@ import com.butvan.blog.pojo.dto.auth.CurrentUserUpdateDTO;
 import com.butvan.blog.pojo.dto.auth.LoginDTO;
 import com.butvan.blog.pojo.dto.auth.PasswordChangeDTO;
 import com.butvan.blog.pojo.dto.auth.RegisterDTO;
+import com.butvan.blog.pojo.dto.auth.TwoFactorEnableDTO;
+import com.butvan.blog.pojo.dto.auth.TwoFactorDisableDTO;
+import com.butvan.blog.pojo.dto.auth.GithubBindDTO;
 import com.butvan.blog.pojo.vo.auth.CurrentUserVO;
 import com.butvan.blog.pojo.vo.auth.LoginVO;
 import com.butvan.blog.service.service.AuthService;
@@ -13,6 +16,7 @@ import lombok.extern.slf4j.Slf4j;
 import org.springframework.validation.annotation.Validated;
 import org.springframework.web.bind.annotation.*;
 import java.security.Principal;
+import java.util.Map;
 
 /**
  * 账号认证与安全控制层 RESTful 接口控制器
@@ -92,6 +96,65 @@ public class AuthController {
             Principal principal
     ) {
         authService.changePassword(principal.getName(), dto);
+        return Result.success();
+    }
+
+    /**
+     * 初始化双重认证 (2FA)，下发密钥和扫码 URI
+     */
+    @GetMapping("/me/2fa/init")
+    public Result<Map<String, String>> initTwoFactor(Principal principal) {
+        log.info("用户 [{}] 请求初始化双重验证 2FA", principal.getName());
+        Map<String, String> data = authService.initTwoFactor(principal.getName());
+        return Result.success(data);
+    }
+
+    /**
+     * 验证并启用双重认证 (2FA)
+     */
+    @PostMapping("/me/2fa/enable")
+    public Result<Void> enableTwoFactor(
+            @Validated @RequestBody TwoFactorEnableDTO dto,
+            Principal principal
+    ) {
+        log.info("用户 [{}] 验证并启用双重验证 2FA", principal.getName());
+        authService.enableTwoFactor(principal.getName(), dto);
+        return Result.success();
+    }
+
+    /**
+     * 校验并关闭双重认证 (2FA)
+     */
+    @PostMapping("/me/2fa/disable")
+    public Result<Void> disableTwoFactor(
+            @Validated @RequestBody TwoFactorDisableDTO dto,
+            Principal principal
+    ) {
+        log.info("用户 [{}] 请求停用双重验证 2FA", principal.getName());
+        authService.disableTwoFactor(principal.getName(), dto);
+        return Result.success();
+    }
+
+    /**
+     * 绑定 GitHub 账号
+     */
+    @PostMapping("/me/github/bind")
+    public Result<Void> bindGithub(
+            @Validated @RequestBody GithubBindDTO dto,
+            Principal principal
+    ) {
+        log.info("用户 [{}] 绑定 GitHub 账号: {}", principal.getName(), dto.getGithubUsername());
+        authService.bindGithub(principal.getName(), dto);
+        return Result.success();
+    }
+
+    /**
+     * 解绑 GitHub 账号
+     */
+    @PostMapping("/me/github/unbind")
+    public Result<Void> unbindGithub(Principal principal) {
+        log.info("用户 [{}] 解绑 GitHub 账号", principal.getName());
+        authService.unbindGithub(principal.getName());
         return Result.success();
     }
 }
