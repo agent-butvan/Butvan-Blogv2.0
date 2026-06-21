@@ -333,6 +333,7 @@ export default function NavigationFormModal({
                           return (
                             <ListBoxItem
                               key={key}
+                              id={key}
                               textValue={opt.label}
                               className="flex items-center gap-2 px-3 py-1.5 text-sm text-zinc-900 dark:text-zinc-200 hover:bg-zinc-100 dark:hover:bg-zinc-900 cursor-pointer outline-none transition-colors rounded-md mx-1 data-[focused]:bg-zinc-100 dark:data-[focused]:bg-zinc-900"
                             >
@@ -351,6 +352,7 @@ export default function NavigationFormModal({
                         })}
                         <ListBoxItem
                           key="CUSTOM_INPUT"
+                          id="CUSTOM_INPUT"
                           textValue="自定义图标名称"
                           className="flex items-center gap-2 px-3 py-1.5 text-sm text-zinc-900 dark:text-zinc-200 hover:bg-zinc-100 dark:hover:bg-zinc-900 cursor-pointer outline-none border-t border-zinc-100 dark:border-zinc-800 mt-1 pt-2 transition-colors rounded-md mx-1 data-[focused]:bg-zinc-100 dark:data-[focused]:bg-zinc-900"
                         >
