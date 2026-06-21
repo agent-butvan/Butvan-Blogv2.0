@@ -19,7 +19,6 @@ export default function LoginPage() {
   const [password, setPassword] = useState("");
   const [showPassword, setShowPassword] = useState(false);
   const [twoFactorCode, setTwoFactorCode] = useState("");
-  const [require2fa, setRequire2fa] = useState(false);
   const [submitting, setSubmitting] = useState(false);
   const [errorMsg, setErrorMsg] = useState<string | null>(null);
   const [rememberMe, setRememberMe] = useState(false);
@@ -64,23 +63,17 @@ export default function LoginPage() {
       return;
     }
 
-    if (require2fa && !twoFactorCode.trim()) {
-      setErrorMsg("请输入2FA验证码");
-      return;
-    }
-
     setSubmitting(true);
     try {
       const result = await login({
         username: username.trim(),
         password,
-        twoFactorCode: require2fa ? twoFactorCode.trim() : undefined,
+        twoFactorCode: twoFactorCode.trim() || undefined,
       });
       if (result.success) {
         router.push("/");
       } else {
         if (result.error === "NEED_2FA") {
-          setRequire2fa(true);
           setErrorMsg("该账号已开启双重验证，请输入2FA验证码");
         } else {
           setErrorMsg(result.error || "账号或密码错误");
@@ -230,28 +223,25 @@ export default function LoginPage() {
             </div>
 
             {/* 2FA 双重验证码 */}
-            {require2fa && (
-              <div className="animate-in fade-in slide-in-from-top-2 duration-200">
-                <label className="mb-1 block text-[10px] font-bold text-zinc-500 dark:text-zinc-400 uppercase tracking-widest">
-                  双重验证码 (2FA)
-                </label>
-                <div className="relative">
-                  <span className="absolute left-3 top-1/2 -translate-y-1/2 text-zinc-400 dark:text-zinc-500 font-bold text-xs select-none">
-                    #
-                  </span>
-                  <input
-                    type="text"
-                    value={twoFactorCode}
-                    onChange={(e) => setTwoFactorCode(e.target.value.replace(/\D/g, "").slice(0, 6))}
-                    placeholder="请输入 6 位验证码"
-                    required
-                    maxLength={6}
-                    autoComplete="one-time-code"
-                    className="w-full rounded border border-zinc-200 dark:border-zinc-800 bg-zinc-50 dark:bg-zinc-950 pl-9 pr-4 py-2 text-xs text-zinc-800 dark:text-zinc-200 placeholder-zinc-400 dark:placeholder-zinc-600 outline-none transition-colors focus:border-primary focus:bg-white dark:focus:bg-zinc-900"
-                  />
-                </div>
+            <div>
+              <label className="mb-1 block text-[10px] font-bold text-zinc-500 dark:text-zinc-400 uppercase tracking-widest">
+                双重验证码 (2FA)
+              </label>
+              <div className="relative">
+                <span className="absolute left-3 top-1/2 -translate-y-1/2 text-zinc-400 dark:text-zinc-500 font-bold text-xs select-none">
+                  #
+                </span>
+                <input
+                  type="text"
+                  value={twoFactorCode}
+                  onChange={(e) => setTwoFactorCode(e.target.value.replace(/\D/g, "").slice(0, 6))}
+                  placeholder="未开启双重验证时请留空"
+                  maxLength={6}
+                  autoComplete="one-time-code"
+                  className="w-full rounded border border-zinc-200 dark:border-zinc-800 bg-zinc-50 dark:bg-zinc-950 pl-9 pr-4 py-2 text-xs text-zinc-800 dark:text-zinc-200 placeholder-zinc-400 dark:placeholder-zinc-600 outline-none transition-colors focus:border-primary focus:bg-white dark:focus:bg-zinc-900"
+                />
               </div>
-            )}
+            </div>
 
             {/* 选项组：记住我 */}
             <div className="flex items-center justify-between pt-1">
