@@ -48,3 +48,39 @@ export async function updateCurrentUserProfile(payload: CurrentUserUpdatePayload
 export async function changeCurrentUserPassword(payload: PasswordChangePayload): Promise<void> {
   await apiClient.put<ApiResponse<void>>("/auth/me/password", payload);
 }
+
+/**
+ * 初始化双重验证 (2FA)
+ */
+export async function initTwoFactor(): Promise<{ secret: string; otpauthUri: string }> {
+  const res = await apiClient.get<ApiResponse<{ secret: string; otpauthUri: string }>>("/auth/me/2fa/init");
+  return res.data.data;
+}
+
+/**
+ * 启用双重验证 (2FA)
+ */
+export async function enableTwoFactor(payload: { secret: string; code: string }): Promise<void> {
+  await apiClient.post<ApiResponse<void>>("/auth/me/2fa/enable", payload);
+}
+
+/**
+ * 停用双重验证 (2FA)
+ */
+export async function disableTwoFactor(payload: { code: string }): Promise<void> {
+  await apiClient.post<ApiResponse<void>>("/auth/me/2fa/disable", payload);
+}
+
+/**
+ * 绑定 GitHub 账号
+ */
+export async function bindGithub(payload: { githubId: string; githubUsername: string }): Promise<void> {
+  await apiClient.post<ApiResponse<void>>("/auth/me/github/bind", payload);
+}
+
+/**
+ * 解绑 GitHub 账号
+ */
+export async function unbindGithub(): Promise<void> {
+  await apiClient.post<ApiResponse<void>>("/auth/me/github/unbind");
+}

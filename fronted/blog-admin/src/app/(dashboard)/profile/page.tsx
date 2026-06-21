@@ -24,6 +24,11 @@ import {
   changeCurrentUserPassword,
   fetchCurrentUser,
   updateCurrentUserProfile,
+  initTwoFactor,
+  enableTwoFactor,
+  disableTwoFactor,
+  bindGithub,
+  unbindGithub,
   type CurrentUser,
 } from "@/lib/account-api";
 
@@ -120,18 +125,34 @@ export default function ProfilePage() {
   const [changingPassword, setChangingPassword] = useState(false);
   const [uploadingAvatar, setUploadingAvatar] = useState(false);
 
+  // 模拟 GitHub 绑定弹窗状态
+  const [showGithubModal, setShowGithubModal] = useState(false);
+  const [ghUsernameInput, setGhUsernameInput] = useState("");
+  const [bindingGh, setBindingGh] = useState(false);
+
+  // 2FA 弹窗状态
+  const [showTwoFactorModal, setShowTwoFactorModal] = useState(false);
+  const [twoFactorStep, setTwoFactorStep] = useState<"enable" | "disable">("enable");
+  const [twoFactorSecretData, setTwoFactorSecretData] = useState<{ secret: string; otpauthUri: string } | null>(null);
+  const [totpCodeInput, setTotpCodeInput] = useState("");
+  const [submittingTotp, setSubmittingTotp] = useState(false);
+
+  const reloadUserData = async () => {
+    const user = await fetchCurrentUser();
+    const nextForm = toProfileForm(user);
+    setCurrentUser(user);
+    setInitialForm(nextForm);
+    setProfileForm(nextForm);
+    setUser(user);
+  };
+
   useEffect(() => {
     /**
      * 初始化个人中心数据
      */
     const loadCurrentUser = async () => {
       try {
-        const user = await fetchCurrentUser();
-        const nextForm = toProfileForm(user);
-        setCurrentUser(user);
-        setInitialForm(nextForm);
-        setProfileForm(nextForm);
-        setUser(user);
+        await reloadUserData();
       } catch (error) {
         console.error("获取当前账号资料失败", error);
         toast.error("获取个人中心资料失败，请稍后重试");
@@ -267,6 +288,120 @@ export default function ProfilePage() {
       toast.error(apiError.response?.data?.msg || "密码修改失败，请检查当前密码");
     } finally {
       setChangingPassword(false);
+    }
+  };
+
+  /**
+   * 解绑 GitHub 账号
+   */
+  const handleUnbindGithub = async () => {
+    if (!confirm("确认解除与 GitHub 账号的绑定吗？")) return;
+    try {
+      await unbindGithub();
+      toast.success("GitHub 解绑成功");
+      await reloadUserData();
+    } catch (error) {
+      console.error("解绑 GitHub 失败", error);
+      toast.error("解绑 GitHub 失败，请稍后重试");
+    }
+  };
+
+  /**
+   * 开始绑定 GitHub （开启弹窗）
+   */
+  const handleStartBindGithub = () => {
+    setGhUsernameInput("");
+    setShowGithubModal(true);
+  };
+
+  /**
+   * 确认绑定 GitHub （模拟授权）
+   */
+  const handleConfirmBindGithub = async (e: FormEvent) => {
+    e.preventDefault();
+    if (!ghUsernameInput.trim()) {
+      toast.warning("请输入 GitHub 用户名");
+      return;
+    }
+    setBindingGh(true);
+    try {
+      const githubId = "gh-" + Math.floor(Math.random() * 8999999 + 1000000);
+      await bindGithub({
+        githubId,
+        githubUsername: ghUsernameInput.trim(),
+      });
+      toast.success(`成功绑定 GitHub 账号：@${ghUsernameInput}`);
+      setShowGithubModal(false);
+      await reloadUserData();
+    } catch (error) {
+      console.error("绑定 GitHub 失败", error);
+      toast.error("绑定 GitHub 失败，请稍后重试");
+    } finally {
+      setBindingGh(false);
+    }
+  };
+
+  /**
+   * 开始配置 2FA
+   */
+  const handleStartEnableTwoFactor = async () => {
+    setTotpCodeInput("");
+    setSubmittingTotp(true);
+    try {
+      const data = await initTwoFactor();
+      setTwoFactorSecretData(data);
+      setTwoFactorStep("enable");
+      setShowTwoFactorModal(true);
+    } catch (error) {
+      console.error("初始化 2FA 失败", error);
+      toast.error("初始化双重校验失败，请稍后重试");
+    } finally {
+      setSubmittingTotp(false);
+    }
+  };
+
+  /**
+   * 开始关闭 2FA
+   */
+  const handleStartDisableTwoFactor = () => {
+    setTotpCodeInput("");
+    setTwoFactorStep("disable");
+    setShowTwoFactorModal(true);
+  };
+
+  /**
+   * 确认启用或停用 2FA
+   */
+  const handleConfirmTwoFactor = async (e: FormEvent) => {
+    e.preventDefault();
+    if (totpCodeInput.length !== 6) {
+      toast.warning("请输入 6 位数字验证码");
+      return;
+    }
+
+    setSubmittingTotp(true);
+    try {
+      if (twoFactorStep === "enable") {
+        if (!twoFactorSecretData) return;
+        await enableTwoFactor({
+          secret: twoFactorSecretData.secret,
+          code: totpCodeInput,
+        });
+        toast.success("成功启用双重验证！下次登录时需校验验证码。");
+      } else {
+        await disableTwoFactor({
+          code: totpCodeInput,
+        });
+        toast.success("双重验证已关闭");
+      }
+      setShowTwoFactorModal(false);
+      setTwoFactorSecretData(null);
+      await reloadUserData();
+    } catch (error: unknown) {
+      const apiError = error as { response?: { data?: { msg?: string } } };
+      toast.error(apiError.response?.data?.msg || "校验失败，请确保验证码正确且未过期");
+    } finally {
+      setSubmittingTotp(false);
     }
   };
 
@@ -432,38 +567,261 @@ export default function ProfilePage() {
           )}
 
           {activeTab === "bindings" && (
-            <div className="flex flex-col gap-4 p-5">
-              <div className="grid grid-cols-1 gap-3 md:grid-cols-2">
-                <BindingItem icon={<Mail size={15} />} title="电子邮箱" value={profileForm.email || "未绑定"} active={!!profileForm.email} />
-                <BindingItem icon={<Smartphone size={15} />} title="手机号码" value="暂未绑定" active={false} />
-                <BindingItem icon={<GitBranch size={15} />} title="GitHub" value="暂未绑定" active={false} />
-                <BindingItem icon={<ShieldCheck size={15} />} title="双重验证" value="未开启" active={false} />
+            <div className="flex flex-col gap-5 p-5">
+              {/* 绑定状态卡片组 */}
+              <div className="grid grid-cols-1 gap-3 md:grid-cols-3">
+                <BindingItem
+                  icon={<Mail size={15} />}
+                  title="电子邮箱"
+                  value={profileForm.email || "未绑定"}
+                  active={!!profileForm.email}
+                />
+                <BindingItem
+                  icon={<GitBranch size={15} />}
+                  title="GitHub"
+                  value={currentUser?.githubUsername ? `@${currentUser.githubUsername}` : "暂未绑定"}
+                  active={!!currentUser?.githubUsername}
+                />
+                <BindingItem
+                  icon={<ShieldCheck size={15} />}
+                  title="双重验证 (2FA)"
+                  value={currentUser?.twoFactorEnabled ? "已开启安全保护" : "未开启"}
+                  active={!!currentUser?.twoFactorEnabled}
+                />
               </div>
-              <form onSubmit={handleSaveProfile} className="grid grid-cols-1 gap-3 border-t border-zinc-200 pt-4 dark:border-zinc-800 md:grid-cols-[1fr_auto]">
-                <Field label="绑定邮箱">
-                  <input
-                    type="email"
-                    value={profileForm.email}
-                    onChange={(event) => updateProfileField("email", event.target.value)}
-                    className="h-10 rounded-lg border border-zinc-200 bg-white px-3 text-sm outline-none transition focus:border-primary dark:border-zinc-800 dark:bg-zinc-900"
-                    placeholder="name@example.com"
-                  />
-                </Field>
-                <div className="flex items-end">
-                  <button
-                    type="submit"
-                    disabled={!isProfileDirty || savingProfile}
-                    className="inline-flex h-10 w-full items-center justify-center gap-2 rounded-lg bg-primary px-4 text-xs font-bold text-white transition hover:bg-primary/90 disabled:cursor-not-allowed disabled:opacity-50 md:w-auto"
-                  >
-                    {savingProfile ? <Loader2 size={14} className="animate-spin" /> : <CheckCircle2 size={14} />}
-                    保存绑定
-                  </button>
+
+              {/* 邮箱管理区块 */}
+              <div className="rounded-lg border border-zinc-200 p-4 dark:border-zinc-800">
+                <h3 className="mb-2 text-xs font-bold text-zinc-950 dark:text-zinc-50">邮箱绑定管理</h3>
+                <form onSubmit={handleSaveProfile} className="grid grid-cols-1 gap-3 md:grid-cols-[1fr_auto]">
+                  <Field label="修改或绑定邮箱">
+                    <input
+                      type="email"
+                      value={profileForm.email}
+                      onChange={(event) => updateProfileField("email", event.target.value)}
+                      className="h-10 rounded-lg border border-zinc-200 bg-white px-3 text-sm outline-none transition focus:border-primary dark:border-zinc-800 dark:bg-zinc-900"
+                      placeholder="name@example.com"
+                    />
+                  </Field>
+                  <div className="flex items-end gap-2">
+                    {profileForm.email && (
+                      <button
+                        type="button"
+                        onClick={() => {
+                          if (confirm("确定要解除邮箱绑定吗？")) {
+                            updateProfileField("email", "");
+                            setTimeout(() => handleSaveProfile(), 0);
+                          }
+                        }}
+                        className="inline-flex h-10 w-full items-center justify-center rounded-lg border border-zinc-200 px-4 text-xs font-bold text-zinc-600 transition hover:bg-zinc-50 dark:border-zinc-800 dark:text-zinc-400 dark:hover:bg-zinc-900 md:w-auto"
+                      >
+                        解绑
+                      </button>
+                    )}
+                    <button
+                      type="submit"
+                      disabled={!isProfileDirty || savingProfile}
+                      className="inline-flex h-10 w-full items-center justify-center gap-2 rounded-lg bg-primary px-4 text-xs font-bold text-white transition hover:bg-primary/90 disabled:cursor-not-allowed disabled:opacity-50 md:w-auto"
+                    >
+                      {savingProfile ? <Loader2 size={14} className="animate-spin" /> : <CheckCircle2 size={14} />}
+                      {initialForm.email ? "保存修改" : "立即绑定"}
+                    </button>
+                  </div>
+                </form>
+              </div>
+
+              {/* GitHub 与 2FA 绑定管理区块 */}
+              <div className="grid grid-cols-1 gap-4 md:grid-cols-2">
+                {/* GitHub 绑定 */}
+                <div className="flex flex-col justify-between rounded-lg border border-zinc-200 p-4 dark:border-zinc-800">
+                  <div>
+                    <h3 className="text-xs font-bold text-zinc-950 dark:text-zinc-50">GitHub 账号绑定</h3>
+                    <p className="mt-1 text-[11px] text-zinc-500 dark:text-zinc-500">
+                      绑定后可用于社交化链接展示及后续可能的第三方快速登录。
+                    </p>
+                  </div>
+                  <div className="mt-4 flex items-center justify-between border-t border-zinc-100 pt-3 dark:border-zinc-900">
+                    <span className="text-[11px] text-zinc-500 dark:text-zinc-400">
+                      {currentUser?.githubUsername ? (
+                        <span className="text-emerald-600 dark:text-emerald-400 font-semibold">
+                          已绑定: @{currentUser.githubUsername}
+                        </span>
+                      ) : (
+                        "当前未绑定 GitHub 账号"
+                      )}
+                    </span>
+                    {currentUser?.githubUsername ? (
+                      <button
+                        onClick={handleUnbindGithub}
+                        className="rounded bg-red-50 px-2.5 py-1.5 text-[11px] font-bold text-red-600 transition hover:bg-red-100 dark:bg-red-950/20 dark:text-red-400"
+                      >
+                        解除绑定
+                      </button>
+                    ) : (
+                      <button
+                        onClick={handleStartBindGithub}
+                        className="rounded bg-zinc-950 px-2.5 py-1.5 text-[11px] font-bold text-white transition hover:bg-zinc-800 dark:bg-zinc-100 dark:text-zinc-950 dark:hover:bg-white animate-pulse"
+                      >
+                        立即绑定
+                      </button>
+                    )}
+                  </div>
                 </div>
-              </form>
+
+                {/* 2FA 绑定 */}
+                <div className="flex flex-col justify-between rounded-lg border border-zinc-200 p-4 dark:border-zinc-800">
+                  <div>
+                    <h3 className="text-xs font-bold text-zinc-950 dark:text-zinc-50">双重身份验证 (2FA)</h3>
+                    <p className="mt-1 text-[11px] text-zinc-500 dark:text-zinc-500">
+                      启用后，登录管理后台系统时需要输入身份验证器 App 生成的 6 位动态验证码。
+                    </p>
+                  </div>
+                  <div className="mt-4 flex items-center justify-between border-t border-zinc-100 pt-3 dark:border-zinc-900">
+                    <span className="text-[11px] text-zinc-500 dark:text-zinc-400">
+                      {currentUser?.twoFactorEnabled ? (
+                        <span className="text-emerald-600 dark:text-emerald-400 font-semibold">已启用 2FA 保护</span>
+                      ) : (
+                        "当前未开启双重验证"
+                      )}
+                    </span>
+                    {currentUser?.twoFactorEnabled ? (
+                      <button
+                        onClick={handleStartDisableTwoFactor}
+                        className="rounded bg-red-50 px-2.5 py-1.5 text-[11px] font-bold text-red-600 transition hover:bg-red-100 dark:bg-red-950/20 dark:text-red-400"
+                      >
+                        停用 2FA
+                      </button>
+                    ) : (
+                      <button
+                        onClick={handleStartEnableTwoFactor}
+                        className="rounded bg-primary px-2.5 py-1.5 text-[11px] font-bold text-white transition hover:bg-primary/90 animate-pulse"
+                      >
+                        开启验证
+                      </button>
+                    )}
+                  </div>
+                </div>
+              </div>
             </div>
           )}
         </section>
       </div>
+
+      {/* 模拟 GitHub OAuth 绑定 Modal */}
+      {showGithubModal && (
+        <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/60 p-4 backdrop-blur-xs select-none animate-in fade-in duration-200">
+          <div className="relative w-full max-w-sm rounded-xl border border-zinc-200 bg-white p-6 shadow-xl dark:border-zinc-800 dark:bg-zinc-950 text-left">
+            <h3 className="font-heading text-sm font-bold text-zinc-950 dark:text-zinc-50">GitHub 账号授权模拟</h3>
+            <p className="mt-1 text-xs text-zinc-500 dark:text-zinc-500 leading-relaxed">
+              这里模拟第三方 OAuth 授权确认。请输入您的 GitHub 用户名以完成绑定：
+            </p>
+            <form onSubmit={handleConfirmBindGithub} className="mt-4 space-y-4">
+              <Field label="GitHub 用户名">
+                <input
+                  type="text"
+                  value={ghUsernameInput}
+                  onChange={(e) => setGhUsernameInput(e.target.value)}
+                  className="h-10 w-full rounded-lg border border-zinc-200 bg-white px-3 text-sm outline-none transition focus:border-primary dark:border-zinc-800 dark:bg-zinc-900"
+                  placeholder="例如: octocat"
+                  required
+                  autoFocus
+                />
+              </Field>
+              <div className="flex justify-end gap-2 border-t border-zinc-100 pt-4 dark:border-zinc-900">
+                <button
+                  type="button"
+                  onClick={() => setShowGithubModal(false)}
+                  className="rounded-lg border border-zinc-200 px-4 py-2 text-xs font-bold text-zinc-600 transition hover:bg-zinc-50 dark:border-zinc-800 dark:text-zinc-400 dark:hover:bg-zinc-900"
+                >
+                  取消
+                </button>
+                <button
+                  type="submit"
+                  disabled={bindingGh}
+                  className="rounded-lg bg-zinc-950 px-4 py-2 text-xs font-bold text-white transition hover:bg-zinc-800 disabled:opacity-50 dark:bg-zinc-100 dark:text-zinc-950 dark:hover:bg-white"
+                >
+                  {bindingGh ? "绑定中..." : "授权并绑定"}
+                </button>
+              </div>
+            </form>
+          </div>
+        </div>
+      )}
+
+      {/* 2FA 启用/停用验证 Modal */}
+      {showTwoFactorModal && (
+        <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/60 p-4 backdrop-blur-xs select-none animate-in fade-in duration-200">
+          <div className="relative w-full max-w-md rounded-xl border border-zinc-200 bg-white p-6 shadow-xl dark:border-zinc-800 dark:bg-zinc-950 text-left">
+            <h3 className="font-heading text-sm font-bold text-zinc-950 dark:text-zinc-50">
+              {twoFactorStep === "enable" ? "启用双重验证 (2FA)" : "停用双重验证 (2FA)"}
+            </h3>
+            
+            <form onSubmit={handleConfirmTwoFactor} className="mt-4 space-y-4">
+              {twoFactorStep === "enable" && twoFactorSecretData && (
+                <div className="space-y-3">
+                  <p className="text-xs text-zinc-500 dark:text-zinc-500 leading-relaxed">
+                    请使用身份验证器 App（如 Google Authenticator）扫描下方二维码，或手动输入下方密钥：
+                  </p>
+                  
+                  {/* 二完码图片 */}
+                  <div className="flex flex-col items-center justify-center py-2 bg-zinc-50 dark:bg-zinc-900 rounded-lg">
+                    {/* eslint-disable-next-line @next/next/no-img-element */}
+                    <img
+                      src={`https://api.qrserver.com/v1/create-qr-code/?size=160x160&data=${encodeURIComponent(
+                        twoFactorSecretData.otpauthUri
+                      )}`}
+                      alt="2FA QR Code"
+                      className="h-40 w-40 border border-zinc-200 bg-white p-1 rounded"
+                    />
+                    <div className="mt-2 select-all font-mono text-[10px] text-zinc-600 dark:text-zinc-400 bg-zinc-200/50 dark:bg-zinc-800/80 px-2 py-0.5 rounded">
+                      密钥: {twoFactorSecretData.secret}
+                    </div>
+                  </div>
+                </div>
+              )}
+
+              {twoFactorStep === "disable" && (
+                <p className="text-xs text-zinc-500 dark:text-zinc-500 leading-relaxed">
+                  为了您的账户安全，停用双重校验前需要进行身份验证。请输入您手机中生成的 6 位验证码：
+                </p>
+              )}
+
+              <Field label="6 位身份验证码">
+                <input
+                  type="text"
+                  value={totpCodeInput}
+                  onChange={(e) => setTotpCodeInput(e.target.value.replace(/\D/g, "").slice(0, 6))}
+                  className="h-10 w-full rounded-lg border border-zinc-200 bg-white px-3 text-sm outline-none transition focus:border-primary dark:border-zinc-800 dark:bg-zinc-900 text-center font-mono tracking-widest text-base"
+                  placeholder="000000"
+                  required
+                  maxLength={6}
+                  autoFocus
+                />
+              </Field>
+
+              <div className="flex justify-end gap-2 border-t border-zinc-100 pt-4 dark:border-zinc-900">
+                <button
+                  type="button"
+                  onClick={() => {
+                    setShowTwoFactorModal(false);
+                    setTwoFactorSecretData(null);
+                  }}
+                  className="rounded-lg border border-zinc-200 px-4 py-2 text-xs font-bold text-zinc-600 transition hover:bg-zinc-50 dark:border-zinc-800 dark:text-zinc-400 dark:hover:bg-zinc-900"
+                >
+                  取消
+                </button>
+                <button
+                  type="submit"
+                  disabled={submittingTotp}
+                  className="rounded-lg bg-primary px-4 py-2 text-xs font-bold text-white transition hover:bg-primary/90 disabled:opacity-50"
+                >
+                  {submittingTotp ? "验证中..." : "确认提交"}
+                </button>
+              </div>
+            </form>
+          </div>
+        </div>
+      )}
     </div>
   );
 }

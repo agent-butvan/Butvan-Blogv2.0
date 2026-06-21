@@ -8,6 +8,7 @@ import type { AuthUser } from "@/lib/auth";
 export interface LoginDTO {
   username: string;
   password: string;
+  twoFactorCode?: string;
 }
 
 /** 注册请求体 */
