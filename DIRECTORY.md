@@ -108,6 +108,9 @@ Butvan Blog2.0/                                    # 📦 项目根目录
 │   │
 │   └── blog-admin/                                #   管理后台端（内容管理）
 │       ├── public/                                #     静态资源
+│       │   ├── topography.svg                     #       地形图交互背景资源
+│       │   ├── texture.png                        #       微粒材质贴图
+│       │   └── noise.png                          #       噪点贴图
 │       ├── src/
 │       │   ├── app/                               #     Next.js App Router 路由层
 │       │   │   ├── (auth)/                        #       🔐 认证模块（无布局壳）
@@ -396,4 +399,4 @@ Butvan Blog2.0/                                    # 📦 项目根目录
 
 ---
 
-*最后更新：2026-06-20*
+*最后更新：2026-06-21*
