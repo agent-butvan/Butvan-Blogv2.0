@@ -332,6 +332,9 @@ export default function LikesPage() {
                         ) : (
                           <div className="flex items-center gap-1">
                             <span className="inline-flex items-center px-1.5 py-0.5 rounded text-[9px] font-bold bg-zinc-150/70 dark:bg-zinc-800 text-zinc-500 uppercase">游客</span>
+                            <span className="text-zinc-450 dark:text-zinc-500 text-[10px] font-mono">
+                              ({item.ipAddress === "0:0:0:0:0:0:0:1" || item.ipAddress === "::1" ? "127.0.0.1" : item.ipAddress})
+                            </span>
                           </div>
                         )}
                       </td>

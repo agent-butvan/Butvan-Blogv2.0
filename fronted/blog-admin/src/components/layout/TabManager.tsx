@@ -24,6 +24,7 @@ const PATH_TITLE_MAP: Record<string, string> = {
   "/subscribers": "订阅管理",
   "/navigation": "导航管理",
   "/pages": "单页管理",
+  "/likes": "点赞管理",
 };
 
 /**
