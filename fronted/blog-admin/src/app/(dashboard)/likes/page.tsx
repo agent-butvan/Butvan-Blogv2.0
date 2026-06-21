@@ -122,18 +122,6 @@ export default function LikesPage() {
     loadLikes(page, keyword);
   }, [page, keyword]);
 
-  const handleSearch = (e: React.FormEvent) => {
-    e.preventDefault();
-    setPage(1);
-    setKeyword(searchVal.trim());
-  };
-
-  const handleClearSearch = () => {
-    setSearchVal("");
-    setKeyword("");
-    setPage(1);
-  };
-
   // 全选/反选
   const handleSelectAll = () => {
     if (selectedIds.length === likes.length) {
@@ -219,120 +207,119 @@ export default function LikesPage() {
   };
 
   return (
-    <div className="w-full flex flex-col p-4 bg-transparent min-h-full">
-      {/* 顶部简明标题与操作栏 - 一体化平铺去卡片 */}
-      <div className="flex flex-col sm:flex-row items-start sm:items-center justify-between gap-3 pb-4 border-b border-zinc-250/60 dark:border-zinc-800/50 shrink-0">
-        <div className="flex items-center gap-2.5">
-          <div className="w-8 h-8 rounded-md bg-rose-500/10 text-rose-500 flex items-center justify-center border border-rose-500/20 shrink-0">
-            <Heart size={15} fill="currentColor" />
-          </div>
-          <div>
-            <h1 className="text-sm font-bold text-zinc-900 dark:text-zinc-100">点赞记录管理</h1>
-            <p className="text-[10px] text-zinc-400 dark:text-zinc-500 mt-0.5">查看前台文章游客和登录用户的点赞流水，支持安全过滤与物理删除</p>
-          </div>
+    <div className="space-y-4">
+      {/* 页面标题 - 与其他页面高度统一 */}
+      <div className="flex items-center justify-between pb-3.5 border-b border-zinc-200/50 dark:border-zinc-900/60 shrink-0">
+        <div>
+          <h1 className="font-heading text-xl font-bold text-neutral-dark dark:text-zinc-50">点赞记录管理</h1>
+          <p className="text-[11px] font-medium text-zinc-400 dark:text-zinc-500 mt-1 font-mono">
+            WORKSPACE / LIKES (共 {total} 条点赞记录)
+          </p>
         </div>
+      </div>
 
-        {/* 顶部条件查询 */}
-        <form onSubmit={handleSearch} className="flex items-center gap-2 w-full sm:w-auto">
-          <div className="relative flex-1 sm:w-60 focus-within:scale-[1.01] transition-transform">
-            <Search className="absolute left-2.5 top-1/2 -translate-y-1/2 text-zinc-400 w-3.5 h-3.5" />
+      {/* 筛选 + 搜索栏与辅助状态工具栏 - 与 articles 高度统一 */}
+      <div className="flex flex-wrap items-center justify-between gap-3">
+        <div className="flex items-center gap-2 flex-1 max-w-xs">
+          <div className="flex h-9 items-center gap-2 rounded-xl border border-zinc-200/60 dark:border-zinc-800 bg-white dark:bg-zinc-950 px-3 py-1.5 w-full transition-all focus-within:ring-2 focus-within:ring-rose-500/15 focus-within:border-rose-500/60">
+            <Search size={14} className="text-zinc-400 dark:text-zinc-500 shrink-0" />
             <input
               type="text"
-              placeholder="搜索 IP 地址 / 文章标题..."
               value={searchVal}
-              onChange={(e) => setSearchVal(e.target.value)}
-              className="w-full pl-8 pr-7 py-1.5 text-xs rounded-md border border-zinc-200/80 dark:border-zinc-850 bg-white dark:bg-zinc-950 text-zinc-900 dark:text-zinc-100 focus:outline-none focus:border-rose-500/60 focus:ring-2 focus:ring-rose-500/15 transition-all placeholder:text-zinc-400/80"
+              onChange={(e) => {
+                setSearchVal(e.target.value);
+                setKeyword(e.target.value.trim());
+                setPage(1);
+              }}
+              placeholder="搜索 IP 地址 / 文章标题..."
+              className="flex-1 border-0 bg-transparent p-0 text-xs text-zinc-800 dark:text-zinc-100 outline-none placeholder-zinc-400 dark:placeholder-zinc-650 focus:ring-0 leading-normal"
             />
             {searchVal && (
               <button
                 type="button"
-                onClick={handleClearSearch}
-                className="absolute right-2.5 top-1/2 -translate-y-1/2 text-zinc-400 hover:text-zinc-650 dark:hover:text-zinc-200 cursor-pointer"
+                onClick={() => {
+                  setSearchVal("");
+                  setKeyword("");
+                  setPage(1);
+                }}
+                className="text-zinc-400 hover:text-zinc-655 dark:hover:text-zinc-200 cursor-pointer border-0 bg-transparent"
               >
-                <X className="w-3 h-3" />
+                <X size={13} />
               </button>
             )}
           </div>
-          <button
-            type="submit"
-            className="px-4 py-1.5 rounded-md text-xs font-bold bg-rose-500 hover:bg-rose-600 active:scale-95 text-white transition-all cursor-pointer select-none shadow-sm shadow-rose-500/10"
-          >
-            筛选
-          </button>
-        </form>
+        </div>
+
+        {/* 辅助状态与工具区 */}
+        <div className="flex items-center gap-3">
+          {selectedIds.length > 0 ? (
+            <div className="flex items-center gap-3 animate-[fadeIn_0.15s_ease-out] select-none">
+              <div className="flex items-center gap-1.5">
+                <span className="relative flex h-1.5 w-1.5">
+                  <span className="animate-ping absolute inline-flex h-full w-full rounded-full bg-rose-400 opacity-75"></span>
+                  <span className="relative inline-flex rounded-full h-1.5 w-1.5 bg-rose-500"></span>
+                </span>
+                <span className="font-bold text-rose-600 dark:text-rose-400 text-xs font-mono">
+                  已选中 {selectedIds.length} 项
+                </span>
+              </div>
+              <button
+                onClick={() => setBatchModalOpen(true)}
+                className="h-8 px-3 rounded-lg bg-rose-600 hover:bg-rose-700 active:scale-95 text-white text-[11px] font-bold transition-all cursor-pointer shadow-xs flex items-center gap-1"
+              >
+                <Trash2 size={11} />
+                <span>批量删除</span>
+              </button>
+            </div>
+          ) : (
+            <div className="flex items-center gap-3.5 select-none">
+              <div className="flex items-center gap-1.5 text-[10px] text-zinc-400 dark:text-zinc-500 font-mono">
+                <span className="relative flex h-1.5 w-1.5">
+                  <span className="animate-ping absolute inline-flex h-full w-full rounded-full bg-emerald-400 opacity-75"></span>
+                  <span className="relative inline-flex rounded-full h-1.5 w-1.5 bg-emerald-500"></span>
+                </span>
+                <span>RUNNING</span>
+              </div>
+              <button
+                onClick={handleExportCSV}
+                className="h-8 px-3 rounded-lg border border-zinc-200/60 dark:border-zinc-800 bg-white dark:bg-zinc-950 text-xs font-bold text-zinc-600 dark:text-zinc-450 hover:bg-zinc-50 dark:hover:bg-zinc-900 transition-colors shadow-2xs hover:shadow-xs active:scale-95 cursor-pointer flex items-center gap-1"
+              >
+                <span>导出 CSV</span>
+              </button>
+            </div>
+          )}
+        </div>
       </div>
 
-      {/* 辅助工具与状态监控栏 */}
-      <div className="py-2 flex items-center justify-between min-h-[36px] transition-all">
-        {selectedIds.length > 0 ? (
-          // 批量操作控制
-          <div className="w-full flex items-center justify-between text-xs animate-[fadeIn_0.15s_ease-out]">
-            <div className="flex items-center gap-2">
-              <span className="relative flex h-1.5 w-1.5">
-                <span className="animate-ping absolute inline-flex h-full w-full rounded-full bg-rose-400 opacity-75"></span>
-                <span className="relative inline-flex rounded-full h-1.5 w-1.5 bg-rose-500"></span>
-              </span>
-              <span className="font-bold text-rose-600 dark:text-rose-400 text-[11px]">
-                已选中 {selectedIds.length} 条点赞记录流水
-              </span>
-            </div>
-            <button
-              onClick={() => setBatchModalOpen(true)}
-              className="flex items-center gap-1 px-2.5 py-1 bg-rose-600 hover:bg-rose-700 active:scale-95 text-white rounded-md text-[10px] font-bold transition-all cursor-pointer shadow-xs"
-            >
-              <Trash2 size={11} />
-              批量彻底删除
-            </button>
-          </div>
-        ) : (
-          // 运行状态与数据导出
-          <div className="w-full flex items-center justify-between text-xs">
-            <div className="flex items-center gap-2 text-[10px] text-zinc-400 dark:text-zinc-500">
-              <span className="relative flex h-1.5 w-1.5">
-                <span className="animate-ping absolute inline-flex h-full w-full rounded-full bg-emerald-400 opacity-75"></span>
-                <span className="relative inline-flex rounded-full h-1.5 w-1.5 bg-emerald-500"></span>
-              </span>
-              <span>流水日志监控中 · 状态正常</span>
-            </div>
-            <button
-              onClick={handleExportCSV}
-              className="inline-flex items-center gap-1 text-[10px] font-bold text-zinc-500 dark:text-zinc-400 hover:text-zinc-950 dark:hover:text-zinc-100 border border-zinc-200/80 dark:border-zinc-800 px-2 py-1 rounded-md bg-white dark:bg-zinc-900 transition-colors shadow-2xs hover:shadow-xs active:scale-95 cursor-pointer"
-            >
-              导出 CSV
-            </button>
-          </div>
-        )}
-      </div>
-
-      {/* 表格面板层 - 平铺一体，收敛大圆角 */}
-      <div className="flex-1 bg-white dark:bg-zinc-900 rounded-md border border-zinc-200/50 dark:border-zinc-800/40 overflow-hidden flex flex-col min-h-[300px] shadow-2xs">
+      {/* 表格面板层 - 与全站统一采用 rounded-2xl 卡片包裹表格 */}
+      <div className="overflow-x-auto rounded-2xl border border-zinc-200/60 dark:border-zinc-800 bg-white dark:bg-zinc-950 shadow-xs flex flex-col min-h-[300px]">
         {loading ? (
           /* 排线骨架屏加载占位 */
-          <div className="flex-1 overflow-x-auto">
+          <div className="flex-1">
             <table className="w-full text-left border-collapse table-auto select-none">
               <thead>
-                <tr className="border-b border-zinc-200/50 dark:border-zinc-800/40 text-[11px] text-zinc-400 bg-zinc-50/50 dark:bg-zinc-950/20 font-semibold tracking-wider">
-                  <th className="px-3.5 py-2.5 w-10"></th>
-                  <th className="px-3.5 py-2.5">点赞对象/文章</th>
-                  <th className="px-3.5 py-2.5">点赞人/来源</th>
-                  <th className="px-3.5 py-2.5 w-32">IP 地址</th>
-                  <th className="px-3.5 py-2.5 w-40">设备环境</th>
-                  <th className="px-3.5 py-2.5 w-44">点赞时间</th>
+                <tr className="border-b border-zinc-200/50 dark:border-zinc-800/40 text-[10px] font-bold text-zinc-400 dark:text-zinc-500 bg-zinc-50/70 dark:bg-zinc-900/40 uppercase tracking-widest">
+                  <th className="px-4 py-3.5 w-10"></th>
+                  <th className="px-4 py-3">点赞对象/文章</th>
+                  <th className="px-4 py-3">点赞人/来源</th>
+                  <th className="px-4 py-3 w-32">IP 地址</th>
+                  <th className="px-4 py-3 w-40">设备环境</th>
+                  <th className="px-4 py-3 w-44">点赞时间</th>
                 </tr>
               </thead>
               <tbody>
                 {[1, 2, 3, 4, 5].map((i) => (
                   <tr key={i} className="border-b border-zinc-100 dark:border-zinc-800/50 animate-pulse">
-                    <td className="px-3.5 py-3 w-10">
+                    <td className="px-4 py-3 w-10">
                       <div className="w-4 h-4 bg-zinc-100 dark:bg-zinc-800 rounded-[3px]"></div>
                     </td>
-                    <td className="px-3.5 py-3">
+                    <td className="px-4 py-3">
                       <div className="flex items-center gap-2">
                         <div className="w-6 h-6 bg-zinc-100 dark:bg-zinc-800 rounded-[3px]"></div>
                         <div className="h-3.5 bg-zinc-100 dark:bg-zinc-800 rounded-[3px] w-2/3"></div>
                       </div>
                     </td>
-                    <td className="px-3.5 py-3">
+                    <td className="px-4 py-3">
                       <div className="flex items-center gap-2">
                         <div className="w-6 h-6 bg-zinc-100 dark:bg-zinc-800 rounded-full"></div>
                         <div className="flex flex-col gap-1 w-24">
@@ -341,13 +328,13 @@ export default function LikesPage() {
                         </div>
                       </div>
                     </td>
-                    <td className="px-3.5 py-3">
+                    <td className="px-4 py-3">
                       <div className="h-5 bg-zinc-100 dark:bg-zinc-800 rounded-[3px] w-20"></div>
                     </td>
-                    <td className="px-3.5 py-3">
+                    <td className="px-4 py-3">
                       <div className="h-5 bg-zinc-100 dark:bg-zinc-800 rounded-[3px] w-24"></div>
                     </td>
-                    <td className="px-3.5 py-3">
+                    <td className="px-4 py-3">
                       <div className="h-3 bg-zinc-100 dark:bg-zinc-800 rounded-[3px] w-28"></div>
                     </td>
                   </tr>
@@ -366,9 +353,9 @@ export default function LikesPage() {
           <div className="flex-1 overflow-x-auto custom-scrollbar">
             <table className="w-full text-left border-collapse table-auto select-none">
               <thead>
-                <tr className="border-b border-zinc-200/50 dark:border-zinc-800/40 text-[11px] text-zinc-400 bg-zinc-50/50 dark:bg-zinc-950/20 font-semibold tracking-wider">
-                  <th className="px-3.5 py-2.5 w-10">
-                    <button onClick={handleSelectAll} className="text-zinc-400 hover:text-zinc-600 transition-colors cursor-pointer">
+                <tr className="border-b border-zinc-200/50 dark:border-zinc-800 bg-zinc-50/70 dark:bg-zinc-900/40 text-[10px] font-bold text-zinc-400 dark:text-zinc-500 uppercase tracking-widest">
+                  <th className="px-4 py-3.5 w-10">
+                    <button onClick={handleSelectAll} className="text-zinc-400 hover:text-zinc-600 transition-colors cursor-pointer border-0 bg-transparent">
                       {selectedIds.length === likes.length ? (
                         <CheckSquare size={15} className="text-rose-500" />
                       ) : (
@@ -376,11 +363,11 @@ export default function LikesPage() {
                       )}
                     </button>
                   </th>
-                  <th className="px-3.5 py-2.5">点赞对象/文章</th>
-                  <th className="px-3.5 py-2.5">点赞人/来源</th>
-                  <th className="px-3.5 py-2.5 w-32">IP 地址</th>
-                  <th className="px-3.5 py-2.5 w-40">设备环境</th>
-                  <th className="px-3.5 py-2.5 w-44">点赞时间</th>
+                  <th className="px-4 py-3.5">点赞对象/文章</th>
+                  <th className="px-4 py-3.5">点赞人/来源</th>
+                  <th className="px-4 py-3.5 w-32">IP 地址</th>
+                  <th className="px-4 py-3.5 w-40">设备环境</th>
+                  <th className="px-4 py-3.5 w-44">点赞时间</th>
                 </tr>
               </thead>
               <tbody className="text-xs text-zinc-600 dark:text-zinc-350 divide-y divide-zinc-100 dark:divide-zinc-800/50">
@@ -397,8 +384,8 @@ export default function LikesPage() {
                       )}
                     >
                       {/* 复选框 */}
-                      <td className="px-3.5 py-2.5">
-                        <button onClick={() => handleSelectOne(item.id)} className="text-zinc-400 hover:text-rose-500 transition-colors cursor-pointer">
+                      <td className="px-4 py-2.5">
+                        <button onClick={() => handleSelectOne(item.id)} className="text-zinc-400 hover:text-rose-500 transition-colors cursor-pointer border-0 bg-transparent">
                           {isSelected ? (
                             <CheckSquare size={15} className="text-rose-500" />
                           ) : (
@@ -408,7 +395,7 @@ export default function LikesPage() {
                       </td>
 
                       {/* 点赞对象/文章 */}
-                      <td className="px-3.5 py-2.5 font-semibold text-zinc-800 dark:text-zinc-200">
+                      <td className="px-4 py-2.5 font-semibold text-zinc-800 dark:text-zinc-200">
                         <div className="flex items-center gap-2 max-w-[280px]">
                           <div className="w-6 h-6 rounded-[3px] bg-rose-500/5 text-rose-500 border border-rose-500/10 flex items-center justify-center shrink-0">
                             <FileText size={11} />
@@ -431,7 +418,7 @@ export default function LikesPage() {
                       </td>
 
                       {/* 点赞人/来源 */}
-                      <td className="px-3.5 py-2.5">
+                      <td className="px-4 py-2.5">
                         {item.userId ? (
                           <div className="flex items-center gap-2">
                             {item.userAvatar ? (
@@ -474,7 +461,7 @@ export default function LikesPage() {
                       </td>
 
                       {/* IP 地址 */}
-                      <td className="px-3.5 py-2.5 select-text">
+                      <td className="px-4 py-2.5 select-text">
                         <div className="inline-flex items-center gap-1.5 px-2 py-0.75 font-mono text-[10px] font-semibold bg-zinc-50 dark:bg-zinc-950/40 border border-zinc-200/50 dark:border-zinc-800 rounded-[3px] text-zinc-500 dark:text-zinc-400">
                           <Globe size={10} className="text-zinc-400 dark:text-zinc-500 shrink-0" />
                           <span>{item.ipAddress === "0:0:0:0:0:0:0:1" || item.ipAddress === "::1" ? "127.0.0.1" : item.ipAddress}</span>
@@ -482,7 +469,7 @@ export default function LikesPage() {
                       </td>
 
                       {/* 设备环境 */}
-                      <td className="px-3.5 py-2.5">
+                      <td className="px-4 py-2.5">
                         <div
                           onMouseEnter={(e) => {
                             const rect = e.currentTarget.getBoundingClientRect();
@@ -511,7 +498,7 @@ export default function LikesPage() {
                       </td>
 
                       {/* 点赞时间 */}
-                      <td className="px-3.5 py-2.5">
+                      <td className="px-4 py-2.5">
                         <div className="inline-flex items-center gap-1 text-[10px] font-mono text-zinc-450 dark:text-zinc-500">
                           <Calendar size={10.5} className="shrink-0 text-zinc-400 dark:text-zinc-600" />
                           <span>{formatTime(item.createdAt)}</span>
@@ -525,22 +512,24 @@ export default function LikesPage() {
           </div>
         )}
 
-        {/* 底部简明分页栏 */}
+        {/* 底部简明分页栏 - 样式对齐全站 */}
         {!loading && total > 0 && (
-          <div className="flex items-center justify-between px-4 py-3 bg-zinc-50/50 dark:bg-zinc-950/20 border-t border-zinc-200/50 dark:border-zinc-800/40 text-xs">
-            <span className="text-zinc-400 dark:text-zinc-500 font-mono">显示第 {(page - 1) * size + 1} 到 {Math.min(page * size, total)} 条，共 {total} 条</span>
-            <div className="flex items-center gap-1.5">
+          <div className="flex items-center justify-between px-5 py-3.5 bg-zinc-50/50 dark:bg-zinc-950/20 border-t border-zinc-200/50 dark:border-zinc-800/40 text-xs">
+            <span className="text-zinc-500 dark:text-zinc-450 font-medium font-mono">
+              SHOWING PAGE {page} OF {Math.ceil(total / size) || 1} ({total} ITEMS)
+            </span>
+            <div className="flex items-center gap-1.5 font-bold select-none">
               <button
                 disabled={page <= 1}
                 onClick={() => setPage(p => p - 1)}
-                className="px-3 py-1 bg-white dark:bg-zinc-900 border border-zinc-200/70 dark:border-zinc-800 hover:bg-zinc-50 dark:hover:bg-zinc-800 rounded-md disabled:opacity-45 disabled:hover:bg-transparent text-zinc-500 dark:text-zinc-450 font-semibold cursor-pointer transition-all active:scale-95"
+                className="rounded-xl border border-zinc-200/60 dark:border-zinc-800 px-3 py-1.5 hover:bg-zinc-150/40 dark:hover:bg-zinc-900/60 text-zinc-650 dark:text-zinc-350 disabled:opacity-30 transition-all cursor-pointer font-bold outline-none active:scale-[0.98]"
               >
                 上一页
               </button>
               <button
                 disabled={page * size >= total}
                 onClick={() => setPage(p => p + 1)}
-                className="px-3 py-1 bg-white dark:bg-zinc-900 border border-zinc-200/70 dark:border-zinc-800 hover:bg-zinc-50 dark:hover:bg-zinc-800 rounded-md disabled:opacity-45 disabled:hover:bg-transparent text-zinc-500 dark:text-zinc-450 font-semibold cursor-pointer transition-all active:scale-95"
+                className="rounded-xl border border-zinc-200/60 dark:border-zinc-800 px-3 py-1.5 hover:bg-zinc-150/40 dark:hover:bg-zinc-900/60 text-zinc-650 dark:text-zinc-350 disabled:opacity-30 transition-all cursor-pointer font-bold outline-none active:scale-[0.98]"
               >
                 下一页
               </button>
