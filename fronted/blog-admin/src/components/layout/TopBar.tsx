@@ -154,7 +154,7 @@ export default function TopBar() {
   const breadcrumbs = getBreadcrumbs();
 
   return (
-    <header className="flex h-[52px] items-center justify-between px-4 z-10 select-none shrink-0 glass-panel rounded-2xl">
+    <header className="flex h-[52px] items-center justify-between px-4 z-10 select-none shrink-0 border-b border-zinc-200/50 dark:border-zinc-800/40 bg-white dark:bg-zinc-950 rounded-none">
       
       {/* 左侧：带 Icon 的高集成面包屑 */}
       <div className="flex items-center gap-1.5 text-zinc-500 dark:text-zinc-400">

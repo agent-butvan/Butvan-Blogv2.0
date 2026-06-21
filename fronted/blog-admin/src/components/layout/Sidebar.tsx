@@ -114,14 +114,14 @@ export default function Sidebar({ isMobile = false, isOpen = false, onClose }: S
       className={cn(
         isMobile
           ? "fixed left-0 top-0 h-full w-[240px] z-50 glass-panel flex flex-col select-none transition-transform duration-300 shadow-2xl rounded-r-2xl rounded-l-none border-r border-zinc-200/50 dark:border-zinc-800/40"
-          : "flex flex-col h-full rounded-2xl transition-all duration-200 select-none z-30 shrink-0 glass-panel overflow-hidden",
+          : "flex flex-col h-full transition-all duration-200 select-none z-30 shrink-0 bg-white dark:bg-zinc-950 border-r border-zinc-200/50 dark:border-zinc-800/40 rounded-none overflow-hidden",
         isMobile
           ? (isOpen ? "translate-x-0" : "-translate-x-full")
           : (collapsed ? "w-[56px]" : "w-[220px]")
       )}
     >
       {/* 顶层 Logo 标志区 (高度对齐 TopBar) */}
-      <div className="flex h-[52px] items-center justify-between px-3 border-b border-zinc-200/50 dark:border-zinc-800/40 shrink-0 bg-white/20 dark:bg-zinc-900/20">
+      <div className="flex h-[52px] items-center justify-between px-3 border-b border-zinc-200/50 dark:border-zinc-800/40 shrink-0 bg-white dark:bg-zinc-950">
         {(!collapsed || isMobile) && (
           <div className="flex items-center gap-2 animate-[fadeIn_0.15s_ease-out]">
             <span className="font-heading font-extrabold text-[10px] bg-primary text-white w-5 h-5 rounded-md flex items-center justify-center tracking-tighter">VB</span>

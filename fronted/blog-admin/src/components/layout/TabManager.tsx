@@ -161,7 +161,7 @@ export default function TabManager() {
   };
 
   return (
-    <div className="flex h-9 items-center justify-between select-none px-4 shrink-0 bg-transparent">
+    <div className="flex h-9 items-center justify-between select-none px-4 shrink-0 bg-white dark:bg-zinc-950 border-b border-zinc-200/50 dark:border-zinc-800/40">
       
       {/* 标签列表区 */}
       <div className="flex flex-1 items-center overflow-x-auto custom-scrollbar h-full gap-1.5">
