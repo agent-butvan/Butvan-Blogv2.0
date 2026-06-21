@@ -2,6 +2,7 @@
 
 import { useState, useEffect } from "react";
 import * as Icons from "lucide-react";
+import { Select, ListBox, ListBoxItem } from "@heroui/react";
 import Portal from "../common/Portal";
 import type {
   NavigationItem,
@@ -115,6 +116,12 @@ export default function NavigationFormModal({
     }
     return <Icons.HelpCircle size={16} className="text-zinc-400" />;
   };
+
+  const currentIconLabel = (() => {
+    if (isCustomIcon) return `自定义图标 (${icon})`;
+    const matched = POPULAR_ICONS.find((opt) => opt.value === icon);
+    return matched ? matched.label : "无图标";
+  })();
 
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
@@ -290,34 +297,73 @@ export default function NavigationFormModal({
                 菜单图标
               </label>
               {!isCustomIcon ? (
-                <div className="flex gap-2">
-                  <select
-                    value={icon}
-                    onChange={(e) => {
-                      if (e.target.value === "CUSTOM_INPUT") {
+                <div className="flex gap-2 w-full">
+                  <Select
+                    aria-label="菜单图标"
+                    selectedKey={icon || "NONE"}
+                    onSelectionChange={(key) => {
+                      const val = key as string;
+                      if (val === "CUSTOM_INPUT") {
                         setIsCustomIcon(true);
+                      } else if (val === "NONE" || val === "") {
+                        setIcon("");
                       } else {
-                        setIcon(e.target.value);
+                        setIcon(val);
                       }
                     }}
-                    className={inputClass}
+                    className="w-full relative"
                   >
-                    {POPULAR_ICONS.map((opt) => (
-                      <option key={opt.value} value={opt.value} className="bg-white dark:bg-zinc-900">
-                        {opt.label} {opt.value ? `(${opt.value})` : ""}
-                      </option>
-                    ))}
-                    <option value="CUSTOM_INPUT" className="bg-white dark:bg-zinc-900">
-                      ✏️ 自定义图标名称...
-                    </option>
-                  </select>
-                  
-                  {/* 实时图标预览 */}
-                  {icon && (
-                    <div className="flex h-9 w-9 shrink-0 items-center justify-center rounded-lg border border-zinc-200 dark:border-zinc-800 bg-zinc-50 dark:bg-zinc-900 text-zinc-650 dark:text-zinc-350">
-                      {renderIconPreview(icon)}
-                    </div>
-                  )}
+                    <Select.Trigger className="w-full border border-zinc-200 dark:border-zinc-800 bg-white dark:bg-zinc-900 rounded-lg h-9 px-3 min-h-9 flex items-center justify-between text-sm hover:bg-zinc-50 dark:hover:bg-zinc-900/50 transition-colors cursor-pointer text-zinc-900 dark:text-zinc-150 outline-none focus:border-primary focus:ring-2 focus:ring-primary/10">
+                      <div className="flex items-center gap-2">
+                        {icon ? (
+                          renderIconPreview(icon)
+                        ) : (
+                          <Icons.Minus size={16} className="text-zinc-450 dark:text-zinc-550" />
+                        )}
+                        <span className="text-sm text-zinc-900 dark:text-zinc-150 font-normal">
+                          {currentIconLabel}
+                        </span>
+                      </div>
+                      <Select.Indicator className="text-zinc-400 dark:text-zinc-500" />
+                    </Select.Trigger>
+                    <Select.Popover className="bg-white dark:bg-zinc-950 border border-zinc-200/80 dark:border-zinc-800/80 rounded-lg shadow-xl min-w-[200px] z-[60] py-1 max-h-[300px] overflow-y-auto">
+                      <ListBox className="py-1 outline-none">
+                        {POPULAR_ICONS.map((opt) => {
+                          const key = opt.value || "NONE";
+                          return (
+                            <ListBoxItem
+                              key={key}
+                              textValue={opt.label}
+                              className="flex items-center gap-2 px-3 py-1.5 text-sm text-zinc-900 dark:text-zinc-200 hover:bg-zinc-100 dark:hover:bg-zinc-900 cursor-pointer outline-none transition-colors rounded-md mx-1 data-[focused]:bg-zinc-100 dark:data-[focused]:bg-zinc-900"
+                            >
+                              <div className="flex items-center gap-2 w-full">
+                                {opt.value ? (
+                                  renderIconPreview(opt.value)
+                                ) : (
+                                  <Icons.Minus size={16} className="text-zinc-450 dark:text-zinc-550" />
+                                )}
+                                <span className="text-sm font-normal text-zinc-700 dark:text-zinc-300">
+                                  {opt.label} {opt.value ? `(${opt.value})` : ""}
+                                </span>
+                              </div>
+                            </ListBoxItem>
+                          );
+                        })}
+                        <ListBoxItem
+                          key="CUSTOM_INPUT"
+                          textValue="自定义图标名称"
+                          className="flex items-center gap-2 px-3 py-1.5 text-sm text-zinc-900 dark:text-zinc-200 hover:bg-zinc-100 dark:hover:bg-zinc-900 cursor-pointer outline-none border-t border-zinc-100 dark:border-zinc-800 mt-1 pt-2 transition-colors rounded-md mx-1 data-[focused]:bg-zinc-100 dark:data-[focused]:bg-zinc-900"
+                        >
+                          <div className="flex items-center gap-2 w-full">
+                            <Icons.Edit3 size={16} className="text-zinc-450 dark:text-zinc-550" />
+                            <span className="font-medium text-primary dark:text-[#b0a2ff]">
+                              ✏️ 自定义图标名称...
+                            </span>
+                          </div>
+                        </ListBoxItem>
+                      </ListBox>
+                    </Select.Popover>
+                  </Select>
                 </div>
               ) : (
                 <div className="flex gap-2 animate-fade-in">
