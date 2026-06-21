@@ -82,34 +82,42 @@ CREATE INDEX idx_hotspot_scene_sort ON blog_homepage_hotspot (scene_id, sort_ord
 
 -- 3. 用户表
 CREATE TABLE IF NOT EXISTS blog_user (
-    id              BIGSERIAL       PRIMARY KEY,
-    username        VARCHAR(50)     NOT NULL,
-    password_hash   VARCHAR(255)    NOT NULL,
-    nickname        VARCHAR(50)     NOT NULL,
-    email           VARCHAR(100),
-    avatar_url      VARCHAR(500),
-    bio             TEXT,
-    social_links    JSONB,
-    role            VARCHAR(20)     NOT NULL DEFAULT 'AUTHOR',
-    status          VARCHAR(20)     NOT NULL DEFAULT 'ACTIVE',
-    last_login_at   TIMESTAMP,
-    created_at      TIMESTAMP       NOT NULL DEFAULT NOW(),
-    updated_at      TIMESTAMP       NOT NULL DEFAULT NOW()
+    id                  BIGSERIAL       PRIMARY KEY,
+    username            VARCHAR(50)     NOT NULL,
+    password_hash       VARCHAR(255)    NOT NULL,
+    nickname            VARCHAR(50)     NOT NULL,
+    email               VARCHAR(100),
+    avatar_url          VARCHAR(500),
+    bio                 TEXT,
+    social_links        JSONB,
+    role                VARCHAR(20)     NOT NULL DEFAULT 'AUTHOR',
+    status              VARCHAR(20)     NOT NULL DEFAULT 'ACTIVE',
+    last_login_at       TIMESTAMP,
+    github_id           VARCHAR(100),
+    github_username     VARCHAR(100),
+    two_factor_secret   VARCHAR(100),
+    two_factor_enabled  BOOLEAN         NOT NULL DEFAULT FALSE,
+    created_at          TIMESTAMP       NOT NULL DEFAULT NOW(),
+    updated_at          TIMESTAMP       NOT NULL DEFAULT NOW()
 );
 
-COMMENT ON TABLE  blog_user                IS '用户表 — 支持多作者账号管理';
-COMMENT ON COLUMN blog_user.username       IS '登录用户名（字母数字下划线）';
-COMMENT ON COLUMN blog_user.password_hash  IS 'BCrypt加密密码';
-COMMENT ON COLUMN blog_user.nickname       IS '前端展示昵称（支持中文）';
-COMMENT ON COLUMN blog_user.email          IS '邮箱地址';
-COMMENT ON COLUMN blog_user.avatar_url     IS '头像图片URL';
-COMMENT ON COLUMN blog_user.bio            IS '个人简介/签名';
-COMMENT ON COLUMN blog_user.social_links   IS '社交链接JSON: {"github":"...", "twitter":"..."}';
-COMMENT ON COLUMN blog_user.role           IS '角色: ADMIN|AUTHOR';
-COMMENT ON COLUMN blog_user.status         IS '账号状态: ACTIVE|DISABLED';
-COMMENT ON COLUMN blog_user.last_login_at  IS '最后登录时间';
-COMMENT ON COLUMN blog_user.created_at     IS '注册时间';
-COMMENT ON COLUMN blog_user.updated_at     IS '更新时间';
+COMMENT ON TABLE  blog_user                    IS '用户表 — 支持多作者账号管理';
+COMMENT ON COLUMN blog_user.username           IS '登录用户名（字母数字下划线）';
+COMMENT ON COLUMN blog_user.password_hash      IS 'BCrypt加密密码';
+COMMENT ON COLUMN blog_user.nickname           IS '前端展示昵称（支持中文）';
+COMMENT ON COLUMN blog_user.email              IS '邮箱地址';
+COMMENT ON COLUMN blog_user.avatar_url         IS '头像图片URL';
+COMMENT ON COLUMN blog_user.bio                IS '个人简介/签名';
+COMMENT ON COLUMN blog_user.social_links       IS '社交链接JSON: {"github":"...", "twitter":"..."}';
+COMMENT ON COLUMN blog_user.role               IS '角色: ADMIN|AUTHOR';
+COMMENT ON COLUMN blog_user.status             IS '账号状态: ACTIVE|DISABLED';
+COMMENT ON COLUMN blog_user.last_login_at      IS '最后登录时间';
+COMMENT ON COLUMN blog_user.github_id          IS '绑定的 GitHub 用户唯一标识 ID';
+COMMENT ON COLUMN blog_user.github_username     IS '绑定的 GitHub 用户名';
+COMMENT ON COLUMN blog_user.two_factor_secret   IS '双重验证 TOTP 密钥 (Base32)';
+COMMENT ON COLUMN blog_user.two_factor_enabled  IS '是否启用双重验证';
+COMMENT ON COLUMN blog_user.created_at          IS '注册时间';
+COMMENT ON COLUMN blog_user.updated_at          IS '更新时间';
 
 CREATE UNIQUE INDEX uk_user_username ON blog_user (username);
 CREATE UNIQUE INDEX uk_user_email    ON blog_user (email) WHERE email IS NOT NULL;

@@ -35,7 +35,9 @@ Butvan Blog2.0/                                    # 📦 项目根目录
 │       ├── migration-v0.4.sql                     #   数据库迁移脚本 (v0.4 版本)
 │       ├── migration-v0.5.sql                     #   数据库迁移脚本 (v0.5 版本，文章、分类与标签建表及初始化数据)
 │       ├── migration-v0.6.sql                     #   数据库迁移脚本 (v0.6 版本，安全插入后台评论管理侧边栏菜单)
-│       └── migration-v0.7.sql                     #   数据库迁移脚本 (v0.7 版本，安全插入后台“资源管理 -> 媒体内容管理”菜单)
+│       ├── migration-v0.7.sql                     #   数据库迁移脚本 (v0.7 版本，安全插入后台“资源管理 -> 媒体内容管理”菜单)
+│       ├── migration-v0.8.sql                     #   数据库迁移脚本 (v0.8 版本，文章点赞记录管理及菜单安全配置)
+│       └── migration-v0.9.sql                     #   数据库迁移脚本 (v0.9 版本，实现 GitHub 和 2FA 安全绑定与双重认证)
 │
 ├── fronted/                                       # 🖥️【前端】Next.js 16 + TypeScript + HeroUI v3 + Tailwind v4
 │   │
@@ -374,6 +376,7 @@ Butvan Blog2.0/                                    # 📦 项目根目录
 | `docx/database/migration-v0.5.sql` | 数据库 | PostgreSQL v0.5 迁移脚本（文章分类标签建表与初始数据） |
 | `docx/database/migration-v0.6.sql` | 数据库 | PostgreSQL v0.6 迁移脚本（安全插入后台评论管理侧边栏菜单） |
 | `docx/database/migration-v0.7.sql` | 数据库 | PostgreSQL v0.7 迁移脚本（安全插入后台“资源管理 -> 媒体内容管理”菜单） |
+| `docx/database/migration-v0.9.sql` | 数据库 | PostgreSQL v0.9 迁移脚本（实现 GitHub 和 2FA 安全绑定与双重认证） |
 | `fronted/blog-admin/src/lib/article-api.ts` | 后台-工具 | 统一封装文章、分类、标签相关 API 请求方法 |
 | `fronted/blog-client/src/app/page.tsx` | 前台-首页 | 房间场景：从 API 获取激活场景，PNG 图层叠层绝对百分比渲染、hover 物理悬空、发光避光阴影及缩放过渡 |
 | `fronted/blog-client/src/components/home/RoomScene.tsx` | 前台-组件 | 多图层渲染容器，背景图+PNG物品百分比定位叠加 |
