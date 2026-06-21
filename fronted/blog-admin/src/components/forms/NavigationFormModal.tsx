@@ -132,8 +132,9 @@ export default function NavigationFormModal({
       return;
     }
 
-    if (linkType === "EXTERNAL" && !linkUrl.trim()) {
-      setError("外部链接类型必须填写链接地址");
+    const isLinkRequired = linkType === "EXTERNAL" || (position === "ADMIN_SIDEBAR" && linkType !== "NONE");
+    if (isLinkRequired && !linkUrl.trim()) {
+      setError("链接地址不能为空");
       return;
     }
 
@@ -259,17 +260,17 @@ export default function NavigationFormModal({
               </select>
             </div>
 
-            {/* 外部链接 URL（仅 EXTERNAL 类型时显示） */}
-            {linkType === "EXTERNAL" && (
+            {/* 链接地址（EXTERNAL 类型，或管理端下非 NONE 类型时显示） */}
+            {(linkType === "EXTERNAL" || (position === "ADMIN_SIDEBAR" && linkType !== "NONE")) && (
               <div className="animate-fade-in">
                 <label className="mb-1 block text-xs font-medium text-zinc-500 dark:text-zinc-400 uppercase tracking-wide">
                   链接地址 <span className="text-red-400">*</span>
                 </label>
                 <input
-                  type="url"
+                  type="text"
                   value={linkUrl}
                   onChange={(e) => setLinkUrl(e.target.value)}
-                  placeholder="https://example.com"
+                  placeholder={position === "ADMIN_SIDEBAR" ? "输入路由路径，例如：/ 或 /articles" : "https://example.com"}
                   className={inputClass}
                 />
               </div>
