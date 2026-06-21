@@ -15,6 +15,7 @@ export default function LoginPage() {
   const router = useRouter();
   const { login } = useAuth();
 
+  const [loginMethod, setLoginMethod] = useState<"password" | "2fa">("password");
   const [username, setUsername] = useState("");
   const [password, setPassword] = useState("");
   const [showPassword, setShowPassword] = useState(false);
@@ -70,12 +71,18 @@ export default function LoginPage() {
     e.preventDefault();
     setErrorMsg(null);
 
-    if (!username.trim() || !password.trim()) {
-      setErrorMsg("请填写账号和密码");
+    if (!username.trim()) {
+      setErrorMsg("请填写账号");
       return;
     }
 
-    if (require2fa && !twoFactorCode.trim()) {
+    if (loginMethod === "password" && !password.trim()) {
+      setErrorMsg("请填写密码");
+      return;
+    }
+
+    const is2faActive = loginMethod === "2fa" || require2fa;
+    if (is2faActive && !twoFactorCode.trim()) {
       setErrorMsg("请输入 6 位 2FA 验证码");
       twoFactorInputRef.current?.focus();
       return;
@@ -85,8 +92,8 @@ export default function LoginPage() {
     try {
       const result = await login({
         username: username.trim(),
-        password,
-        twoFactorCode: require2fa ? twoFactorCode.trim() : undefined,
+        password: loginMethod === "password" ? password : "",
+        twoFactorCode: is2faActive ? twoFactorCode.trim() : undefined,
       });
       if (result.success) {
         // 登录成功，将该用户的最新的 2FA 状态缓存在本地，以便下次快速登录
@@ -102,6 +109,10 @@ export default function LoginPage() {
           } catch (err) {
             console.error("解析用户信息失败", err);
           }
+        }
+        // 如果是2fa模式登录，确保开启状态保存在本地
+        if (loginMethod === "2fa") {
+          localStorage.setItem(`blog_2fa_enabled_${username.trim()}`, "true");
         }
         router.push("/");
       } else {
@@ -200,6 +211,42 @@ export default function LoginPage() {
             </p>
           </div>
 
+          {/* 登录方式切换：直角极简扁平设计 */}
+          <div className="mt-4 flex border-b border-zinc-100 dark:border-zinc-800 text-[11px]">
+            <button
+              type="button"
+              onClick={() => {
+                setLoginMethod("password");
+                setErrorMsg(null);
+              }}
+              className={`flex-1 pb-1.5 font-medium transition-colors border-b-2 -mb-px text-center cursor-pointer ${
+                loginMethod === "password"
+                  ? "border-primary text-zinc-900 dark:text-zinc-100 font-semibold"
+                  : "border-transparent text-zinc-400 dark:text-zinc-500 hover:text-zinc-600 dark:hover:text-zinc-400"
+              }`}
+            >
+              密码登录
+            </button>
+            <button
+              type="button"
+              onClick={() => {
+                setLoginMethod("2fa");
+                setErrorMsg(null);
+                // 自动将焦点定位到 2FA 框
+                setTimeout(() => {
+                  twoFactorInputRef.current?.focus();
+                }, 100);
+              }}
+              className={`flex-1 pb-1.5 font-medium transition-colors border-b-2 -mb-px text-center cursor-pointer ${
+                loginMethod === "2fa"
+                  ? "border-primary text-zinc-900 dark:text-zinc-100 font-semibold"
+                  : "border-transparent text-zinc-400 dark:text-zinc-500 hover:text-zinc-600 dark:hover:text-zinc-400"
+              }`}
+            >
+              2FA 免密直接登录
+            </button>
+          </div>
+
           {/* 错误提示 */}
           {errorMsg && (
             <div className="mt-4 flex items-center gap-2 rounded border border-red-200/50 dark:border-red-900/30 bg-red-50 dark:bg-red-950/20 px-3 py-2 text-[11px] text-red-500 dark:text-red-400">
@@ -232,38 +279,40 @@ export default function LoginPage() {
             </div>
 
             {/* 密码 */}
-            <div>
-              <label className="mb-1 block text-[10px] font-bold text-zinc-500 dark:text-zinc-400 uppercase tracking-widest">
-                密码
-              </label>
-              <div className="relative">
-                <span className="absolute left-3 top-1/2 -translate-y-1/2 text-zinc-400 dark:text-zinc-500">
-                  <Lock size={14} />
-                </span>
-                <input
-                  type={showPassword ? "text" : "password"}
-                  value={password}
-                  onChange={(e) => setPassword(e.target.value)}
-                  placeholder="请输入密码"
-                  required
-                  autoComplete="current-password"
-                  className="w-full rounded border border-zinc-200 dark:border-zinc-800 bg-zinc-50 dark:bg-zinc-950 pl-9 pr-10 py-2 text-xs text-zinc-800 dark:text-zinc-200 placeholder-zinc-400 dark:placeholder-zinc-600 outline-none transition-colors focus:border-primary focus:bg-white dark:focus:bg-zinc-900"
-                />
-                <button
-                  type="button"
-                  onClick={() => setShowPassword(!showPassword)}
-                  className="absolute right-3 top-1/2 -translate-y-1/2 text-zinc-400 hover:text-zinc-600 dark:text-zinc-500 dark:hover:text-zinc-300 cursor-pointer transition-colors"
-                  aria-label={showPassword ? "隐藏密码" : "显示密码"}
-                >
-                  {showPassword ? <EyeOff size={14} /> : <Eye size={14} />}
-                </button>
+            {loginMethod === "password" && (
+              <div className="animate-in fade-in slide-in-from-top-1 duration-150">
+                <label className="mb-1 block text-[10px] font-bold text-zinc-500 dark:text-zinc-400 uppercase tracking-widest">
+                  密码
+                </label>
+                <div className="relative">
+                  <span className="absolute left-3 top-1/2 -translate-y-1/2 text-zinc-400 dark:text-zinc-500">
+                    <Lock size={14} />
+                  </span>
+                  <input
+                    type={showPassword ? "text" : "password"}
+                    value={password}
+                    onChange={(e) => setPassword(e.target.value)}
+                    placeholder="请输入密码"
+                    required={loginMethod === "password"}
+                    autoComplete="current-password"
+                    className="w-full rounded border border-zinc-200 dark:border-zinc-800 bg-zinc-50 dark:bg-zinc-950 pl-9 pr-10 py-2 text-xs text-zinc-800 dark:text-zinc-200 placeholder-zinc-400 dark:placeholder-zinc-600 outline-none transition-colors focus:border-primary focus:bg-white dark:focus:bg-zinc-900"
+                  />
+                  <button
+                    type="button"
+                    onClick={() => setShowPassword(!showPassword)}
+                    className="absolute right-3 top-1/2 -translate-y-1/2 text-zinc-400 hover:text-zinc-600 dark:text-zinc-500 dark:hover:text-zinc-300 cursor-pointer transition-colors"
+                    aria-label={showPassword ? "隐藏密码" : "显示密码"}
+                  >
+                    {showPassword ? <EyeOff size={14} /> : <Eye size={14} />}
+                  </button>
+                </div>
               </div>
-            </div>
+            )}
 
             {/* 2FA 双重验证码 (带平滑手风琴展开动效) */}
             <div 
               className={`transition-all duration-300 ease-in-out overflow-hidden ${
-                require2fa 
+                (loginMethod === "2fa" || require2fa)
                   ? "max-h-[80px] opacity-100 mt-4" 
                   : "max-h-0 opacity-0 !mt-0 pointer-events-none"
               }`}
@@ -309,7 +358,7 @@ export default function LoginPage() {
               disabled={submitting}
               className="w-full mt-2 rounded bg-primary hover:bg-primary/90 text-white py-2 text-xs font-bold tracking-widest cursor-pointer shadow-sm hover:shadow transition-all active:scale-[0.99] disabled:opacity-50 disabled:cursor-not-allowed"
             >
-              {submitting ? "安全验证中..." : "进入后台"}
+              {submitting ? "安全验证中..." : loginMethod === "2fa" ? "双重认证登录" : "进入后台"}
             </button>
           </form>
 

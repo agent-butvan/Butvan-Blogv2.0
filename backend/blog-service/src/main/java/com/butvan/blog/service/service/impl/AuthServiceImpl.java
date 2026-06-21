@@ -106,22 +106,41 @@ public class AuthServiceImpl implements AuthService {
             throw new BusinessException(400, "该账号已被停用，请联系管理员");
         }
 
-        // 3. 校验密码是否匹配
-        if (!passwordEncoder.matches(loginDTO.getPassword(), user.getPasswordHash())) {
-            log.warn("用户登录失败，密码不匹配: {}", loginDTO.getUsername());
-            throw new BusinessException(400, "用户名或密码错误");
-        }
+        // 3. 根据登录入参判断登录模式：2FA 免密极速登录 或 传统密码登录
+        String password = loginDTO.getPassword();
+        String code = loginDTO.getTwoFactorCode();
+        boolean is2FactorMode = (code != null && !code.trim().isEmpty()) && (password == null || password.trim().isEmpty());
 
-        // 3.5. 2FA (双重验证) 安全检查校验
-        if (Boolean.TRUE.equals(user.getTwoFactorEnabled())) {
-            String code = loginDTO.getTwoFactorCode();
-            if (code == null || code.trim().isEmpty()) {
-                log.warn("用户 [{}] 已启用双重验证，但登录未传入验证码，返回 NEED_2FA 拦截", user.getUsername());
-                throw new BusinessException(400, "NEED_2FA");
+        if (is2FactorMode) {
+            // 3.1 2FA 免密直接登录模式
+            if (!Boolean.TRUE.equals(user.getTwoFactorEnabled())) {
+                log.warn("用户 [{}] 未启用双重验证，无法使用 2FA 免密登录", user.getUsername());
+                throw new BusinessException(400, "该账号未开启双重验证，请使用密码登录");
             }
             if (!TotpUtil.verifyCode(user.getTwoFactorSecret(), code)) {
                 log.warn("用户 [{}] 双重验证码输入错误: {}", user.getUsername(), code);
                 throw new BusinessException(400, "双重验证码错误，请重新输入");
+            }
+            log.info("用户 [{}] 使用 2FA 免密通道登录成功", user.getUsername());
+        } else {
+            // 3.2 传统密码登录模式
+            if (password == null || password.trim().isEmpty()) {
+                throw new BusinessException(400, "登录密码不能为空");
+            }
+            if (!passwordEncoder.matches(password, user.getPasswordHash())) {
+                log.warn("用户登录失败，密码不匹配: {}", loginDTO.getUsername());
+                throw new BusinessException(400, "用户名或密码错误");
+            }
+            // 密码通过后，如果该用户开启了 2FA，进行双重校验拦截
+            if (Boolean.TRUE.equals(user.getTwoFactorEnabled())) {
+                if (code == null || code.trim().isEmpty()) {
+                    log.warn("用户 [{}] 已启用双重验证，但登录未传入验证码，返回 NEED_2FA 拦截", user.getUsername());
+                    throw new BusinessException(400, "NEED_2FA");
+                }
+                if (!TotpUtil.verifyCode(user.getTwoFactorSecret(), code)) {
+                    log.warn("用户 [{}] 双重验证码输入错误: {}", user.getUsername(), code);
+                    throw new BusinessException(400, "双重验证码错误，请重新输入");
+                }
             }
         }
 
