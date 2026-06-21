@@ -180,12 +180,50 @@ export default function LikesPage() {
     return `${clientUrl}/article/${slug}`;
   };
 
+  // 导出 CSV 格式的点赞流水
+  const handleExportCSV = () => {
+    if (likes.length === 0) {
+      toast.error("没有可导出的数据");
+      return;
+    }
+    // CSV 头部
+    const headers = ["ID", "文章标题", "文章Slug", "点赞人/来源", "UID", "IP地址", "设备系统", "浏览器", "点赞时间"];
+    // CSV 内容
+    const rows = likes.map(item => {
+      const uaInfo = parseUA(item.userAgent);
+      const userType = item.userId ? `会员(${item.userNickname})` : "游客";
+      return [
+        item.id,
+        `"${(item.articleTitle || '').replace(/"/g, '""')}"`,
+        `"${(item.articleSlug || '').replace(/"/g, '""')}"`,
+        `"${userType}"`,
+        item.userId || "",
+        item.ipAddress || "",
+        uaInfo.os || "",
+        uaInfo.browser || "",
+        formatTime(item.createdAt)
+      ];
+    });
+    
+    const csvContent = "\ufeff" + [headers.join(","), ...rows.map(e => e.join(","))].join("\n");
+    const blob = new Blob([csvContent], { type: "text/csv;charset=utf-8;" });
+    const url = URL.createObjectURL(blob);
+    const link = document.createElement("a");
+    link.setAttribute("href", url);
+    link.setAttribute("download", `点赞记录流水_${new Date().toISOString().slice(0, 10)}.csv`);
+    link.style.visibility = "hidden";
+    document.body.appendChild(link);
+    link.click();
+    document.body.removeChild(link);
+    toast.success("当前页数据导出成功");
+  };
+
   return (
-    <div className="w-full flex flex-col gap-3.5 p-3.5">
-      {/* 顶部简明标题与操作栏 */}
-      <div className="flex flex-col sm:flex-row items-start sm:items-center justify-between gap-3 bg-white dark:bg-zinc-900 px-4 py-3.5 rounded-xl border border-zinc-200/50 dark:border-zinc-800/40 shrink-0 shadow-xs">
+    <div className="w-full flex flex-col p-4 bg-transparent min-h-full">
+      {/* 顶部简明标题与操作栏 - 一体化平铺去卡片 */}
+      <div className="flex flex-col sm:flex-row items-start sm:items-center justify-between gap-3 pb-4 border-b border-zinc-250/60 dark:border-zinc-800/50 shrink-0">
         <div className="flex items-center gap-2.5">
-          <div className="w-8 h-8 rounded-lg bg-rose-500/10 text-rose-500 flex items-center justify-center border border-rose-500/20 shrink-0">
+          <div className="w-8 h-8 rounded-md bg-rose-500/10 text-rose-500 flex items-center justify-center border border-rose-500/20 shrink-0">
             <Heart size={15} fill="currentColor" />
           </div>
           <div>
@@ -203,7 +241,7 @@ export default function LikesPage() {
               placeholder="搜索 IP 地址 / 文章标题..."
               value={searchVal}
               onChange={(e) => setSearchVal(e.target.value)}
-              className="w-full pl-8 pr-7 py-1.5 text-xs rounded-lg border border-zinc-200/80 dark:border-zinc-850 bg-zinc-50/50 dark:bg-zinc-950 text-zinc-900 dark:text-zinc-100 focus:outline-none focus:border-rose-500/60 focus:ring-2 focus:ring-rose-500/15 transition-all placeholder:text-zinc-400/80"
+              className="w-full pl-8 pr-7 py-1.5 text-xs rounded-md border border-zinc-200/80 dark:border-zinc-850 bg-white dark:bg-zinc-950 text-zinc-900 dark:text-zinc-100 focus:outline-none focus:border-rose-500/60 focus:ring-2 focus:ring-rose-500/15 transition-all placeholder:text-zinc-400/80"
             />
             {searchVal && (
               <button
@@ -217,75 +255,100 @@ export default function LikesPage() {
           </div>
           <button
             type="submit"
-            className="px-4 py-1.5 rounded-lg text-xs font-bold bg-rose-500 hover:bg-rose-600 active:scale-95 text-white transition-all cursor-pointer select-none shadow-sm shadow-rose-500/10"
+            className="px-4 py-1.5 rounded-md text-xs font-bold bg-rose-500 hover:bg-rose-600 active:scale-95 text-white transition-all cursor-pointer select-none shadow-sm shadow-rose-500/10"
           >
             筛选
           </button>
         </form>
       </div>
 
-      {/* 批量操作控制浮格 */}
-      {selectedIds.length > 0 && (
-        <div className="flex items-center justify-between bg-rose-500/5 dark:bg-rose-950/10 border border-rose-200/40 dark:border-rose-900/20 rounded-xl px-4 py-2.5 text-xs animate-[fadeIn_0.15s_ease-out] shadow-xs">
-          <div className="flex items-center gap-2">
-            <div className="w-1.5 h-1.5 rounded-full bg-rose-500 animate-pulse"></div>
-            <span className="font-semibold text-rose-700 dark:text-rose-400">已选中 {selectedIds.length} 条点赞记录流水</span>
+      {/* 辅助工具与状态监控栏 */}
+      <div className="py-2 flex items-center justify-between min-h-[36px] transition-all">
+        {selectedIds.length > 0 ? (
+          // 批量操作控制
+          <div className="w-full flex items-center justify-between text-xs animate-[fadeIn_0.15s_ease-out]">
+            <div className="flex items-center gap-2">
+              <span className="relative flex h-1.5 w-1.5">
+                <span className="animate-ping absolute inline-flex h-full w-full rounded-full bg-rose-400 opacity-75"></span>
+                <span className="relative inline-flex rounded-full h-1.5 w-1.5 bg-rose-500"></span>
+              </span>
+              <span className="font-bold text-rose-600 dark:text-rose-400 text-[11px]">
+                已选中 {selectedIds.length} 条点赞记录流水
+              </span>
+            </div>
+            <button
+              onClick={() => setBatchModalOpen(true)}
+              className="flex items-center gap-1 px-2.5 py-1 bg-rose-600 hover:bg-rose-700 active:scale-95 text-white rounded-md text-[10px] font-bold transition-all cursor-pointer shadow-xs"
+            >
+              <Trash2 size={11} />
+              批量彻底删除
+            </button>
           </div>
-          <button
-            onClick={() => setBatchModalOpen(true)}
-            className="flex items-center gap-1.5 px-3.5 py-1.5 bg-rose-600 hover:bg-rose-700 active:scale-95 text-white rounded-lg text-xs font-semibold transition-all cursor-pointer shadow-sm"
-          >
-            <Trash2 size={13} />
-            批量彻底删除
-          </button>
-        </div>
-      )}
+        ) : (
+          // 运行状态与数据导出
+          <div className="w-full flex items-center justify-between text-xs">
+            <div className="flex items-center gap-2 text-[10px] text-zinc-400 dark:text-zinc-500">
+              <span className="relative flex h-1.5 w-1.5">
+                <span className="animate-ping absolute inline-flex h-full w-full rounded-full bg-emerald-400 opacity-75"></span>
+                <span className="relative inline-flex rounded-full h-1.5 w-1.5 bg-emerald-500"></span>
+              </span>
+              <span>流水日志监控中 · 状态正常</span>
+            </div>
+            <button
+              onClick={handleExportCSV}
+              className="inline-flex items-center gap-1 text-[10px] font-bold text-zinc-500 dark:text-zinc-400 hover:text-zinc-950 dark:hover:text-zinc-100 border border-zinc-200/80 dark:border-zinc-800 px-2 py-1 rounded-md bg-white dark:bg-zinc-900 transition-colors shadow-2xs hover:shadow-xs active:scale-95 cursor-pointer"
+            >
+              导出 CSV
+            </button>
+          </div>
+        )}
+      </div>
 
-      {/* 表格面板层 */}
-      <div className="flex-1 bg-white dark:bg-zinc-900 rounded-xl border border-zinc-200/50 dark:border-zinc-800/40 overflow-hidden flex flex-col min-h-[300px]">
+      {/* 表格面板层 - 平铺一体，收敛大圆角 */}
+      <div className="flex-1 bg-white dark:bg-zinc-900 rounded-md border border-zinc-200/50 dark:border-zinc-800/40 overflow-hidden flex flex-col min-h-[300px] shadow-2xs">
         {loading ? (
           /* 排线骨架屏加载占位 */
           <div className="flex-1 overflow-x-auto">
             <table className="w-full text-left border-collapse table-auto select-none">
               <thead>
                 <tr className="border-b border-zinc-200/50 dark:border-zinc-800/40 text-[11px] text-zinc-400 bg-zinc-50/50 dark:bg-zinc-950/20 font-semibold tracking-wider">
-                  <th className="px-4 py-3.5 w-10"></th>
-                  <th className="px-4 py-3">点赞对象/文章</th>
-                  <th className="px-4 py-3">点赞人/来源</th>
-                  <th className="px-4 py-3 w-32">IP 地址</th>
-                  <th className="px-4 py-3 w-40">设备环境</th>
-                  <th className="px-4 py-3 w-44">点赞时间</th>
+                  <th className="px-3.5 py-2.5 w-10"></th>
+                  <th className="px-3.5 py-2.5">点赞对象/文章</th>
+                  <th className="px-3.5 py-2.5">点赞人/来源</th>
+                  <th className="px-3.5 py-2.5 w-32">IP 地址</th>
+                  <th className="px-3.5 py-2.5 w-40">设备环境</th>
+                  <th className="px-3.5 py-2.5 w-44">点赞时间</th>
                 </tr>
               </thead>
               <tbody>
                 {[1, 2, 3, 4, 5].map((i) => (
                   <tr key={i} className="border-b border-zinc-100 dark:border-zinc-800/50 animate-pulse">
-                    <td className="px-4 py-4 w-10">
-                      <div className="w-4 h-4 bg-zinc-100 dark:bg-zinc-800 rounded"></div>
+                    <td className="px-3.5 py-3 w-10">
+                      <div className="w-4 h-4 bg-zinc-100 dark:bg-zinc-800 rounded-[3px]"></div>
                     </td>
-                    <td className="px-4 py-4">
+                    <td className="px-3.5 py-3">
                       <div className="flex items-center gap-2">
-                        <div className="w-6 h-6 bg-zinc-100 dark:bg-zinc-800 rounded-lg"></div>
-                        <div className="h-3.5 bg-zinc-100 dark:bg-zinc-800 rounded w-2/3"></div>
+                        <div className="w-6 h-6 bg-zinc-100 dark:bg-zinc-800 rounded-[3px]"></div>
+                        <div className="h-3.5 bg-zinc-100 dark:bg-zinc-800 rounded-[3px] w-2/3"></div>
                       </div>
                     </td>
-                    <td className="px-4 py-4">
+                    <td className="px-3.5 py-3">
                       <div className="flex items-center gap-2">
                         <div className="w-6 h-6 bg-zinc-100 dark:bg-zinc-800 rounded-full"></div>
                         <div className="flex flex-col gap-1 w-24">
-                          <div className="h-3 bg-zinc-100 dark:bg-zinc-800 rounded w-full"></div>
-                          <div className="h-2 bg-zinc-100 dark:bg-zinc-800 rounded w-2/3"></div>
+                          <div className="h-3 bg-zinc-100 dark:bg-zinc-800 rounded-[3px] w-full"></div>
+                          <div className="h-2 bg-zinc-100 dark:bg-zinc-800 rounded-[3px] w-2/3"></div>
                         </div>
                       </div>
                     </td>
-                    <td className="px-4 py-4">
-                      <div className="h-5 bg-zinc-100 dark:bg-zinc-800 rounded w-20"></div>
+                    <td className="px-3.5 py-3">
+                      <div className="h-5 bg-zinc-100 dark:bg-zinc-800 rounded-[3px] w-20"></div>
                     </td>
-                    <td className="px-4 py-4">
-                      <div className="h-5 bg-zinc-100 dark:bg-zinc-800 rounded w-24"></div>
+                    <td className="px-3.5 py-3">
+                      <div className="h-5 bg-zinc-100 dark:bg-zinc-800 rounded-[3px] w-24"></div>
                     </td>
-                    <td className="px-4 py-4">
-                      <div className="h-3 bg-zinc-100 dark:bg-zinc-800 rounded w-28"></div>
+                    <td className="px-3.5 py-3">
+                      <div className="h-3 bg-zinc-100 dark:bg-zinc-800 rounded-[3px] w-28"></div>
                     </td>
                   </tr>
                 ))}
@@ -304,7 +367,7 @@ export default function LikesPage() {
             <table className="w-full text-left border-collapse table-auto select-none">
               <thead>
                 <tr className="border-b border-zinc-200/50 dark:border-zinc-800/40 text-[11px] text-zinc-400 bg-zinc-50/50 dark:bg-zinc-950/20 font-semibold tracking-wider">
-                  <th className="px-4 py-3.5 w-10">
+                  <th className="px-3.5 py-2.5 w-10">
                     <button onClick={handleSelectAll} className="text-zinc-400 hover:text-zinc-600 transition-colors cursor-pointer">
                       {selectedIds.length === likes.length ? (
                         <CheckSquare size={15} className="text-rose-500" />
@@ -313,11 +376,11 @@ export default function LikesPage() {
                       )}
                     </button>
                   </th>
-                  <th className="px-4 py-3">点赞对象/文章</th>
-                  <th className="px-4 py-3">点赞人/来源</th>
-                  <th className="px-4 py-3 w-32">IP 地址</th>
-                  <th className="px-4 py-3 w-40">设备环境</th>
-                  <th className="px-4 py-3 w-44">点赞时间</th>
+                  <th className="px-3.5 py-2.5">点赞对象/文章</th>
+                  <th className="px-3.5 py-2.5">点赞人/来源</th>
+                  <th className="px-3.5 py-2.5 w-32">IP 地址</th>
+                  <th className="px-3.5 py-2.5 w-40">设备环境</th>
+                  <th className="px-3.5 py-2.5 w-44">点赞时间</th>
                 </tr>
               </thead>
               <tbody className="text-xs text-zinc-600 dark:text-zinc-350 divide-y divide-zinc-100 dark:divide-zinc-800/50">
@@ -334,7 +397,7 @@ export default function LikesPage() {
                       )}
                     >
                       {/* 复选框 */}
-                      <td className="px-4 py-3">
+                      <td className="px-3.5 py-2.5">
                         <button onClick={() => handleSelectOne(item.id)} className="text-zinc-400 hover:text-rose-500 transition-colors cursor-pointer">
                           {isSelected ? (
                             <CheckSquare size={15} className="text-rose-500" />
@@ -345,9 +408,9 @@ export default function LikesPage() {
                       </td>
 
                       {/* 点赞对象/文章 */}
-                      <td className="px-4 py-3 font-semibold text-zinc-800 dark:text-zinc-200">
+                      <td className="px-3.5 py-2.5 font-semibold text-zinc-800 dark:text-zinc-200">
                         <div className="flex items-center gap-2 max-w-[280px]">
-                          <div className="w-6 h-6 rounded-lg bg-rose-500/5 text-rose-500 border border-rose-500/10 flex items-center justify-center shrink-0">
+                          <div className="w-6 h-6 rounded-[3px] bg-rose-500/5 text-rose-500 border border-rose-500/10 flex items-center justify-center shrink-0">
                             <FileText size={11} />
                           </div>
                           <span className="truncate text-[12px] font-bold text-zinc-800 dark:text-zinc-200" title={item.articleTitle}>
@@ -358,7 +421,7 @@ export default function LikesPage() {
                               href={getArticleClientUrl(item.articleSlug)}
                               target="_blank"
                               rel="noopener noreferrer"
-                              className="w-5 h-5 rounded-md hover:bg-zinc-100 dark:hover:bg-zinc-800 text-zinc-400 hover:text-rose-500 transition-colors flex items-center justify-center shrink-0 cursor-pointer"
+                              className="w-5 h-5 rounded hover:bg-zinc-100 dark:hover:bg-zinc-800 text-zinc-400 hover:text-rose-500 transition-colors flex items-center justify-center shrink-0 cursor-pointer"
                               title="在新窗口预览文章"
                             >
                               <ExternalLink size={11} />
@@ -368,7 +431,7 @@ export default function LikesPage() {
                       </td>
 
                       {/* 点赞人/来源 */}
-                      <td className="px-4 py-3">
+                      <td className="px-3.5 py-2.5">
                         {item.userId ? (
                           <div className="flex items-center gap-2">
                             {item.userAvatar ? (
@@ -388,7 +451,7 @@ export default function LikesPage() {
                               </span>
                               <span className="text-[9px] text-zinc-400 dark:text-zinc-500 font-mono mt-0.5">UID: {item.userId}</span>
                             </div>
-                            <span className="inline-flex items-center px-1.5 py-0.5 rounded-md text-[9px] font-bold bg-rose-500/10 text-rose-500 uppercase border border-rose-500/20 scale-90 origin-left">
+                            <span className="inline-flex items-center px-1.5 py-0.5 rounded-[3px] text-[9px] font-bold bg-rose-500/10 text-rose-500 uppercase border border-rose-500/20 scale-90 origin-left">
                               会员
                             </span>
                           </div>
@@ -403,7 +466,7 @@ export default function LikesPage() {
                                 {item.ipAddress === "0:0:0:0:0:0:0:1" || item.ipAddress === "::1" ? "127.0.0.1" : item.ipAddress.split('.').slice(0, 2).join('.') + '.*.*'}
                               </span>
                             </div>
-                            <span className="inline-flex items-center px-1.5 py-0.5 rounded-md text-[9px] font-bold bg-zinc-100 dark:bg-zinc-800 text-zinc-500 uppercase border border-zinc-200/50 dark:border-zinc-700/45 scale-90 origin-left">
+                            <span className="inline-flex items-center px-1.5 py-0.5 rounded-[3px] text-[9px] font-bold bg-zinc-100 dark:bg-zinc-800 text-zinc-500 uppercase border border-zinc-200/50 dark:border-zinc-700/45 scale-90 origin-left">
                               访客
                             </span>
                           </div>
@@ -411,15 +474,15 @@ export default function LikesPage() {
                       </td>
 
                       {/* IP 地址 */}
-                      <td className="px-4 py-3 select-text">
-                        <div className="inline-flex items-center gap-1.5 px-2 py-0.75 font-mono text-[10px] font-semibold bg-zinc-50 dark:bg-zinc-950/40 border border-zinc-200/50 dark:border-zinc-800 rounded-md text-zinc-500 dark:text-zinc-400">
+                      <td className="px-3.5 py-2.5 select-text">
+                        <div className="inline-flex items-center gap-1.5 px-2 py-0.75 font-mono text-[10px] font-semibold bg-zinc-50 dark:bg-zinc-950/40 border border-zinc-200/50 dark:border-zinc-800 rounded-[3px] text-zinc-500 dark:text-zinc-400">
                           <Globe size={10} className="text-zinc-400 dark:text-zinc-500 shrink-0" />
                           <span>{item.ipAddress === "0:0:0:0:0:0:0:1" || item.ipAddress === "::1" ? "127.0.0.1" : item.ipAddress}</span>
                         </div>
                       </td>
 
                       {/* 设备环境 */}
-                      <td className="px-4 py-3">
+                      <td className="px-3.5 py-2.5">
                         <div
                           onMouseEnter={(e) => {
                             const rect = e.currentTarget.getBoundingClientRect();
@@ -433,12 +496,12 @@ export default function LikesPage() {
                           className="inline-flex items-center gap-1.5 cursor-help"
                         >
                           {uaInfo.deviceType === "mobile" ? (
-                            <span className="inline-flex items-center gap-1 px-1.5 py-0.5 rounded-md text-[10px] font-semibold bg-amber-50 dark:bg-amber-950/20 text-amber-600 dark:text-amber-400 border border-amber-250/20 dark:border-amber-900/30">
+                            <span className="inline-flex items-center gap-1 px-1.5 py-0.5 rounded-[3px] text-[10px] font-semibold bg-amber-50 dark:bg-amber-950/20 text-amber-600 dark:text-amber-400 border border-amber-250/20 dark:border-amber-900/30">
                               <Smartphone size={10} />
                               <span>{uaInfo.os}</span>
                             </span>
                           ) : (
-                            <span className="inline-flex items-center gap-1 px-1.5 py-0.5 rounded-md text-[10px] font-semibold bg-zinc-100 dark:bg-zinc-800 text-zinc-650 dark:text-zinc-350 border border-zinc-200/35 dark:border-zinc-700/40">
+                            <span className="inline-flex items-center gap-1 px-1.5 py-0.5 rounded-[3px] text-[10px] font-semibold bg-zinc-100 dark:bg-zinc-800 text-zinc-650 dark:text-zinc-350 border border-zinc-200/35 dark:border-zinc-700/40">
                               <Laptop size={10} />
                               <span>{uaInfo.os}</span>
                             </span>
@@ -448,7 +511,7 @@ export default function LikesPage() {
                       </td>
 
                       {/* 点赞时间 */}
-                      <td className="px-4 py-3">
+                      <td className="px-3.5 py-2.5">
                         <div className="inline-flex items-center gap-1 text-[10px] font-mono text-zinc-450 dark:text-zinc-500">
                           <Calendar size={10.5} className="shrink-0 text-zinc-400 dark:text-zinc-600" />
                           <span>{formatTime(item.createdAt)}</span>
@@ -470,14 +533,14 @@ export default function LikesPage() {
               <button
                 disabled={page <= 1}
                 onClick={() => setPage(p => p - 1)}
-                className="px-3 py-1 bg-white dark:bg-zinc-900 border border-zinc-200/70 dark:border-zinc-800 hover:bg-zinc-50 dark:hover:bg-zinc-800 rounded-lg disabled:opacity-45 disabled:hover:bg-transparent text-zinc-500 dark:text-zinc-450 font-semibold cursor-pointer transition-all active:scale-95"
+                className="px-3 py-1 bg-white dark:bg-zinc-900 border border-zinc-200/70 dark:border-zinc-800 hover:bg-zinc-50 dark:hover:bg-zinc-800 rounded-md disabled:opacity-45 disabled:hover:bg-transparent text-zinc-500 dark:text-zinc-450 font-semibold cursor-pointer transition-all active:scale-95"
               >
                 上一页
               </button>
               <button
                 disabled={page * size >= total}
                 onClick={() => setPage(p => p + 1)}
-                className="px-3 py-1 bg-white dark:bg-zinc-900 border border-zinc-200/70 dark:border-zinc-800 hover:bg-zinc-50 dark:hover:bg-zinc-800 rounded-lg disabled:opacity-45 disabled:hover:bg-transparent text-zinc-500 dark:text-zinc-450 font-semibold cursor-pointer transition-all active:scale-95"
+                className="px-3 py-1 bg-white dark:bg-zinc-900 border border-zinc-200/70 dark:border-zinc-800 hover:bg-zinc-50 dark:hover:bg-zinc-800 rounded-md disabled:opacity-45 disabled:hover:bg-transparent text-zinc-500 dark:text-zinc-450 font-semibold cursor-pointer transition-all active:scale-95"
               >
                 下一页
               </button>
@@ -509,9 +572,9 @@ export default function LikesPage() {
               left: `${uaTooltipPos.left}px`,
               transform: 'translate(-50%, -100%)' 
             }}
-            className="z-50 w-72 bg-zinc-950/95 dark:bg-zinc-955/95 backdrop-blur-md text-zinc-200 text-[10px] p-2.5 rounded-xl break-all font-mono leading-relaxed shadow-xl border border-zinc-850 dark:border-zinc-800 animate-[fadeIn_0.12s_ease-out] pointer-events-none select-text animate-[fadeIn_0.1s_ease-out]"
+            className="z-50 w-72 bg-zinc-950/95 dark:bg-zinc-900/95 backdrop-blur-md text-zinc-200 text-[10px] p-2.5 rounded-md break-all font-mono leading-relaxed shadow-xl border border-zinc-800 dark:border-zinc-800 animate-[fadeIn_0.12s_ease-out] pointer-events-none select-text animate-[fadeIn_0.1s_ease-out]"
           >
-            <div className="font-bold text-rose-400 mb-1.5 border-b border-zinc-800/80 pb-1 flex items-center justify-between">
+            <div className="font-bold text-rose-400 mb-1.5 border-b border-zinc-850 pb-1 flex items-center justify-between">
               <span>完整 User-Agent</span>
               <span className="text-[9px] text-zinc-500 font-normal font-sans">设备指纹</span>
             </div>
