@@ -12,7 +12,10 @@ import {
   ChevronUp,
   ChevronDown,
   FolderOpen,
+  GripVertical,
 } from "lucide-react";
+import { cn } from "@heroui/react";
+import { toast } from "@/lib/toast";
 import NavigationFormModal from "@/components/forms/NavigationFormModal";
 import ConfirmModal from "@/components/common/ConfirmModal";
 import type {
@@ -94,6 +97,51 @@ function countChildren(item: NavigationItem): number {
   return count;
 }
 
+/** 递归判断 targetId 是否为 draggedNode 的子孙节点（防环检测） */
+function isDescendant(node: NavigationItem, targetId: number): boolean {
+  if (!node.children) return false;
+  for (const child of node.children) {
+    if (child.id === targetId) return true;
+    if (isDescendant(child, targetId)) return true;
+  }
+  return false;
+}
+
+/** 递归寻找节点及其同级列表 */
+function findNodeAndSiblings(
+  tree: NavigationItem[],
+  id: number
+): { node: NavigationItem; siblings: NavigationItem[] } | null {
+  const idx = tree.findIndex(item => item.id === id);
+  if (idx !== -1) {
+    return { node: tree[idx], siblings: tree };
+  }
+  for (const item of tree) {
+    if (item.children && item.children.length > 0) {
+      const found = findNodeAndSiblings(item.children, id);
+      if (found) return found;
+    }
+  }
+  return null;
+}
+
+/** 递归寻找某个节点的父节点 */
+function findParentNode(
+  tree: NavigationItem[],
+  id: number
+): NavigationItem | null {
+  for (const item of tree) {
+    if (item.children && item.children.some(child => child.id === id)) {
+      return item;
+    }
+    if (item.children && item.children.length > 0) {
+      const parent = findParentNode(item.children, id);
+      if (parent) return parent;
+    }
+  }
+  return null;
+}
+
 /**
  * 导航菜单管理配置页面
  * - 按位置切换查看
@@ -126,6 +174,13 @@ export default function NavigationPage() {
     null
   );
   const [actionLoading, setActionLoading] = useState(false);
+
+  // 拖拽相关状态
+  const [draggedId, setDraggedId] = useState<number | null>(null);
+  const [dragOverState, setDragOverState] = useState<{
+    targetId: number;
+    position: "before" | "after" | "inside";
+  } | null>(null);
 
   // ==================== 数据加载 ====================
 
@@ -331,6 +386,103 @@ export default function NavigationPage() {
     }
   };
 
+  // ==================== 拖拽处理 ====================
+
+  const handleNodeDrop = async (
+    draggedId: number,
+    targetId: number,
+    position: "before" | "after" | "inside"
+  ) => {
+    if (draggedId === targetId) return;
+
+    const rootCloned = cloneTree(menuTree);
+    const draggedResult = findNodeAndSiblings(rootCloned, draggedId);
+    if (!draggedResult) return;
+    const { node: draggedNode } = draggedResult;
+
+    // 防环检测
+    if (targetId !== -1 && isDescendant(draggedNode, targetId)) {
+      toast.error("不能将父菜单移动到它自己的子菜单下");
+      return;
+    }
+
+    const treeWithoutDragged = removeItemFromTree(rootCloned, draggedId);
+    let newTree = cloneTree(treeWithoutDragged);
+    let newParentId: number | null = null;
+    let targetSiblings: NavigationItem[] = [];
+
+    if (targetId === -1) {
+      newParentId = null;
+      newTree.push(draggedNode);
+      targetSiblings = newTree;
+    } else {
+      const targetResult = findNodeAndSiblings(newTree, targetId);
+      if (!targetResult) return;
+      const { node: targetNode, siblings: siblingsOfTarget } = targetResult;
+
+      if (position === "inside") {
+        newParentId = targetNode.id;
+        targetNode.children = targetNode.children || [];
+        targetNode.children.push(draggedNode);
+        targetSiblings = targetNode.children;
+      } else {
+        const targetParent = findParentNode(newTree, targetId);
+        newParentId = targetParent ? targetParent.id : null;
+        
+        const targetIdx = siblingsOfTarget.findIndex(s => s.id === targetId);
+        if (position === "before") {
+          siblingsOfTarget.splice(targetIdx, 0, draggedNode);
+        } else {
+          siblingsOfTarget.splice(targetIdx + 1, 0, draggedNode);
+        }
+        targetSiblings = siblingsOfTarget;
+      }
+    }
+
+    // 重新排序并收集需要更新的节点
+    const updatePromises: Promise<any>[] = [];
+    draggedNode.parentId = newParentId;
+
+    targetSiblings.forEach((sibling, index) => {
+      const newOrder = (index + 1) * 10;
+      if (sibling.id === draggedId || sibling.sortOrder !== newOrder) {
+        sibling.sortOrder = newOrder;
+        updatePromises.push(
+          updateNavigation(sibling.id, {
+            title: sibling.title,
+            linkType: sibling.linkType,
+            linkTargetId: sibling.linkTargetId,
+            linkUrl: sibling.linkUrl,
+            icon: sibling.icon,
+            position: sibling.position as NavPosition,
+            sortOrder: newOrder,
+            isVisible: sibling.isVisible,
+            isOpenNewTab: sibling.isOpenNewTab,
+            parentId: sibling.id === draggedId ? newParentId : sibling.parentId,
+          })
+        );
+      }
+    });
+
+    setLoading(true);
+    try {
+      if (updatePromises.length > 0) {
+        await Promise.all(updatePromises);
+      }
+      toast.success("菜单层级与排序调整成功");
+      const data = await fetchAdminNavigations(selectedPosition);
+      setMenuTree(data);
+    } catch (err: any) {
+      console.error("更新导航拖拽排序失败:", err);
+      toast.error("更新导航菜单顺序失败，请重试");
+      loadData();
+    } finally {
+      setLoading(false);
+      setDraggedId(null);
+      setDragOverState(null);
+    }
+  };
+
   // ==================== 渲染 ====================
 
   return (
@@ -433,11 +585,39 @@ export default function NavigationPage() {
                 onToggleVisible={handleToggleRequest}
                 siblings={menuTree}
                 onMoveInSiblings={handleMoveInSiblings}
+                draggedId={draggedId}
+                setDraggedId={setDraggedId}
+                dragOverState={dragOverState}
+                setDragOverState={setDragOverState}
+                onNodeDrop={handleNodeDrop}
               />
             ))}
           </div>
         )}
       </div>
+
+      {/* 拖拽到根目录的 Drop Area */}
+      {draggedId !== null && (
+        <div
+          onDragOver={(e) => {
+            e.preventDefault();
+            setDragOverState({ targetId: -1, position: "inside" });
+          }}
+          onDragLeave={() => setDragOverState(null)}
+          onDrop={(e) => {
+            e.preventDefault();
+            handleNodeDrop(draggedId, -1, "inside");
+          }}
+          className={cn(
+            "mt-2.5 py-4 border-2 border-dashed rounded-xl text-center text-xs font-bold transition-all duration-200 select-none",
+            dragOverState?.targetId === -1
+              ? "border-rose-500 bg-rose-500/5 text-rose-600 scale-[0.99] shadow-inner"
+              : "border-zinc-200 dark:border-zinc-800 text-zinc-400 dark:text-zinc-500 hover:border-rose-500/40 hover:text-rose-500"
+          )}
+        >
+          拖拽至此处移动至根目录（第一级菜单）
+        </div>
+      )}
 
       {/* 表单弹窗 */}
       <NavigationFormModal
@@ -507,6 +687,12 @@ function TreeNodeRow({
   onToggleVisible,
   siblings,
   onMoveInSiblings,
+  // 拖拽相关
+  draggedId,
+  setDraggedId,
+  dragOverState,
+  setDragOverState,
+  onNodeDrop,
 }: {
   item: NavigationItem;
   depth: number;
@@ -524,6 +710,11 @@ function TreeNodeRow({
     direction: "up" | "down",
     siblings: NavigationItem[]
   ) => Promise<void>;
+  draggedId: number | null;
+  setDraggedId: (id: number | null) => void;
+  dragOverState: { targetId: number; position: "before" | "after" | "inside" } | null;
+  setDragOverState: (state: { targetId: number; position: "before" | "after" | "inside" } | null) => void;
+  onNodeDrop: (draggedId: number, targetId: number, position: "before" | "after" | "inside") => Promise<void>;
 }) {
   const hasChildren = item.children.length > 0;
   const isCollapsed = collapsedIds.has(item.id);
@@ -538,17 +729,71 @@ function TreeNodeRow({
   return (
     <>
       <div
-        className={`flex items-center gap-3 px-5 py-2.5 hover:bg-zinc-50 dark:hover:bg-zinc-900/20 transition-colors group ${
-          hidden ? "opacity-50" : ""
-        }`}
+        draggable={true}
+        onDragStart={(e) => {
+          setDraggedId(item.id);
+          e.dataTransfer.effectAllowed = "move";
+        }}
+        onDragOver={(e) => {
+          if (draggedId === item.id) return;
+          e.preventDefault();
+          
+          const rect = e.currentTarget.getBoundingClientRect();
+          const offset = e.clientY - rect.top;
+          const ratio = offset / rect.height;
+          
+          let position: "before" | "after" | "inside" = "inside";
+          if (ratio < 0.25) {
+            position = "before";
+          } else if (ratio > 0.75) {
+            position = "after";
+          }
+          
+          setDragOverState({ targetId: item.id, position });
+        }}
+        onDragLeave={() => {
+          setDragOverState(null);
+        }}
+        onDrop={(e) => {
+          e.preventDefault();
+          if (draggedId !== null && draggedId !== item.id) {
+            const position = dragOverState?.position ?? "inside";
+            onNodeDrop(draggedId, item.id, position);
+          }
+        }}
+        onDragEnd={() => {
+          setDraggedId(null);
+          setDragOverState(null);
+        }}
+        className={cn(
+          "flex items-center gap-3 px-5 py-2.5 hover:bg-zinc-50 dark:hover:bg-zinc-900/20 transition-all group cursor-grab active:cursor-grabbing border-y border-transparent relative select-none",
+          hidden ? "opacity-50" : "",
+          draggedId === item.id ? "bg-zinc-100/50 dark:bg-zinc-900/40 opacity-30 select-none pointer-events-none" : "",
+          dragOverState?.targetId === item.id && dragOverState.position === "inside"
+            ? "bg-rose-500/5 dark:bg-rose-500/10 border-rose-500/30 border-y-rose-500/30"
+            : ""
+        )}
         style={{ paddingLeft: `${20 + depth * 24}px` }}
       >
+        {/* 拖拽顶部/底部提示定位线 */}
+        {dragOverState?.targetId === item.id && dragOverState.position === "before" && (
+          <div className="absolute top-0 left-0 right-0 h-0.5 bg-rose-500 z-10 animate-pulse" />
+        )}
+        {dragOverState?.targetId === item.id && dragOverState.position === "after" && (
+          <div className="absolute bottom-0 left-0 right-0 h-0.5 bg-rose-500 z-10 animate-pulse" />
+        )}
+
+        {/* 拖拽抓手 */}
+        <div className="text-zinc-350 dark:text-zinc-650 cursor-grab active:cursor-grabbing hover:text-zinc-550 mr-0.5 shrink-0 opacity-0 group-hover:opacity-100 transition-opacity">
+          <GripVertical size={13} />
+        </div>
+
         {/* 展开/折叠 */}
         <span className="w-6 flex justify-center">
           {hasChildren ? (
             <button
               onClick={() => onToggleCollapse(item.id)}
-              className="p-0.5 rounded hover:bg-zinc-200 dark:hover:bg-zinc-800 text-zinc-400 dark:text-zinc-500 transition-colors"
+              className="p-0.5 rounded hover:bg-zinc-200 dark:hover:bg-zinc-800 text-zinc-400 dark:text-zinc-550 transition-colors border-0 bg-transparent cursor-pointer"
             >
               {isCollapsed ? (
                 <ChevronRight size={14} />
@@ -562,24 +807,24 @@ function TreeNodeRow({
         </span>
 
         {/* 标题 */}
-        <div className="flex-1 flex items-center gap-2 min-w-0">
+        <div className="flex-1 flex items-center gap-2 min-w-0 select-text">
           {item.linkType === "EXTERNAL" && (
             <ExternalLink size={12} className="text-zinc-400 shrink-0" />
           )}
           <span
-            className={`text-sm truncate font-medium ${
-              hidden ? "text-zinc-400 dark:text-zinc-500" : "text-neutral-dark dark:text-zinc-100"
+            className={`text-sm truncate font-semibold leading-normal ${
+              hidden ? "text-zinc-400 dark:text-zinc-550" : "text-neutral-dark dark:text-zinc-150"
             }`}
           >
             {item.title}
           </span>
           {hidden && (
-            <span className="text-[10px] text-amber-650 dark:text-amber-400 bg-amber-50 dark:bg-amber-950/30 px-1.5 py-0.5 rounded font-medium shrink-0">
+            <span className="text-[10px] text-rose-500 bg-rose-500/10 border border-rose-500/20 px-1.5 py-0.5 rounded font-bold shrink-0">
               已隐藏
             </span>
           )}
           {item.icon && (
-            <code className="text-[10px] text-zinc-400 dark:text-zinc-550 bg-zinc-100 dark:bg-zinc-900 px-1.5 py-0.5 rounded">
+            <code className="text-[10px] text-zinc-400 dark:text-zinc-500 bg-zinc-100 dark:bg-zinc-900 px-1.5 py-0.5 rounded font-mono">
               {item.icon}
             </code>
           )}
@@ -587,13 +832,13 @@ function TreeNodeRow({
 
         {/* 链接类型 */}
         <span className="w-20 text-center">
-          <span className="inline-block text-[11px] px-2 py-0.5 rounded-full bg-zinc-100 dark:bg-zinc-900 text-zinc-500 dark:text-zinc-400">
+          <span className="inline-block text-[11px] px-2.5 py-0.5 rounded-full bg-zinc-100 dark:bg-zinc-900 text-zinc-500 dark:text-zinc-400 font-bold border border-zinc-200/50 dark:border-zinc-800/40 select-none">
             {linkTypeLabel}
           </span>
         </span>
 
         {/* 排序 */}
-        <span className="w-20 text-center text-xs text-zinc-400 dark:text-zinc-550 font-mono">
+        <span className="w-20 text-center text-xs text-zinc-400 dark:text-zinc-550 font-mono select-text">
           {item.sortOrder}
         </span>
 
@@ -601,10 +846,10 @@ function TreeNodeRow({
         <span className="w-16 flex justify-center">
           <button
             onClick={() => onToggleVisible(item)}
-            className={`p-1 rounded transition-colors ${
+            className={`p-1 rounded transition-colors border-0 bg-transparent cursor-pointer ${
               item.isVisible !== false
                 ? "text-green-500 hover:bg-green-50 dark:hover:bg-green-950/20"
-                : "text-zinc-300 dark:text-zinc-650 hover:bg-zinc-100 dark:hover:bg-zinc-800"
+                : "text-zinc-355 dark:text-zinc-650 hover:bg-zinc-100 dark:hover:bg-zinc-800"
             }`}
             title={item.isVisible !== false ? "已显示，点击隐藏" : "已隐藏，点击显示"}
           >
@@ -617,11 +862,11 @@ function TreeNodeRow({
         </span>
 
         {/* 操作按钮 */}
-        <div className="w-[120px] flex items-center justify-end gap-1">
+        <div className="w-[120px] flex items-center justify-end gap-0.5 select-none">
           <button
             onClick={() => onMoveUp(item)}
             disabled={isFirst}
-            className="p-1 rounded text-zinc-400 hover:bg-zinc-100 dark:hover:bg-zinc-800 hover:text-zinc-600 dark:hover:text-zinc-200 transition-colors disabled:opacity-20"
+            className="p-1 rounded text-zinc-400 hover:bg-zinc-100 dark:hover:bg-zinc-800 hover:text-zinc-600 dark:hover:text-zinc-200 transition-colors disabled:opacity-20 border-0 bg-transparent cursor-pointer"
             title="上移"
           >
             <ChevronUp size={15} />
@@ -629,28 +874,28 @@ function TreeNodeRow({
           <button
             onClick={() => onMoveDown(item)}
             disabled={isLast}
-            className="p-1 rounded text-zinc-400 hover:bg-zinc-100 dark:hover:bg-zinc-800 hover:text-zinc-600 dark:hover:text-zinc-200 transition-colors disabled:opacity-20"
+            className="p-1 rounded text-zinc-400 hover:bg-zinc-100 dark:hover:bg-zinc-800 hover:text-zinc-650 dark:hover:text-zinc-200 transition-colors disabled:opacity-20 border-0 bg-transparent cursor-pointer"
             title="下移"
           >
             <ChevronDown size={15} />
           </button>
           <button
             onClick={() => onAddChild(item.id)}
-            className="p-1 rounded text-zinc-400 hover:bg-primary/10 dark:hover:bg-primary/20 hover:text-primary transition-colors"
+            className="p-1 rounded text-zinc-400 hover:bg-primary/10 dark:hover:bg-primary/20 hover:text-primary transition-colors border-0 bg-transparent cursor-pointer"
             title="添加子菜单"
           >
             <Plus size={15} />
           </button>
           <button
             onClick={() => onEdit(item)}
-            className="p-1 rounded text-zinc-400 hover:bg-zinc-100 dark:hover:bg-zinc-800 hover:text-zinc-600 dark:hover:text-zinc-200 transition-colors"
+            className="p-1 rounded text-zinc-400 hover:bg-zinc-100 dark:hover:bg-zinc-800 hover:text-zinc-600 dark:hover:text-zinc-200 transition-colors border-0 bg-transparent cursor-pointer"
             title="编辑"
           >
             <Edit size={14} />
           </button>
           <button
             onClick={() => onDelete(item)}
-            className="p-1 rounded text-zinc-400 hover:bg-red-50 dark:hover:bg-red-950/30 hover:text-red-500 dark:hover:text-red-400 transition-colors"
+            className="p-1 rounded text-zinc-400 hover:bg-red-50 dark:hover:bg-red-950/30 hover:text-red-500 dark:hover:text-red-400 transition-colors border-0 bg-transparent cursor-pointer"
             title="删除"
           >
             <Trash2 size={14} />
@@ -680,6 +925,11 @@ function TreeNodeRow({
               onToggleVisible={onToggleVisible}
               siblings={item.children}
               onMoveInSiblings={onMoveInSiblings}
+              draggedId={draggedId}
+              setDraggedId={setDraggedId}
+              dragOverState={dragOverState}
+              setDragOverState={setDragOverState}
+              onNodeDrop={onNodeDrop}
             />
           ))}
         </>
