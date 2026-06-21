@@ -306,22 +306,17 @@ export default function CommentSection({
                         className="text-xs font-heading font-extrabold text-zinc-700 dark:text-zinc-350 hover:text-[#727BBA] dark:hover:text-[#8E97D5] transition-colors truncate hover:underline flex items-center"
                       >
                         <span>{comment.nickname}</span>
-                        {comment.userId ? (
-                          <VerifiedBadge type="admin" />
-                        ) : comment.isAuthor ? (
-                          <VerifiedBadge type="author" />
-                        ) : null}
                       </a>
                     ) : (
                       <span className="text-xs font-heading font-extrabold text-zinc-700 dark:text-zinc-350 truncate flex items-center">
                         <span>{comment.nickname}</span>
-                        {comment.userId ? (
-                          <VerifiedBadge type="admin" />
-                        ) : comment.isAuthor ? (
-                          <VerifiedBadge type="author" />
-                        ) : null}
                       </span>
                     )}
+                    {comment.userId ? (
+                      <VerifiedBadge type="admin" />
+                    ) : comment.isAuthor ? (
+                      <VerifiedBadge type="author" />
+                    ) : null}
                     {comment.status === 'PENDING' && (
                       <span className="bg-amber-100/70 dark:bg-amber-950/30 border border-amber-200/50 dark:border-amber-900/30 text-amber-600 dark:text-amber-400 text-[9px] px-1.5 py-0.5 rounded font-medium select-none ml-1 shrink-0 animate-pulse">
                         待审核，仅自己可见
@@ -450,22 +445,17 @@ export default function CommentSection({
                                   className="font-heading font-extrabold text-zinc-700 dark:text-zinc-350 hover:text-[#727BBA] dark:hover:text-[#8E97D5] transition-colors truncate hover:underline flex items-center"
                                 >
                                   <span>{reply.nickname}</span>
-                                  {reply.userId ? (
-                                    <VerifiedBadge type="admin" />
-                                  ) : reply.isAuthor ? (
-                                    <VerifiedBadge type="author" />
-                                  ) : null}
                                 </a>
                               ) : (
                                 <span className="font-heading font-extrabold text-zinc-700 dark:text-zinc-350 truncate flex items-center">
                                   <span>{reply.nickname}</span>
-                                  {reply.userId ? (
-                                    <VerifiedBadge type="admin" />
-                                  ) : reply.isAuthor ? (
-                                    <VerifiedBadge type="author" />
-                                  ) : null}
                                 </span>
                               )}
+                              {reply.userId ? (
+                                <VerifiedBadge type="admin" />
+                              ) : reply.isAuthor ? (
+                                <VerifiedBadge type="author" />
+                              ) : null}
                               {reply.status === 'PENDING' && (
                                 <span className="bg-amber-100/70 dark:bg-amber-950/30 border border-amber-200/50 dark:border-amber-900/30 text-amber-600 dark:text-amber-400 text-[9px] px-1.5 py-0.5 rounded font-medium select-none ml-1 shrink-0 animate-pulse">
                                   待审核，仅自己可见
