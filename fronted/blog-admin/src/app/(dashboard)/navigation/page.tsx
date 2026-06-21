@@ -768,7 +768,7 @@ function TreeNodeRow({
         className={cn(
           "flex items-center gap-3 px-5 py-2.5 hover:bg-zinc-50 dark:hover:bg-zinc-900/20 transition-all group cursor-grab active:cursor-grabbing border-y border-transparent relative select-none",
           hidden ? "opacity-50" : "",
-          draggedId === item.id ? "bg-zinc-100/50 dark:bg-zinc-900/40 opacity-30 select-none pointer-events-none" : "",
+          draggedId === item.id ? "bg-zinc-100/50 dark:bg-zinc-900/40 opacity-30 select-none" : "",
           dragOverState?.targetId === item.id && dragOverState.position === "inside"
             ? "bg-rose-500/5 dark:bg-rose-500/10 border-rose-500/30 border-y-rose-500/30"
             : ""
