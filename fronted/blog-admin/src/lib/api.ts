@@ -38,7 +38,23 @@ apiClient.interceptors.request.use(
  * 响应拦截器 — 统一处理 401 未认证
  */
 apiClient.interceptors.response.use(
-  (response) => response,
+  (response) => {
+    // 校验后端统一响应体的状态码
+    const resData = response.data;
+    if (resData && typeof resData === "object" && "code" in resData) {
+      if (resData.code !== 200) {
+        // 如果业务 code 不是 200，说明业务出错，抛出异常，进入 catch 块
+        return Promise.reject({
+          response: {
+            status: resData.code,
+            data: resData,
+          },
+          message: resData.msg || "业务处理失败",
+        });
+      }
+    }
+    return response;
+  },
   (error: AxiosError) => {
     if (error.response?.status === 401) {
       // Token 过期或无效，清除本地存储并跳转登录页

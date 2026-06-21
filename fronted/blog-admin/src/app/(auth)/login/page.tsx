@@ -19,11 +19,23 @@ export default function LoginPage() {
   const [password, setPassword] = useState("");
   const [showPassword, setShowPassword] = useState(false);
   const [twoFactorCode, setTwoFactorCode] = useState("");
+  const [require2fa, setRequire2fa] = useState(false);
   const [submitting, setSubmitting] = useState(false);
   const [errorMsg, setErrorMsg] = useState<string | null>(null);
   const [rememberMe, setRememberMe] = useState(false);
 
   const containerRef = useRef<HTMLDivElement>(null);
+  const twoFactorInputRef = useRef<HTMLInputElement>(null);
+
+  // 监听用户名变化，自动根据本地缓存判断是否展示 2FA 输入框，实现“一次性直接登录”的极佳体验
+  useEffect(() => {
+    if (typeof window !== "undefined" && username.trim()) {
+      const isEnabled = localStorage.getItem(`blog_2fa_enabled_${username.trim()}`) === "true";
+      setRequire2fa(isEnabled);
+    } else {
+      setRequire2fa(false);
+    }
+  }, [username]);
 
   // 监听鼠标与触摸位置，更新 CSS 变量以驱动背景遮罩定位
   useEffect(() => {
@@ -63,18 +75,44 @@ export default function LoginPage() {
       return;
     }
 
+    if (require2fa && !twoFactorCode.trim()) {
+      setErrorMsg("请输入 6 位 2FA 验证码");
+      twoFactorInputRef.current?.focus();
+      return;
+    }
+
     setSubmitting(true);
     try {
       const result = await login({
         username: username.trim(),
         password,
-        twoFactorCode: twoFactorCode.trim() || undefined,
+        twoFactorCode: require2fa ? twoFactorCode.trim() : undefined,
       });
       if (result.success) {
+        // 登录成功，将该用户的最新的 2FA 状态缓存在本地，以便下次快速登录
+        const storedUser = localStorage.getItem("user_info");
+        if (storedUser) {
+          try {
+            const u = JSON.parse(storedUser);
+            if (u.twoFactorEnabled) {
+              localStorage.setItem(`blog_2fa_enabled_${username.trim()}`, "true");
+            } else {
+              localStorage.removeItem(`blog_2fa_enabled_${username.trim()}`);
+            }
+          } catch (err) {
+            console.error("解析用户信息失败", err);
+          }
+        }
         router.push("/");
       } else {
         if (result.error === "NEED_2FA") {
+          setRequire2fa(true);
+          localStorage.setItem(`blog_2fa_enabled_${username.trim()}`, "true");
           setErrorMsg("该账号已开启双重验证，请输入2FA验证码");
+          // 延迟聚焦，等待动画展开完毕
+          setTimeout(() => {
+            twoFactorInputRef.current?.focus();
+          }, 150);
         } else {
           setErrorMsg(result.error || "账号或密码错误");
         }
@@ -222,8 +260,14 @@ export default function LoginPage() {
               </div>
             </div>
 
-            {/* 2FA 双重验证码 */}
-            <div>
+            {/* 2FA 双重验证码 (带平滑手风琴展开动效) */}
+            <div 
+              className={`transition-all duration-300 ease-in-out overflow-hidden ${
+                require2fa 
+                  ? "max-h-[80px] opacity-100 mt-4" 
+                  : "max-h-0 opacity-0 !mt-0 pointer-events-none"
+              }`}
+            >
               <label className="mb-1 block text-[10px] font-bold text-zinc-500 dark:text-zinc-400 uppercase tracking-widest">
                 双重验证码 (2FA)
               </label>
@@ -232,10 +276,11 @@ export default function LoginPage() {
                   #
                 </span>
                 <input
+                  ref={twoFactorInputRef}
                   type="text"
                   value={twoFactorCode}
                   onChange={(e) => setTwoFactorCode(e.target.value.replace(/\D/g, "").slice(0, 6))}
-                  placeholder="未开启双重验证时请留空"
+                  placeholder="请输入 6 位验证码"
                   maxLength={6}
                   autoComplete="one-time-code"
                   className="w-full rounded border border-zinc-200 dark:border-zinc-800 bg-zinc-50 dark:bg-zinc-950 pl-9 pr-4 py-2 text-xs text-zinc-800 dark:text-zinc-200 placeholder-zinc-400 dark:placeholder-zinc-600 outline-none transition-colors focus:border-primary focus:bg-white dark:focus:bg-zinc-900"
