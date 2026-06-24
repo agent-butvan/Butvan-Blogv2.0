@@ -55,6 +55,7 @@ export default function HotspotPropertiesPanel({
   className = '',
 }: HotspotPropertiesPanelProps) {
   const replaceFileInputRef = useRef<HTMLInputElement>(null)
+  const [isExpandedMobile, setIsExpandedMobile] = useState(false)
 
   // --- 跳转目标下拉框数据 ---
   const [clientRoutes, setClientRoutes] = useState<ClientRoute[]>([])
@@ -120,10 +121,38 @@ export default function HotspotPropertiesPanel({
 
   return (
     <div
-      className={`flex flex-col gap-5 bg-white dark:bg-zinc-900 border border-zinc-200 dark:border-zinc-800 p-5 rounded-2xl shadow-sm ${className}`}
+      className={`flex flex-col gap-5 bg-white dark:bg-zinc-900 border border-zinc-200 dark:border-zinc-800 p-4 sm:p-5 rounded-2xl shadow-sm max-h-none lg:max-h-[calc(100vh-8rem)] lg:overflow-y-auto ${className}`}
     >
+      <div className="flex items-center justify-between lg:hidden">
+        <button
+          type="button"
+          onClick={() => setIsExpandedMobile((prev) => !prev)}
+          className="flex items-center gap-1.5 px-3 py-1.5 rounded-lg bg-zinc-100 dark:bg-zinc-800 text-zinc-700 dark:text-zinc-200 text-xs font-heading border border-zinc-200 dark:border-zinc-700"
+        >
+          {isExpandedMobile ? '收起属性面板' : '展开属性面板'}
+        </button>
+        <span className="text-[10px] text-zinc-500 dark:text-zinc-400 font-mono">
+          移动端精简视图
+        </span>
+      </div>
+
+      <div className="lg:hidden sticky top-0 z-20 bg-white dark:bg-zinc-900 pb-3 -mt-1">
+        <button
+          type="button"
+          onClick={() => setIsExpandedMobile((prev) => !prev)}
+          className="flex items-center gap-1.5 px-3 py-2 rounded-lg bg-zinc-100 dark:bg-zinc-800 text-zinc-700 dark:text-zinc-200 text-xs font-heading border border-zinc-200 dark:border-zinc-700 w-full justify-center shadow-sm"
+        >
+          {isExpandedMobile ? '收起属性面板' : '展开属性面板'}
+        </button>
+        <span className="mt-2 block text-[10px] text-zinc-500 dark:text-zinc-400 font-mono text-center">
+          移动端精简视图
+        </span>
+      </div>
+
+      {isExpandedMobile && (
+        <>
       {/* 热区列表 */}
-      <div className="flex flex-col gap-3 border-b border-zinc-200 dark:border-zinc-800 pb-4">
+      <div className="flex flex-col gap-3 border-b border-zinc-200 dark:border-zinc-800 pb-4 lg:sticky lg:top-0 lg:bg-white lg:dark:bg-zinc-900 lg:z-10">
         <h2 className="text-xs font-heading text-zinc-900 dark:text-zinc-50 font-bold flex items-center gap-1.5">
           <span className="w-1.5 h-1.5 rounded-full bg-primary" />
           物品列表 ({hotspotList.length})

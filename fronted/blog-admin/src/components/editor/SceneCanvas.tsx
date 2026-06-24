@@ -130,15 +130,20 @@ const SceneCanvas = forwardRef<HTMLDivElement, SceneCanvasProps>(
     return (
       <div className={`flex flex-col gap-3 ${className}`}>
         {/* 画布提示栏 */}
-        <div className="flex items-center justify-between bg-white dark:bg-zinc-900 border border-zinc-200 dark:border-zinc-800 px-4 py-2.5 rounded-xl shadow-xs">
-          <span className="text-xs font-heading text-zinc-800 dark:text-zinc-200 flex items-center gap-1.5">
-            <Move size={14} className="text-primary" />
-            {mode === 'draw'
-              ? '框选模式 — 在场景上拖动鼠标框选物品区域，松开自动裁剪上传'
-              : '编辑模式 — 点击物品选中，拖拽移动位置，拖拽右下角拉伸缩放'}
+        <div className="flex flex-col gap-2 bg-white dark:bg-zinc-900 border border-zinc-200 dark:border-zinc-800 px-4 py-3 rounded-xl shadow-xs sm:flex-row sm:items-center sm:justify-between">
+          <span className="text-xs font-heading text-zinc-800 dark:text-zinc-200 flex items-start gap-1.5 leading-relaxed">
+            <Move size={14} className="text-primary mt-0.5 shrink-0" />
+            <span className="hidden sm:inline">
+              {mode === 'draw'
+                ? '框选模式 — 在场景上拖动鼠标框选物品区域，松开自动裁剪上传'
+                : '编辑模式 — 点击物品选中，拖拽移动位置，拖拽右下角拉伸缩放'}
+            </span>
+            <span className="sm:hidden">
+              {mode === 'draw' ? '框选模式：拖动鼠标创建物品区域' : '编辑模式：点击选中并拖拽调整'}
+            </span>
           </span>
           <span
-            className={`text-xs font-heading px-2 py-0.5 rounded-full border ${
+            className={`self-start sm:self-auto text-xs font-heading px-2 py-0.5 rounded-full border ${
               mode === 'draw'
                 ? 'border-primary/40 text-primary bg-primary/5'
                 : 'border-zinc-200 dark:border-zinc-800 text-zinc-650 dark:text-zinc-400 bg-zinc-50 dark:bg-zinc-800/40'
@@ -152,7 +157,7 @@ const SceneCanvas = forwardRef<HTMLDivElement, SceneCanvasProps>(
         {/* 画布容器 */}
         <div
           ref={ref}
-          className={`relative w-full aspect-video rounded-2xl overflow-hidden border shadow-lg select-none ${
+          className={`relative w-full aspect-video min-h-[320px] lg:min-h-[420px] rounded-2xl overflow-hidden border shadow-lg select-none ${
             mode === 'draw'
               ? 'border-primary/40 ring-1 ring-primary/20'
               : 'border-zinc-200 dark:border-zinc-800'
@@ -187,6 +192,16 @@ const SceneCanvas = forwardRef<HTMLDivElement, SceneCanvasProps>(
 
           {/* Layer 4: 已保存的热区 */}
           <div className="absolute inset-0 w-full h-full z-10">
+            {activeHotspotId && (
+              <div className="absolute left-3 top-3 z-40 rounded-lg bg-zinc-950/85 border border-white/10 px-3 py-1.5 text-[10px] font-mono text-white shadow-lg sm:hidden">
+                当前选中: #{activeHotspotId}
+              </div>
+            )}
+            {activeHotspotId && (
+              <div className="absolute right-3 top-3 z-40 rounded-lg bg-primary/15 border border-primary/30 px-3 py-1.5 text-[10px] font-heading text-primary shadow-lg sm:hidden">
+                可拖拽或展开面板继续编辑
+              </div>
+            )}
             {hotspots.map((hotspot) => {
               if (!hotspot.itemImageUrl) return null
               const isSelected = activeHotspotId === hotspot.id
@@ -195,11 +210,11 @@ const SceneCanvas = forwardRef<HTMLDivElement, SceneCanvasProps>(
               return (
                 <div
                   key={hotspot.id}
-                  className={`absolute transition-all group ${
+                  className={`absolute transition-all group touch-manipulation ${
                     mode === 'draw' ? 'pointer-events-none' : 'cursor-move'
                   } ${
                     isSelected
-                      ? 'border-2 border-primary bg-primary/20 ring-2 ring-primary/35 z-30'
+                      ? 'border-2 border-primary bg-primary/25 ring-4 ring-primary/25 z-30 shadow-lg'
                       : 'border border-dashed border-primary/50 bg-primary/5 hover:border-primary/80 hover:bg-primary/10 z-20'
                   }`}
                   style={{
@@ -229,14 +244,14 @@ const SceneCanvas = forwardRef<HTMLDivElement, SceneCanvasProps>(
                   />
 
                   {/* 悬浮标签 */}
-                  <div className="absolute -top-5 left-0 bg-zinc-950/90 border border-white/10 px-1.5 py-0.5 rounded text-[8px] font-mono text-white pointer-events-none opacity-0 group-hover:opacity-100 transition-opacity whitespace-nowrap">
+                  <div className="absolute -top-5 left-0 bg-zinc-950/90 border border-white/10 px-1.5 py-0.5 rounded text-[8px] font-mono text-white pointer-events-none opacity-0 group-hover:opacity-100 transition-opacity whitespace-nowrap hidden sm:block">
                     {hotspot.itemName} ({hotspot.widthPercent}%)
                   </div>
 
                   {/* 选中态右下角缩放把手 */}
                   {isSelected && mode === 'select' && (
                     <div
-                      className="absolute -bottom-1.5 -right-1.5 w-3.5 h-3.5 bg-primary border border-black rounded-full cursor-se-resize z-50 flex items-center justify-center hover:scale-125 transition-transform"
+                      className="absolute -bottom-2 -right-2 w-6 h-6 sm:w-3.5 sm:h-3.5 bg-primary border border-black rounded-full cursor-se-resize z-50 flex items-center justify-center hover:scale-125 transition-transform shadow-md"
                       onMouseDown={(e) => {
                         e.stopPropagation()
                         onHotspotResizeStart(e, hotspot)
@@ -256,7 +271,7 @@ const SceneCanvas = forwardRef<HTMLDivElement, SceneCanvasProps>(
               className={`absolute z-40 transition-shadow ${
                 isDrawing ? 'pointer-events-none' : 'pointer-events-auto cursor-move shadow-2xl'
               }`}
-              style={getDrawRectStyle()}
+              style={{ ...getDrawRectStyle(), minWidth: '24px', minHeight: '24px' }}
               onMouseDown={(e) => {
                 if (isDrawing) return
                 onDrawingRectDragStart?.(e)
@@ -283,7 +298,7 @@ const SceneCanvas = forwardRef<HTMLDivElement, SceneCanvasProps>(
               {/* 选中态右下角缩放把手 */}
               {!isDrawing && (
                 <div
-                  className="absolute -bottom-1.5 -right-1.5 w-3.5 h-3.5 bg-primary border border-black rounded-full cursor-se-resize z-50 flex items-center justify-center hover:scale-125 transition-transform"
+                  className="absolute -bottom-2 -right-2 w-6 h-6 sm:w-3.5 sm:h-3.5 bg-primary border border-black rounded-full cursor-se-resize z-50 flex items-center justify-center hover:scale-125 transition-transform shadow-md"
                   onMouseDown={(e) => {
                     e.stopPropagation()
                     e.preventDefault()
@@ -297,7 +312,7 @@ const SceneCanvas = forwardRef<HTMLDivElement, SceneCanvasProps>(
               {/* 确认与取消微型悬浮工具栏 */}
               {!isDrawing && !isCropping && (
                 <div 
-                  className="absolute -bottom-12 left-1/2 -translate-x-1/2 flex items-center gap-1.5 bg-zinc-950/95 border border-white/10 px-2 py-1.5 rounded-xl shadow-2xl z-50 pointer-events-auto select-none whitespace-nowrap animate-fade-in"
+                  className="absolute -bottom-12 left-1/2 -translate-x-1/2 flex flex-col sm:flex-row items-stretch sm:items-center gap-1.5 bg-zinc-950/95 border border-white/10 px-2 py-1.5 rounded-xl shadow-2xl z-50 pointer-events-auto select-none whitespace-nowrap animate-fade-in min-w-[160px]"
                   onMouseDown={(e) => e.stopPropagation()} // 阻止拖拽冒泡
                 >
                   <button
@@ -305,7 +320,7 @@ const SceneCanvas = forwardRef<HTMLDivElement, SceneCanvasProps>(
                       e.stopPropagation()
                       onConfirmCrop?.()
                     }}
-                    className="px-2.5 py-1 rounded-md bg-primary hover:bg-primary/90 text-white text-xs font-heading font-medium flex items-center gap-1 cursor-pointer transition-colors duration-200 shadow-sm"
+                    className="px-2.5 py-1 rounded-md bg-primary hover:bg-primary/90 text-white text-xs font-heading font-medium flex items-center justify-center gap-1 cursor-pointer transition-colors duration-200 shadow-sm min-h-8"
                   >
                     确认裁剪 ✂️
                   </button>
@@ -314,7 +329,7 @@ const SceneCanvas = forwardRef<HTMLDivElement, SceneCanvasProps>(
                       e.stopPropagation()
                       onCancelCrop?.()
                     }}
-                    className="px-2 py-1 rounded-md bg-zinc-800 hover:bg-zinc-700 text-zinc-200 text-xs font-heading cursor-pointer transition-colors duration-200"
+                    className="px-2 py-1 rounded-md bg-zinc-800 hover:bg-zinc-700 text-zinc-200 text-xs font-heading cursor-pointer transition-colors duration-200 min-h-8"
                   >
                     取消
                   </button>

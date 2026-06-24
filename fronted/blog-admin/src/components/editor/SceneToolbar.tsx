@@ -62,24 +62,25 @@ export default function SceneToolbar({
     'flex items-center gap-1.5 px-3 py-1.5 rounded-lg border text-xs font-heading transition-all duration-200'
 
   return (
-    <div className="flex items-center justify-between border-b border-zinc-200 dark:border-zinc-800 pb-4 flex-wrap gap-3">
+    <div className="flex flex-col gap-3 border-b border-zinc-200 dark:border-zinc-800 pb-4 lg:flex-row lg:items-center lg:justify-between">
       {/* 左侧：返回 + 场景信息 */}
-      <div className="flex items-center gap-3">
+      <div className="flex items-start gap-3 flex-wrap">
         <Link href="/scenes">
           <button
-            className={`${modeBtnBase} border-zinc-200 dark:border-zinc-800 bg-white dark:bg-zinc-900 text-zinc-700 dark:text-zinc-300 hover:border-zinc-300 dark:hover:border-zinc-700 hover:bg-zinc-50 dark:hover:bg-zinc-800 cursor-pointer shadow-sm`}
+            className={`${modeBtnBase} border-zinc-200 dark:border-zinc-800 bg-white dark:bg-zinc-900 text-zinc-700 dark:text-zinc-300 hover:border-zinc-300 dark:hover:border-zinc-700 hover:bg-zinc-50 dark:hover:bg-zinc-800 cursor-pointer shadow-sm w-full sm:w-auto`}
           >
             <ArrowLeft size={14} /> 返回列表
           </button>
         </Link>
-        <div>
-          <h1 className="text-lg font-bold font-heading text-zinc-900 dark:text-zinc-50">
+        <div className="min-w-0">
+          <h1 className="text-lg font-bold font-heading text-zinc-900 dark:text-zinc-50 truncate max-w-[18rem] sm:max-w-none">
             场景物品编辑器
           </h1>
-          <p className="text-xs text-zinc-650 dark:text-zinc-400 mt-0.5">
-            编辑场景：
-            <span className="text-primary font-bold ml-1">{sceneTitle}</span>
-            <span className="text-zinc-550 dark:text-zinc-400 ml-2 font-mono text-xs">
+          <p className="text-xs text-zinc-650 dark:text-zinc-400 mt-0.5 flex flex-wrap items-center gap-x-2 gap-y-1">
+            <span className="min-w-0 truncate">
+              编辑场景：<span className="text-primary font-bold ml-1">{sceneTitle}</span>
+            </span>
+            <span className="text-zinc-550 dark:text-zinc-400 font-mono text-xs">
               ID {sceneId}
             </span>
           </p>
@@ -87,13 +88,13 @@ export default function SceneToolbar({
       </div>
 
       {/* 右侧：模式切换 + 手动上传 */}
-      <div className="flex items-center gap-2">
+      <div className="flex flex-wrap items-center gap-2 w-full lg:w-auto">
         {/* 模式切换组 */}
-        <div className="flex items-center rounded-xl bg-zinc-100/80 dark:bg-zinc-900 border border-zinc-200 dark:border-zinc-800 p-1 gap-0.5 animate-fade-in duration-200">
+        <div className="flex items-center rounded-xl bg-zinc-100/80 dark:bg-zinc-900 border border-zinc-200 dark:border-zinc-800 p-1 gap-0.5 animate-fade-in duration-200 w-full sm:w-auto">
           {/* 选择编辑模式 */}
           <button
             onClick={() => onModeChange('select')}
-            className={`${modeBtnBase} border-transparent cursor-pointer ${
+            className={`${modeBtnBase} border-transparent cursor-pointer flex-1 sm:flex-none justify-center ${
               mode === 'select'
                 ? 'bg-white dark:bg-zinc-800 text-primary border-zinc-200 dark:border-zinc-700 shadow-sm font-semibold'
                 : 'text-zinc-600 dark:text-zinc-400 hover:text-zinc-900 dark:hover:text-white hover:bg-white/50 dark:hover:bg-white/5'
@@ -106,7 +107,7 @@ export default function SceneToolbar({
           {/* 框选物品模式 */}
           <button
             onClick={() => onModeChange('draw')}
-            className={`${modeBtnBase} border-transparent cursor-pointer ${
+            className={`${modeBtnBase} border-transparent cursor-pointer flex-1 sm:flex-none justify-center ${
               mode === 'draw'
                 ? 'bg-white dark:bg-zinc-800 text-primary border-zinc-200 dark:border-zinc-700 shadow-sm font-semibold animate-draw-pulse'
                 : 'text-zinc-600 dark:text-zinc-400 hover:text-zinc-900 dark:hover:text-white hover:bg-white/50 dark:hover:bg-white/5'
@@ -121,14 +122,15 @@ export default function SceneToolbar({
         {mode === 'draw' && onSmartExtractionChange && (
           <button
             onClick={() => onSmartExtractionChange(!smartExtraction)}
-            className={`${modeBtnBase} border-zinc-200 dark:border-zinc-800 cursor-pointer shadow-sm ${
+            className={`${modeBtnBase} border-zinc-200 dark:border-zinc-800 cursor-pointer shadow-sm flex-1 sm:flex-none justify-center ${
               smartExtraction
                 ? 'bg-primary/10 text-primary border-primary/40 font-semibold'
                 : 'bg-white dark:bg-zinc-900 text-zinc-600 dark:text-zinc-400 hover:bg-zinc-50 dark:hover:bg-zinc-800'
             }`}
             title={smartExtraction ? '已启用 AI 智能抠图' : '已关闭智能抠图，使用矩形裁剪'}
           >
-            ✨ {smartExtraction ? '智能抠图' : '矩形裁剪'}
+            ✨ <span className="hidden sm:inline">{smartExtraction ? '智能抠图' : '矩形裁剪'}</span>
+            <span className="sm:hidden">抠图</span>
           </button>
         )}
 
@@ -143,7 +145,7 @@ export default function SceneToolbar({
         <button
           onClick={handleUploadClick}
           disabled={uploading}
-          className={`${modeBtnBase} border-zinc-200 dark:border-zinc-800 bg-white dark:bg-zinc-900 text-zinc-700 dark:text-zinc-300 hover:border-zinc-300 dark:hover:border-zinc-700 hover:bg-zinc-50 dark:hover:bg-zinc-800 disabled:opacity-50 cursor-pointer shadow-sm`}
+          className={`${modeBtnBase} border-zinc-200 dark:border-zinc-800 bg-white dark:bg-zinc-900 text-zinc-700 dark:text-zinc-300 hover:border-zinc-300 dark:hover:border-zinc-700 hover:bg-zinc-50 dark:hover:bg-zinc-800 disabled:opacity-50 cursor-pointer shadow-sm flex-1 sm:flex-none justify-center`}
         >
           <Upload size={14} />
           {uploading ? '上传中...' : '上传物品图'}

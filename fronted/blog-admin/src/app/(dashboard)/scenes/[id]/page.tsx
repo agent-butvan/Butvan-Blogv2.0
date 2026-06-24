@@ -614,7 +614,7 @@ export default function SceneEditorPage() {
   )
 
   return (
-    <div className="flex flex-col gap-6 p-6 min-h-screen text-zinc-600 dark:text-zinc-400 font-body max-w-[1600px] mx-auto text-left">
+    <div className="flex flex-col gap-6 p-4 sm:p-6 min-h-screen text-zinc-600 dark:text-zinc-400 font-body max-w-[1600px] mx-auto text-left">
       {/* 工具栏 */}
       <SceneToolbar
         sceneTitle={scene.title}
@@ -628,7 +628,7 @@ export default function SceneEditorPage() {
       />
 
       {/* 主区域：画布 + 属性面板 */}
-      <div className="grid grid-cols-1 xl:grid-cols-4 gap-6 items-start">
+      <div className="grid grid-cols-1 gap-6 items-start xl:grid-cols-4 lg:gap-5">
         {/* 画布 */}
         <SceneCanvas
           ref={containerRef}

@@ -4,7 +4,7 @@ import axios, { type AxiosInstance, type AxiosError } from "axios";
  * 后端 API 基地址
  * 开发环境默认指向本地 Spring Boot 服务
  */
-const BASE_URL = process.env.NEXT_PUBLIC_API_BASE_URL || "http://localhost:8080/api";
+const BASE_URL = process.env.NEXT_PUBLIC_API_BASE_URL || "/api";
 
 /**
  * Axios 实例 — 预配置 baseURL、超时、请求拦截器（注入 JWT）、响应拦截器（处理 401）

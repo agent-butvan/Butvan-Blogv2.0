@@ -161,10 +161,10 @@ export default function ScenesPage() {
 
 
   return (
-    <div className="flex flex-col gap-6 p-6 max-w-7xl mx-auto min-h-screen text-zinc-700 dark:text-zinc-350 font-body">
+    <div className="flex flex-col gap-6 p-4 sm:p-6 max-w-7xl mx-auto min-h-screen text-zinc-700 dark:text-zinc-350 font-body">
       {/* 页面标题 */}
-      <div className="flex items-center justify-between border-b border-zinc-200 dark:border-zinc-800 pb-4">
-        <div className="flex items-center gap-3">
+      <div className="flex flex-col gap-4 border-b border-zinc-200 dark:border-zinc-800 pb-4 lg:flex-row lg:items-center lg:justify-between">
+        <div className="flex items-center gap-3 min-w-0">
           <div className="w-10 h-10 rounded-xl bg-primary/10 flex items-center justify-center border border-primary/20 text-primary">
             <Layers className="w-5 h-5" />
           </div>
@@ -177,7 +177,7 @@ export default function ScenesPage() {
         </div>
         <button
           onClick={() => setShowCreateModal(true)}
-          className="flex items-center gap-1.5 px-4 py-2 bg-primary text-white text-xs font-heading font-medium rounded-lg shadow-sm hover:opacity-90 active:scale-98 transition-all duration-200 cursor-pointer"
+          className="flex items-center justify-center gap-1.5 px-4 py-2 bg-primary text-white text-xs font-heading font-medium rounded-lg shadow-sm hover:opacity-90 active:scale-98 transition-all duration-200 cursor-pointer w-full lg:w-auto"
         >
           <Plus size={14} />
           上传新场景
@@ -186,7 +186,7 @@ export default function ScenesPage() {
 
       {/* 主展示区：场景列表 */}
       <div className="flex flex-col gap-4">
-        <div className="flex items-center justify-between border-b border-zinc-200 dark:border-zinc-800 pb-3">
+        <div className="flex flex-col gap-2 border-b border-zinc-200 dark:border-zinc-800 pb-3 sm:flex-row sm:items-center sm:justify-between">
           <h2 className="text-sm font-heading text-zinc-900 dark:text-zinc-50 font-bold">
             全部房间场景 ({scenes.length})
           </h2>
@@ -197,14 +197,14 @@ export default function ScenesPage() {
 
         {loading ? (
           /* 骨架屏 */
-          <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-5">
+          <div className="grid grid-cols-1 gap-5 md:grid-cols-2 xl:grid-cols-3">
             <SkeletonCard />
             <SkeletonCard />
             <SkeletonCard />
           </div>
         ) : scenes.length === 0 ? (
           /* 空状态 */
-          <div className="flex flex-col items-center justify-center border border-dashed border-zinc-200 dark:border-zinc-800 rounded-2xl py-20 bg-white dark:bg-zinc-900/20 gap-3 shadow-sm">
+          <div className="flex flex-col items-center justify-center border border-dashed border-zinc-200 dark:border-zinc-800 rounded-2xl py-16 sm:py-20 bg-white dark:bg-zinc-900/20 gap-3 shadow-sm px-4 text-center">
             <MapPin size={36} className="text-zinc-450 dark:text-zinc-400" />
             <p className="text-sm font-heading font-semibold text-zinc-900 dark:text-zinc-50">
               暂无场景配置
@@ -214,7 +214,7 @@ export default function ScenesPage() {
             </p>
           </div>
         ) : (
-          <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-5">
+          <div className="grid grid-cols-1 gap-5 md:grid-cols-2 xl:grid-cols-3">
             {scenes.map((scene) => {
               const previewUrl = resolveUrl(scene.imageUrl)
               return (
@@ -271,16 +271,16 @@ export default function ScenesPage() {
                     </div>
 
                     {/* 操作按钮 */}
-                    <div className="flex justify-between items-center mt-2 pt-3 border-t border-zinc-100 dark:border-zinc-800/80 gap-2">
+                    <div className="flex flex-col gap-2 mt-2 pt-3 border-t border-zinc-100 dark:border-zinc-800/80 sm:flex-row sm:items-center">
                       {!scene.isActive ? (
                         <button
                           onClick={() => handleActivateScene(scene.id)}
-                          className="flex items-center gap-1 px-3 py-2 rounded-lg border border-zinc-200 dark:border-zinc-800 text-zinc-700 dark:text-zinc-300 text-xs font-heading font-medium hover:bg-zinc-50 dark:hover:bg-zinc-800/50 transition-colors flex-1 justify-center cursor-pointer"
+                          className="flex items-center gap-1 px-3 py-2 rounded-lg border border-zinc-200 dark:border-zinc-800 text-zinc-700 dark:text-zinc-300 text-xs font-heading font-medium hover:bg-zinc-50 dark:hover:bg-zinc-800/50 transition-colors flex-1 justify-center cursor-pointer min-h-9"
                         >
                           <Check size={13} /> 设为启用
                         </button>
                       ) : (
-                        <span className="flex-1 text-center text-xs text-emerald-600 dark:text-emerald-400 font-heading font-medium flex items-center justify-center gap-1">
+                        <span className="flex-1 text-center text-xs text-emerald-600 dark:text-emerald-400 font-heading font-medium flex items-center justify-center gap-1 min-h-9 rounded-lg border border-emerald-500/20 bg-emerald-500/5">
                           <span className="w-1.5 h-1.5 rounded-full bg-emerald-500 animate-pulse" />
                           正在启用中
                         </span>
@@ -289,7 +289,7 @@ export default function ScenesPage() {
                         href={`/scenes/${scene.id}`}
                         className="flex-1"
                       >
-                        <button className="flex items-center gap-1 px-3 py-2 rounded-lg bg-zinc-50 dark:bg-zinc-800/50 border border-zinc-200 dark:border-zinc-800 text-zinc-700 dark:text-zinc-300 text-xs font-heading font-medium hover:bg-zinc-100 dark:hover:bg-zinc-800 transition-colors w-full justify-center cursor-pointer">
+                        <button className="flex items-center gap-1 px-3 py-2 rounded-lg bg-zinc-50 dark:bg-zinc-800/50 border border-zinc-200 dark:border-zinc-800 text-zinc-700 dark:text-zinc-300 text-xs font-heading font-medium hover:bg-zinc-100 dark:hover:bg-zinc-800 transition-colors w-full justify-center cursor-pointer min-h-9">
                           <Eye size={13} /> 编辑物品
                         </button>
                       </Link>
@@ -387,7 +387,7 @@ export default function ScenesPage() {
                           <button
                             type="button"
                             onClick={() => fileInputRef.current?.click()}
-                            className="px-3 py-1.5 rounded-md bg-white dark:bg-zinc-800 text-zinc-900 dark:text-zinc-100 text-xs font-medium hover:bg-zinc-100 dark:hover:bg-zinc-700 transition-colors cursor-pointer"
+                            className="px-3 py-1.5 rounded-md bg-white dark:bg-zinc-800 text-zinc-900 dark:text-zinc-100 text-xs font-medium hover:bg-zinc-100 dark:hover:bg-zinc-700 transition-colors cursor-pointer min-h-9"
                           >
                             重新选择
                           </button>
@@ -398,7 +398,7 @@ export default function ScenesPage() {
                         type="button"
                         disabled={uploading}
                         onClick={() => fileInputRef.current?.click()}
-                        className="flex items-center gap-1.5 px-3 py-2 rounded-lg bg-white dark:bg-zinc-800 border border-zinc-200 dark:border-zinc-700 text-zinc-700 dark:text-zinc-200 text-xs font-heading hover:bg-zinc-50 dark:hover:bg-zinc-800 transition-colors disabled:opacity-50 cursor-pointer shadow-sm"
+                        className="flex items-center justify-center gap-1.5 px-3 py-2 rounded-lg bg-white dark:bg-zinc-800 border border-zinc-200 dark:border-zinc-700 text-zinc-700 dark:text-zinc-200 text-xs font-heading hover:bg-zinc-50 dark:hover:bg-zinc-800 transition-colors disabled:opacity-50 cursor-pointer shadow-sm min-h-10 w-full"
                       >
                         {uploading ? (
                           <Spinner size="sm" />
