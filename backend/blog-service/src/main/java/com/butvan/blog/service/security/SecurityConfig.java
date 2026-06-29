@@ -21,6 +21,9 @@ import org.springframework.security.web.authentication.UsernamePasswordAuthentic
 import org.springframework.web.cors.CorsConfiguration;
 import org.springframework.web.cors.CorsConfigurationSource;
 import org.springframework.web.cors.UrlBasedCorsConfigurationSource;
+import com.butvan.blog.common.result.Result;
+import com.fasterxml.jackson.databind.ObjectMapper;
+import jakarta.servlet.http.HttpServletResponse;
 import java.util.List;
 
 /**
@@ -32,6 +35,7 @@ import java.util.List;
 public class SecurityConfig {
 
     private final UserRepository userRepository;
+    private final ObjectMapper objectMapper;
 
     /**
      * 配置 UserDetailsService，对接 JPA 的 UserRepository 查询逻辑
@@ -112,6 +116,19 @@ public class SecurityConfig {
                     .requestMatchers("/uploads/**").permitAll()
                     // 其它任何后台 API 均需校验 Bearer Token 权限身份
                     .anyRequest().authenticated()
+            )
+            // 配置未认证和未授权时的统一 JSON 响应体
+            .exceptionHandling(exceptions -> exceptions
+                    .authenticationEntryPoint((request, response, authException) -> {
+                        response.setContentType("application/json;charset=UTF-8");
+                        response.setStatus(HttpServletResponse.SC_UNAUTHORIZED);
+                        response.getWriter().write(objectMapper.writeValueAsString(Result.error(401, "未授权，请重新登录")));
+                    })
+                    .accessDeniedHandler((request, response, accessDeniedException) -> {
+                        response.setContentType("application/json;charset=UTF-8");
+                        response.setStatus(HttpServletResponse.SC_FORBIDDEN);
+                        response.getWriter().write(objectMapper.writeValueAsString(Result.error(403, "无权限访问该资源")));
+                    })
             )
             // 将 JWT 过滤器放置在 Spring Security 默认表单拦截器 UsernamePasswordAuthenticationFilter 之前
             .addFilterBefore(jwtAuthFilter, UsernamePasswordAuthenticationFilter.class);

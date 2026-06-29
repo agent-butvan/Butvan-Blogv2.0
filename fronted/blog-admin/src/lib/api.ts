@@ -43,6 +43,16 @@ apiClient.interceptors.response.use(
     const resData = response.data;
     if (resData && typeof resData === "object" && "code" in resData) {
       if (resData.code !== 200) {
+        // 如果业务 code 为 401，清除本地存储并跳转登录页
+        if (resData.code === 401) {
+          if (typeof window !== "undefined") {
+            localStorage.removeItem("access_token");
+            localStorage.removeItem("user_info");
+            if (!window.location.pathname.includes("/login")) {
+              window.location.href = "/login";
+            }
+          }
+        }
         // 如果业务 code 不是 200，说明业务出错，抛出异常，进入 catch 块
         return Promise.reject({
           response: {
