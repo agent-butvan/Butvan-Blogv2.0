@@ -1,28 +1,32 @@
 /**
- * 图片 URL 解析工具函数
- *
- * 统一管理所有图片 URL 的拼接逻辑，
- * 避免在多个组件中硬编码 `${baseURL}/uploads/...`。
+ * API 基地址（含 /api 后缀）
+ * 开发环境默认 /api，走 Next.js 代理；生产需配置 NEXT_PUBLIC_API_BASE_URL
  */
+export const API_BASE =
+  process.env.NEXT_PUBLIC_API_BASE_URL || "/api";
 
-const API_BASE = process.env.NEXT_PUBLIC_API_BASE_URL || 'http://localhost:8080'
+/**
+ * 后端 Host（不含 /api），用于拼接 /uploads 等静态资源
+ */
+export function getBackendHost(): string {
+  if (process.env.NEXT_PUBLIC_API_BASE_URL) {
+    return process.env.NEXT_PUBLIC_API_BASE_URL.replace(/\/api\/?$/, "");
+  }
+  if (process.env.NEXT_PUBLIC_BACKEND_URL) {
+    return process.env.NEXT_PUBLIC_BACKEND_URL.replace(/\/$/, "");
+  }
+  return "";
+}
 
 /**
  * 解析相对路径图片 URL 为完整可访问地址
- *
- * @param url 图片相对路径（如 /uploads/uuid.png）或完整 URL
- * @returns 可访问的完整图片 URL，url 为空时返回空字符串
- *
- * @example
- * resolveImageUrl('/uploads/abc.png')  // => 'http://localhost:8080/uploads/abc.png'
- * resolveImageUrl('https://cdn.example.com/img.png')  // => 'https://cdn.example.com/img.png'
- * resolveImageUrl(undefined)  // => ''
  */
 export function resolveImageUrl(url?: string): string {
-  if (!url) return ''
-  // 已经是绝对 URL（含协议头）或本地静态 public 目录图片则直接返回
-  if (url.startsWith('http://') || url.startsWith('https://') || url.startsWith('/images/')) return url
-  // 相对路径拼接后端基础 URL
-  if (url.startsWith('/')) return `${API_BASE}${url}`
-  return `${API_BASE}/${url}`
+  if (!url) return "";
+  if (url.startsWith("http://") || url.startsWith("https://") || url.startsWith("/images/")) {
+    return url;
+  }
+  const host = getBackendHost();
+  if (url.startsWith("/")) return `${host}${url}`;
+  return `${host}/${url}`;
 }
