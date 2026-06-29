@@ -6,7 +6,7 @@ import { ArrowLeft, FileText, Settings, Sparkles, RefreshCw } from 'lucide-react
 import Link from 'next/link'
 import { useRouter } from 'next/navigation'
 import Image from 'next/image'
-import { resolveImageUrl } from '@/lib/image-url'
+import { resolveImageUrl, API_BASE } from '@/lib/image-url'
 
 // Define v0.2 Hotspot and Scene types matching backend VO
 interface Hotspot {
@@ -61,7 +61,7 @@ export default function RoomPage() {
   const fetchActiveScene = () => {
     setLoading(true)
     setError(null)
-    fetch('http://localhost:8080/api/scenes/active')
+    fetch(`${API_BASE}/scenes/active`)
       .then((res) => {
         if (!res.ok) {
           throw new Error('无法连接到服务端，或目前无激活的房间场景')

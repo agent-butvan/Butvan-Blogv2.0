@@ -2,6 +2,7 @@
 
 import React, { useState, useEffect, useRef } from 'react'
 import apiClient from '@/lib/api'
+import { resolveAssetUrl } from '@/lib/image-url'
 import { toast } from '@/lib/toast'
 import { Spinner } from '@heroui/react'
 import { MapPin, Upload, Layers, Plus, Check, Eye, Trash2, X } from 'lucide-react'
@@ -155,8 +156,7 @@ export default function ScenesPage() {
   }
 
   /** 解析预览 URL */
-  const resolveUrl = (url: string) =>
-    url.startsWith('/') ? `http://localhost:8080${url}` : url
+  const resolveUrl = resolveAssetUrl
 
 
 

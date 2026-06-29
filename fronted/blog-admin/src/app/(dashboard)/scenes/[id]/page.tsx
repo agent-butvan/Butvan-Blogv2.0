@@ -3,6 +3,7 @@
 import React, { useState, useEffect, useRef, useCallback } from 'react'
 import { useParams, useRouter } from 'next/navigation'
 import apiClient from '@/lib/api'
+import { resolveAssetUrl } from '@/lib/image-url'
 import { toast } from '@/lib/toast'
 import { cropImageFromBackground } from '@/lib/canvas-crop'
 import { removeImageBackground } from '@/lib/background-removal'
@@ -486,9 +487,7 @@ export default function SceneEditorPage() {
     setIsCropping(true)
     try {
       // 1. 从背景图裁剪矩形区域
-      const bgUrl = scene!.imageUrl.startsWith('/')
-        ? `http://localhost:8080${scene!.imageUrl}`
-        : scene!.imageUrl
+      const bgUrl = resolveAssetUrl(scene!.imageUrl)
       const { blob: croppedBlob } = await cropImageFromBackground(
         bgUrl,
         rect.xPercent,
@@ -604,9 +603,7 @@ export default function SceneEditorPage() {
   }
 
 
-  const bgImgUrl = scene.imageUrl.startsWith('/')
-    ? `http://localhost:8080${scene.imageUrl}`
-    : scene.imageUrl
+  const bgImgUrl = resolveAssetUrl(scene.imageUrl)
 
   // 动态合并当前正在拖拽/编辑中的热区坐标，使得画布能够实时反映位置与属性的变化
   const hotspotsForCanvas = scene.hotspots.map((h) =>

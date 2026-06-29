@@ -36,6 +36,7 @@ import {
 
 import SlashMenu, { SLASH_COMMANDS, type SlashCommand } from "./SlashMenu";
 import apiClient from "@/lib/api";
+import { resolveAssetUrl } from "@/lib/image-url";
 
 const lowlight = createLowlight(all);
 
@@ -141,7 +142,7 @@ export default function MarkdownEditor({
     if (res.data.code === 200 || res.data.code === 0) {
       let url = res.data.data.fileUrl;
       if (url.startsWith("/")) {
-        url = `http://localhost:8080${url}`;
+        url = resolveAssetUrl(url);
       }
       return url;
     }

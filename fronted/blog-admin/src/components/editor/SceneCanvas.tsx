@@ -3,6 +3,7 @@
 import React, { forwardRef } from 'react'
 import { Maximize, Move } from 'lucide-react'
 import type { EditorMode } from './SceneToolbar'
+import { resolveAssetUrl } from '@/lib/image-url'
 
 /** 热区数据（与编辑器页面保持一致） */
 export interface HotspotData {
@@ -108,8 +109,7 @@ const SceneCanvas = forwardRef<HTMLDivElement, SceneCanvasProps>(
     ref
   ) => {
     /** 解析图片 URL */
-    const resolveUrl = (url: string) =>
-      url.startsWith('/') ? `http://localhost:8080${url}` : url
+    const resolveUrl = resolveAssetUrl
 
     /** 绘制矩形的 CSS 样式（支持任意方向拖拽） */
     const getDrawRectStyle = () => {

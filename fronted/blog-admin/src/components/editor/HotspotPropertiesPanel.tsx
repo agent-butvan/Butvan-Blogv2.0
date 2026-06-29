@@ -5,6 +5,7 @@ import { Save, Trash2, Upload, HelpCircle, SquareDashed, Loader2 } from 'lucide-
 import type { HotspotData } from './SceneCanvas'
 import { fetchClientRoutes, fetchArticlesSimple, fetchCategoriesSimple } from '@/lib/client-route-api'
 import type { ClientRoute, ArticleSimple, CategorySimple } from '@/types/route'
+import { resolveAssetUrl } from '@/lib/image-url'
 
 /** 热区属性面板 Props */
 interface HotspotPropertiesPanelProps {
@@ -102,10 +103,6 @@ export default function HotspotPropertiesPanel({
     return () => clearTimeout(timer)
   }, [hotspot?.redirectType, articles.length, articlesLoading, categories.length, categoriesLoading])
 
-  /** 解析图片 URL */
-  const resolveUrl = (url: string) =>
-    url.startsWith('/') ? `http://localhost:8080${url}` : url
-
   /** 触发替换图片 */
   const handleReplaceClick = () => {
     replaceFileInputRef.current?.click()
@@ -123,20 +120,7 @@ export default function HotspotPropertiesPanel({
     <div
       className={`flex flex-col gap-5 bg-white dark:bg-zinc-900 border border-zinc-200 dark:border-zinc-800 p-4 sm:p-5 rounded-2xl shadow-sm max-h-none lg:max-h-[calc(100vh-8rem)] lg:overflow-y-auto ${className}`}
     >
-      <div className="flex items-center justify-between lg:hidden">
-        <button
-          type="button"
-          onClick={() => setIsExpandedMobile((prev) => !prev)}
-          className="flex items-center gap-1.5 px-3 py-1.5 rounded-lg bg-zinc-100 dark:bg-zinc-800 text-zinc-700 dark:text-zinc-200 text-xs font-heading border border-zinc-200 dark:border-zinc-700"
-        >
-          {isExpandedMobile ? '收起属性面板' : '展开属性面板'}
-        </button>
-        <span className="text-[10px] text-zinc-500 dark:text-zinc-400 font-mono">
-          移动端精简视图
-        </span>
-      </div>
-
-      <div className="lg:hidden sticky top-0 z-20 bg-white dark:bg-zinc-900 pb-3 -mt-1">
+      <div className="lg:hidden sticky top-0 z-20 bg-white dark:bg-zinc-900 pb-3">
         <button
           type="button"
           onClick={() => setIsExpandedMobile((prev) => !prev)}
@@ -144,13 +128,9 @@ export default function HotspotPropertiesPanel({
         >
           {isExpandedMobile ? '收起属性面板' : '展开属性面板'}
         </button>
-        <span className="mt-2 block text-[10px] text-zinc-500 dark:text-zinc-400 font-mono text-center">
-          移动端精简视图
-        </span>
       </div>
 
-      {isExpandedMobile && (
-        <>
+      <div className={`flex flex-col gap-5 ${isExpandedMobile ? 'flex' : 'hidden'} lg:flex`}>
       {/* 热区列表 */}
       <div className="flex flex-col gap-3 border-b border-zinc-200 dark:border-zinc-800 pb-4 lg:sticky lg:top-0 lg:bg-white lg:dark:bg-zinc-900 lg:z-10">
         <h2 className="text-xs font-heading text-zinc-900 dark:text-zinc-50 font-bold flex items-center gap-1.5">
@@ -227,7 +207,7 @@ export default function HotspotPropertiesPanel({
             {hotspot.itemImageUrl ? (
               <div className="relative aspect-video rounded-xl overflow-hidden border border-zinc-200 dark:border-zinc-800 bg-zinc-50 dark:bg-zinc-950/30">
                 <img
-                  src={resolveUrl(hotspot.itemImageUrl)}
+                  src={resolveAssetUrl(hotspot.itemImageUrl)}
                   alt={hotspot.itemName}
                   className="w-full h-full object-contain"
                 />
@@ -529,6 +509,7 @@ export default function HotspotPropertiesPanel({
           </button>
         </div>
       )}
+      </div>
     </div>
   )
 }
