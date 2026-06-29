@@ -12,6 +12,13 @@ Butvan Blog2.0/                                    # 📦 项目根目录
 ├── PRODUCT.md                                     # 产品迭代需求文档（v0.1 / v0.2）
 ├── DATA_MODEL.md                                  # 数据库模型完整设计（10模块19张表）
 ├── fWdgJuAOF.jpeg                                 # 默认「Cozy Room」场景高清背景图
+├── .graphifyignore                                # 🔍 Graphify 本地提取忽略规则配置（剔除文档/媒体文件以实现免 LLM 提取）
+│
+├── .agents/                                       # 🤖 智能体辅助开发配置
+│   ├── rules/
+│   │   └── graphify.md                            #   Graphify 关联规则配置（指导 IDE 优先查询知识图谱）
+│   └── workflows/
+│       └── graphify.md                            #   Graphify 关联工作流配置（自动化更新图谱）
 │
 ├── .claude/                                       # 🤖 Claude Code 配置
 │   └── skills/
@@ -394,6 +401,9 @@ Butvan Blog2.0/                                    # 📦 项目根目录
 | `backend/blog-pojo/.../entity/` | 后端-模型 | 19 个 JPA 实体类，与数据库表一一对应 |
 | `backend/blog-service/.../security/JwtAuthFilter.java` | 后端-安全 | JWT 认证过滤器，每次请求校验 Token |
 | `backend/blog-service/.../security/SecurityConfig.java` | 后端-安全 | Spring Security 配置，白名单与权限规则 |
+| `.graphifyignore` | 根目录 | Graphify 排除非代码静态资源的规则配置文件（避免免 Key 模式下提取报错） |
+| `.agents/rules/graphify.md` | 智能体-规则 | 指引 Antigravity IDE 助手优先通过 Graphify 知识图谱进行 codebase 分析的规则 |
+| `.agents/workflows/graphify.md` | 智能体-工作流 | Graphify 知识图谱自动化检测与增量重构工作流配置 |
 
 > **注意**：
 > - 目录结构严格遵循大厂开发规范，前端按业务领域分组组件，后端按三层分层架构组织
@@ -402,4 +412,4 @@ Butvan Blog2.0/                                    # 📦 项目根目录
 
 ---
 
-*最后更新：2026-06-21*
+*最后更新：2026-06-29*

@@ -1,0 +1,33 @@
+# 忽略所有非代码文档与媒体文件，以在本地无 LLM API key 状态下建立纯代码知识图谱
+*.md
+*.txt
+*.pdf
+*.docx
+*.png
+*.jpg
+*.jpeg
+*.gif
+*.svg
+*.webp
+*.ico
+*.json
+*.yaml
+*.yml
+*.toml
+*.xml
+*.properties
+
+# 忽略临时和依赖目录
+node_modules/
+.next/
+out/
+build/
+dist/
+.pnpm-store/
+target/
+.mvn/
+.settings/
+.idea/
+.vscode/
+.agents/
+graphify-out/
