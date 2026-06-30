@@ -46,6 +46,7 @@ dependency-reduced-pom.xml
 # AI Agent & Skills
 .agents/
 .claude/
+.trae/
 skills-lock.json
 
 # Local Uploads
