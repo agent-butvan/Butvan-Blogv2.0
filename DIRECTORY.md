@@ -93,6 +93,8 @@ Butvan Blog2.0/                                    # 📦 项目根目录
 │   │   │   │   ├── comment/                       #       评论组件
 │   │   │   │   │   ├── CommentSection.tsx         #         评论区容器（嵌套回复结构）
 │   │   │   │   │   └── CommentForm.tsx            #         评论表单（Markdown 快捷输入）
+│   │   │   │   ├── friend/                        #       友链组件
+│   │   │   │   │   └── FriendLinks.tsx            #         友链目录（按分类分组的编辑式列表，GSAP 入场动效）
 │   │   │   │   └── series/                        #       系列组件
 │   │   │   │       └── SeriesNavigation.tsx       #         系列目录导航（上一篇/下一篇）
 │   │   │   ├── hooks/                             #     🪝 自定义 Hooks
