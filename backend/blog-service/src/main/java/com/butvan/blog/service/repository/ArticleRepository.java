@@ -1,9 +1,13 @@
 package com.butvan.blog.service.repository;
 
 import com.butvan.blog.pojo.entity.Article;
+import org.springframework.data.domain.Pageable;
 import org.springframework.data.jpa.repository.JpaRepository;
 import org.springframework.data.jpa.repository.JpaSpecificationExecutor;
+import org.springframework.data.jpa.repository.Query;
 import org.springframework.stereotype.Repository;
+
+import java.util.List;
 import java.util.Optional;
 
 /**
@@ -35,4 +39,22 @@ public interface ArticleRepository extends JpaRepository<Article, Long>, JpaSpec
      * @return 是否存在
      */
     boolean existsByTagsId(Long tagId);
+
+    /**
+     * 统计指定状态文章的浏览量总和
+     *
+     * @param status 文章状态
+     * @return 浏览量总和
+     */
+    @Query("SELECT COALESCE(SUM(a.viewCount), 0) FROM Article a WHERE a.status = :status")
+    Long sumViewCountByStatus(String status);
+
+    /**
+     * 查询最近发布的文章列表
+     *
+     * @param status   文章状态
+     * @param pageable 分页参数
+     * @return 文章列表
+     */
+    List<Article> findByStatusOrderByPublishedAtDesc(String status, Pageable pageable);
 }

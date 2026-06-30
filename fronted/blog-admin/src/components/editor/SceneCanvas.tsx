@@ -4,6 +4,7 @@ import React, { forwardRef } from 'react'
 import { Maximize, Move } from 'lucide-react'
 import type { EditorMode } from './SceneToolbar'
 import { resolveAssetUrl } from '@/lib/image-url'
+import { toast } from '@/lib/toast'
 
 /** 热区数据（与编辑器页面保持一致） */
 export interface HotspotData {
@@ -51,6 +52,12 @@ interface SceneCanvasProps {
   extractionProgress?: number
   /** 是否正在进行智能抠图 */
   isExtracting?: boolean
+  /** 显示辅助网格 */
+  showGrid?: boolean
+  /** 网格间距百分比 */
+  activeGridSize?: number
+  /** 当前拖拽时的吸附线信息 */
+  draggedHotspotSnapLines?: { x: number | null; y: number | null }
   /** 画布鼠标按下 */
   onMouseDown: (e: React.MouseEvent<HTMLDivElement>) => void
   /** 画布鼠标移动 */
@@ -60,13 +67,23 @@ interface SceneCanvasProps {
   /** 选中热区 */
   onHotspotSelect: (hotspot: HotspotData) => void
   /** 开始拖拽热区 */
-  onHotspotDragStart: (e: React.MouseEvent<HTMLDivElement>, hotspot: HotspotData) => void
+  onHotspotDragStart: (
+    e: React.MouseEvent<HTMLDivElement> | React.TouchEvent<HTMLDivElement>,
+    hotspot: HotspotData
+  ) => void
   /** 开始缩放热区 */
-  onHotspotResizeStart: (e: React.MouseEvent<HTMLDivElement>, hotspot: HotspotData) => void
+  onHotspotResizeStart: (
+    e: React.MouseEvent<HTMLDivElement> | React.TouchEvent<HTMLDivElement>,
+    hotspot: HotspotData
+  ) => void
   /** 开始拖拽临时选区 */
-  onDrawingRectDragStart?: (e: React.MouseEvent<HTMLDivElement>) => void
+  onDrawingRectDragStart?: (
+    e: React.MouseEvent<HTMLDivElement> | React.TouchEvent<HTMLDivElement>
+  ) => void
   /** 开始缩放临时选区 */
-  onDrawingRectResizeStart?: (e: React.MouseEvent<HTMLDivElement>) => void
+  onDrawingRectResizeStart?: (
+    e: React.MouseEvent<HTMLDivElement> | React.TouchEvent<HTMLDivElement>
+  ) => void
   /** 确认裁剪选区 */
   onConfirmCrop?: () => void
   /** 取消裁剪选区 */
@@ -78,9 +95,10 @@ interface SceneCanvasProps {
 /**
  * 场景可视化画布
  *
- * 支持两种模式：
+ * 支持三种模式：
  * - select：选中 / 拖拽移动 / 拉伸缩放已有热区物品
  * - draw：在背景图上拖拽框选矩形区域，松手触发裁剪
+ * - preview：预览前台沉浸式发光悬浮动效
  */
 const SceneCanvas = forwardRef<HTMLDivElement, SceneCanvasProps>(
   (
@@ -94,6 +112,9 @@ const SceneCanvas = forwardRef<HTMLDivElement, SceneCanvasProps>(
       isCropping,
       extractionProgress = 0,
       isExtracting = false,
+      showGrid = false,
+      activeGridSize = 5,
+      draggedHotspotSnapLines = { x: null, y: null },
       onMouseDown,
       onMouseMove,
       onMouseUp,
@@ -110,6 +131,9 @@ const SceneCanvas = forwardRef<HTMLDivElement, SceneCanvasProps>(
   ) => {
     /** 解析图片 URL */
     const resolveUrl = resolveAssetUrl
+
+    // 预览模式下的 hovered 物品状态
+    const [hoveredHotspotId, setHoveredHotspotId] = React.useState<number | null>(null)
 
     /** 绘制矩形的 CSS 样式（支持任意方向拖拽） */
     const getDrawRectStyle = () => {
@@ -136,23 +160,30 @@ const SceneCanvas = forwardRef<HTMLDivElement, SceneCanvasProps>(
             <span className="hidden sm:inline">
               {mode === 'draw'
                 ? '框选模式 — 在场景上拖动鼠标框选物品区域，松开自动裁剪上传'
+                : mode === 'preview'
+                ? '预览模式 — 移动鼠标悬浮在物品上，或触屏轻点，可预览前台物理悬浮与发光交互'
                 : '编辑模式 — 点击物品选中，拖拽移动位置，拖拽右下角拉伸缩放'}
             </span>
             <span className="sm:hidden">
-              {mode === 'draw' ? '框选模式：拖动鼠标创建物品区域' : '编辑模式：点击选中并拖拽调整'}
+              {mode === 'draw'
+                ? '框选模式：拖动鼠标创建物品区域'
+                : mode === 'preview'
+                ? '预览模式：悬浮或点击物品预览效果'
+                : '编辑模式：点击选中并拖拽调整'}
             </span>
           </span>
           <span
-            className={`self-start sm:self-auto text-xs font-heading px-2 py-0.5 rounded-full border ${
+            className={`self-start sm:self-auto text-xs font-heading px-2.5 py-0.5 rounded-full border ${
               mode === 'draw'
                 ? 'border-primary/40 text-primary bg-primary/5'
+                : mode === 'preview'
+                ? 'border-emerald-500/30 text-emerald-600 dark:text-emerald-400 bg-emerald-500/5'
                 : 'border-zinc-200 dark:border-zinc-800 text-zinc-650 dark:text-zinc-400 bg-zinc-50 dark:bg-zinc-800/40'
             }`}
           >
-            {mode === 'draw' ? '🔲 绘制模式' : '🖱 选择模式'}
+            {mode === 'draw' ? '🔲 绘制模式' : mode === 'preview' ? '👁 预览模式' : '🖱 选择模式'}
           </span>
         </div>
-
 
         {/* 画布容器 */}
         <div
@@ -160,12 +191,50 @@ const SceneCanvas = forwardRef<HTMLDivElement, SceneCanvasProps>(
           className={`relative w-full aspect-video min-h-[320px] lg:min-h-[420px] rounded-2xl overflow-hidden border shadow-lg select-none ${
             mode === 'draw'
               ? 'border-primary/40 ring-1 ring-primary/20'
+              : mode === 'preview'
+              ? 'border-emerald-500/30 ring-1 ring-emerald-500/10'
               : 'border-zinc-200 dark:border-zinc-800'
           }`}
           style={{ cursor: mode === 'draw' ? 'crosshair' : 'default' }}
-          onMouseDown={onMouseDown}
-          onMouseMove={onMouseMove}
-          onMouseUp={onMouseUp}
+          onMouseDown={mode === 'preview' ? undefined : onMouseDown}
+          onMouseMove={mode === 'preview' ? undefined : onMouseMove}
+          onMouseUp={mode === 'preview' ? undefined : onMouseUp}
+          onTouchStart={mode === 'preview' ? undefined : (e) => {
+            if (e.touches.length === 1 && mode === 'draw') {
+              // 兼容 touch 绘图坐标转换
+              const rect = e.currentTarget.getBoundingClientRect()
+              const touch = e.touches[0]
+              const mockEvent = {
+                clientX: touch.clientX,
+                clientY: touch.clientY,
+                preventDefault: () => {},
+                stopPropagation: () => {},
+              } as unknown as React.MouseEvent<HTMLDivElement>
+              onMouseDown(mockEvent)
+            }
+          }}
+          onTouchMove={mode === 'preview' ? undefined : (e) => {
+            if (e.touches.length === 1 && isDrawing && mode === 'draw') {
+              const rect = e.currentTarget.getBoundingClientRect()
+              const touch = e.touches[0]
+              const mockEvent = {
+                clientX: touch.clientX,
+                clientY: touch.clientY,
+                preventDefault: () => {},
+                stopPropagation: () => {},
+              } as unknown as React.MouseEvent<HTMLDivElement>
+              onMouseMove(mockEvent)
+            }
+          }}
+          onTouchEnd={mode === 'preview' ? undefined : (e) => {
+            if (isDrawing && mode === 'draw') {
+              const mockEvent = {
+                preventDefault: () => {},
+                stopPropagation: () => {},
+              } as unknown as React.MouseEvent<HTMLDivElement>
+              onMouseUp(mockEvent)
+            }
+          }}
         >
           {/* Layer 1: 背景图 */}
           <img
@@ -178,26 +247,40 @@ const SceneCanvas = forwardRef<HTMLDivElement, SceneCanvasProps>(
           {/* Layer 2: 暗化遮罩 */}
           <div className="absolute inset-0 bg-black/15 pointer-events-none" />
 
-          {/* Layer 3: 网格辅助线（仅在 draw 模式下显示） */}
-          {mode === 'draw' && (
+          {/* Layer 3: 网格辅助线 */}
+          {(mode === 'draw' || (showGrid && mode !== 'preview')) && (
             <div
-              className="absolute inset-0 pointer-events-none opacity-10"
+              className="absolute inset-0 pointer-events-none opacity-20 z-10"
               style={{
                 backgroundImage:
-                  'linear-gradient(rgba(255,255,255,0.3) 1px, transparent 1px), linear-gradient(90deg, rgba(255,255,255,0.3) 1px, transparent 1px)',
-                backgroundSize: '5% 5%',
+                  'linear-gradient(rgba(114, 123, 186, 0.2) 1px, transparent 1px), linear-gradient(90deg, rgba(114, 123, 186, 0.2) 1px, transparent 1px)',
+                backgroundSize: `${activeGridSize}% ${activeGridSize}%`,
               }}
+            />
+          )}
+
+          {/* Layer 3.5: 磁吸对齐指示线 */}
+          {mode === 'select' && draggedHotspotSnapLines.x !== null && (
+            <div
+              className="absolute top-0 bottom-0 border-l border-dashed border-red-500/80 z-40 pointer-events-none"
+              style={{ left: `${draggedHotspotSnapLines.x}%` }}
+            />
+          )}
+          {mode === 'select' && draggedHotspotSnapLines.y !== null && (
+            <div
+              className="absolute left-0 right-0 border-t border-dashed border-red-500/80 z-40 pointer-events-none"
+              style={{ top: `${draggedHotspotSnapLines.y}%` }}
             />
           )}
 
           {/* Layer 4: 已保存的热区 */}
           <div className="absolute inset-0 w-full h-full z-10">
-            {activeHotspotId && (
+            {activeHotspotId && mode !== 'preview' && (
               <div className="absolute left-3 top-3 z-40 rounded-lg bg-zinc-950/85 border border-white/10 px-3 py-1.5 text-[10px] font-mono text-white shadow-lg sm:hidden">
                 当前选中: #{activeHotspotId}
               </div>
             )}
-            {activeHotspotId && (
+            {activeHotspotId && mode !== 'preview' && (
               <div className="absolute right-3 top-3 z-40 rounded-lg bg-primary/15 border border-primary/30 px-3 py-1.5 text-[10px] font-heading text-primary shadow-lg sm:hidden">
                 可拖拽或展开面板继续编辑
               </div>
@@ -206,6 +289,45 @@ const SceneCanvas = forwardRef<HTMLDivElement, SceneCanvasProps>(
               if (!hotspot.itemImageUrl) return null
               const isSelected = activeHotspotId === hotspot.id
               const spriteUrl = resolveUrl(hotspot.itemImageUrl)
+
+              if (mode === 'preview') {
+                const isHovered = hoveredHotspotId === hotspot.id
+                return (
+                  <div
+                    key={hotspot.id}
+                    className="absolute cursor-pointer select-none origin-bottom transition-all duration-[450ms] z-20 hover:z-30 touch-manipulation"
+                    style={{
+                      left: `${hotspot.xPercent}%`,
+                      top: `${hotspot.yPercent}%`,
+                      width: `${hotspot.widthPercent}%`,
+                      transform: isHovered ? 'scale(1.01)' : 'none',
+                    }}
+                    onMouseEnter={() => setHoveredHotspotId(hotspot.id ?? null)}
+                    onMouseLeave={() => setHoveredHotspotId(null)}
+                    onTouchStart={() => setHoveredHotspotId(hotspot.id ?? null)}
+                    onTouchEnd={() => setTimeout(() => setHoveredHotspotId(null), 1500)}
+                    onClick={() => {
+                      toast.info(`[交互物品]: ${hotspot.itemName}\n跳转路径: ${hotspot.redirectPath} (类型: ${hotspot.redirectType})`)
+                    }}
+                  >
+                    <div className="relative w-full">
+                      <img
+                        src={spriteUrl}
+                        alt={hotspot.itemName}
+                        className="object-contain transition-all duration-[450ms] ease-out pointer-events-none"
+                        style={{
+                          width: '100%',
+                          height: 'auto',
+                          opacity: isHovered ? 1 : 0,
+                          filter: isHovered
+                            ? 'drop-shadow(0 0 15px rgba(114, 123, 186, 0.95)) drop-shadow(0 5px 10px rgba(0, 0, 0, 0.35))'
+                            : 'none',
+                        }}
+                      />
+                    </div>
+                  </div>
+                )
+              }
 
               return (
                 <div
@@ -224,6 +346,10 @@ const SceneCanvas = forwardRef<HTMLDivElement, SceneCanvasProps>(
                     zIndex: isSelected ? 50 : hotspot.sortOrder || 10,
                   }}
                   onMouseDown={(e) => {
+                    if (mode === 'draw') return
+                    onHotspotDragStart(e, hotspot)
+                  }}
+                  onTouchStart={(e) => {
                     if (mode === 'draw') return
                     onHotspotDragStart(e, hotspot)
                   }}
@@ -248,16 +374,22 @@ const SceneCanvas = forwardRef<HTMLDivElement, SceneCanvasProps>(
                     {hotspot.itemName} ({hotspot.widthPercent}%)
                   </div>
 
-                  {/* 选中态右下角缩放把手 */}
+                  {/* 选中态右下角缩放把手 - 移动端增大点击区域 */}
                   {isSelected && mode === 'select' && (
                     <div
-                      className="absolute -bottom-2 -right-2 w-6 h-6 sm:w-3.5 sm:h-3.5 bg-primary border border-black rounded-full cursor-se-resize z-50 flex items-center justify-center hover:scale-125 transition-transform shadow-md"
+                      className="absolute -bottom-3 -right-3 w-8 h-8 sm:w-3.5 sm:h-3.5 bg-primary border-2 sm:border border-black rounded-full cursor-se-resize z-50 flex items-center justify-center hover:scale-125 transition-transform shadow-md touch-manipulation"
                       onMouseDown={(e) => {
+                        e.stopPropagation()
+                        onHotspotResizeStart(e, hotspot)
+                      }}
+                      onTouchStart={(e) => {
                         e.stopPropagation()
                         onHotspotResizeStart(e, hotspot)
                       }}
                     >
                       <Maximize size={10} className="text-black" />
+                      {/* 移动端外圈提示 */}
+                      <span className="absolute inset-0 rounded-full border-2 border-primary/30 sm:hidden animate-pulse" />
                     </div>
                   )}
                 </div>
@@ -273,6 +405,10 @@ const SceneCanvas = forwardRef<HTMLDivElement, SceneCanvasProps>(
               }`}
               style={{ ...getDrawRectStyle(), minWidth: '24px', minHeight: '24px' }}
               onMouseDown={(e) => {
+                if (isDrawing) return
+                onDrawingRectDragStart?.(e)
+              }}
+              onTouchStart={(e) => {
                 if (isDrawing) return
                 onDrawingRectDragStart?.(e)
               }}
@@ -295,23 +431,29 @@ const SceneCanvas = forwardRef<HTMLDivElement, SceneCanvasProps>(
                 </div>
               )}
 
-              {/* 选中态右下角缩放把手 */}
+              {/* 选中态右下角缩放把手 - 移动端增大点击区域 */}
               {!isDrawing && (
                 <div
-                  className="absolute -bottom-2 -right-2 w-6 h-6 sm:w-3.5 sm:h-3.5 bg-primary border border-black rounded-full cursor-se-resize z-50 flex items-center justify-center hover:scale-125 transition-transform shadow-md"
+                  className="absolute -bottom-3 -right-3 w-8 h-8 sm:w-3.5 sm:h-3.5 bg-primary border-2 sm:border border-black rounded-full cursor-se-resize z-50 flex items-center justify-center hover:scale-125 transition-transform shadow-md touch-manipulation"
                   onMouseDown={(e) => {
                     e.stopPropagation()
                     e.preventDefault()
                     onDrawingRectResizeStart?.(e)
                   }}
+                  onTouchStart={(e) => {
+                    e.stopPropagation()
+                    onDrawingRectResizeStart?.(e)
+                  }}
                 >
                   <Maximize size={10} className="text-black" />
+                  {/* 移动端外圈提示 */}
+                  <span className="absolute inset-0 rounded-full border-2 border-primary/30 sm:hidden animate-pulse" />
                 </div>
               )}
 
               {/* 确认与取消微型悬浮工具栏 */}
               {!isDrawing && !isCropping && (
-                <div 
+                <div
                   className="absolute -bottom-12 left-1/2 -translate-x-1/2 flex flex-col sm:flex-row items-stretch sm:items-center gap-1.5 bg-zinc-950/95 border border-white/10 px-2 py-1.5 rounded-xl shadow-2xl z-50 pointer-events-auto select-none whitespace-nowrap animate-fade-in min-w-[160px]"
                   onMouseDown={(e) => e.stopPropagation()} // 阻止拖拽冒泡
                 >
@@ -333,7 +475,6 @@ const SceneCanvas = forwardRef<HTMLDivElement, SceneCanvasProps>(
                   >
                     取消
                   </button>
-
                 </div>
               )}
             </div>

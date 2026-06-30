@@ -47,6 +47,52 @@ export default function SceneEditorPage() {
   const [activeHotspot, setActiveHotspot] = useState<HotspotData | null>(null)
   const [isEditMode, setIsEditMode] = useState(false)
 
+  // --- 撤销/重做历史栈 ---
+  const [historyStack, setHistoryStack] = useState<HotspotData[][]>([])
+  const [historyIndex, setHistoryIndex] = useState(-1)
+
+  /** 将当前热区状态推入历史栈（在执行可逆操作前调用） */
+  const pushHistory = useCallback((currentHotspots: HotspotData[]) => {
+    setHistoryStack((prev) => {
+      // 截断 redo 分支
+      const truncated = prev.slice(0, historyIndex + 1)
+      const next = [...truncated, currentHotspots.map((h) => ({ ...h }))]
+      // 限制历史长度为 50
+      if (next.length > 50) next.shift()
+      return next
+    })
+    setHistoryIndex((prev) => Math.min(prev + 1, 49))
+  }, [historyIndex])
+
+  /** 撤销 */
+  const handleUndo = useCallback(() => {
+    if (historyIndex <= 0 || !scene) return
+    const prevIndex = historyIndex - 1
+    setHistoryIndex(prevIndex)
+    const prevState = historyStack[prevIndex]
+    if (prevState) {
+      setScene({ ...scene, hotspots: prevState })
+      setActiveHotspot(null)
+      toast.info('已撤销')
+    }
+  }, [historyIndex, historyStack, scene])
+
+  /** 重做 */
+  const handleRedo = useCallback(() => {
+    if (historyIndex >= historyStack.length - 1 || !scene) return
+    const nextIndex = historyIndex + 1
+    setHistoryIndex(nextIndex)
+    const nextState = historyStack[nextIndex]
+    if (nextState) {
+      setScene({ ...scene, hotspots: nextState })
+      setActiveHotspot(null)
+      toast.info('已重做')
+    }
+  }, [historyIndex, historyStack, scene])
+
+  const canUndo = historyIndex > 0
+  const canRedo = historyIndex < historyStack.length - 1
+
   // --- 绘制状态（框选模式） ---
   const [isDrawing, setIsDrawing] = useState(false)
   const [drawingRect, setDrawingRect] = useState<DrawingRect | null>(null)
@@ -155,11 +201,85 @@ export default function SceneEditorPage() {
     }
   }
 
-  // ==================== 拖拽与缩放（编辑模式） ====================
+  // ==================== 全局键盘快捷键 ====================
 
-  const handleDragStart = (e: React.MouseEvent, hotspot: HotspotData) => {
+  useEffect(() => {
+    /** 全局键盘事件处理 */
+    const handleKeyDown = (e: KeyboardEvent) => {
+      // Ctrl+Z / Cmd+Z 撤销
+      if ((e.ctrlKey || e.metaKey) && e.key === 'z' && !e.shiftKey) {
+        e.preventDefault()
+        handleUndo()
+        return
+      }
+      // Ctrl+Y / Cmd+Shift+Z 重做
+      if ((e.ctrlKey || e.metaKey) && (e.key === 'y' || (e.key === 'z' && e.shiftKey))) {
+        e.preventDefault()
+        handleRedo()
+        return
+      }
+      // Delete / Backspace 删除选中热区
+      if ((e.key === 'Delete' || e.key === 'Backspace') && activeHotspot?.id) {
+        // 避免在输入框中误触发
+        const tag = (e.target as HTMLElement)?.tagName
+        if (tag === 'INPUT' || tag === 'TEXTAREA' || tag === 'SELECT') return
+        e.preventDefault()
+        handleDeleteRequest(activeHotspot.id)
+        return
+      }
+      // Esc 取消选中
+      if (e.key === 'Escape') {
+        setActiveHotspot(null)
+        setIsEditMode(false)
+        return
+      }
+      // 方向键像素级移动选中热区
+      if (['ArrowUp', 'ArrowDown', 'ArrowLeft', 'ArrowRight'].includes(e.key) && activeHotspot) {
+        const tag = (e.target as HTMLElement)?.tagName
+        if (tag === 'INPUT' || tag === 'TEXTAREA' || tag === 'SELECT') return
+        e.preventDefault()
+        const step = e.shiftKey ? 1 : 0.2 // Shift 加速
+        setActiveHotspot((prev) => {
+          if (!prev) return null
+          let { xPercent, yPercent } = prev
+          if (e.key === 'ArrowUp') yPercent = Math.max(0, yPercent - step)
+          if (e.key === 'ArrowDown') yPercent = Math.min(100, yPercent + step)
+          if (e.key === 'ArrowLeft') xPercent = Math.max(0, xPercent - step)
+          if (e.key === 'ArrowRight') xPercent = Math.min(100 - prev.widthPercent, xPercent + step)
+          return { ...prev, xPercent: Number(xPercent.toFixed(2)), yPercent: Number(yPercent.toFixed(2)) }
+        })
+        return
+      }
+    }
+
+    window.addEventListener('keydown', handleKeyDown)
+    return () => window.removeEventListener('keydown', handleKeyDown)
+  }, [activeHotspot, handleUndo, handleRedo])
+
+  // ==================== 拖拽与缩放（编辑模式，兼容鼠标+触屏） ====================
+
+  /**
+   * 从鼠标或触摸事件中提取 clientX/clientY
+   */
+  const getPointerCoords = (e: React.MouseEvent | React.TouchEvent | MouseEvent | TouchEvent) => {
+    if ('touches' in e && e.touches.length > 0) {
+      return { clientX: e.touches[0].clientX, clientY: e.touches[0].clientY }
+    }
+    if ('changedTouches' in e && e.changedTouches.length > 0) {
+      return { clientX: e.changedTouches[0].clientX, clientY: e.changedTouches[0].clientY }
+    }
+    return { clientX: (e as MouseEvent).clientX, clientY: (e as MouseEvent).clientY }
+  }
+
+  const handleDragStart = (
+    e: React.MouseEvent | React.TouchEvent,
+    hotspot: HotspotData
+  ) => {
     e.preventDefault()
     if (!containerRef.current) return
+
+    // 拖拽前记录历史快照
+    if (scene) pushHistory(scene.hotspots)
 
     if (!activeHotspot || activeHotspot.id !== hotspot.id) {
       setActiveHotspot({ ...hotspot })
@@ -167,14 +287,14 @@ export default function SceneEditorPage() {
     }
 
     const containerRect = containerRef.current.getBoundingClientRect()
-    const startX = e.clientX
-    const startY = e.clientY
+    const { clientX: startX, clientY: startY } = getPointerCoords(e)
     const startXPercent = Number(hotspot.xPercent)
     const startYPercent = Number(hotspot.yPercent)
 
-    const handleMouseMove = (moveEvent: MouseEvent) => {
-      const dx = moveEvent.clientX - startX
-      const dy = moveEvent.clientY - startY
+    const handlePointerMove = (moveEvent: MouseEvent | TouchEvent) => {
+      const { clientX, clientY } = getPointerCoords(moveEvent)
+      const dx = clientX - startX
+      const dy = clientY - startY
       const dxPercent = (dx / containerRect.width) * 100
       const dyPercent = (dy / containerRect.height) * 100
       const newX = Math.max(0, Math.min(100 - Number(hotspot.widthPercent), startXPercent + dxPercent))
@@ -187,26 +307,37 @@ export default function SceneEditorPage() {
       )
     }
 
-    const handleMouseUp = () => {
-      document.removeEventListener('mousemove', handleMouseMove)
-      document.removeEventListener('mouseup', handleMouseUp)
+    const handlePointerUp = () => {
+      document.removeEventListener('mousemove', handlePointerMove)
+      document.removeEventListener('mouseup', handlePointerUp)
+      document.removeEventListener('touchmove', handlePointerMove)
+      document.removeEventListener('touchend', handlePointerUp)
     }
 
-    document.addEventListener('mousemove', handleMouseMove)
-    document.addEventListener('mouseup', handleMouseUp)
+    document.addEventListener('mousemove', handlePointerMove)
+    document.addEventListener('mouseup', handlePointerUp)
+    document.addEventListener('touchmove', handlePointerMove, { passive: false })
+    document.addEventListener('touchend', handlePointerUp)
   }
 
-  const handleResizeStart = (e: React.MouseEvent, hotspot: HotspotData) => {
+  const handleResizeStart = (
+    e: React.MouseEvent | React.TouchEvent,
+    hotspot: HotspotData
+  ) => {
     e.stopPropagation()
-    e.preventDefault()
+    if ('preventDefault' in e) e.preventDefault()
     if (!containerRef.current) return
 
+    // 缩放前记录历史快照
+    if (scene) pushHistory(scene.hotspots)
+
     const containerRect = containerRef.current.getBoundingClientRect()
-    const startX = e.clientX
+    const { clientX: startX } = getPointerCoords(e)
     const startWidthPercent = Number(hotspot.widthPercent)
 
-    const handleMouseMove = (moveEvent: MouseEvent) => {
-      const dx = moveEvent.clientX - startX
+    const handlePointerMove = (moveEvent: MouseEvent | TouchEvent) => {
+      const { clientX } = getPointerCoords(moveEvent)
+      const dx = clientX - startX
       const dxPercent = (dx / containerRect.width) * 100
       const newWidth = Math.max(1, Math.min(100, startWidthPercent + dxPercent))
 
@@ -215,13 +346,17 @@ export default function SceneEditorPage() {
       )
     }
 
-    const handleMouseUp = () => {
-      document.removeEventListener('mousemove', handleMouseMove)
-      document.removeEventListener('mouseup', handleMouseUp)
+    const handlePointerUp = () => {
+      document.removeEventListener('mousemove', handlePointerMove)
+      document.removeEventListener('mouseup', handlePointerUp)
+      document.removeEventListener('touchmove', handlePointerMove)
+      document.removeEventListener('touchend', handlePointerUp)
     }
 
-    document.addEventListener('mousemove', handleMouseMove)
-    document.addEventListener('mouseup', handleMouseUp)
+    document.addEventListener('mousemove', handlePointerMove)
+    document.addEventListener('mouseup', handlePointerUp)
+    document.addEventListener('touchmove', handlePointerMove, { passive: false })
+    document.addEventListener('touchend', handlePointerUp)
   }
 
   // ==================== 手动上传物品图 ====================
@@ -377,23 +512,29 @@ export default function SceneEditorPage() {
   }
 
   /** 拖拽移动临时选选区 */
-  const handleDrawingRectDragStart = (e: React.MouseEvent<HTMLDivElement>) => {
+  const handleDrawingRectDragStart = (
+    e: React.MouseEvent<HTMLDivElement> | React.TouchEvent<HTMLDivElement>
+  ) => {
     e.stopPropagation()
-    e.preventDefault()
+    if ('preventDefault' in e) e.preventDefault()
     if (!containerRef.current || !drawingRect) return
 
     const containerRect = containerRef.current.getBoundingClientRect()
-    const startX = e.clientX
-    const startY = e.clientY
+    const clientX = 'touches' in e ? e.touches[0].clientX : e.clientX
+    const clientY = 'touches' in e ? e.touches[0].clientY : e.clientY
+    const startX = clientX
+    const startY = clientY
 
     const rectW = drawingRect.currentX - drawingRect.startX
     const rectH = drawingRect.currentY - drawingRect.startY
     const initStartX = drawingRect.startX
     const initStartY = drawingRect.startY
 
-    const handleMouseMove = (moveEvent: MouseEvent) => {
-      const dx = moveEvent.clientX - startX
-      const dy = moveEvent.clientY - startY
+    const handlePointerMove = (moveEvent: MouseEvent | TouchEvent) => {
+      const moveClientX = 'touches' in moveEvent ? moveEvent.touches[0].clientX : moveEvent.clientX
+      const moveClientY = 'touches' in moveEvent ? moveEvent.touches[0].clientY : moveEvent.clientY
+      const dx = moveClientX - startX
+      const dy = moveClientY - startY
 
       const newX = Math.max(0, Math.min(containerRect.width - rectW, initStartX + dx))
       const newY = Math.max(0, Math.min(containerRect.height - rectH, initStartY + dy))
@@ -406,33 +547,43 @@ export default function SceneEditorPage() {
       })
     }
 
-    const handleMouseUp = () => {
-      document.removeEventListener('mousemove', handleMouseMove)
-      document.removeEventListener('mouseup', handleMouseUp)
+    const handlePointerUp = () => {
+      document.removeEventListener('mousemove', handlePointerMove)
+      document.removeEventListener('mouseup', handlePointerUp)
+      document.removeEventListener('touchmove', handlePointerMove)
+      document.removeEventListener('touchend', handlePointerUp)
     }
 
-    document.addEventListener('mousemove', handleMouseMove)
-    document.addEventListener('mouseup', handleMouseUp)
+    document.addEventListener('mousemove', handlePointerMove)
+    document.addEventListener('mouseup', handlePointerUp)
+    document.addEventListener('touchmove', handlePointerMove, { passive: false })
+    document.addEventListener('touchend', handlePointerUp)
   }
 
   /** 拖拽缩放临时选区 */
-  const handleDrawingRectResizeStart = (e: React.MouseEvent<HTMLDivElement>) => {
+  const handleDrawingRectResizeStart = (
+    e: React.MouseEvent<HTMLDivElement> | React.TouchEvent<HTMLDivElement>
+  ) => {
     e.stopPropagation()
-    e.preventDefault()
+    if ('preventDefault' in e) e.preventDefault()
     if (!containerRef.current || !drawingRect) return
 
     const containerRect = containerRef.current.getBoundingClientRect()
-    const startX = e.clientX
-    const startY = e.clientY
+    const clientX = 'touches' in e ? e.touches[0].clientX : e.clientX
+    const clientY = 'touches' in e ? e.touches[0].clientY : e.clientY
+    const startX = clientX
+    const startY = clientY
 
     const rectW = drawingRect.currentX - drawingRect.startX
     const rectH = drawingRect.currentY - drawingRect.startY
     const initStartX = drawingRect.startX
     const initStartY = drawingRect.startY
 
-    const handleMouseMove = (moveEvent: MouseEvent) => {
-      const dx = moveEvent.clientX - startX
-      const dy = moveEvent.clientY - startY
+    const handlePointerMove = (moveEvent: MouseEvent | TouchEvent) => {
+      const moveClientX = 'touches' in moveEvent ? moveEvent.touches[0].clientX : moveEvent.clientX
+      const moveClientY = 'touches' in moveEvent ? moveEvent.touches[0].clientY : moveEvent.clientY
+      const dx = moveClientX - startX
+      const dy = moveClientY - startY
 
       const newW = Math.max(10, Math.min(containerRect.width - initStartX, rectW + dx))
       const newH = Math.max(10, Math.min(containerRect.height - initStartY, rectH + dy))
@@ -445,13 +596,17 @@ export default function SceneEditorPage() {
       })
     }
 
-    const handleMouseUp = () => {
-      document.removeEventListener('mousemove', handleMouseMove)
-      document.removeEventListener('mouseup', handleMouseUp)
+    const handlePointerUp = () => {
+      document.removeEventListener('mousemove', handlePointerMove)
+      document.removeEventListener('mouseup', handlePointerUp)
+      document.removeEventListener('touchmove', handlePointerMove)
+      document.removeEventListener('touchend', handlePointerUp)
     }
 
-    document.addEventListener('mousemove', handleMouseMove)
-    document.addEventListener('mouseup', handleMouseUp)
+    document.addEventListener('mousemove', handlePointerMove)
+    document.addEventListener('mouseup', handlePointerUp)
+    document.addEventListener('touchmove', handlePointerMove, { passive: false })
+    document.addEventListener('touchend', handlePointerUp)
   }
 
   /** 确认裁剪 */
@@ -622,6 +777,10 @@ export default function SceneEditorPage() {
         uploading={uploading}
         smartExtraction={smartExtraction}
         onSmartExtractionChange={setSmartExtraction}
+        onUndo={handleUndo}
+        onRedo={handleRedo}
+        canUndo={canUndo}
+        canRedo={canRedo}
       />
 
       {/* 主区域：画布 + 属性面板 */}
@@ -664,6 +823,7 @@ export default function SceneEditorPage() {
           hotspotList={scene.hotspots}
           activeHotspotId={activeHotspot?.id ?? null}
           onReplaceImage={handleReplaceImage}
+          onCanvasClick={() => setActiveHotspot(null)}
           className="xl:col-span-1"
         />
       </div>

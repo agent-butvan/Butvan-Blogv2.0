@@ -25,7 +25,7 @@ public class NavigationSaveDTO {
     @NotBlank(message = "链接类型不能为空")
     private String linkType; // PAGE | CATEGORY | ARTICLE | EXTERNAL | NONE
 
-    private Long linkTargetId; // 关联目标实体ID
+    private Long linkTargetId; // 关联目标实体ID（CATEGORY/ARTICLE 类型使用）
 
     @Size(max = 500, message = "外部链接长度不能超过 500 个字符")
     private String linkUrl; // 外部超链接

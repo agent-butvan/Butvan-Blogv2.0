@@ -1,7 +1,7 @@
 'use client'
 
 import React, { useRef, useState, useEffect } from 'react'
-import { Save, Trash2, Upload, HelpCircle, SquareDashed, Loader2 } from 'lucide-react'
+import { Save, Trash2, Upload, HelpCircle, SquareDashed, Loader2, ChevronDown, X, Search } from 'lucide-react'
 import type { HotspotData } from './SceneCanvas'
 import { fetchClientRoutes, fetchArticlesSimple, fetchCategoriesSimple } from '@/lib/client-route-api'
 import type { ClientRoute, ArticleSimple, CategorySimple } from '@/types/route'
@@ -31,6 +31,8 @@ interface HotspotPropertiesPanelProps {
   activeHotspotId: number | null
   /** 替换物品图（上传文件） */
   onReplaceImage: (file: File) => void
+  /** 点击画布空白处（用于移动端收起抽屉） */
+  onCanvasClick?: () => void
   /** 外部 class */
   className?: string
 }
@@ -53,10 +55,12 @@ export default function HotspotPropertiesPanel({
   hotspotList,
   activeHotspotId,
   onReplaceImage,
+  onCanvasClick,
   className = '',
 }: HotspotPropertiesPanelProps) {
   const replaceFileInputRef = useRef<HTMLInputElement>(null)
   const [isExpandedMobile, setIsExpandedMobile] = useState(false)
+  const [searchQuery, setSearchQuery] = useState('')
 
   // --- 跳转目标下拉框数据 ---
   const [clientRoutes, setClientRoutes] = useState<ClientRoute[]>([])
@@ -117,87 +121,79 @@ export default function HotspotPropertiesPanel({
   }
 
   return (
-    <div
-      className={`flex flex-col gap-5 bg-white dark:bg-zinc-900 border border-zinc-200 dark:border-zinc-800 p-4 sm:p-5 rounded-2xl shadow-sm max-h-none lg:max-h-[calc(100vh-8rem)] lg:overflow-y-auto ${className}`}
-    >
-      <div className="lg:hidden sticky top-0 z-20 bg-white dark:bg-zinc-900 pb-3">
-        <button
-          type="button"
-          onClick={() => setIsExpandedMobile((prev) => !prev)}
-          className="flex items-center gap-1.5 px-3 py-2 rounded-lg bg-zinc-100 dark:bg-zinc-800 text-zinc-700 dark:text-zinc-200 text-xs font-heading border border-zinc-200 dark:border-zinc-700 w-full justify-center shadow-sm"
-        >
-          {isExpandedMobile ? '收起属性面板' : '展开属性面板'}
-        </button>
-      </div>
-
-      <div className={`flex flex-col gap-5 ${isExpandedMobile ? 'flex' : 'hidden'} lg:flex`}>
-      {/* 热区列表 */}
-      <div className="flex flex-col gap-3 border-b border-zinc-200 dark:border-zinc-800 pb-4 lg:sticky lg:top-0 lg:bg-white lg:dark:bg-zinc-900 lg:z-10">
-        <h2 className="text-xs font-heading text-zinc-900 dark:text-zinc-50 font-bold flex items-center gap-1.5">
-          <span className="w-1.5 h-1.5 rounded-full bg-primary" />
-          物品列表 ({hotspotList.length})
-        </h2>
-        <div className="flex flex-col gap-1.5 max-h-[180px] overflow-y-auto pr-1 custom-scrollbar">
-          {hotspotList.length === 0 ? (
-            <p className="text-xs text-zinc-550 dark:text-zinc-450 text-center py-4">
-              暂无物品，请框选添加
-            </p>
-          ) : (
-            hotspotList.map((h) => (
-              <div
-                key={h.id}
-                onClick={() => onHotspotChange(h)}
-                className={`px-3 py-2 rounded-lg border text-xs cursor-pointer flex items-center justify-between transition-all duration-200 select-none ${
-                  activeHotspotId === h.id
-                    ? 'border-primary/60 bg-primary/10 text-primary font-semibold'
-                    : 'border-zinc-100 dark:border-zinc-800/60 hover:border-zinc-200 dark:hover:border-zinc-700 bg-zinc-50 dark:bg-zinc-800/40 text-zinc-800 dark:text-zinc-200'
-                }`}
-              >
-                <div className="flex items-center gap-2 truncate">
-                  <span className="w-1.5 h-1.5 rounded-full bg-primary shrink-0" />
-                  <span className="truncate">{h.itemName}</span>
+    <>
+      {/* 桌面端：右侧栏卡片布局 */}
+      <div
+        className={`hidden lg:flex flex-col gap-5 bg-white dark:bg-zinc-900 border border-zinc-200 dark:border-zinc-800 p-4 sm:p-5 rounded-2xl shadow-sm max-h-[calc(100vh-8rem)] overflow-y-auto ${className}`}
+      >
+        <div className="flex flex-col gap-5">
+        {/* 热区列表 */}
+        <div className="flex flex-col gap-3 border-b border-zinc-200 dark:border-zinc-800 pb-4 sticky top-0 bg-white dark:bg-zinc-900 z-10">
+          <h2 className="text-xs font-heading text-zinc-900 dark:text-zinc-50 font-bold flex items-center gap-1.5">
+            <span className="w-1.5 h-1.5 rounded-full bg-primary" />
+            物品列表 ({hotspotList.length})
+          </h2>
+          <div className="flex flex-col gap-1.5 max-h-[180px] overflow-y-auto pr-1 custom-scrollbar">
+            {hotspotList.length === 0 ? (
+              <p className="text-xs text-zinc-550 dark:text-zinc-450 text-center py-4">
+                暂无物品，请框选添加
+              </p>
+            ) : (
+              hotspotList.map((h) => (
+                <div
+                  key={h.id}
+                  onClick={() => onHotspotChange(h)}
+                  className={`px-3 py-2 rounded-lg border text-xs cursor-pointer flex items-center justify-between transition-all duration-200 select-none ${
+                    activeHotspotId === h.id
+                      ? 'border-primary/60 bg-primary/10 text-primary font-semibold'
+                      : 'border-zinc-100 dark:border-zinc-800/60 hover:border-zinc-200 dark:hover:border-zinc-700 bg-zinc-50 dark:bg-zinc-800/40 text-zinc-800 dark:text-zinc-200'
+                  }`}
+                >
+                  <div className="flex items-center gap-2 truncate">
+                    <span className="w-1.5 h-1.5 rounded-full bg-primary shrink-0" />
+                    <span className="truncate">{h.itemName}</span>
+                  </div>
+                  <span className="text-[10px] font-mono text-zinc-500 dark:text-zinc-400 ml-1 shrink-0">
+                    z:{h.sortOrder}
+                  </span>
                 </div>
-                <span className="text-[10px] font-mono text-zinc-500 dark:text-zinc-400 ml-1 shrink-0">
-                  z:{h.sortOrder}
-                </span>
-              </div>
-            ))
-          )}
+              ))
+            )}
+          </div>
         </div>
-      </div>
 
-      {/* 未选中热区时：引导卡片 */}
-      {!hotspot ? (
-        <div className="flex flex-col items-center justify-center py-12 border border-dashed border-zinc-200 dark:border-zinc-800 rounded-xl bg-zinc-50/50 dark:bg-zinc-950/20 gap-3 shadow-inner">
-          <HelpCircle size={24} className="text-zinc-400 dark:text-zinc-500" />
-          <p className="text-xs text-zinc-600 dark:text-zinc-350 text-center px-4 leading-relaxed">
-            选择已有物品编辑属性，或
-            <br />
-            进入框选模式在场景上拖拽框选新物品
-          </p>
-          <button
-            onClick={onSwitchToDraw}
-            className="flex items-center gap-1.5 px-3 py-1.5 rounded-lg bg-primary/10 border border-primary/20 text-primary text-xs font-heading hover:bg-primary/20 transition-colors cursor-pointer"
-          >
-            <SquareDashed size={13} />
-            开始框选
-          </button>
-        </div>
-      ) : (
-        /* 选中热区：属性表单 */
-        <div className="flex flex-col gap-4 text-left">
-          {/* 标题行 */}
-          <div className="flex items-center justify-between border-b border-zinc-200 dark:border-zinc-800 pb-2">
-            <span className="text-xs font-heading text-zinc-900 dark:text-zinc-50 font-bold">
-              {isEditMode ? '⚙️ 编辑物品属性' : '✨ 新物品配置'}
-            </span>
+        {/* 未选中热区时：引导卡片 */}
+        {!hotspot ? (
+          <div className="flex flex-col items-center justify-center py-12 border border-dashed border-zinc-200 dark:border-zinc-800 rounded-xl bg-zinc-50/50 dark:bg-zinc-950/20 gap-3 shadow-inner">
+            <HelpCircle size={24} className="text-zinc-400 dark:text-zinc-500" />
+            <p className="text-xs text-zinc-600 dark:text-zinc-350 text-center px-4 leading-relaxed">
+              选择已有物品编辑属性，或
+              <br />
+              进入框选模式在场景上拖拽框选新物品
+            </p>
             <button
-              onClick={() => onDelete(hotspot.id)}
-              className="flex items-center gap-1 px-2 py-1 rounded-lg border border-red-500/20 text-red-500 hover:text-white dark:text-red-400 hover:bg-red-500 dark:hover:bg-red-500/10 hover:border-red-500 transition-colors duration-200 text-xs font-heading cursor-pointer"
+              onClick={onSwitchToDraw}
+              className="flex items-center gap-1.5 px-3 py-1.5 rounded-lg bg-primary/10 border border-primary/20 text-primary text-xs font-heading hover:bg-primary/20 transition-colors cursor-pointer"
             >
-              <Trash2 size={11} /> 删除
+              <SquareDashed size={13} />
+              开始框选
             </button>
           </div>
+        ) : (
+          /* 选中热区：属性表单 */
+          <div className="flex flex-col gap-4 text-left">
+            {/* 标题行 */}
+            <div className="flex items-center justify-between border-b border-zinc-200 dark:border-zinc-800 pb-2">
+              <span className="text-xs font-heading text-zinc-900 dark:text-zinc-50 font-bold">
+                {isEditMode ? '⚙️ 编辑物品属性' : '✨ 新物品配置'}
+              </span>
+              <button
+                onClick={() => onDelete(hotspot.id)}
+                className="flex items-center gap-1 px-2 py-1 rounded-lg border border-red-500/20 text-red-500 hover:text-white dark:text-red-400 hover:bg-red-500 dark:hover:bg-red-500/10 hover:border-red-500 transition-colors duration-200 text-xs font-heading cursor-pointer"
+              >
+                <Trash2 size={11} /> 删除
+              </button>
+            </div>
 
           {/* 物品图预览 + 替换 */}
           <div className="flex flex-col gap-2">
@@ -508,8 +504,188 @@ export default function HotspotPropertiesPanel({
             )}
           </button>
         </div>
-      )}
+        )}
+        </div>
       </div>
-    </div>
+
+      {/* 移动端：底抽屉 (Bottom Sheet) */}
+      <div className="lg:hidden fixed inset-x-0 bottom-0 z-50">
+        {/* 抽屉头部 - 拖动手柄 */}
+        <div
+          className="bg-white dark:bg-zinc-900 rounded-t-2xl border-t border-x border-zinc-200 dark:border-zinc-800 shadow-lg"
+        >
+          {/* 拖动手柄 */}
+          <div
+            className="flex justify-center py-3 cursor-pointer"
+            onClick={() => setIsExpandedMobile((prev) => !prev)}
+          >
+            <div className="w-10 h-1 bg-zinc-300 dark:bg-zinc-700 rounded-full" />
+          </div>
+
+          {/* 展开/收起状态 */}
+          {isExpandedMobile ? (
+            <div className="px-4 pb-4 max-h-[70vh] overflow-y-auto">
+              {/* 移动端热区列表 */}
+              <div className="flex flex-col gap-2 mb-4">
+                <h2 className="text-xs font-heading text-zinc-900 dark:text-zinc-50 font-bold flex items-center gap-1.5">
+                  <span className="w-1.5 h-1.5 rounded-full bg-primary" />
+                  物品列表 ({hotspotList.length})
+                </h2>
+                <div className="flex gap-1.5 overflow-x-auto pb-1 custom-scrollbar">
+                  {hotspotList.length === 0 ? (
+                    <span className="text-xs text-zinc-500">暂无物品</span>
+                  ) : (
+                    hotspotList.map((h) => (
+                      <button
+                        key={h.id}
+                        onClick={() => {
+                          onHotspotChange(h)
+                          setIsExpandedMobile(false)
+                        }}
+                        className={`px-3 py-1.5 rounded-lg border text-xs whitespace-nowrap transition-all ${
+                          activeHotspotId === h.id
+                            ? 'border-primary/60 bg-primary/10 text-primary font-semibold'
+                            : 'border-zinc-200 dark:border-zinc-700 bg-zinc-50 dark:bg-zinc-800 text-zinc-700 dark:text-zinc-300'
+                        }`}
+                      >
+                        {h.itemName}
+                      </button>
+                    ))
+                  )}
+                </div>
+              </div>
+
+              {/* 移动端属性表单 */}
+              {hotspot ? (
+                <div className="flex flex-col gap-3">
+                  <div className="flex items-center justify-between">
+                    <span className="text-xs font-heading font-bold text-zinc-900 dark:text-zinc-50">
+                      {isEditMode ? '编辑物品' : '新物品配置'}
+                    </span>
+                    <button
+                      onClick={() => onDelete(hotspot.id)}
+                      className="text-red-500 text-xs"
+                    >
+                      <Trash2 size={14} />
+                    </button>
+                  </div>
+
+                  {/* 物品名称 */}
+                  <input
+                    placeholder="物品名称"
+                    value={hotspot.itemName || ''}
+                    onChange={(e) => onHotspotChange({ ...hotspot, itemName: e.target.value })}
+                    className="w-full bg-zinc-50 dark:bg-zinc-950 border border-zinc-200 dark:border-zinc-800 rounded-lg px-3 h-9 text-xs"
+                  />
+
+                  {/* 坐标 */}
+                  <div className="grid grid-cols-4 gap-2">
+                    <input
+                      type="number"
+                      placeholder="X%"
+                      value={hotspot.xPercent}
+                      onChange={(e) => onHotspotChange({ ...hotspot, xPercent: Number(e.target.value) })}
+                      className="bg-zinc-50 dark:bg-zinc-950 border border-zinc-200 dark:border-zinc-800 rounded px-2 h-8 text-xs text-center"
+                    />
+                    <input
+                      type="number"
+                      placeholder="Y%"
+                      value={hotspot.yPercent}
+                      onChange={(e) => onHotspotChange({ ...hotspot, yPercent: Number(e.target.value) })}
+                      className="bg-zinc-50 dark:bg-zinc-950 border border-zinc-200 dark:border-zinc-800 rounded px-2 h-8 text-xs text-center"
+                    />
+                    <input
+                      type="number"
+                      placeholder="W%"
+                      value={hotspot.widthPercent}
+                      onChange={(e) => onHotspotChange({ ...hotspot, widthPercent: Number(e.target.value) })}
+                      className="bg-zinc-50 dark:bg-zinc-950 border border-zinc-200 dark:border-zinc-800 rounded px-2 h-8 text-xs text-center"
+                    />
+                    <input
+                      type="number"
+                      placeholder="Z"
+                      value={hotspot.sortOrder}
+                      onChange={(e) => onHotspotChange({ ...hotspot, sortOrder: Number(e.target.value) })}
+                      className="bg-zinc-50 dark:bg-zinc-950 border border-zinc-200 dark:border-zinc-800 rounded px-2 h-8 text-xs text-center"
+                    />
+                  </div>
+
+                  {/* 跳转类型 */}
+                  <select
+                    value={hotspot.redirectType}
+                    onChange={(e) => onHotspotChange({ ...hotspot, redirectType: e.target.value })}
+                    className="text-xs bg-zinc-50 dark:bg-zinc-950 border border-zinc-200 dark:border-zinc-800 rounded-lg px-2 py-2 w-full"
+                  >
+                    <option value="INTERNAL">站内路径</option>
+                    <option value="EXTERNAL">外链 URL</option>
+                    <option value="ARTICLE">关联文章</option>
+                    <option value="CATEGORY">关联分类</option>
+                  </select>
+
+                  {/* 跳转路径 */}
+                  {hotspot.redirectType === 'INTERNAL' && (
+                    <input
+                      placeholder="/path"
+                      value={hotspot.redirectPath || ''}
+                      onChange={(e) => onHotspotChange({ ...hotspot, redirectPath: e.target.value })}
+                      className="w-full bg-zinc-50 dark:bg-zinc-950 border border-zinc-200 dark:border-zinc-800 rounded-lg px-3 h-9 text-xs"
+                    />
+                  )}
+                  {hotspot.redirectType === 'EXTERNAL' && (
+                    <input
+                      placeholder="https://"
+                      value={hotspot.redirectPath || ''}
+                      onChange={(e) => onHotspotChange({ ...hotspot, redirectPath: e.target.value })}
+                      className="w-full bg-zinc-50 dark:bg-zinc-950 border border-zinc-200 dark:border-zinc-800 rounded-lg px-3 h-9 text-xs"
+                    />
+                  )}
+
+                  {/* 保存按钮 */}
+                  <button
+                    onClick={onSave}
+                    disabled={saving}
+                    className="flex items-center justify-center gap-1.5 w-full py-2.5 rounded-lg bg-primary text-white text-sm font-heading font-medium disabled:opacity-50"
+                  >
+                    {saving ? <Loader2 className="animate-spin" size={14} /> : <Save size={14} />}
+                    保存
+                  </button>
+                </div>
+              ) : (
+                <div className="text-center py-6">
+                  <p className="text-xs text-zinc-500 mb-3">点击物品列表编辑属性</p>
+                  <button
+                    onClick={() => {
+                      onSwitchToDraw()
+                      setIsExpandedMobile(false)
+                    }}
+                    className="px-4 py-2 rounded-lg bg-primary/10 text-primary text-xs"
+                  >
+                    框选添加新物品
+                  </button>
+                </div>
+              )}
+            </div>
+          ) : (
+            <div className="px-4 pb-3 flex items-center justify-between">
+              <span className="text-xs text-zinc-500">
+                {hotspot ? `正在编辑: ${hotspot.itemName}` : '点击展开属性面板'}
+              </span>
+              <ChevronDown size={16} className="text-zinc-400 rotate-180" />
+            </div>
+          )}
+        </div>
+
+        {/* 遮罩层 */}
+        {isExpandedMobile && (
+          <div
+            className="fixed inset-0 bg-black/30 -z-10"
+            onClick={() => {
+              setIsExpandedMobile(false)
+              onCanvasClick?.()
+            }}
+          />
+        )}
+      </div>
+    </>
   )
 }

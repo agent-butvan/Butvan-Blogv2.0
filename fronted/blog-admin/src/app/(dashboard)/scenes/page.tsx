@@ -197,7 +197,7 @@ export default function ScenesPage() {
 
         {loading ? (
           /* 骨架屏 */
-          <div className="grid grid-cols-1 gap-5 md:grid-cols-2 xl:grid-cols-3">
+          <div className="grid grid-cols-1 gap-3 md:gap-4 md:grid-cols-2 xl:grid-cols-3">
             <SkeletonCard />
             <SkeletonCard />
             <SkeletonCard />
@@ -214,13 +214,13 @@ export default function ScenesPage() {
             </p>
           </div>
         ) : (
-          <div className="grid grid-cols-1 gap-5 md:grid-cols-2 xl:grid-cols-3">
+          <div className="grid grid-cols-1 gap-3 md:gap-4 md:grid-cols-2 xl:grid-cols-3">
             {scenes.map((scene) => {
               const previewUrl = resolveUrl(scene.imageUrl)
               return (
                 <div
                   key={scene.id}
-                  className={`group bg-white dark:bg-zinc-900/40 border rounded-2xl overflow-hidden flex flex-col transition-all duration-200 shadow-sm hover:shadow-md hover:-translate-y-0.5 ${
+                  className={`group bg-white dark:bg-zinc-900/40 border rounded-xl overflow-hidden flex flex-col transition-all duration-200 shadow-sm hover:shadow-md hover:-translate-y-0.5 ${
                     scene.isActive
                       ? 'border-primary/50 ring-1 ring-primary/25'
                       : 'border-zinc-200 dark:border-zinc-800 hover:border-zinc-350 dark:hover:border-zinc-700'
@@ -317,7 +317,7 @@ export default function ScenesPage() {
             />
 
             {/* 弹窗内容 */}
-            <div className="relative z-10 w-full max-w-md mx-4 bg-white dark:bg-zinc-900 border border-zinc-200 dark:border-zinc-800 rounded-2xl shadow-xl animate-slide-up flex flex-col overflow-hidden">
+            <div className="relative z-10 w-full max-w-md mx-4 sm:my-6 bg-white dark:bg-zinc-900 border border-zinc-200 dark:border-zinc-800 rounded-2xl sm:rounded-2xl shadow-xl animate-slide-up flex flex-col overflow-hidden max-h-[90vh] sm:max-h-[auto]">
               <div className="p-6 flex flex-col gap-4">
                 <div className="flex items-center justify-between border-b border-zinc-100 dark:border-zinc-800 pb-3">
                   <div className="flex items-center gap-2">

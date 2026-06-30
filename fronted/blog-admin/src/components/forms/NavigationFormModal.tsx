@@ -11,6 +11,8 @@ import type {
   NavPosition,
 } from "@/types/navigation";
 import { NAV_LINK_TYPE_LABELS, NAV_POSITION_LABELS } from "@/types/navigation";
+import { fetchClientRoutes } from "@/lib/client-route-api";
+import type { ClientRoute } from "@/types/route";
 
 // 预定义的常用 Lucide 导航图标选项列表
 const POPULAR_ICONS = [
@@ -73,6 +75,20 @@ export default function NavigationFormModal({
   const [isVisible, setIsVisible] = useState(true);
   const [isOpenNewTab, setIsOpenNewTab] = useState(false);
   const [error, setError] = useState<string | null>(null);
+  const [clientRoutes, setClientRoutes] = useState<ClientRoute[]>([]);
+
+  // 加载客户端路由列表
+  useEffect(() => {
+    const loadRoutes = async () => {
+      try {
+        const routes = await fetchClientRoutes()
+        setClientRoutes(routes)
+      } catch (err) {
+        console.error('加载路由失败:', err)
+      }
+    }
+    loadRoutes()
+  }, [])
 
   // 弹窗打开时重置表单
   useEffect(() => {
@@ -142,8 +158,11 @@ export default function NavigationFormModal({
       title: title.trim(),
       parentId: parentId ?? initialData?.parentId ?? null,
       linkType,
-      linkTargetId: linkTargetId ? Number(linkTargetId) : undefined,
-      linkUrl: linkUrl.trim() || undefined,
+      // PAGE 类型：使用 linkUrl 存储路径（如 /friend）
+      // CATEGORY/ARTICLE 类型：使用 linkTargetId 存数字 ID
+      // EXTERNAL 类型：使用 linkUrl 存外部链接
+      linkTargetId: (linkType === "CATEGORY" || linkType === "ARTICLE") && linkTargetId ? Number(linkTargetId) : undefined,
+      linkUrl: (linkType === "PAGE" || linkType === "EXTERNAL") ? (linkUrl.trim() || undefined) : undefined,
       icon: icon.trim() || undefined,
       position,
       sortOrder: Number(sortOrder) || 0,
@@ -276,17 +295,54 @@ export default function NavigationFormModal({
               </div>
             )}
 
-            {/* 关联目标 ID（PAGE/CATEGORY/ARTICLE 类型时显示） */}
-            {["PAGE", "CATEGORY", "ARTICLE"].includes(linkType) && (
+            {/* 关联目标（PAGE 类型时显示页面下拉框，CATEGORY/ARTICLE 类型时显示 ID 输入） */}
+            {linkType === "PAGE" && (
               <div className="animate-fade-in">
                 <label className="mb-1 block text-xs font-medium text-zinc-500 dark:text-zinc-400 uppercase tracking-wide">
-                  关联目标 ID
+                  选择页面
+                </label>
+                <select
+                  value={linkUrl}
+                  onChange={(e) => setLinkUrl(e.target.value)}
+                  className={inputClass}
+                >
+                  <option value="">请选择页面</option>
+                  {clientRoutes
+                    .filter(route => !route.dynamic)
+                    .map(route => (
+                      <option key={route.path} value={route.path}>
+                        {route.label} ({route.path})
+                      </option>
+                    ))}
+                </select>
+              </div>
+            )}
+
+            {linkType === "CATEGORY" && (
+              <div className="animate-fade-in">
+                <label className="mb-1 block text-xs font-medium text-zinc-500 dark:text-zinc-400 uppercase tracking-wide">
+                  分类 ID
                 </label>
                 <input
                   type="number"
                   value={linkTargetId}
                   onChange={(e) => setLinkTargetId(e.target.value)}
-                  placeholder="输入对应页面/分类/文章的 ID"
+                  placeholder="输入分类 ID"
+                  className={inputClass}
+                />
+              </div>
+            )}
+
+            {linkType === "ARTICLE" && (
+              <div className="animate-fade-in">
+                <label className="mb-1 block text-xs font-medium text-zinc-500 dark:text-zinc-400 uppercase tracking-wide">
+                  文章 ID
+                </label>
+                <input
+                  type="number"
+                  value={linkTargetId}
+                  onChange={(e) => setLinkTargetId(e.target.value)}
+                  placeholder="输入文章 ID"
                   className={inputClass}
                 />
               </div>

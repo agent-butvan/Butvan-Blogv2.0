@@ -1,11 +1,11 @@
 'use client'
 
 import React, { useRef } from 'react'
-import { ArrowLeft, MousePointer2, SquareDashed, Upload } from 'lucide-react'
+import { ArrowLeft, MousePointer2, SquareDashed, Upload, Eye, Undo2, Redo2 } from 'lucide-react'
 import Link from 'next/link'
 
 /** 编辑器工作模式 */
-export type EditorMode = 'select' | 'draw'
+export type EditorMode = 'select' | 'draw' | 'preview'
 
 /** 场景工具栏 Props */
 interface SceneToolbarProps {
@@ -25,6 +25,14 @@ interface SceneToolbarProps {
   smartExtraction?: boolean
   /** 智能抠图开关回调 */
   onSmartExtractionChange?: (enabled: boolean) => void
+  /** 撤销回调 */
+  onUndo?: () => void
+  /** 重做回调 */
+  onRedo?: () => void
+  /** 是否可撤销 */
+  canUndo?: boolean
+  /** 是否可重做 */
+  canRedo?: boolean
 }
 
 /**
@@ -41,6 +49,10 @@ export default function SceneToolbar({
   uploading = false,
   smartExtraction = true,
   onSmartExtractionChange,
+  onUndo,
+  onRedo,
+  canUndo = false,
+  canRedo = false,
 }: SceneToolbarProps) {
   const fileInputRef = useRef<HTMLInputElement>(null)
 
@@ -89,7 +101,7 @@ export default function SceneToolbar({
 
       {/* 右侧：模式切换 + 手动上传 */}
       <div className="flex flex-wrap items-center gap-2 w-full lg:w-auto">
-        {/* 模式切换组 */}
+        {/* 模式切换组 - 移动端自适应 */}
         <div className="flex items-center rounded-xl bg-zinc-100/80 dark:bg-zinc-900 border border-zinc-200 dark:border-zinc-800 p-1 gap-0.5 animate-fade-in duration-200 w-full sm:w-auto">
           {/* 选择编辑模式 */}
           <button
@@ -101,7 +113,7 @@ export default function SceneToolbar({
             }`}
           >
             <MousePointer2 size={14} />
-            选择编辑
+            <span className="hidden xs:inline">选择编辑</span>
           </button>
 
           {/* 框选物品模式 */}
@@ -114,7 +126,40 @@ export default function SceneToolbar({
             }`}
           >
             <SquareDashed size={14} />
-            框选物品
+            <span className="hidden xs:inline">框选物品</span>
+          </button>
+
+          {/* 预览模式 */}
+          <button
+            onClick={() => onModeChange('preview')}
+            className={`${modeBtnBase} border-transparent cursor-pointer flex-1 sm:flex-none justify-center ${
+              mode === 'preview'
+                ? 'bg-white dark:bg-zinc-800 text-emerald-600 dark:text-emerald-400 border-zinc-200 dark:border-zinc-700 shadow-sm font-semibold'
+                : 'text-zinc-600 dark:text-zinc-400 hover:text-zinc-900 dark:hover:text-white hover:bg-white/50 dark:hover:bg-white/5'
+            }`}
+          >
+            <Eye size={14} />
+            <span className="hidden xs:inline">预览</span>
+          </button>
+        </div>
+
+        {/* 撤销 / 重做 */}
+        <div className="flex items-center gap-1">
+          <button
+            onClick={onUndo}
+            disabled={!canUndo}
+            title="撤销 (Ctrl+Z)"
+            className={`${modeBtnBase} border-zinc-200 dark:border-zinc-800 bg-white dark:bg-zinc-900 cursor-pointer shadow-sm disabled:opacity-30 disabled:cursor-not-allowed p-1.5 !px-2`}
+          >
+            <Undo2 size={14} />
+          </button>
+          <button
+            onClick={onRedo}
+            disabled={!canRedo}
+            title="重做 (Ctrl+Y)"
+            className={`${modeBtnBase} border-zinc-200 dark:border-zinc-800 bg-white dark:bg-zinc-900 cursor-pointer shadow-sm disabled:opacity-30 disabled:cursor-not-allowed p-1.5 !px-2`}
+          >
+            <Redo2 size={14} />
           </button>
         </div>
 

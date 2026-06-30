@@ -86,25 +86,34 @@ export default function DashboardPage() {
   }, []);
 
   useEffect(() => {
-    // 从后端获取统计数据（后端未就绪时使用默认值进行优雅兜底）
+    // 从后端获取统计数据
     apiClient
       .get<ApiResponse<DashboardStats>>("/admin/dashboard")
       .then((res) => {
-        if (res.data?.data) setStats(res.data.data);
+        if (res.data?.data) {
+          // 转换后端数据格式，publishedAt 从 LocalDateTime 转为字符串
+          const data = res.data.data;
+          const transformedData: DashboardStats = {
+            ...data,
+            recentArticles: data.recentArticles?.map(article => ({
+              ...article,
+              publishedAt: article.publishedAt
+                ? new Date(article.publishedAt).toISOString()
+                : null
+            })) || []
+          };
+          setStats(transformedData);
+        }
       })
-      .catch(() => {
+      .catch((err) => {
+        console.error('获取工作台数据失败:', err);
+        // 优雅兜底：保持 loading 状态或显示空数据
         setStats({
-          articleCount: 12,
-          commentCount: 48,
-          totalViews: 1420,
-          subscriberCount: 89,
-          recentArticles: [
-            { id: 1, title: "探索抠图切片悬浮物理立体交互机制", status: "PUBLISHED", viewCount: 320, publishedAt: "2026-06-15T02:00:00.000Z" },
-            { id: 2, title: "Butvan Blog 2.0 后台 UI/UX 极致调优记录", status: "PUBLISHED", viewCount: 180, publishedAt: "2026-06-14T08:30:00.000Z" },
-            { id: 3, title: "如何构建大厂风格的 React 高密度集成管理后台", status: "PUBLISHED", viewCount: 245, publishedAt: "2026-06-13T12:00:00.000Z" },
-            { id: 4, title: "Spring Boot 3 WebFlux 异步接口开发实践", status: "DRAFT", viewCount: 0, publishedAt: null },
-            { id: 5, title: "物理空间深度效果下的 Sprite 精准对齐技巧", status: "PUBLISHED", viewCount: 95, publishedAt: "2026-06-10T15:45:00.000Z" }
-          ],
+          articleCount: 0,
+          commentCount: 0,
+          totalViews: 0,
+          subscriberCount: 0,
+          recentArticles: []
         });
       })
       .finally(() => setLoading(false));

@@ -46,7 +46,9 @@ export interface NavigationSaveDTO {
   title: string;
   parentId?: number | null;
   linkType: NavLinkType;
+  // CATEGORY/ARTICLE 类型：存数字 ID
   linkTargetId?: number | null;
+  // PAGE/EXTERNAL 类型：存路径字符串
   linkUrl?: string;
   icon?: string;
   position: NavPosition;
