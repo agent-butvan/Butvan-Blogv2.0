@@ -20,7 +20,8 @@ import gsap from 'gsap'
  * 2. HeroSection      — 个人信息核心区（头像、打字机简介、社交链接、CTA）
  * 3. FeaturesSection  — 技能卡片（第二屏，向下滚动可见）
  *
- * 场景房间入口：HeroSection 中的「🚪 进入我的房间」按钮 → /room
+ * 文章列表入口：HeroSection 中的「🚪 进入我的房间」按钮 → /article
+ * 向下滚动也会自动跳转到文章列表页面
  */
 export default function HomePage() {
   const [profile, setProfile] = useState<ProfileVO | null>(null)
@@ -52,7 +53,7 @@ export default function HomePage() {
 
       const tl = gsap.timeline({
         onComplete: () => {
-          router.push('/room')
+          router.push('/article')
           // 跳转后 1.2 秒恢复 body 交互
           setTimeout(() => {
             document.body.style.pointerEvents = 'auto'
@@ -159,7 +160,7 @@ export default function HomePage() {
         {!loading && (
           <div className="scroll-indicator absolute bottom-8 left-1/2 -translate-x-1/2 z-20 flex flex-col items-center gap-1 opacity-0 text-zinc-400 dark:text-zinc-500 select-none">
             <span className="text-[9px] font-heading font-semibold tracking-widest text-zinc-400 dark:text-zinc-600 uppercase">
-              SCROLL DOWN TO ENTER ROOM
+              SCROLL DOWN TO VIEW ARTICLES
             </span>
             <span className="text-xs font-light animate-bounce mt-1.5">↓</span>
           </div>

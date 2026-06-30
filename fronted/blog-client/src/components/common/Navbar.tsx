@@ -226,10 +226,10 @@ export default function Navbar({ profile }: NavbarProps) {
         )}
 
         <Link
-          href="/room"
+          href="/article"
           className="flex items-center gap-1 px-3.5 py-1.5 rounded-lg border border-[#09B38A]/20 bg-[#09B38A]/5 hover:bg-[#09B38A]/10 text-[#09B38A] font-heading text-xs font-bold transition-all duration-200"
         >
-          <span>🚪 沉浸空间</span>
+          <span>📚 文章列表</span>
           <ArrowUpRight size={12} />
         </Link>
       </div>
@@ -317,11 +317,11 @@ export default function Navbar({ profile }: NavbarProps) {
 
           <div className="border-t border-zinc-150 dark:border-zinc-900 pt-3 flex flex-col">
             <Link
-              href="/room"
+              href="/article"
               onClick={() => setMobileMenuOpen(false)}
               className="flex items-center justify-center gap-1 w-full py-2 rounded-lg bg-[#09B38A]/10 border border-[#09B38A]/20 text-[#09B38A] text-xs font-bold"
             >
-              <span>🚪 进入 3D 沉浸空间</span>
+              <span>� 进入文章列表</span>
             </Link>
           </div>
         </div>
