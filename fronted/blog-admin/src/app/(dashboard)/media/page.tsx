@@ -15,7 +15,7 @@ import {
   ExternalLink,
   Filter
 } from "lucide-react";
-import { cn } from "@heroui/react";
+import { cn, Input, Button } from "@heroui/react";
 import { fetchMediaList, deleteMediaItem, uploadMediaFile, type MediaItem } from "@/lib/media-api";
 import { toast } from "@/lib/toast";
 import ConfirmModal from "@/components/common/ConfirmModal";
@@ -290,18 +290,20 @@ export default function MediaPage() {
     for (let i = 1; i <= totalPages; i++) {
       if (i === 1 || i === totalPages || (i >= page - 2 && i <= page + 2)) {
         buttons.push(
-          <button
+          <Button
             key={i}
-            onClick={() => setPage(i)}
+            isIconOnly
+            size="sm"
+            onPress={() => setPage(i)}
             className={cn(
-              "h-8 w-8 rounded-xl text-xs font-bold transition-all cursor-pointer flex items-center justify-center border",
+              "h-8 w-8 rounded-xl text-xs font-bold flex items-center justify-center border",
               page === i
                 ? "bg-primary border-primary text-white shadow-xs"
                 : "border-zinc-200/60 dark:border-zinc-800 hover:bg-zinc-100 dark:hover:bg-zinc-900 text-zinc-650 dark:text-zinc-350 bg-white dark:bg-zinc-950"
             )}
           >
             {i}
-          </button>
+          </Button>
         );
       } else if (i === page - 3 || i === page + 3) {
         buttons.push(
@@ -335,19 +337,21 @@ export default function MediaPage() {
           
           {/* 批量操作控制 */}
           {checkedIds.length > 0 && (
-            <button
-              onClick={handleBulkDeleteRequest}
-              className="flex h-9 items-center justify-center gap-1.5 rounded-xl border border-rose-200 hover:bg-rose-50 dark:border-rose-900/30 dark:hover:bg-rose-950/20 text-rose-600 dark:text-rose-400 py-2 px-4 text-xs font-bold transition-all cursor-pointer animate-fade-in"
+            <Button
+              onPress={handleBulkDeleteRequest}
+              variant="danger"
+              size="sm"
+              className="flex h-9 items-center justify-center gap-1.5 rounded-xl py-2 px-4 text-xs font-bold animate-fade-in"
             >
               <Trash2 size={13} />
               <span>批量删除 ({checkedIds.length})</span>
-            </button>
+            </Button>
           )}
 
-          <button
-            onClick={handleUploadClick}
-            disabled={uploading}
-            className="flex h-9 items-center justify-center gap-1.5 rounded-xl bg-primary hover:bg-primary/95 active:scale-[0.98] py-2 px-4 text-xs font-bold text-white transition-all cursor-pointer disabled:opacity-50"
+          <Button
+            onPress={handleUploadClick}
+            isDisabled={uploading}
+            className="flex h-9 items-center justify-center gap-1.5 rounded-xl bg-primary hover:bg-primary/95 active:scale-[0.98] py-2 px-4 text-xs font-bold text-white"
           >
             {uploading ? (
               <Loader2 size={13} className="animate-spin" />
@@ -355,7 +359,7 @@ export default function MediaPage() {
               <Upload size={13} />
             )}
             <span>{uploading ? "正在上传中..." : "上传新媒体"}</span>
-          </button>
+          </Button>
         </div>
       </div>
 
@@ -364,39 +368,42 @@ export default function MediaPage() {
         
         {/* 左侧：文件大类 Tabs */}
         <div className="flex items-center gap-1.5 overflow-x-auto no-scrollbar">
-          <button
-            onClick={() => { setFileType(""); setPage(1); }}
+          <Button
+            size="sm"
+            onPress={() => { setFileType(""); setPage(1); }}
             className={cn(
-              "h-8 px-4 rounded-lg text-xs font-bold transition-all cursor-pointer whitespace-nowrap outline-none border-0",
+              "h-8 px-4 rounded-lg text-xs font-bold whitespace-nowrap outline-none border-0",
               fileType === ""
                 ? "bg-primary text-white shadow-xs"
-                : "text-zinc-500 dark:text-zinc-450 hover:bg-zinc-150/60 dark:hover:bg-zinc-800/60 hover:text-zinc-800 dark:hover:text-zinc-200"
+                : "text-zinc-500 dark:text-zinc-450 hover:bg-zinc-150/60 dark:hover:bg-zinc-800/60 hover:text-zinc-800 dark:hover:text-zinc-200 bg-transparent"
             )}
           >
             全部资源
-          </button>
-          <button
-            onClick={() => { setFileType("IMAGE"); setPage(1); }}
+          </Button>
+          <Button
+            size="sm"
+            onPress={() => { setFileType("IMAGE"); setPage(1); }}
             className={cn(
-              "h-8 px-4 rounded-lg text-xs font-bold transition-all cursor-pointer whitespace-nowrap outline-none border-0",
+              "h-8 px-4 rounded-lg text-xs font-bold whitespace-nowrap outline-none border-0",
               fileType === "IMAGE"
                 ? "bg-primary text-white shadow-xs"
-                : "text-zinc-500 dark:text-zinc-450 hover:bg-zinc-150/60 dark:hover:bg-zinc-800/60 hover:text-zinc-800 dark:hover:text-zinc-200"
+                : "text-zinc-500 dark:text-zinc-450 hover:bg-zinc-150/60 dark:hover:bg-zinc-800/60 hover:text-zinc-800 dark:hover:text-zinc-200 bg-transparent"
             )}
           >
             图片资源
-          </button>
-          <button
-            onClick={() => { setFileType("OTHER"); setPage(1); }}
+          </Button>
+          <Button
+            size="sm"
+            onPress={() => { setFileType("OTHER"); setPage(1); }}
             className={cn(
-              "h-8 px-4 rounded-lg text-xs font-bold transition-all cursor-pointer whitespace-nowrap outline-none border-0",
+              "h-8 px-4 rounded-lg text-xs font-bold whitespace-nowrap outline-none border-0",
               fileType === "OTHER"
                 ? "bg-primary text-white shadow-xs"
-                : "text-zinc-500 dark:text-zinc-450 hover:bg-zinc-150/60 dark:hover:bg-zinc-800/60 hover:text-zinc-800 dark:hover:text-zinc-200"
+                : "text-zinc-500 dark:text-zinc-450 hover:bg-zinc-150/60 dark:hover:bg-zinc-800/60 hover:text-zinc-800 dark:hover:text-zinc-200 bg-transparent"
             )}
           >
             其他文件
-          </button>
+          </Button>
         </div>
 
         {/* 右侧：多重条件检索 */}
@@ -422,7 +429,7 @@ export default function MediaPage() {
           <form onSubmit={handleSearchSubmit} className="flex items-center gap-2">
             <div className="flex h-8 items-center gap-2 rounded-lg border border-zinc-200/65 dark:border-zinc-800 bg-white dark:bg-zinc-950 px-2.5 w-48 md:w-56 focus-within:ring-2 focus-within:ring-primary/20 focus-within:border-primary transition-all">
               <Search size={13} className="text-zinc-400 shrink-0" />
-              <input
+              <Input
                 type="text"
                 value={searchVal}
                 onChange={(e) => setSearchVal(e.target.value)}
@@ -430,21 +437,24 @@ export default function MediaPage() {
                 className="flex-1 border-0 bg-transparent p-0 text-xs text-zinc-850 dark:text-zinc-150 outline-none placeholder-zinc-400 dark:placeholder-zinc-650 focus:ring-0 leading-normal"
               />
               {searchVal && (
-                <button
-                  type="button"
-                  onClick={handleClearSearch}
-                  className="text-zinc-400 hover:text-zinc-655 cursor-pointer"
+                <Button
+                  isIconOnly
+                  size="sm"
+                  variant="ghost"
+                  onPress={handleClearSearch}
+                  className="text-zinc-400 hover:text-zinc-655 min-w-0 h-auto w-auto p-0"
                 >
                   <X size={12} />
-                </button>
+                </Button>
               )}
             </div>
-            <button
+            <Button
               type="submit"
-              className="h-8 px-3.5 rounded-lg bg-zinc-850 hover:bg-zinc-800 dark:bg-zinc-800 dark:hover:bg-zinc-750 text-white text-xs font-bold transition-colors cursor-pointer"
+              size="sm"
+              className="h-8 px-3.5 rounded-lg bg-zinc-850 hover:bg-zinc-800 dark:bg-zinc-800 dark:hover:bg-zinc-750 text-white text-xs font-bold"
             >
               搜索
-            </button>
+            </Button>
           </form>
         </div>
       </div>
@@ -592,34 +602,41 @@ export default function MediaPage() {
                     <td className="px-5 py-3 text-right select-none">
                       <div className="flex items-center justify-end gap-2">
                         {/* 复制直链 */}
-                        <button
-                          onClick={() => handleCopyLink(item)}
+                        <Button
+                          isIconOnly
+                          size="sm"
+                          variant="ghost"
+                          onPress={() => handleCopyLink(item)}
                           className={cn(
-                            "w-7 h-7 rounded-lg hover:bg-zinc-100 dark:hover:bg-zinc-900 transition-colors flex items-center justify-center cursor-pointer border border-transparent hover:border-zinc-200/50 dark:hover:border-zinc-800",
+                            "w-7 h-7 rounded-lg hover:bg-zinc-100 dark:hover:bg-zinc-900 flex items-center justify-center border border-transparent hover:border-zinc-200/50 dark:hover:border-zinc-800 min-w-0 p-0",
                             copiedId === item.id ? "text-emerald-500 hover:text-emerald-600" : "text-zinc-400 dark:text-zinc-500 hover:text-zinc-750 dark:hover:text-zinc-300"
                           )}
-                          title="复制访问直链 URL"
+                          aria-label="复制访问直链 URL"
                         >
                           {copiedId === item.id ? <Check size={13.5} /> : <Copy size={12} />}
-                        </button>
+                        </Button>
 
-                        {/* 查看详情 */}
-                        <button
-                          onClick={() => setSelectedMedia(item)}
-                          className="w-7 h-7 rounded-lg text-zinc-400 hover:text-primary hover:bg-zinc-100 dark:hover:bg-zinc-900 transition-colors flex items-center justify-center cursor-pointer border border-transparent hover:border-zinc-200/50 dark:hover:border-zinc-800"
-                          title="查看元数据详情"
+                        <Button
+                          isIconOnly
+                          size="sm"
+                          variant="ghost"
+                          onPress={() => setSelectedMedia(item)}
+                          className="w-7 h-7 rounded-lg text-zinc-400 hover:text-primary hover:bg-zinc-100 dark:hover:bg-zinc-900 flex items-center justify-center border border-transparent hover:border-zinc-200/50 dark:hover:border-zinc-800 min-w-0 p-0"
+                          aria-label="查看元数据详情"
                         >
                           <Eye size={12} />
-                        </button>
+                        </Button>
 
-                        {/* 二次确认级联物理删除 */}
-                        <button
-                          onClick={() => handleDeleteRequest(item.id)}
-                          className="w-7 h-7 rounded-lg text-zinc-400 hover:text-rose-500 hover:bg-zinc-100 dark:hover:bg-zinc-900 transition-colors flex items-center justify-center cursor-pointer border border-transparent hover:border-zinc-200/50 dark:hover:border-zinc-800"
-                          title="删除并从硬盘擦除"
+                        <Button
+                          isIconOnly
+                          size="sm"
+                          variant="ghost"
+                          onPress={() => handleDeleteRequest(item.id)}
+                          className="w-7 h-7 rounded-lg text-zinc-400 hover:text-rose-500 hover:bg-zinc-100 dark:hover:bg-zinc-900 flex items-center justify-center border border-transparent hover:border-zinc-200/50 dark:hover:border-zinc-800 min-w-0 p-0"
+                          aria-label="删除并从硬盘擦除"
                         >
                           <Trash2 size={12} />
-                        </button>
+                        </Button>
                       </div>
                     </td>
                   </tr>
@@ -637,23 +654,27 @@ export default function MediaPage() {
             SHOWING PAGE {page} OF {totalPages} ({total} ITEMS)
           </span>
           <div className="flex items-center gap-1.5">
-            <button
-              onClick={() => setPage((p) => Math.max(1, p - 1))}
-              disabled={page <= 1 || loading}
-              className="rounded-xl border border-zinc-200/60 dark:border-zinc-800 px-3 py-1.5 hover:bg-zinc-150/40 dark:hover:bg-zinc-900/60 text-zinc-650 dark:text-zinc-350 disabled:opacity-30 dark:disabled:opacity-20 transition-all cursor-pointer disabled:cursor-not-allowed font-bold outline-none"
+            <Button
+              onPress={() => setPage((p) => Math.max(1, p - 1))}
+              isDisabled={page <= 1 || loading}
+              variant="outline"
+              size="sm"
+              className="rounded-xl px-3 py-1.5 text-xs font-bold disabled:cursor-not-allowed"
             >
               上一页
-            </button>
+            </Button>
             <div className="flex items-center gap-1">
               {renderPagination()}
             </div>
-            <button
-              onClick={() => setPage((p) => Math.min(totalPages, p + 1))}
-              disabled={page >= totalPages || loading}
-              className="rounded-xl border border-zinc-200/60 dark:border-zinc-800 px-3 py-1.5 hover:bg-zinc-150/40 dark:hover:bg-zinc-900/60 text-zinc-650 dark:text-zinc-350 disabled:opacity-30 dark:disabled:opacity-20 transition-all cursor-pointer disabled:cursor-not-allowed font-bold outline-none"
+            <Button
+              onPress={() => setPage((p) => Math.min(totalPages, p + 1))}
+              isDisabled={page >= totalPages || loading}
+              variant="outline"
+              size="sm"
+              className="rounded-xl px-3 py-1.5 text-xs font-bold disabled:cursor-not-allowed"
             >
               下一页
-            </button>
+            </Button>
           </div>
         </div>
       )}
@@ -676,12 +697,15 @@ export default function MediaPage() {
                   <h3 className="font-heading text-sm font-bold text-zinc-900 dark:text-zinc-150 truncate max-w-[280px]">
                     媒体属性详情: {selectedMedia.fileName}
                   </h3>
-                  <button
-                    onClick={() => setSelectedMedia(null)}
-                    className="p-1 rounded-md text-zinc-400 hover:text-zinc-600 dark:hover:text-zinc-250 hover:bg-zinc-100 dark:hover:bg-zinc-800 transition-colors cursor-pointer border-0 bg-transparent"
+                  <Button
+                    isIconOnly
+                    size="sm"
+                    variant="ghost"
+                    onPress={() => setSelectedMedia(null)}
+                    className="p-1 rounded-md text-zinc-400 hover:text-zinc-600 dark:hover:text-zinc-250 hover:bg-zinc-100 dark:hover:bg-zinc-800 min-w-0 h-auto w-auto"
                   >
                     <X size={15} />
-                  </button>
+                  </Button>
                 </div>
 
                 {/* 预览图 */}
@@ -768,12 +792,12 @@ export default function MediaPage() {
 
                 {/* 底栏按钮 */}
                 <div className="border-t border-zinc-100 dark:border-zinc-800 pt-3.5 mt-2 flex items-center justify-end">
-                  <button
-                    onClick={() => setSelectedMedia(null)}
-                    className="h-9 px-6 rounded-xl bg-zinc-850 hover:bg-zinc-800 dark:bg-zinc-800 dark:hover:bg-zinc-750 text-white text-xs font-bold transition-colors cursor-pointer"
+                  <Button
+                    onPress={() => setSelectedMedia(null)}
+                    className="h-9 px-6 rounded-xl bg-zinc-850 hover:bg-zinc-800 dark:bg-zinc-800 dark:hover:bg-zinc-750 text-white text-xs font-bold"
                   >
                     关闭
-                  </button>
+                  </Button>
                 </div>
               </div>
             </div>

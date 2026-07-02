@@ -16,7 +16,7 @@ import {
   Smartphone,
   User,
 } from "lucide-react";
-import { cn } from "@heroui/react";
+import { cn, Input, Button } from "@heroui/react";
 import QRCode from "qrcode";
 import apiClient from "@/lib/api";
 import { setUser } from "@/lib/auth";
@@ -446,14 +446,15 @@ export default function ProfilePage() {
                   {profileForm.nickname?.[0]?.toUpperCase() || currentUser?.username?.[0]?.toUpperCase() || "A"}
                 </div>
               )}
-              <button
-                onClick={handleChooseAvatar}
-                disabled={uploadingAvatar}
-                className="absolute bottom-0 right-0 flex h-8 w-8 items-center justify-center rounded-full bg-primary text-white shadow-sm transition-colors hover:bg-primary/90 disabled:cursor-not-allowed disabled:opacity-60"
-                title="上传头像"
+              <Button
+                isIconOnly
+                onPress={handleChooseAvatar}
+                isDisabled={uploadingAvatar}
+                className="absolute bottom-0 right-0 flex h-8 w-8 items-center justify-center rounded-full bg-primary text-white shadow-sm hover:bg-primary/90"
+                aria-label="上传头像"
               >
                 {uploadingAvatar ? <Loader2 size={14} className="animate-spin" /> : <Camera size={14} />}
-              </button>
+              </Button>
               <input ref={fileInputRef} type="file" accept="image/*" onChange={handleAvatarChange} className="hidden" />
             </div>
             <div className="min-w-0 text-center">
@@ -486,7 +487,7 @@ export default function ProfilePage() {
             <form onSubmit={handleSaveProfile} className="flex flex-col gap-4 p-5">
               <div className="grid grid-cols-1 gap-4 md:grid-cols-2">
                 <Field label="昵称" required>
-                  <input
+                  <Input
                     value={profileForm.nickname}
                     onChange={(event) => updateProfileField("nickname", event.target.value)}
                     className="h-10 rounded-lg border border-zinc-200 bg-white px-3 text-sm outline-none transition focus:border-primary dark:border-zinc-800 dark:bg-zinc-900"
@@ -494,7 +495,7 @@ export default function ProfilePage() {
                   />
                 </Field>
                 <Field label="头像地址">
-                  <input
+                  <Input
                     value={profileForm.avatarUrl}
                     onChange={(event) => updateProfileField("avatarUrl", event.target.value)}
                     className="h-10 rounded-lg border border-zinc-200 bg-white px-3 text-sm outline-none transition focus:border-primary dark:border-zinc-800 dark:bg-zinc-900"
@@ -515,14 +516,14 @@ export default function ProfilePage() {
                 <span className={cn("text-xs", isProfileDirty ? "text-amber-600 dark:text-amber-300" : "text-zinc-400")}>
                   {isProfileDirty ? "资料有未保存修改" : "当前资料已同步"}
                 </span>
-                <button
+                <Button
                   type="submit"
-                  disabled={!isProfileDirty || savingProfile}
-                  className="inline-flex h-9 items-center gap-2 rounded-lg bg-primary px-4 text-xs font-bold text-white transition hover:bg-primary/90 disabled:cursor-not-allowed disabled:opacity-50"
+                  isDisabled={!isProfileDirty || savingProfile}
+                  className="inline-flex h-9 items-center gap-2 rounded-lg bg-primary px-4 text-xs font-bold text-white"
                 >
                   {savingProfile ? <Loader2 size={14} className="animate-spin" /> : <Save size={14} />}
                   保存资料
-                </button>
+                </Button>
               </div>
             </form>
           )}
@@ -534,7 +535,7 @@ export default function ProfilePage() {
                 <span>修改密码后当前 Token 仍可继续使用；重新登录时请使用新密码。</span>
               </div>
               <Field label="当前密码" required>
-                <input
+                <Input
                   type="password"
                   value={passwordForm.currentPassword}
                   onChange={(event) => setPasswordForm((prev) => ({ ...prev, currentPassword: event.target.value }))}
@@ -543,7 +544,7 @@ export default function ProfilePage() {
                 />
               </Field>
               <Field label="新密码" required>
-                <input
+                <Input
                   type="password"
                   value={passwordForm.newPassword}
                   onChange={(event) => setPasswordForm((prev) => ({ ...prev, newPassword: event.target.value }))}
@@ -552,7 +553,7 @@ export default function ProfilePage() {
                 />
               </Field>
               <Field label="确认新密码" required>
-                <input
+                <Input
                   type="password"
                   value={passwordForm.confirmPassword}
                   onChange={(event) => setPasswordForm((prev) => ({ ...prev, confirmPassword: event.target.value }))}
@@ -561,14 +562,14 @@ export default function ProfilePage() {
                 />
               </Field>
               <div className="flex justify-end border-t border-zinc-200 pt-4 dark:border-zinc-800">
-                <button
+                <Button
                   type="submit"
-                  disabled={changingPassword}
-                  className="inline-flex h-9 items-center gap-2 rounded-lg bg-zinc-950 px-4 text-xs font-bold text-white transition hover:bg-zinc-800 disabled:cursor-not-allowed disabled:opacity-50 dark:bg-zinc-100 dark:text-zinc-950 dark:hover:bg-white"
+                  isDisabled={changingPassword}
+                  className="inline-flex h-9 items-center gap-2 rounded-lg bg-zinc-950 px-4 text-xs font-bold text-white dark:bg-zinc-100 dark:text-zinc-950"
                 >
                   {changingPassword ? <Loader2 size={14} className="animate-spin" /> : <KeyRound size={14} />}
                   更新密码
-                </button>
+                </Button>
               </div>
             </form>
           )}
@@ -602,7 +603,7 @@ export default function ProfilePage() {
                 <h3 className="mb-2 text-xs font-bold text-zinc-950 dark:text-zinc-50">邮箱绑定管理</h3>
                 <form onSubmit={handleSaveProfile} className="grid grid-cols-1 gap-3 md:grid-cols-[1fr_auto]">
                   <Field label="修改或绑定邮箱">
-                    <input
+                    <Input
                       type="email"
                       value={profileForm.email}
                       onChange={(event) => updateProfileField("email", event.target.value)}
@@ -612,27 +613,28 @@ export default function ProfilePage() {
                   </Field>
                   <div className="flex items-end gap-2">
                     {profileForm.email && (
-                      <button
+                      <Button
                         type="button"
-                        onClick={() => {
+                        variant="outline"
+                        onPress={() => {
                           if (confirm("确定要解除邮箱绑定吗？")) {
                             updateProfileField("email", "");
                             setTimeout(() => handleSaveProfile(), 0);
                           }
                         }}
-                        className="inline-flex h-10 w-full items-center justify-center rounded-lg border border-zinc-200 px-4 text-xs font-bold text-zinc-600 transition hover:bg-zinc-50 dark:border-zinc-800 dark:text-zinc-400 dark:hover:bg-zinc-900 md:w-auto"
+                        className="h-10 w-full text-xs font-bold md:w-auto"
                       >
                         解绑
-                      </button>
+                      </Button>
                     )}
-                    <button
+                    <Button
                       type="submit"
-                      disabled={!isProfileDirty || savingProfile}
-                      className="inline-flex h-10 w-full items-center justify-center gap-2 rounded-lg bg-primary px-4 text-xs font-bold text-white transition hover:bg-primary/90 disabled:cursor-not-allowed disabled:opacity-50 md:w-auto"
+                      isDisabled={!isProfileDirty || savingProfile}
+                      className="h-10 w-full items-center gap-2 bg-primary px-4 text-xs font-bold text-white md:w-auto"
                     >
                       {savingProfile ? <Loader2 size={14} className="animate-spin" /> : <CheckCircle2 size={14} />}
                       {initialForm.email ? "保存修改" : "立即绑定"}
-                    </button>
+                    </Button>
                   </div>
                 </form>
               </div>
@@ -658,19 +660,22 @@ export default function ProfilePage() {
                       )}
                     </span>
                     {currentUser?.githubUsername ? (
-                      <button
-                        onClick={handleUnbindGithub}
-                        className="rounded bg-red-50 px-2.5 py-1.5 text-[11px] font-bold text-red-600 transition hover:bg-red-100 dark:bg-red-950/20 dark:text-red-400"
+                      <Button
+                        onPress={handleUnbindGithub}
+                        size="sm"
+                        variant="danger"
+                        className="rounded px-2.5 py-1.5 text-[11px] font-bold"
                       >
                         解除绑定
-                      </button>
+                      </Button>
                     ) : (
-                      <button
-                        onClick={handleStartBindGithub}
-                        className="rounded bg-zinc-950 px-2.5 py-1.5 text-[11px] font-bold text-white transition hover:bg-zinc-800 dark:bg-zinc-100 dark:text-zinc-950 dark:hover:bg-white animate-pulse"
+                      <Button
+                        onPress={handleStartBindGithub}
+                        size="sm"
+                        className="rounded bg-zinc-950 px-2.5 py-1.5 text-[11px] font-bold text-white dark:bg-zinc-100 dark:text-zinc-950 animate-pulse"
                       >
                         立即绑定
-                      </button>
+                      </Button>
                     )}
                   </div>
                 </div>
@@ -692,19 +697,22 @@ export default function ProfilePage() {
                       )}
                     </span>
                     {currentUser?.twoFactorEnabled ? (
-                      <button
-                        onClick={handleStartDisableTwoFactor}
-                        className="rounded bg-red-50 px-2.5 py-1.5 text-[11px] font-bold text-red-600 transition hover:bg-red-100 dark:bg-red-950/20 dark:text-red-400"
+                      <Button
+                        onPress={handleStartDisableTwoFactor}
+                        size="sm"
+                        variant="danger"
+                        className="rounded px-2.5 py-1.5 text-[11px] font-bold"
                       >
                         停用 2FA
-                      </button>
+                      </Button>
                     ) : (
-                      <button
-                        onClick={handleStartEnableTwoFactor}
-                        className="rounded bg-primary px-2.5 py-1.5 text-[11px] font-bold text-white transition hover:bg-primary/90 animate-pulse"
+                      <Button
+                        onPress={handleStartEnableTwoFactor}
+                        size="sm"
+                        className="rounded bg-primary px-2.5 py-1.5 text-[11px] font-bold text-white animate-pulse"
                       >
                         开启验证
-                      </button>
+                      </Button>
                     )}
                   </div>
                 </div>
@@ -724,7 +732,7 @@ export default function ProfilePage() {
             </p>
             <form onSubmit={handleConfirmBindGithub} className="mt-4 space-y-4">
               <Field label="GitHub 用户名">
-                <input
+                <Input
                   type="text"
                   value={ghUsernameInput}
                   onChange={(e) => setGhUsernameInput(e.target.value)}
@@ -735,20 +743,21 @@ export default function ProfilePage() {
                 />
               </Field>
               <div className="flex justify-end gap-2 border-t border-zinc-100 pt-4 dark:border-zinc-900">
-                <button
+                <Button
                   type="button"
-                  onClick={() => setShowGithubModal(false)}
-                  className="rounded-lg border border-zinc-200 px-4 py-2 text-xs font-bold text-zinc-600 transition hover:bg-zinc-50 dark:border-zinc-800 dark:text-zinc-400 dark:hover:bg-zinc-900"
+                  variant="outline"
+                  onPress={() => setShowGithubModal(false)}
+                  className="rounded-lg px-4 py-2 text-xs font-bold"
                 >
                   取消
-                </button>
-                <button
+                </Button>
+                <Button
                   type="submit"
-                  disabled={bindingGh}
-                  className="rounded-lg bg-zinc-950 px-4 py-2 text-xs font-bold text-white transition hover:bg-zinc-800 disabled:opacity-50 dark:bg-zinc-100 dark:text-zinc-950 dark:hover:bg-white"
+                  isDisabled={bindingGh}
+                  className="rounded-lg bg-zinc-950 px-4 py-2 text-xs font-bold text-white dark:bg-zinc-100 dark:text-zinc-950"
                 >
                   {bindingGh ? "绑定中..." : "授权并绑定"}
-                </button>
+                </Button>
               </div>
             </form>
           </div>
@@ -792,7 +801,7 @@ export default function ProfilePage() {
               )}
 
               <Field label="6 位身份验证码">
-                <input
+                <Input
                   type="text"
                   value={totpCodeInput}
                   onChange={(e) => setTotpCodeInput(e.target.value.replace(/\D/g, "").slice(0, 6))}
@@ -805,23 +814,24 @@ export default function ProfilePage() {
               </Field>
 
               <div className="flex justify-end gap-2 border-t border-zinc-100 pt-4 dark:border-zinc-900">
-                <button
+                <Button
                   type="button"
-                  onClick={() => {
+                  variant="outline"
+                  onPress={() => {
                     setShowTwoFactorModal(false);
                     setTwoFactorSecretData(null);
                   }}
-                  className="rounded-lg border border-zinc-200 px-4 py-2 text-xs font-bold text-zinc-600 transition hover:bg-zinc-50 dark:border-zinc-800 dark:text-zinc-400 dark:hover:bg-zinc-900"
+                  className="rounded-lg px-4 py-2 text-xs font-bold"
                 >
                   取消
-                </button>
-                <button
+                </Button>
+                <Button
                   type="submit"
-                  disabled={submittingTotp}
-                  className="rounded-lg bg-primary px-4 py-2 text-xs font-bold text-white transition hover:bg-primary/90 disabled:opacity-50"
+                  isDisabled={submittingTotp}
+                  className="rounded-lg bg-primary px-4 py-2 text-xs font-bold text-white"
                 >
                   {submittingTotp ? "验证中..." : "确认提交"}
-                </button>
+                </Button>
               </div>
             </form>
           </div>

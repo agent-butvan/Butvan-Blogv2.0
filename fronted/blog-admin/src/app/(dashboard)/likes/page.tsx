@@ -17,7 +17,7 @@ import {
   User,
   FileText
 } from "lucide-react";
-import { cn } from "@heroui/react";
+import { cn, Input, Button } from "@heroui/react";
 import { fetchAdminLikes, deleteLikes, LikeItem } from "@/lib/likes-api";
 import { toast } from "@/lib/toast";
 import ConfirmModal from "@/components/common/ConfirmModal";
@@ -223,7 +223,7 @@ export default function LikesPage() {
         <div className="flex items-center gap-2 flex-1 max-w-xs">
           <div className="flex h-9 items-center gap-2 rounded-xl border border-zinc-200/60 dark:border-zinc-800 bg-white dark:bg-zinc-950 px-3 py-1.5 w-full transition-all focus-within:ring-2 focus-within:ring-rose-500/15 focus-within:border-rose-500/60">
             <Search size={14} className="text-zinc-400 dark:text-zinc-500 shrink-0" />
-            <input
+            <Input
               type="text"
               value={searchVal}
               onChange={(e) => {
@@ -235,17 +235,19 @@ export default function LikesPage() {
               className="flex-1 border-0 bg-transparent p-0 text-xs text-zinc-800 dark:text-zinc-100 outline-none placeholder-zinc-400 dark:placeholder-zinc-650 focus:ring-0 leading-normal"
             />
             {searchVal && (
-              <button
-                type="button"
-                onClick={() => {
+              <Button
+                isIconOnly
+                size="sm"
+                variant="ghost"
+                onPress={() => {
                   setSearchVal("");
                   setKeyword("");
                   setPage(1);
                 }}
-                className="text-zinc-400 hover:text-zinc-655 dark:hover:text-zinc-200 cursor-pointer border-0 bg-transparent"
+                className="text-zinc-400 hover:text-zinc-655 dark:hover:text-zinc-200 min-w-0 h-auto w-auto p-0"
               >
                 <X size={13} />
-              </button>
+              </Button>
             )}
           </div>
         </div>
@@ -263,13 +265,15 @@ export default function LikesPage() {
                   已选中 {selectedIds.length} 项
                 </span>
               </div>
-              <button
-                onClick={() => setBatchModalOpen(true)}
-                className="h-8 px-3 rounded-lg bg-rose-600 hover:bg-rose-700 active:scale-95 text-white text-[11px] font-bold transition-all cursor-pointer shadow-xs flex items-center gap-1"
+              <Button
+                onPress={() => setBatchModalOpen(true)}
+                variant="danger"
+                size="sm"
+                className="h-8 px-3 rounded-lg text-[11px] font-bold shadow-xs"
               >
                 <Trash2 size={11} />
                 <span>批量删除</span>
-              </button>
+              </Button>
             </div>
           ) : (
             <div className="flex items-center gap-3.5 select-none">
@@ -280,12 +284,14 @@ export default function LikesPage() {
                 </span>
                 <span>RUNNING</span>
               </div>
-              <button
-                onClick={handleExportCSV}
-                className="h-8 px-3 rounded-lg border border-zinc-200/60 dark:border-zinc-800 bg-white dark:bg-zinc-950 text-xs font-bold text-zinc-600 dark:text-zinc-450 hover:bg-zinc-50 dark:hover:bg-zinc-900 transition-colors shadow-2xs hover:shadow-xs active:scale-95 cursor-pointer flex items-center gap-1"
+              <Button
+                onPress={handleExportCSV}
+                variant="outline"
+                size="sm"
+                className="h-8 px-3 rounded-lg text-xs font-bold shadow-2xs hover:shadow-xs"
               >
                 <span>导出 CSV</span>
-              </button>
+              </Button>
             </div>
           )}
         </div>
@@ -519,20 +525,24 @@ export default function LikesPage() {
               SHOWING PAGE {page} OF {Math.ceil(total / size) || 1} ({total} ITEMS)
             </span>
             <div className="flex items-center gap-1.5 font-bold select-none">
-              <button
-                disabled={page <= 1}
-                onClick={() => setPage(p => p - 1)}
-                className="rounded-xl border border-zinc-200/60 dark:border-zinc-800 px-3 py-1.5 hover:bg-zinc-150/40 dark:hover:bg-zinc-900/60 text-zinc-650 dark:text-zinc-350 disabled:opacity-30 transition-all cursor-pointer font-bold outline-none active:scale-[0.98]"
+              <Button
+                isDisabled={page <= 1}
+                onPress={() => setPage(p => p - 1)}
+                variant="outline"
+                size="sm"
+                className="rounded-xl px-3 py-1.5 text-xs font-bold"
               >
                 上一页
-              </button>
-              <button
-                disabled={page * size >= total}
-                onClick={() => setPage(p => p + 1)}
-                className="rounded-xl border border-zinc-200/60 dark:border-zinc-800 px-3 py-1.5 hover:bg-zinc-150/40 dark:hover:bg-zinc-900/60 text-zinc-650 dark:text-zinc-350 disabled:opacity-30 transition-all cursor-pointer font-bold outline-none active:scale-[0.98]"
+              </Button>
+              <Button
+                isDisabled={page * size >= total}
+                onPress={() => setPage(p => p + 1)}
+                variant="outline"
+                size="sm"
+                className="rounded-xl px-3 py-1.5 text-xs font-bold"
               >
                 下一页
-              </button>
+              </Button>
             </div>
           </div>
         )}

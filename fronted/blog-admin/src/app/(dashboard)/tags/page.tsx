@@ -3,7 +3,7 @@
 import { useEffect, useState, useMemo } from "react";
 import { useRouter } from "next/navigation";
 import { Plus, Search, Edit, Trash2, Loader2, X, AlertCircle } from "lucide-react";
-import { cn } from "@heroui/react";
+import { cn, Input, Button } from "@heroui/react";
 import { fetchTagsList, createTag, updateTag, deleteTag, fetchArticles as fetchArticlesApi } from "@/lib/article-api";
 import { toast } from "@/lib/toast";
 import ConfirmModal from "@/components/common/ConfirmModal";
@@ -184,35 +184,36 @@ export default function TagsPage() {
             WORKSPACE / TAGS (共 {tags.length} 个标签)
           </p>
         </div>
-        <button
-          onClick={handleOpenCreate}
-          className="flex h-9 items-center justify-center gap-1.5 rounded-xl bg-primary hover:bg-primary/95 active:scale-[0.98] py-2 px-4 text-xs font-bold text-white transition-all cursor-pointer"
+        <Button
+          onPress={handleOpenCreate}
+          className="h-9 rounded-xl bg-primary hover:bg-primary/95 active:scale-[0.98] px-4 text-xs font-bold text-white"
         >
           <Plus size={13} />
           <span>新建标签</span>
-        </button>
+        </Button>
       </div>
 
       {/* 模糊检索栏 */}
       <div className="flex items-center gap-3">
-        <div className="flex h-9 items-center gap-2 rounded-xl border border-zinc-200/60 dark:border-zinc-800 bg-white dark:bg-zinc-950 px-3 py-1.5 flex-1 max-w-xs transition-all focus-within:ring-2 focus-within:ring-primary/20 focus-within:border-primary">
-          <Search size={14} className="text-zinc-400 dark:text-zinc-550 shrink-0" />
-          <input
-            type="text"
-            value={keyword}
-            onChange={(e) => setKeyword(e.target.value)}
-            placeholder="搜索标签名称或标识..."
-            className="flex-1 border-0 bg-transparent p-0 text-xs text-zinc-800 dark:text-zinc-100 outline-none placeholder-zinc-400 dark:placeholder-zinc-650 focus:ring-0 leading-normal"
-          />
-          {keyword && (
-            <button
-              onClick={() => setKeyword("")}
-              className="text-zinc-400 hover:text-zinc-650 cursor-pointer"
-            >
-              <X size={12} />
-            </button>
-          )}
-        </div>
+          <div className="relative w-full max-w-xs h-9 rounded-xl border border-zinc-200/60 dark:border-zinc-800 bg-white dark:bg-zinc-950 hover:border-zinc-300 dark:hover:border-zinc-700 focus-within:border-primary focus-within:ring-2 focus-within:ring-primary/20 transition-all flex items-center px-3">
+            <Search size={14} className="text-zinc-400 dark:text-zinc-550 shrink-0" />
+            <Input
+              type="text"
+              value={keyword}
+              onChange={(e) => setKeyword(e.target.value)}
+              placeholder="搜索标签名称或标识..."
+              className="flex-1 border-0 bg-transparent p-0 text-xs outline-none placeholder-zinc-400 dark:placeholder-zinc-650 focus:ring-0 leading-normal ml-2"
+            />
+            {keyword && (
+              <button
+                type="button"
+                onClick={() => setKeyword("")}
+                className="text-zinc-400 hover:text-zinc-650 cursor-pointer"
+              >
+                <X size={12} />
+              </button>
+            )}
+          </div>
       </div>
 
       {/* 标签表格 */}
@@ -334,13 +335,13 @@ export default function TagsPage() {
                     <label className="text-[11px] font-bold text-zinc-500 dark:text-zinc-400 tracking-wider">
                       标签名称
                     </label>
-                    <input
+                    <Input
                       type="text"
                       disabled={submitting}
                       value={formData.name}
                       onChange={(e) => setFormData((prev) => ({ ...prev, name: e.target.value }))}
                       placeholder="例如: React"
-                      className="w-full rounded-xl border border-zinc-200/60 dark:border-zinc-800 bg-white dark:bg-zinc-950 px-3 py-2 text-xs text-zinc-800 dark:text-zinc-100 outline-none transition-all focus:ring-2 focus:ring-primary/20 focus:border-primary"
+                      className="w-full rounded-xl border border-zinc-200/60 dark:border-zinc-800 bg-white dark:bg-zinc-950 px-3 py-2 text-xs outline-none transition-all focus:ring-2 focus:ring-primary/20 focus:border-primary"
                     />
                   </div>
 
@@ -349,13 +350,13 @@ export default function TagsPage() {
                     <label className="text-[11px] font-bold text-zinc-500 dark:text-zinc-400 tracking-wider">
                       唯一标识 (Slug)
                     </label>
-                    <input
+                    <Input
                       type="text"
                       disabled={submitting}
                       value={formData.slug}
                       onChange={(e) => setFormData((prev) => ({ ...prev, slug: e.target.value.toLowerCase().replace(/\s+/g, "-") }))}
                       placeholder="例如: react"
-                      className="w-full rounded-xl border border-zinc-200/60 dark:border-zinc-800 bg-white dark:bg-zinc-950 px-3 py-2 text-xs text-zinc-800 dark:text-zinc-100 outline-none transition-all focus:ring-2 focus:ring-primary/20 focus:border-primary font-mono"
+                      className="w-full rounded-xl border border-zinc-200/60 dark:border-zinc-800 bg-white dark:bg-zinc-950 px-3 py-2 text-xs outline-none transition-all focus:ring-2 focus:ring-primary/20 focus:border-primary font-mono"
                     />
                   </div>
 
@@ -369,22 +370,23 @@ export default function TagsPage() {
 
                   {/* 底栏按钮 */}
                   <div className="flex items-center gap-3 pt-3 border-t border-zinc-100 dark:border-zinc-800">
-                    <button
+                    <Button
                       type="button"
-                      disabled={submitting}
-                      onClick={() => setModalOpen(false)}
-                      className="flex-1 h-9 rounded-xl border border-zinc-200 dark:border-zinc-800 text-xs font-bold text-zinc-600 dark:text-zinc-400 hover:bg-zinc-50 dark:hover:bg-zinc-800 transition-colors cursor-pointer"
+                      isDisabled={submitting}
+                      onPress={() => setModalOpen(false)}
+                      variant="outline"
+                      className="flex-1 h-9 rounded-xl text-xs font-bold"
                     >
                       取消
-                    </button>
-                    <button
+                    </Button>
+                    <Button
                       type="submit"
-                      disabled={submitting}
-                      className="flex-1 h-9 rounded-xl bg-primary hover:bg-primary/95 text-xs font-bold text-white shadow-sm transition-colors cursor-pointer flex items-center justify-center gap-1.5"
+                      isDisabled={submitting}
+                      className="flex-1 h-9 rounded-xl bg-primary hover:bg-primary/95 text-xs font-bold text-white"
                     >
                       {submitting && <Loader2 size={13} className="animate-spin" />}
                       <span>保存</span>
-                    </button>
+                    </Button>
                   </div>
                 </form>
               </div>
