@@ -68,8 +68,10 @@ Butvan Blog2.0/                                    # 📦 项目根目录
 │   │   │   │   ├── series/                        #       📚 系列/专题模块
 │   │   │   │   │   └── [slug]/                    #         系列详情（含目录导航）
 │   │   │   │   │       └── page.tsx
-│   │   │   │   ├── [slug]/                        #       📄 独立页面（关于我、友链等）
-│   │   │   │   │   └── page.tsx
+│   │   │   │   ├── friend/                        #       🔗 友链模块
+│   │   │   │   │   ├── page.tsx                   #         友链目录页 — 「深海星轨」浮动气泡布局（确定性伪随机定位+辉光hover+移动端列表降级）
+│   │   │   │   │   └── apply/                     #         友链申请子路由
+│   │   │   │   │       └── page.tsx               #           友链申请表单页（编辑式分栏布局+实时预览+URL自动抓取+头像上传）
 │   │   │   │   ├── layout.tsx                     #         根布局：字体加载、全局 Metadata
 │   │   │   │   ├── globals.css                    #         全局样式：静谧深海色彩变量、发光阴影
 │   │   │   │   ├── providers.tsx                  #         HeroUI v3 无 Provider 兼容包装器
@@ -94,7 +96,8 @@ Butvan Blog2.0/                                    # 📦 项目根目录
 │   │   │   │   │   ├── CommentSection.tsx         #         评论区容器（嵌套回复结构）
 │   │   │   │   │   └── CommentForm.tsx            #         评论表单（Markdown 快捷输入）
 │   │   │   │   ├── friend/                        #       友链组件
-│   │   │   │   │   └── FriendLinks.tsx            #         友链目录（按分类分组的编辑式列表，GSAP 入场动效）
+│   │   │   │   │   ├── FriendTree.tsx            #         友链大树（旧版，SVG 树骨架 + HTML 卡片叶子）
+│   │   │   │   │   └── FriendLinks.tsx            #         友链目录（旧版备用列表组件）
 │   │   │   │   └── series/                        #       系列组件
 │   │   │   │       └── SeriesNavigation.tsx       #         系列目录导航（上一篇/下一篇）
 │   │   │   ├── hooks/                             #     🪝 自定义 Hooks
@@ -102,6 +105,10 @@ Butvan Blog2.0/                                    # 📦 项目根目录
 │   │   │   │   ├── useHotspots.ts                 #       热区数据请求与鼠标交互
 │   │   │   │   └── useScrollPosition.ts           #       滚动位置监听
 │   │   │   ├── lib/                               #     🔧 工具库
+│   │   │   │   ├── http-client.ts                 #       统一 HTTP 请求封装（fetch 包装、超时控制、统一错误转换为 AppError）
+│   │   │   │   ├── error-handler.ts               #       全局错误处理器（AppError 类、错误分类、统一 toast 提示、SSR 安全）
+│   │   │   │   ├── profile.ts                     #       用户资料 API（公开资料、导航菜单）
+│   │   │   │   ├── friend-api.ts                  #       友链 API（列表查询、申请、图片上传、网站元数据抓取）
 │   │   │   │   ├── api.ts                         #       Axios/fetch 封装（baseURL、拦截器、错误处理）
 │   │   │   │   ├── constants.ts                   #       前端常量（站点名、分页大小等）
 │   │   │   │   └── image-url.ts                   #       图片 URL 解析工具函数（支持相对路径与绝对路径）
@@ -414,4 +421,4 @@ Butvan Blog2.0/                                    # 📦 项目根目录
 
 ---
 
-*最后更新：2026-06-29*
+*最后更新：2026-07-02*
