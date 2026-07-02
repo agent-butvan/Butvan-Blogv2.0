@@ -47,6 +47,7 @@ dependency-reduced-pom.xml
 .agents/
 .claude/
 .trae/
+.qoder/
 skills-lock.json
 
 # Local Uploads

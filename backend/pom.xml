@@ -45,6 +45,11 @@
                 <artifactId>blog-pojo</artifactId>
                 <version>${project.version}</version>
             </dependency>
+            <dependency>
+                <artifactId>hutool-all</artifactId>
+                <groupId>cn.hutool</groupId>
+                <version>5.8.36</version>
+            </dependency>
         </dependencies>
     </dependencyManagement>
 
