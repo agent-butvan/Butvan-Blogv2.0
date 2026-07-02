@@ -1,7 +1,7 @@
 'use client'
 
 import React, { useState, useEffect } from 'react'
-import { Button } from '@heroui/react'
+import { Button, Tooltip, cn } from '@heroui/react'
 import { Smile, Send, X, Globe, Mail, User, Eye, Edit2 } from 'lucide-react'
 import { marked } from 'marked'
 import HtmlRenderer from '@/components/common/HtmlRenderer'
@@ -161,11 +161,11 @@ export default function CommentForm({
   return (
     <form 
       onSubmit={handleSubmit}
-      className={`w-full flex flex-col gap-5 transition-all duration-300 ${
+      className={cn('w-full flex flex-col gap-5 transition-all duration-300',
         parentId 
           ? 'border-t border-zinc-200/40 dark:border-zinc-900/50 mt-4 pt-4' 
           : 'bg-transparent border-none p-0'
-      }`}
+      )}
     >
       {/* 头部：若是回复别人，显示提示 */}
       {replyToName && (
@@ -228,30 +228,46 @@ export default function CommentForm({
 
       {/* 文本输入区上方增加：编辑/预览双模式切换小按钮 */}
       <div className="flex items-center gap-2 select-none text-[11px] font-serif">
-        <button
-          type="button"
-          onClick={() => setPreviewMode(false)}
-          className={`px-3 py-1 rounded-lg transition-all flex items-center gap-1 cursor-pointer ${
-            !previewMode 
-              ? 'bg-zinc-200/60 dark:bg-zinc-800/80 text-zinc-800 dark:text-zinc-200 font-bold' 
-              : 'text-zinc-400 dark:text-zinc-500 hover:text-zinc-600 dark:hover:text-zinc-300'
-          }`}
-        >
-          <Edit2 size={10} />
-          <span>编辑</span>
-        </button>
-        <button
-          type="button"
-          onClick={() => setPreviewMode(true)}
-          className={`px-3 py-1 rounded-lg transition-all flex items-center gap-1 cursor-pointer ${
-            previewMode 
-              ? 'bg-zinc-200/60 dark:bg-zinc-800/80 text-zinc-800 dark:text-zinc-200 font-bold' 
-              : 'text-zinc-400 dark:text-zinc-500 hover:text-zinc-600 dark:hover:text-zinc-300'
-          }`}
-        >
-          <Eye size={10} />
-          <span>预览</span>
-        </button>
+        <Tooltip>
+          <Tooltip.Trigger>
+            <button
+              type="button"
+              onClick={() => setPreviewMode(false)}
+              className={`px-3 py-1 rounded-lg transition-all flex items-center gap-1 cursor-pointer ${
+                !previewMode 
+                  ? 'bg-zinc-200/60 dark:bg-zinc-800/80 text-zinc-800 dark:text-zinc-200 font-bold' 
+                  : 'text-zinc-400 dark:text-zinc-500 hover:text-zinc-600 dark:hover:text-zinc-300'
+              }`}
+            >
+              <Edit2 size={10} />
+              <span>编辑</span>
+            </button>
+          </Tooltip.Trigger>
+          <Tooltip.Content showArrow>
+            <Tooltip.Arrow />
+            切换到编辑模式
+          </Tooltip.Content>
+        </Tooltip>
+        <Tooltip>
+          <Tooltip.Trigger>
+            <button
+              type="button"
+              onClick={() => setPreviewMode(true)}
+              className={`px-3 py-1 rounded-lg transition-all flex items-center gap-1 cursor-pointer ${
+                previewMode 
+                  ? 'bg-zinc-200/60 dark:bg-zinc-800/80 text-zinc-800 dark:text-zinc-200 font-bold' 
+                  : 'text-zinc-400 dark:text-zinc-500 hover:text-zinc-600 dark:hover:text-zinc-300'
+              }`}
+            >
+              <Eye size={10} />
+              <span>预览</span>
+            </button>
+          </Tooltip.Trigger>
+          <Tooltip.Content showArrow>
+            <Tooltip.Arrow />
+            预览 Markdown 渲染效果
+          </Tooltip.Content>
+        </Tooltip>
       </div>
 
       {/* 编辑/预览核心输入容器 */}
@@ -292,15 +308,23 @@ export default function CommentForm({
             <div className="flex items-center gap-3">
               {/* 表情按钮 */}
               <div className="relative">
-                <button
-                  type="button"
-                  onClick={() => setShowEmoji(!showEmoji)}
-                  className="p-1.5 rounded-lg border border-zinc-200/40 dark:border-zinc-800/60 hover:border-[#727BBA]/40 bg-zinc-100/30 dark:bg-zinc-950/20 text-zinc-400 dark:text-zinc-500 hover:text-[#727BBA] transition-colors cursor-pointer"
-                  title="插入表情"
-                  disabled={submitting}
-                >
-                  <Smile size={14} />
-                </button>
+                <Tooltip>
+                  <Tooltip.Trigger>
+                    <button
+                      type="button"
+                      onClick={() => setShowEmoji(!showEmoji)}
+                      className="p-1.5 rounded-lg border border-zinc-200/40 dark:border-zinc-800/60 hover:border-[#727BBA]/40 bg-zinc-100/30 dark:bg-zinc-950/20 text-zinc-400 dark:text-zinc-500 hover:text-[#727BBA] transition-colors cursor-pointer"
+                      title="插入表情"
+                      disabled={submitting}
+                    >
+                      <Smile size={14} />
+                    </button>
+                  </Tooltip.Trigger>
+                  <Tooltip.Content showArrow>
+                    <Tooltip.Arrow />
+                    插入表情符号
+                  </Tooltip.Content>
+                </Tooltip>
 
                 {/* Emoji 漂浮小面板 */}
                 {showEmoji && (

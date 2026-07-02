@@ -2,8 +2,11 @@ package com.butvan.blog.service.controller;
 
 import com.butvan.blog.common.result.Result;
 import com.butvan.blog.pojo.dto.friend.FriendLinkApplyDTO;
+import com.butvan.blog.pojo.dto.friend.WebMetaRequestDTO;
 import com.butvan.blog.pojo.vo.friend.FriendLinkVO;
+import com.butvan.blog.pojo.vo.friend.WebMetaVO;
 import com.butvan.blog.service.service.FriendLinkService;
+import com.butvan.blog.service.service.WebMetaService;
 import jakarta.validation.Valid;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
@@ -21,6 +24,7 @@ import java.util.List;
 public class FriendLinkController {
 
     private final FriendLinkService friendLinkService;
+    private final WebMetaService webMetaService;
 
     /**
      * 获取已批准的友链列表
@@ -51,5 +55,29 @@ public class FriendLinkController {
         log.info("申请友链: {}", dto.getName());
         friendLinkService.applyFriendLink(dto);
         return Result.success();
+    }
+
+    /**
+     * 从 URL 抓取网站元数据（标题、描述、favicon）
+     *
+     * @param dto 请求参数
+     * @return 网站元数据
+     */
+    @PostMapping("/fetch-meta")
+    public Result<WebMetaVO> fetchWebMeta(@Valid @RequestBody WebMetaRequestDTO dto) {
+        log.info("抓取网站元数据: {}", dto.getUrl());
+        var meta = webMetaService.fetchWebMeta(dto.getUrl());
+
+        // 转换为 VO
+        WebMetaVO vo = WebMetaVO.builder()
+                .title(meta.getTitle())
+                .description(meta.getDescription())
+                .faviconUrl(meta.getFaviconUrl())
+                .domain(meta.getDomain())
+                .success(meta.isSuccess())
+                .errorMsg(meta.getErrorMsg())
+                .build();
+
+        return Result.success(vo);
     }
 }

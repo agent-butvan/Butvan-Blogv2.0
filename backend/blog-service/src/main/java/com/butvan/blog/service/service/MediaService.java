@@ -22,6 +22,15 @@ public interface MediaService {
     Media uploadFile(MultipartFile file, String sourceType, Long sourceId, String sourceDetail);
 
     /**
+     * 上传图片但不记录到数据库（用于公开上传场景，如友链头像）
+     * 仅支持图片格式，返回相对路径 /uploads/filename.ext
+     *
+     * @param file 上传的图片文件
+     * @return 相对路径
+     */
+    String uploadFileWithoutDb(MultipartFile file);
+
+    /**
      * 分页多条件检索媒体资源列表
      *
      * @param queryDTO 分页与大类、关键词过滤条件

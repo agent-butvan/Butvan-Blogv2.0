@@ -81,6 +81,13 @@
             <scope>runtime</scope>
         </dependency>
 
+        <!-- Jsoup for HTML parsing (web meta scraping) -->
+        <dependency>
+            <groupId>org.jsoup</groupId>
+            <artifactId>jsoup</artifactId>
+            <version>1.17.2</version>
+        </dependency>
+
         <!-- Spring Boot Starter Test -->
         <dependency>
             <groupId>org.springframework.boot</groupId>

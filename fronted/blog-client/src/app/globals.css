@@ -459,24 +459,40 @@ h1, h2, h3, h4, h5, h6 {
   color: #f43f5e;
 }
 
-/* ===== 友链气泡缓慢漂浮动画 ===== */
-@keyframes float {
-  0%, 100% {
-    margin-top: 0px;
-  }
-  50% {
-    margin-top: calc(var(--float-amplitude) * -1);
-  }
+/* ===== 友链气泡 hover 辉光效果（静谧深海） ===== */
+.friend-bubble-glow {
+  transition: box-shadow 200ms ease-out, background-color 200ms ease-out;
 }
 
-.friend-bubble.animate-float {
-  animation: float var(--float-speed, 1s) ease-in-out infinite;
-  animation-delay: calc(var(--float-phase) / (2 * 3.14159) * var(--float-speed, 1s));
+.friend-bubble-glow:hover {
+  box-shadow: 0 0 20px rgba(114, 123, 186, 0.15);
+}
+
+.dark .friend-bubble-glow:hover {
+  box-shadow: 0 0 20px rgba(114, 123, 186, 0.2);
+}
+
+/* 气泡入场淡入（无编排式序列动画） */
+.friend-bubble-enter {
+  opacity: 0;
+  animation: friendFadeIn 400ms ease-out forwards;
+}
+
+@keyframes friendFadeIn {
+  from {
+    opacity: 0;
+    transform: translate(-50%, -50%) scale(0.92);
+  }
+  to {
+    opacity: 1;
+    transform: translate(-50%, -50%) scale(1);
+  }
 }
 
 @media (prefers-reduced-motion: reduce) {
-  .friend-bubble.animate-float {
+  .friend-bubble-enter {
     animation: none;
+    opacity: 1;
   }
 }
 

@@ -115,6 +115,9 @@ public class SecurityConfig {
                     // 放行前台友链接口（GET 查询 + POST 申请）
                     .requestMatchers(HttpMethod.GET, "/api/friends/**").permitAll()
                     .requestMatchers(HttpMethod.POST, "/api/friends/apply").permitAll()
+                    .requestMatchers(HttpMethod.POST, "/api/friends/fetch-meta").permitAll()
+                    // 放行公开图片上传接口（友链头像等无需登录的场景）
+                    .requestMatchers(HttpMethod.POST, "/api/public/upload/image").permitAll()
                     // 放行本地静态图片映射路径
                     .requestMatchers("/uploads/**").permitAll()
                     // 其它任何后台 API 均需校验 Bearer Token 权限身份
@@ -150,7 +153,8 @@ public class SecurityConfig {
         CorsConfiguration configuration = new CorsConfiguration();
         // 允许所有 Origin Pattern（比直接使用 "*" 安全且支持 allowCredentials）
         configuration.setAllowedOriginPatterns(List.of("*"));
-        configuration.setAllowedMethods(List.of("GET", "POST", "PUT", "DELETE", "OPTIONS", "HEAD"));
+        // 注意：必须包含 PATCH，否则 PATCH 请求的 CORS 预检会被 DefaultCorsProcessor 拒绝并返回 403
+        configuration.setAllowedMethods(List.of("GET", "POST", "PUT", "PATCH", "DELETE", "OPTIONS", "HEAD"));
         configuration.setAllowedHeaders(List.of("*"));
         configuration.setAllowCredentials(true);
         configuration.setMaxAge(3600L);

@@ -47,6 +47,39 @@ public class MediaController {
     }
 
     /**
+     * 【公开】上传图片（用于友链头像等无需登录的场景）
+     * 仅允许图片格式，最大 5MB
+     *
+     * @param file 上传的图片文件
+     * @return 统一格式 Result，携带相对路径 /uploads/filename.ext
+     */
+    @PostMapping("/public/upload/image")
+    public Result<String> uploadPublicImage(@RequestParam("file") MultipartFile file) {
+        log.info("公开接口上传图片，原始文件名: {}, 大小: {} 字节", 
+                file.getOriginalFilename(), file.getSize());
+        
+        // 验证文件类型
+        String contentType = file.getContentType();
+        if (contentType == null || !contentType.startsWith("image/")) {
+            return Result.error("只支持图片格式");
+        }
+        
+        // 验证文件大小（5MB）
+        if (file.getSize() > 5 * 1024 * 1024) {
+            return Result.error("图片大小不能超过 5MB");
+        }
+        
+        try {
+            // 复用现有上传逻辑，但不记录到数据库（因为无用户ID）
+            String relativePath = mediaService.uploadFileWithoutDb(file);
+            return Result.success(relativePath);
+        } catch (Exception e) {
+            log.error("公开上传图片失败", e);
+            return Result.error("上传失败: " + e.getMessage());
+        }
+    }
+
+    /**
      * 【管理后台】多条件分页获取已上传媒体资源列表
      *
      * @param queryDTO 包含搜索、分类及页码参数

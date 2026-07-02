@@ -14,11 +14,15 @@ import {
   Copy,
   Check,
   Info,
+  Upload,
+  X,
 } from 'lucide-react'
 import Navbar from '@/components/common/Navbar'
+import { toast, Avatar, Button, Spinner, Tooltip, cn } from '@heroui/react'
 import { fetchProfile } from '@/lib/profile'
-import { applyFriendLink } from '@/lib/friend-api'
+import { applyFriendLink, uploadPublicImage, fetchWebMeta } from '@/lib/friend-api'
 import { resolveImageUrl } from '@/lib/image-url'
+import { handleError, AppError } from '@/lib/error-handler'
 import type { ProfileVO } from '@/types/profile'
 import { FRIEND_CATEGORIES } from '@/types/friend'
 import gsap from 'gsap'
@@ -41,10 +45,16 @@ export default function FriendApplyPage() {
   const [loading, setLoading] = useState(true)
   const [submitting, setSubmitting] = useState(false)
   const [submitted, setSubmitted] = useState(false)
-  const [error, setError] = useState('')
 
   // 复制状态
   const [copied, setCopied] = useState(false)
+
+  // 头像上传状态
+  const [uploadingAvatar, setUploadingAvatar] = useState(false)
+  const [avatarPreview, setAvatarPreview] = useState<string>('')
+
+  // URL 自动抓取状态
+  const [fetchingMeta, setFetchingMeta] = useState(false)
 
   // 表单数据
   const [formData, setFormData] = useState({
@@ -73,7 +83,7 @@ export default function FriendApplyPage() {
         const profileData = await fetchProfile('butvan')
         setProfile(profileData)
       } catch (err) {
-        console.error('加载数据失败:', err)
+        handleError(err, { silent: true, fallbackMessage: '加载资料失败' })
       } finally {
         setLoading(false)
       }
@@ -106,10 +116,9 @@ export default function FriendApplyPage() {
   // 提交表单
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault()
-    setError('')
 
     if (!formData.name || !formData.url || !formData.description || !formData.email) {
-      setError('请填写所有必填项')
+      toast.danger('请填写所有必填项')
       return
     }
 
@@ -118,8 +127,7 @@ export default function FriendApplyPage() {
       await applyFriendLink(formData)
       setSubmitted(true)
     } catch (err) {
-      console.error('提交失败:', err)
-      setError('提交失败，请稍后重试')
+      handleError(err, { fallbackMessage: '提交失败，请稍后重试' })
     } finally {
       setSubmitting(false)
     }
@@ -138,7 +146,86 @@ export default function FriendApplyPage() {
       setTimeout(() => setCopied(false), 1800)
     } catch {
       // 降级：选中文本兜底
-      setError('复制失败，请手动选择文本复制')
+      toast.danger('复制失败，请手动选择文本复制')
+    }
+  }
+
+  // 处理头像文件上传
+  const handleAvatarUpload = async (e: React.ChangeEvent<HTMLInputElement>) => {
+    const file = e.target.files?.[0]
+    if (!file) return
+
+    // 验证文件类型
+    if (!file.type.startsWith('image/')) {
+      toast.danger('只支持图片格式（JPG、PNG、GIF、WebP）')
+      return
+    }
+
+    // 验证文件大小（5MB）
+    if (file.size > 5 * 1024 * 1024) {
+      toast.danger('图片大小不能超过 5MB')
+      return
+    }
+
+    setUploadingAvatar(true)
+
+    try {
+      // 生成预览 URL
+      const previewUrl = URL.createObjectURL(file)
+      setAvatarPreview(previewUrl)
+
+      // 上传图片到服务器
+      const relativePath = await uploadPublicImage(file)
+      
+      // 更新表单数据（拼接完整 URL，uploads 静态资源不在 /api 路径下）
+      const baseUrl = process.env.NEXT_PUBLIC_API_BASE_URL || 'http://localhost:8080'
+      // 去掉 /api 后缀（如果有），以获取纯 base URL 用于静态资源
+      const staticBase = baseUrl.replace(/\/api$/, '')
+      const fullUrl = `${staticBase}${relativePath}`
+      setFormData({ ...formData, avatarUrl: fullUrl })
+      
+      toast.success('头像上传成功')
+    } catch (err) {
+      handleError(err, { fallbackMessage: '上传失败，请稍后重试' })
+      setAvatarPreview('')
+    } finally {
+      setUploadingAvatar(false)
+    }
+  }
+
+  // 清除头像
+  const handleClearAvatar = () => {
+    setFormData({ ...formData, avatarUrl: '' })
+    setAvatarPreview('')
+  }
+
+  // URL 自动抓取网站元数据
+  const handleFetchMeta = async () => {
+    if (!formData.url) {
+      toast.danger('请先输入博客地址')
+      return
+    }
+
+    setFetchingMeta(true)
+    try {
+      const meta = await fetchWebMeta(formData.url)
+
+      if (meta.success) {
+        // 自动填充表单
+        setFormData({
+          ...formData,
+          name: meta.title || formData.name,
+          description: meta.description || formData.description,
+          avatarUrl: meta.faviconUrl || formData.avatarUrl,
+        })
+        toast.success('已自动抓取网站信息，请核对后提交')
+      } else {
+        toast.warning(meta.errorMsg || '无法抓取该网站信息，请手动填写')
+      }
+    } catch (err) {
+      handleError(err, { fallbackMessage: '抓取失败，请稍后重试' })
+    } finally {
+      setFetchingMeta(false)
     }
   }
 
@@ -171,7 +258,7 @@ export default function FriendApplyPage() {
       <div className="min-h-screen bg-[#f6f6f6] dark:bg-zinc-950 font-body text-zinc-900 dark:text-zinc-50 transition-colors">
         <Navbar profile={null} />
         <div className="flex items-center justify-center py-32" role="status" aria-label="加载中">
-          <div className="animate-spin rounded-full h-7 w-7 border-2 border-[#727BBA] border-t-transparent" />
+          <Spinner size="lg" />
         </div>
       </div>
     )
@@ -253,7 +340,7 @@ export default function FriendApplyPage() {
           {/* 左栏：编辑式表单（无重卡片） */}
           <form
             onSubmit={handleSubmit}
-            className="apply-form lg:col-span-3 space-y-7"
+            className="apply-form lg:col-span-3 space-y-6"
             noValidate
           >
             {/* 分组：站点信息 */}
@@ -268,7 +355,7 @@ export default function FriendApplyPage() {
                 </span>
               </div>
 
-              <div className="grid grid-cols-1 sm:grid-cols-2 gap-3.5">
+              <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
                 <Field label="博客名称" required>
                   <input
                     type="text"
@@ -280,24 +367,101 @@ export default function FriendApplyPage() {
                 </Field>
 
                 <Field label="博客地址" required>
-                  <input
-                    type="url"
-                    placeholder="https://example.com"
-                    value={formData.url}
-                    onChange={(e) => setFormData({ ...formData, url: e.target.value })}
-                    className={inputCls}
-                  />
+                  <div className="relative flex items-center gap-2">
+                    <input
+                      type="url"
+                      placeholder="https://example.com"
+                      value={formData.url}
+                      onChange={(e) => setFormData({ ...formData, url: e.target.value })}
+                      className={`${inputCls} pr-24`}
+                    />
+                    {/* 自动抓取按钮 */}
+                    <Button
+                      type="button"
+                      variant="ghost"
+                      size="sm"
+                      isPending={fetchingMeta}
+                      onPress={handleFetchMeta}
+                      className="absolute right-1 px-2 py-1 text-xs bg-[#727BBA]/10 hover:bg-[#727BBA]/20 text-[#727BBA] dark:text-[#727BBA] border-none rounded-md transition-colors whitespace-nowrap"
+                    >
+                      {fetchingMeta ? (
+                        <span className="flex items-center gap-1">
+                          <Spinner size="sm" color="current" />
+                          抓取中
+                        </span>
+                      ) : (
+                        '自动填充'
+                      )}
+                    </Button>
+                  </div>
                 </Field>
               </div>
+              
+              <Field label="头像" hint="选填，建议方形图">
+                {/* 一体化上传区域 */}
+                <div className="relative group">
+                  {/* 头像预览区 - 作为可点击的上传触发器 */}
+                  <label
+                    className={cn(
+                      'flex items-center justify-center w-20 h-20 rounded-xl border-2 border-dashed',
+                      'border-zinc-300 dark:border-zinc-700 bg-zinc-50 dark:bg-zinc-900',
+                      'cursor-pointer transition-all duration-200',
+                      'hover:border-[#727BBA] hover:bg-[#727BBA]/5 dark:hover:bg-[#727BBA]/10',
+                      uploadingAvatar && 'pointer-events-none opacity-60',
+                    )}
+                  >
+                    {avatarPreview || formData.avatarUrl ? (
+                      // 有头像时显示图片
+                      <>
+                        <Avatar className="w-full h-full rounded-lg">
+                          <Avatar.Image
+                            src={avatarPreview || resolveImageUrl(formData.avatarUrl)}
+                            alt={formData.name || '头像'}
+                          />
+                          <Avatar.Fallback className="text-sm font-medium text-zinc-400">
+                            {(formData.name || '?').charAt(0)}
+                          </Avatar.Fallback>
+                        </Avatar>
+                        {/* Hover 遮罩提示更换 */}
+                        <div className="absolute inset-0 flex items-center justify-center bg-black/40 opacity-0 group-hover:opacity-100 transition-opacity rounded-xl">
+                          <Upload size={20} className="text-white" />
+                        </div>
+                      </>
+                    ) : (
+                      // 无头像时显示占位符
+                      <div className="flex flex-col items-center gap-1.5 text-zinc-400 dark:text-zinc-500">
+                        <Upload size={24} />
+                        <span className="text-xs">点击上传</span>
+                      </div>
+                    )}
+                    <input
+                      type="file"
+                      accept="image/*"
+                      onChange={handleAvatarUpload}
+                      disabled={uploadingAvatar}
+                      className="hidden"
+                    />
+                  </label>
 
-              <Field label="头像 URL" hint="选填，建议方形图">
-                <input
-                  type="url"
-                  placeholder="https://example.com/avatar.jpg"
-                  value={formData.avatarUrl}
-                  onChange={(e) => setFormData({ ...formData, avatarUrl: e.target.value })}
-                  className={inputCls}
-                />
+                  {/* 清除按钮（仅在已上传时显示） */}
+                  {formData.avatarUrl && !uploadingAvatar && (
+                    <Button
+                      variant="ghost"
+                      size="sm"
+                      onPress={handleClearAvatar}
+                      className="absolute -top-2 -right-2 z-10 w-7 h-7 p-0 rounded-full bg-white dark:bg-zinc-800 shadow-md border border-zinc-200 dark:border-zinc-700 hover:bg-rose-50 dark:hover:bg-rose-900/20 hover:text-rose-600 dark:hover:text-rose-400"
+                    >
+                      <X size={14} />
+                    </Button>
+                  )}
+
+                  {/* 上传中状态覆盖层 */}
+                  {uploadingAvatar && (
+                    <div className="absolute inset-0 flex items-center justify-center bg-white/80 dark:bg-zinc-900/80 rounded-xl backdrop-blur-sm">
+                      <Spinner size="md" />
+                    </div>
+                  )}
+                </div>
               </Field>
             </fieldset>
 
@@ -313,7 +477,7 @@ export default function FriendApplyPage() {
                 </span>
               </div>
 
-              <div className="grid grid-cols-1 sm:grid-cols-2 gap-3.5">
+              <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
                 <Field label="分类" required>
                   <div className="relative">
                     <select
@@ -397,33 +561,20 @@ export default function FriendApplyPage() {
               </Field>
             </fieldset>
 
-            {/* 错误提示 */}
-            {error && (
-              <div className="flex items-start gap-2 p-3 rounded-lg bg-rose-50 dark:bg-rose-950/30 border border-rose-200/60 dark:border-rose-900/40 text-rose-600 dark:text-rose-400 text-xs">
-                <AlertCircle size={14} className="shrink-0 mt-0.5" />
-                <span>{error}</span>
-              </div>
-            )}
-
             {/* 提交栏 */}
             <div className="flex items-center gap-3 pt-1">
-              <button
+              <Button
                 type="submit"
-                disabled={submitting}
-                className="inline-flex items-center justify-center gap-2 px-5 py-2.5 rounded-lg bg-[#727BBA] hover:bg-[#6873B0] text-white text-sm font-heading font-medium transition-colors cursor-pointer disabled:opacity-50 disabled:cursor-not-allowed"
+                isPending={submitting}
+                className="inline-flex items-center justify-center gap-2 px-5 py-2.5 rounded-lg bg-[#727BBA] hover:bg-[#6873B0] text-white text-sm font-heading font-medium transition-colors"
               >
-                {submitting ? (
+                {({ isPending }) => (
                   <>
-                    <span className="animate-spin rounded-full h-3.5 w-3.5 border-2 border-white border-t-transparent" />
-                    提交中…
-                  </>
-                ) : (
-                  <>
-                    <Send size={14} />
-                    提交申请
+                    {isPending ? <Spinner size="sm" color="current" /> : <Send size={14} />}
+                    {isPending ? '提交中…' : '提交申请'}
                   </>
                 )}
-              </button>
+              </Button>
               <Link
                 href="/friend"
                 className="inline-flex items-center justify-center gap-1.5 px-4 py-2.5 rounded-lg border border-zinc-200 dark:border-zinc-800 text-zinc-600 dark:text-zinc-300 hover:bg-white dark:hover:bg-zinc-900 text-sm font-medium transition-colors cursor-pointer"
@@ -435,9 +586,9 @@ export default function FriendApplyPage() {
 
           {/* 右栏：粘性预览与回贴信息 */}
           <aside className="apply-aside lg:col-span-2 lg:sticky lg:top-24 lg:self-start space-y-4">
-            {/* 效果预览：使用友链目录的行样式 */}
-            <div className="rounded-xl border border-zinc-200/70 dark:border-zinc-800/70 bg-white dark:bg-zinc-900 p-3.5">
-              <div className="flex items-center justify-between mb-3">
+            {/* 效果预览：参考图2风格，卡片式布局 */}
+            <div className="rounded-xl border border-zinc-200/60 dark:border-zinc-800/60 bg-white dark:bg-zinc-900 shadow-sm p-5">
+              <div className="flex items-center justify-between mb-4">
                 <div className="flex items-center gap-1.5">
                   <Info size={12} className="text-zinc-400" />
                   <span className="text-[11px] font-mono text-zinc-400 dark:text-zinc-500 tracking-wider">
@@ -449,51 +600,60 @@ export default function FriendApplyPage() {
                 </span>
               </div>
 
-              {/* 预览行：复用 FriendLinks 的行样式语言 */}
-              <div className="flex items-center gap-3 py-2 px-1.5 -mx-1.5 rounded-lg">
-                <div className="shrink-0 w-9 h-9 rounded-full overflow-hidden border border-zinc-200/80 dark:border-zinc-800/80 bg-zinc-100 dark:bg-zinc-800 flex items-center justify-center">
-                  {previewFriend.avatarUrl ? (
-                    <img
-                      src={resolveImageUrl(previewFriend.avatarUrl)}
-                      alt=""
-                      className="w-full h-full object-cover"
-                    />
-                  ) : (
-                    <span className="text-xs font-bold text-zinc-500 dark:text-zinc-400 uppercase select-none">
-                      {(previewFriend.name || '?').charAt(0)}
+              {/* 新设计：卡片式友链预览（参考图2） */}
+              <div className="group rounded-lg border border-zinc-200/80 dark:border-zinc-800/80 bg-zinc-50/50 dark:bg-zinc-900/50 hover:border-[#727BBA]/30 dark:hover:border-[#727BBA]/30 transition-colors p-4">
+                {/* 顶部：favicon + 域名 + 复制按钮 */}
+                <div className="flex items-center justify-between mb-3">
+                  <div className="flex items-center gap-2.5">
+                    {/* Favicon */}
+                    {previewFriend.avatarUrl ? (
+                      <img
+                        src={resolveImageUrl(previewFriend.avatarUrl)}
+                        alt={previewFriend.name}
+                        className="w-5 h-5 rounded-sm object-contain"
+                      />
+                    ) : (
+                      <div className="w-5 h-5 rounded-sm bg-zinc-200 dark:bg-zinc-800 flex items-center justify-center">
+                        <Globe size={12} className="text-zinc-400" />
+                      </div>
+                    )}
+                    {/* 域名 */}
+                    <span className="text-xs font-medium text-zinc-700 dark:text-zinc-300 truncate max-w-[180px]">
+                      {previewDomain}
                     </span>
-                  )}
-                </div>
-                <div className="flex-1 min-w-0">
-                  <div className="flex items-center gap-1.5">
-                    <span
-                      className="w-1.5 h-1.5 rounded-full shrink-0"
-                      style={{ backgroundColor: previewCategory?.color || '#727BBA' }}
-                      aria-hidden="true"
-                    />
-                    <h3 className="text-sm font-semibold text-zinc-900 dark:text-zinc-100 truncate">
-                      {previewFriend.name}
-                    </h3>
                   </div>
-                  <p className="text-xs text-zinc-500 dark:text-zinc-400 truncate mt-0.5">
-                    {previewFriend.description}
-                  </p>
+                  {/* 复制按钮 */}
+                  <button
+                    type="button"
+                    className="p-1 rounded-md hover:bg-zinc-100 dark:hover:bg-zinc-800 transition-colors cursor-pointer"
+                    aria-label="复制链接"
+                  >
+                    <Copy size={14} className="text-zinc-400 hover:text-[#727BBA]" />
+                  </button>
                 </div>
-                <span className="hidden sm:inline-flex items-center gap-1 text-[10px] font-mono text-zinc-400 dark:text-zinc-500 shrink-0">
-                  <Globe size={10} />
-                  {previewDomain}
-                </span>
-                <span
-                  className="shrink-0 w-7 h-7 rounded-full border border-zinc-200 dark:border-zinc-800 flex items-center justify-center text-zinc-400"
-                  aria-hidden="true"
-                >
-                  <ArrowUpRight size={12} />
-                </span>
+
+                {/* 标题 */}
+                <h3 className="text-base font-semibold text-zinc-900 dark:text-zinc-100 mb-2 line-clamp-2 leading-snug">
+                  {previewFriend.name || '你的博客名称'}
+                </h3>
+
+                {/* 描述 */}
+                <p className="text-sm text-zinc-600 dark:text-zinc-400 line-clamp-2 leading-relaxed">
+                  {previewFriend.description || '一句话介绍你的博客'}
+                </p>
+
+                {/* 底部装饰线 */}
+                <div className="mt-3 pt-3 border-t border-zinc-200/60 dark:border-zinc-800/60 flex items-center justify-between">
+                  <span className="text-[10px] font-mono text-zinc-400 dark:text-zinc-500">
+                    {previewCategory?.label || '技术'}
+                  </span>
+                  <ArrowUpRight size={14} className="text-zinc-400 group-hover:text-[#727BBA] transition-colors" />
+                </div>
               </div>
             </div>
 
-            {/* 本站友链信息：方便互贴 */}
-            <div className="rounded-xl border border-zinc-200/70 dark:border-zinc-800/70 bg-white dark:bg-zinc-900 p-3.5">
+            {/* 本站友链信息：无边框浅底，方便互贴 */}
+            <div className="rounded-xl bg-zinc-50/80 dark:bg-zinc-900/60 p-4">
               <div className="flex items-center justify-between mb-3">
                 <div className="flex items-center gap-1.5">
                   <span className="inline-flex items-center justify-center w-5 h-5 rounded-md bg-[#09B38A]/10 text-[#09B38A]">
@@ -535,8 +695,8 @@ export default function FriendApplyPage() {
               </dl>
             </div>
 
-            {/* 申请须知：轻量内联提示，替代旧版大块琥珀色警示 */}
-            <div className="rounded-xl border border-zinc-200/70 dark:border-zinc-800/70 bg-white dark:bg-zinc-900 p-3.5">
+            {/* 申请须知：紧凑内联提示 */}
+            <div className="rounded-lg bg-zinc-50/50 dark:bg-zinc-900/40 p-3">
               <div className="flex items-center gap-1.5 mb-2">
                 <AlertCircle size={12} className="text-amber-500" />
                 <span className="text-xs font-heading font-semibold text-zinc-900 dark:text-zinc-50">

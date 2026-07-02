@@ -101,6 +101,60 @@ public class MediaServiceImpl implements MediaService {
         return mediaRepository.save(media);
     }
 
+    /**
+     * 上传图片但不记录到数据库（用于公开上传场景，如友链头像）
+     * 仅支持图片格式，返回相对路径 /uploads/filename.ext
+     *
+     * @param file 上传的图片文件
+     * @return 相对路径
+     */
+    public String uploadFileWithoutDb(MultipartFile file) {
+        if (file.isEmpty()) {
+            throw new BusinessException("上传的文件不能为空");
+        }
+
+        // 1. 获取原文件名及文件后缀
+        String originalFilename = file.getOriginalFilename();
+        if (originalFilename == null) {
+            throw new BusinessException("文件名为空，上传失败");
+        }
+        
+        String extension = "";
+        int dotIndex = originalFilename.lastIndexOf('.');
+        if (dotIndex > 0) {
+            extension = originalFilename.substring(dotIndex + 1).toLowerCase();
+        }
+
+        // 验证图片格式
+        if (!IMAGE_EXTENSIONS.contains(extension)) {
+            throw new BusinessException("只支持图片格式: " + String.join(", ", IMAGE_EXTENSIONS));
+        }
+
+        // 2. 生成唯一的 UUID 文件名
+        String newFilename = UUID.randomUUID().toString() + "." + extension;
+
+        // 3. 构建本地存储路径
+        String userDir = System.getProperty("user.dir");
+        String uploadDirPath = userDir + File.separator + "uploads";
+        File uploadDir = new File(uploadDirPath);
+        if (!uploadDir.exists()) {
+            uploadDir.mkdirs();
+        }
+
+        File destFile = new File(uploadDir, newFilename);
+        try {
+            // 4. 保存文件到本地
+            file.transferTo(destFile);
+            log.info("公开接口文件上传成功: {}", destFile.getAbsolutePath());
+        } catch (IOException e) {
+            log.error("文件物理存储失败", e);
+            throw new BusinessException("文件上传写入磁盘失败：" + e.getMessage());
+        }
+
+        // 5. 返回相对路径
+        return "/uploads/" + newFilename;
+    }
+
     @Override
     public PageResult pageMedia(MediaQueryDTO queryDTO) {
         log.info("分页检索媒体资源列表，参数: {}", queryDTO);

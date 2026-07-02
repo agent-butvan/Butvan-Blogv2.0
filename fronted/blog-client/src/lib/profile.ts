@@ -1,6 +1,5 @@
 import type { ProfileVO } from '@/types/profile'
-
-const API_BASE = process.env.NEXT_PUBLIC_API_BASE_URL || 'http://localhost:8080/api'
+import { get } from './http-client'
 
 /**
  * 获取公开用户资料
@@ -13,14 +12,8 @@ const API_BASE = process.env.NEXT_PUBLIC_API_BASE_URL || 'http://localhost:8080/
  */
 export async function fetchProfile(username = 'butvan'): Promise<ProfileVO | null> {
   try {
-    const res = await fetch(`${API_BASE}/profile/public/${encodeURIComponent(username)}`, { cache: 'no-store' })
-    if (!res.ok) return null
-    const json = await res.json()
-    // 后端统一返回 { code: number, msg: string, data: T }
-    if (json.code === 200 || json.code === 0) {
-      return json.data as ProfileVO
-    }
-    return null
+    const data = await get<ProfileVO>(`/profile/public/${encodeURIComponent(username)}`)
+    return data
   } catch {
     console.warn('获取用户公开资料失败，将使用默认信息')
     return null
@@ -35,13 +28,8 @@ export async function fetchProfile(username = 'butvan'): Promise<ProfileVO | nul
  */
 export async function fetchNavigations(position = 'FOOTER'): Promise<any[]> {
   try {
-    const res = await fetch(`${API_BASE}/navigations?position=${position}`, { cache: 'no-store' })
-    if (!res.ok) return []
-    const json = await res.json()
-    if (json.code === 200 || json.code === 0) {
-      return json.data || []
-    }
-    return []
+    const data = await get<any[]>(`/navigations?position=${position}`)
+    return data || []
   } catch {
     console.warn('获取页脚导航链接失败，将渲染空栏')
     return []
