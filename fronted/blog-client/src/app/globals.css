@@ -459,5 +459,26 @@ h1, h2, h3, h4, h5, h6 {
   color: #f43f5e;
 }
 
+/* ===== 友链气泡缓慢漂浮动画 ===== */
+@keyframes float {
+  0%, 100% {
+    margin-top: 0px;
+  }
+  50% {
+    margin-top: calc(var(--float-amplitude) * -1);
+  }
+}
+
+.friend-bubble.animate-float {
+  animation: float var(--float-speed, 1s) ease-in-out infinite;
+  animation-delay: calc(var(--float-phase) / (2 * 3.14159) * var(--float-speed, 1s));
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .friend-bubble.animate-float {
+    animation: none;
+  }
+}
+
 
 
