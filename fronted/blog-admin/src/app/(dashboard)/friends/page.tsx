@@ -21,7 +21,8 @@ import {
   Tooltip,
   Spinner,
   Dropdown,
-  Button
+  Button,
+  Input
 } from '@heroui/react'
 import { cn } from '@heroui/react'
 import apiClient from '@/lib/api'
@@ -332,33 +333,35 @@ export default function FriendsPage() {
           })}
         </div>
 
-        {/* 搜索框 */}
+        {/* 搜索框 - 使用 HeroUI Input */}
         <form onSubmit={handleSearch} className="flex items-center gap-2">
-          <div className="flex h-8 items-center gap-2 rounded-lg border border-zinc-200/65 dark:border-zinc-800 bg-white dark:bg-zinc-950 px-2.5 flex-1 w-full sm:w-60 focus-within:ring-2 focus-within:ring-primary/20 focus-within:border-primary transition-all">
+          <div className="relative w-full sm:w-60 h-8 rounded-lg border border-zinc-200/65 dark:border-zinc-800 bg-white dark:bg-zinc-950 hover:border-zinc-300 dark:hover:border-zinc-700 focus-within:border-primary focus-within:ring-2 focus-within:ring-primary/20 transition-all flex items-center px-2.5">
             <Search size={13} className="text-zinc-400 shrink-0" />
-            <input
+            <Input
               type="text"
               value={searchVal}
               onChange={(e) => setSearchVal(e.target.value)}
               placeholder="搜索友链名称、描述或地址..."
-              className="flex-1 border-0 bg-transparent p-0 text-xs text-zinc-850 dark:text-zinc-150 outline-none placeholder-zinc-400 dark:placeholder-zinc-600 focus:ring-0 leading-normal"
+              className="flex-1 border-0 bg-transparent p-0 text-xs outline-none placeholder-zinc-400 dark:placeholder-zinc-600 focus:ring-0 leading-normal ml-1.5"
             />
             {searchVal && (
               <button
                 type="button"
                 onClick={handleClearSearch}
-                className="text-zinc-400 hover:text-zinc-650 cursor-pointer"
+                className="text-zinc-400 hover:text-zinc-650 cursor-pointer shrink-0"
               >
                 <X size={12} />
               </button>
             )}
           </div>
-          <button
+          <Button
             type="submit"
-            className="h-8 px-3 rounded-lg bg-zinc-850 hover:bg-zinc-800 dark:bg-zinc-800 dark:hover:bg-zinc-750 text-white text-xs font-bold transition-colors cursor-pointer"
+            size="sm"
+            variant="primary"
+            className="h-8 px-3 text-xs font-bold"
           >
             搜索
-          </button>
+          </Button>
         </form>
       </div>
 
@@ -394,7 +397,7 @@ export default function FriendsPage() {
                 key={friend.id}
                 className="group rounded-xl border border-zinc-200/60 dark:border-zinc-800 bg-white dark:bg-zinc-950 p-4 shadow-2xs hover:border-zinc-300 dark:hover:border-zinc-700 transition-all duration-200"
               >
-                <div className="flex items-start gap-3.5">
+                <div className="flex items-center gap-3.5">
                   {/* 头像区 - 固定44px尺寸 */}
                   <div className="shrink-0 w-[44px] h-[44px]">
                     <Avatar size="md" className="w-full h-full ring-1 ring-zinc-200/40 dark:ring-zinc-800 transition-all duration-300 group-hover:ring-primary/30">
@@ -554,19 +557,19 @@ export default function FriendsPage() {
                         >
                           {isPending && (
                             <>
-                              <Dropdown.Item id="approve" textValue="审核通过">
-                                <Check size={14} className="text-emerald-500" />
-                                <span className="ml-2 text-xs">审核通过</span>
+                              <Dropdown.Item id="approve" textValue="审核通过" className="gap-2">
+                                <Check size={14} className="text-emerald-500 shrink-0" />
+                                <span className="text-xs flex-1">审核通过</span>
                               </Dropdown.Item>
-                              <Dropdown.Item id="reject" textValue="拒绝申请">
-                                <XIcon size={14} className="text-red-400" />
-                                <span className="ml-2 text-xs">拒绝申请</span>
+                              <Dropdown.Item id="reject" textValue="拒绝申请" className="gap-2">
+                                <XIcon size={14} className="text-red-400 shrink-0" />
+                                <span className="text-xs flex-1">拒绝申请</span>
                               </Dropdown.Item>
                             </>
                           )}
-                          <Dropdown.Item id="delete" textValue="删除友链" variant="danger">
-                            <Trash2 size={14} />
-                            <span className="ml-2 text-xs">删除友链</span>
+                          <Dropdown.Item id="delete" textValue="删除友链" variant="danger" className="gap-2">
+                            <Trash2 size={14} className="shrink-0" />
+                            <span className="text-xs flex-1">删除友链</span>
                           </Dropdown.Item>
                         </Dropdown.Menu>
                       </Dropdown.Popover>

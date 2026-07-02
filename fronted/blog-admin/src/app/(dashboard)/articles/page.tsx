@@ -24,7 +24,7 @@ import {
   MessageSquare,
   Heart
 } from "lucide-react";
-import { cn } from "@heroui/react";
+import { cn, Input, Button, Select, Label, ListBox } from "@heroui/react";
 import {
   fetchArticles as fetchArticlesApi,
   fetchArticleDetail,
@@ -359,32 +359,60 @@ export default function ArticlesPage() {
         </div>
       )}
 
-      {/* 筛选 + 搜索栏 - 紧凑大厂排版 */}
+      {/* 筛选 + 搜索栏 - 使用 HeroUI 组件 */}
       <div className="flex flex-wrap items-center gap-3">
-        <div className="flex h-9 items-center gap-2 rounded-xl border border-zinc-200/60 dark:border-zinc-800 bg-white dark:bg-zinc-950 px-3 py-1.5 flex-1 max-w-xs transition-all focus-within:ring-2 focus-within:ring-primary/20 focus-within:border-primary">
+        {/* 搜索框 */}
+        <div className="relative w-full sm:max-w-xs h-9 rounded-xl border border-zinc-200/60 dark:border-zinc-800 bg-white dark:bg-zinc-950 hover:border-zinc-300 dark:hover:border-zinc-700 focus-within:border-primary focus-within:ring-2 focus-within:ring-primary/20 transition-all flex items-center px-3">
           <Search size={14} className="text-zinc-400 dark:text-zinc-500 shrink-0" />
-          <input
+          <Input
             type="text"
             value={keyword}
             onChange={(e) => { setKeyword(e.target.value); setPage(1); }}
             placeholder="搜索文章标题..."
-            className="flex-1 border-0 bg-transparent p-0 text-xs text-zinc-800 dark:text-zinc-100 outline-none placeholder-zinc-400 dark:placeholder-zinc-650 focus:ring-0 leading-normal"
+            className="flex-1 border-0 bg-transparent p-0 text-xs outline-none placeholder-zinc-400 dark:placeholder-zinc-650 focus:ring-0 leading-normal ml-2"
           />
         </div>
-        <div className="flex h-9 items-center gap-1.5 px-3 py-1.5 rounded-xl border border-zinc-200/60 dark:border-zinc-800 bg-white dark:bg-zinc-950 text-xs text-zinc-600 dark:text-zinc-400">
-          <Filter size={12} className="text-zinc-400 dark:text-zinc-550 shrink-0" />
-          <select
-            value={statusFilter}
-            onChange={(e) => { setStatusFilter(e.target.value); setPage(1); }}
-            className="border-none bg-transparent p-0 pr-1 text-xs text-zinc-700 dark:text-zinc-350 outline-none cursor-pointer focus:ring-0"
-          >
-            <option value="">全部状态</option>
-            <option value="PUBLISHED">已发布</option>
-            <option value="DRAFT">草稿</option>
-            <option value="PRIVATE">私密</option>
-            <option value="ARCHIVED">已归档</option>
-          </select>
-        </div>
+        
+        {/* 状态筛选 - 使用 HeroUI Select */}
+        <Select
+          selectedKey={statusFilter || "all"}
+          onSelectionChange={(key) => {
+            const value = key as string;
+            setStatusFilter(value === "all" ? "" : value);
+            setPage(1);
+          }}
+          className="w-32 h-9"
+        >
+          <Label className="text-xs">状态</Label>
+          <Select.Trigger className="h-9 rounded-xl border-zinc-200/60 dark:border-zinc-800 bg-white dark:bg-zinc-950 text-xs">
+            <Select.Value />
+            <Select.Indicator />
+          </Select.Trigger>
+          <Select.Popover>
+            <ListBox aria-label="状态筛选">
+              <ListBox.Item id="all" textValue="全部状态">
+                全部状态
+                <ListBox.ItemIndicator />
+              </ListBox.Item>
+              <ListBox.Item id="PUBLISHED" textValue="已发布">
+                已发布
+                <ListBox.ItemIndicator />
+              </ListBox.Item>
+              <ListBox.Item id="DRAFT" textValue="草稿">
+                草稿
+                <ListBox.ItemIndicator />
+              </ListBox.Item>
+              <ListBox.Item id="PRIVATE" textValue="私密">
+                私密
+                <ListBox.ItemIndicator />
+              </ListBox.Item>
+              <ListBox.Item id="ARCHIVED" textValue="已归档">
+                已归档
+                <ListBox.ItemIndicator />
+              </ListBox.Item>
+            </ListBox>
+          </Select.Popover>
+        </Select>
       </div>
 
       {/* 文章表格 - 极简精致大厂排版 */}
