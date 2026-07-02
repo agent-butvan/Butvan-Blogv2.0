@@ -534,6 +534,8 @@ export default function MediaPage() {
                             <img
                               src={fileLink}
                               alt={item.fileName}
+                              loading="lazy"
+                              decoding="async"
                               className="w-full h-full object-cover transition-transform duration-200 group-hover:scale-110"
                             />
                           ) : (
@@ -690,7 +692,7 @@ export default function MediaPage() {
             />
 
             {/* 模态浮窗 */}
-            <div className="relative z-10 w-full max-w-lg mx-4 bg-white dark:bg-zinc-900 border border-zinc-200 dark:border-zinc-800 rounded-3xl shadow-xl animate-slide-up overflow-hidden flex flex-col">
+            <div className="relative z-10 w-full max-w-lg mx-4 bg-white dark:bg-zinc-900 border border-zinc-200 dark:border-zinc-800 rounded-2xl shadow-xl animate-slide-up overflow-hidden flex flex-col">
               <div className="p-6 flex flex-col gap-4 text-left">
                 {/* 顶栏 */}
                 <div className="flex items-center justify-between border-b border-zinc-100 dark:border-zinc-800 pb-3">
@@ -714,6 +716,7 @@ export default function MediaPage() {
                     <img
                       src={resolveUrl(selectedMedia.fileUrl)}
                       alt={selectedMedia.fileName}
+                      loading="lazy"
                       className="max-w-full max-h-full object-contain"
                     />
                   </div>

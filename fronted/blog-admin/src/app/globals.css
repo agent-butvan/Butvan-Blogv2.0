@@ -567,6 +567,49 @@ h6 {
 }
 
 /* ============================================================================
+ * Reduced Motion 无障碍降级 (WCAG 2.3.3)
+ * ============================================================================ */
+@media (prefers-reduced-motion: reduce) {
+  .animate-fade-in,
+  .animate-slide-up {
+    animation: none;
+    opacity: 1;
+    transform: none;
+  }
+
+  .animate-float-slow,
+  .animate-float-reverse,
+  .animate-pulse-glow {
+    animation: none;
+  }
+
+  .animate-dash-move {
+    animation: none;
+    stroke-dashoffset: 0;
+  }
+
+  .animate-crop-flash {
+    animation: none;
+    opacity: 1;
+    transform: none;
+  }
+
+  .animate-draw-pulse,
+  .animate-skeleton-pulse {
+    animation: none;
+  }
+
+  /* Tailwind animate-pulse / animate-spin / motion-safe fallback */
+  *,
+  ::before,
+  ::after {
+    animation-duration: 0.01ms !important;
+    animation-iteration-count: 1 !important;
+    transition-duration: 0.01ms !important;
+  }
+}
+
+/* ============================================================================
  * 现代拟物玻璃态与微光描边样式
  * ============================================================================ */
 .glass-panel {
