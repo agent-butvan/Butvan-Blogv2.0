@@ -8,5 +8,5 @@ public interface WeiXinApiBaseUrl {
     /**
      *  获取 access token
      */
-    public final String GET_ACCESS_TOKEN_BASE_URL = "https://api.weixin.qq.com/cgi-bin/token";
+    String GET_ACCESS_TOKEN_BASE_URL = "https://api.weixin.qq.com/cgi-bin/token";
 }

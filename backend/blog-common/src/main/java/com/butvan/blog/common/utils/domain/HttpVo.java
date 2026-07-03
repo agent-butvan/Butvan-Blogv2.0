@@ -12,5 +12,5 @@ import java.util.Map;
 @Builder
 public class HttpVo {
 
-    Map<String,String> map;
+    Map<String,Object> map;
 }

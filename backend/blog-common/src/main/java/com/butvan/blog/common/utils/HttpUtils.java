@@ -27,7 +27,7 @@ public class HttpUtils {
         }
 
         try (HttpResponse res = request.execute()){
-            Map<String,String> map = JSONUtil.toBean(res.body(), Map.class);
+            Map<String,Object> map = JSONUtil.toBean(res.body(), Map.class);
 
             return HttpVo.builder().map(map).build();
         }

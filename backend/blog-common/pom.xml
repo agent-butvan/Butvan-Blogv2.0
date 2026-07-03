@@ -40,5 +40,10 @@
             <artifactId>hutool-all</artifactId>
             <groupId>cn.hutool</groupId>
         </dependency>
+
+        <dependency>
+            <artifactId>spring-boot-starter-data-redis</artifactId>
+            <groupId>org.springframework.boot</groupId>
+        </dependency>
     </dependencies>
 </project>

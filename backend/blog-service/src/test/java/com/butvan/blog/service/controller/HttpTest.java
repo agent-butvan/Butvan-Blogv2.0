@@ -16,8 +16,6 @@ public class HttpTest {
     @Test
     void get() {
         String accessToken = weiXinBaseService.getAccessToken("wx8afe4fc4ce1af1eb", "b34313cf29225fae1c2c785839ae688e");
-
-
         log.info("access_token: {}",accessToken);
     }
 }
