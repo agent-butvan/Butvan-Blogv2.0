@@ -145,8 +145,12 @@ export default function LoginModal({ isOpen, onClose }: LoginModalProps) {
   }
 
   return (
-    <Modal isOpen={isOpen} onOpenChange={(open) => { if (!open) onClose() }}>
-      <Modal.Backdrop variant="blur">
+    <Modal>
+      <Modal.Backdrop 
+        isOpen={isOpen} 
+        onOpenChange={(open) => { if (!open) onClose() }}
+        variant="blur"
+      >
         <Modal.Container>
           <Modal.Dialog className="sm:max-w-[360px]">
             <Modal.CloseTrigger />
