@@ -1,5 +1,6 @@
 @import url('https://fonts.googleapis.com/css2?family=Archivo:wght@300;400;500;600;700&family=Space+Grotesk:wght@300;400;500;600;700&family=Noto+Serif+SC:wght@300;400;500;600;700&display=swap');
 @import "tailwindcss";
+@import "@heroui/styles";
 @source "../../node_modules/@heroui/theme/dist/**/*.{js,ts,jsx,tsx}";
 
 @theme {
