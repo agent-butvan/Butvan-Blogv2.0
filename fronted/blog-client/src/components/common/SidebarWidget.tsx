@@ -102,7 +102,7 @@ export default function SidebarWidget() {
       <>
         <div className="fixed left-5 bottom-5 z-40 flex flex-col gap-3.5 select-none">
           {user ? (
-            <Tooltip delay={0}>
+            <Tooltip>
               <Tooltip.Trigger>
                 <Button
                   isIconOnly
@@ -119,8 +119,7 @@ export default function SidebarWidget() {
                   </Avatar>
                 </Button>
               </Tooltip.Trigger>
-              <Tooltip.Content>
-                <Tooltip.Arrow />
+              <Tooltip.Content showArrow>
                 点击退出登录
               </Tooltip.Content>
             </Tooltip>
@@ -149,7 +148,7 @@ export default function SidebarWidget() {
         {items.map((item) => {
           const IconComp = getIconComponent(item.icon)
           return (
-            <Tooltip key={item.id} delay={0}>
+            <Tooltip key={item.id}>
               <Tooltip.Trigger>
                 <Link href={item.linkUrl || '#'}>
                   <Button
@@ -162,8 +161,7 @@ export default function SidebarWidget() {
                   </Button>
                 </Link>
               </Tooltip.Trigger>
-              <Tooltip.Content>
-                <Tooltip.Arrow />
+              <Tooltip.Content showArrow>
                 {item.title}
               </Tooltip.Content>
             </Tooltip>
@@ -175,7 +173,7 @@ export default function SidebarWidget() {
 
         {/* 登录图标 / 用户头像 */}
         {user ? (
-          <Tooltip delay={0}>
+          <Tooltip>
             <Tooltip.Trigger>
               <Button
                 isIconOnly
@@ -192,8 +190,7 @@ export default function SidebarWidget() {
                 </Avatar>
               </Button>
             </Tooltip.Trigger>
-            <Tooltip.Content>
-              <Tooltip.Arrow />
+            <Tooltip.Content showArrow>
               点击退出登录
             </Tooltip.Content>
           </Tooltip>
