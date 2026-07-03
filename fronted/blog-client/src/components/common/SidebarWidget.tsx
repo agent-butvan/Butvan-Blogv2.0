@@ -103,7 +103,7 @@ export default function SidebarWidget() {
           {user ? (
             <button
               onClick={handleLogout}
-              className="w-9 h-9 rounded-full overflow-hidden ring-1 ring-zinc-200 dark:ring-zinc-700 hover:ring-[#727BBA] transition-all cursor-pointer bg-white/70 dark:bg-zinc-950/70 border border-zinc-200/50 dark:border-zinc-800/60 backdrop-blur-md shadow-xs"
+              className="w-9 h-9 rounded-full overflow-hidden ring-1 ring-zinc-200 dark:ring-zinc-700 hover:ring-[#727BBA] transition-all cursor-pointer"
               title="点击退出登录"
             >
               {user.avatarUrl ? (
@@ -121,7 +121,7 @@ export default function SidebarWidget() {
           ) : (
             <button
               onClick={() => setLoginModalOpen(true)}
-              className="w-9 h-9 rounded-full bg-white/70 dark:bg-zinc-950/70 border border-zinc-200/50 dark:border-zinc-800/60 backdrop-blur-md shadow-xs flex items-center justify-center text-zinc-550 dark:text-zinc-400 hover:text-[#727BBA] dark:hover:text-[#727BBA] hover:bg-zinc-150/40 dark:hover:bg-zinc-900/40 transition-all duration-200 cursor-pointer"
+              className="w-9 h-9 rounded-full flex items-center justify-center text-zinc-550 hover:text-[#727BBA] hover:bg-zinc-150/40 dark:text-zinc-400 dark:hover:text-[#727BBA] dark:hover:bg-zinc-900/40 transition-all duration-200 cursor-pointer"
               title="登录"
             >
               <User size={15} className="shrink-0" />
@@ -181,7 +181,7 @@ export default function SidebarWidget() {
         ) : (
           <button
             onClick={() => setLoginModalOpen(true)}
-            className="w-9 h-9 rounded-full bg-white/70 dark:bg-zinc-950/70 border border-zinc-200/50 dark:border-zinc-800/60 backdrop-blur-md shadow-xs flex items-center justify-center text-zinc-550 dark:text-zinc-400 hover:text-[#727BBA] dark:hover:text-[#727BBA] hover:bg-zinc-150/40 dark:hover:bg-zinc-900/40 transition-all duration-200 cursor-pointer"
+            className="w-9 h-9 rounded-full flex items-center justify-center text-zinc-550 hover:text-[#727BBA] hover:bg-zinc-150/40 dark:text-zinc-400 dark:hover:text-[#727BBA] dark:hover:bg-zinc-900/40 transition-all duration-200 cursor-pointer"
             title="登录"
           >
             <User size={15} className="shrink-0" />
