@@ -3,9 +3,10 @@
 import React, { useState, useEffect } from 'react'
 import * as Icons from 'lucide-react'
 import { HelpCircle, User } from 'lucide-react'
-import { Button, Tooltip, Avatar, Separator } from '@heroui/react'
+import { Button, Tooltip, Avatar, Separator, toast } from '@heroui/react'
 import { fetchNavigations } from '@/lib/profile'
 import Link from 'next/link'
+import { usePathname } from 'next/navigation'
 import LoginModal from '@/components/auth/LoginModal'
 
 interface NavigationItem {
@@ -27,13 +28,17 @@ const getIconComponent = (iconName?: string): Icons.LucideIcon => {
  * - 动态拉取后台中展示位置为 'SIDEBAR' 的菜单导航
  * - 使用 HeroUI Tooltip 实现 hover 滑出提示
  * - 底部集成登录图标（HeroUI Avatar/Button + Separator 分隔）
- * - 若后台未配置任何侧边栏目，仅显示登录图标
+ * - 支持当前页面激活态高亮、加载骨架屏、无障碍 aria-label
+ * - 若后台未配置任何侧边栏目，仅显示登录图标（统一定位）
  */
-export default function SidebarWidget() {
+export default function SidebarWidget() { 
   const [items, setItems] = useState<NavigationItem[]>([])
+  const [loading, setLoading] = useState(true)
   // 登录状态
   const [user, setUser] = useState<{ nickname: string; avatarUrl?: string | null } | null>(null)
   const [loginModalOpen, setLoginModalOpen] = useState(false)
+  // 当前路由路径，用于高亮激活菜单项
+  const pathname = usePathname()
 
   /**
    * 获取登录状态
@@ -68,13 +73,14 @@ export default function SidebarWidget() {
   }, [])
 
   /**
-   * 处理登出
+   * 处理登出 — 清除本地状态并广播 auth-change 事件
    */
   const handleLogout = () => {
     localStorage.removeItem('token')
     localStorage.removeItem('user_info')
     setUser(null)
     window.dispatchEvent(new Event('auth-change'))
+    toast.success('已退出登录')
   }
 
   /**
@@ -90,49 +96,89 @@ export default function SidebarWidget() {
     return avatarUrl.startsWith("/") ? `${host}${avatarUrl}` : avatarUrl;
   };
 
+  // 拉取侧边栏动态菜单
   useEffect(() => {
-    fetchNavigations('SIDEBAR').then((data) => {
-      setItems(data || [])
-    })
+    setLoading(true)
+    fetchNavigations('SIDEBAR')
+      .then((data) => {
+        setItems(data || [])
+      })
+      .catch(() => {
+        // fetchNavigations 内部已 warn，此处静默降级
+      })
+      .finally(() => {
+        setLoading(false)
+      })
   }, [])
 
-  // 始终显示登录图标，即使没有菜单项
+  // ---- 骨架屏渲染（数据加载中） ----
+  if (loading) {
+    return (
+      <div
+        className="fixed left-5 top-1/2 -translate-y-1/2 z-40 hidden lg:flex flex-col gap-3.5 bg-white/70 dark:bg-zinc-950/70 p-2 rounded-full border border-zinc-200/50 dark:border-zinc-800/60 backdrop-blur-md shadow-xs select-none"
+        aria-label="侧边栏菜单加载中"
+      >
+        {[1, 2, 3].map((i) => (
+          <div
+            key={i}
+            className="w-9 h-9 rounded-full bg-zinc-200 dark:bg-zinc-800 animate-pulse"
+            aria-hidden="true"
+          />
+        ))}
+        <Separator className="my-1" />
+        <div
+          className="w-9 h-9 rounded-full bg-zinc-200 dark:bg-zinc-800 animate-pulse"
+          aria-hidden="true"
+        />
+      </div>
+    )
+  }
+
+  // ---- 空状态：仅登录图标（统一定位在左侧垂直居中） ----
   if (items.length === 0) {
     return (
       <>
-        <div className="fixed left-5 bottom-5 z-40 flex flex-col gap-3.5 select-none">
+        <div
+          className="fixed left-5 top-1/2 -translate-y-1/2 z-40 hidden lg:flex flex-col gap-3.5 bg-white/70 dark:bg-zinc-950/70 p-2 rounded-full border border-zinc-200/50 dark:border-zinc-800/60 backdrop-blur-md shadow-xs select-none"
+          aria-label="侧边栏"
+        >
           {user ? (
             <Tooltip>
               <Tooltip.Trigger>
-                <Button
-                  isIconOnly
-                  variant="ghost"
-                  size="sm"
-                  className="w-9 h-9"
-                  onPress={handleLogout}
+                <button
+                  type="button"
+                  aria-label="退出登录"
+                  onClick={handleLogout}
+                  className="w-9 h-9 flex items-center justify-center rounded-full hover:bg-zinc-100 dark:hover:bg-zinc-800 transition-colors cursor-pointer"
                 >
-                  <Avatar size="sm">
+                  <Avatar size="sm" className="w-6 h-6">
                     {user.avatarUrl ? (
                       <Avatar.Image src={resolveAvatarUrl(user.avatarUrl)} alt="User avatar" />
                     ) : null}
-                    <Avatar.Fallback>{user.nickname.charAt(0).toUpperCase()}</Avatar.Fallback>
+                    <Avatar.Fallback className="text-[10px]">{user.nickname.charAt(0).toUpperCase()}</Avatar.Fallback>
                   </Avatar>
-                </Button>
+                </button>
               </Tooltip.Trigger>
               <Tooltip.Content showArrow>
                 点击退出登录
               </Tooltip.Content>
             </Tooltip>
           ) : (
-            <Button
-              isIconOnly
-              variant="ghost"
-              size="sm"
-              className="w-9 h-9"
-              onPress={() => setLoginModalOpen(true)}
-            >
-              <User size={15} />
-            </Button>
+            <Tooltip>
+              <Tooltip.Trigger>
+                <button
+                  type="button"
+                  aria-label="登录"
+                  onClick={() => setLoginModalOpen(true)}
+                  className="w-9 h-9 flex items-center justify-center rounded-full text-zinc-600 dark:text-zinc-300 hover:bg-zinc-100 dark:hover:bg-zinc-800 transition-colors cursor-pointer"
+                >
+                  <User size={15} />
+                </button>
+              </Tooltip.Trigger>
+              <Tooltip.Content showArrow>
+                登录
+              </Tooltip.Content>
+            </Tooltip>
           )}
         </div>
         <LoginModal isOpen={loginModalOpen} onClose={() => setLoginModalOpen(false)} />
@@ -143,22 +189,28 @@ export default function SidebarWidget() {
   return (
     <>
       {/* 左侧菜单栏容器（包含菜单项 + 分隔线 + 登录图标） */}
-      <div className="fixed left-5 top-1/2 -translate-y-1/2 z-40 hidden lg:flex flex-col gap-3.5 bg-white/70 dark:bg-zinc-950/70 p-2 rounded-full border border-zinc-200/50 dark:border-zinc-800/60 backdrop-blur-md shadow-xs select-none">
-        {/* 动态菜单项 */}
+      <nav
+        className="fixed left-5 top-1/2 -translate-y-1/2 z-40 hidden lg:flex flex-col gap-3.5 bg-white/70 dark:bg-zinc-950/70 p-2 rounded-full border border-zinc-200/50 dark:border-zinc-800/60 backdrop-blur-md shadow-xs select-none"
+        aria-label="侧边栏导航"
+      >
+        {/* 动态菜单项 — 使用 Link 直接渲染避免嵌套交互元素，激活态高亮 */}
         {items.map((item) => {
           const IconComp = getIconComponent(item.icon)
+          const isActive = !!(item.linkUrl && pathname === item.linkUrl)
           return (
             <Tooltip key={item.id}>
               <Tooltip.Trigger>
-                <Link href={item.linkUrl || '#'}>
-                  <Button
-                    isIconOnly
-                    variant="ghost"
-                    size="sm"
-                    className="w-9 h-9"
-                  >
-                    <IconComp size={15} />
-                  </Button>
+                <Link
+                  href={item.linkUrl || '#'}
+                  aria-label={item.title}
+                  aria-current={isActive ? 'page' : undefined}
+                  className={`w-9 h-9 flex items-center justify-center rounded-full transition-colors ${
+                    isActive
+                      ? 'bg-[#727BBA]/15 text-[#727BBA]'
+                      : 'text-zinc-500 dark:text-zinc-400 hover:bg-zinc-100 dark:hover:bg-zinc-800'
+                  }`}
+                >
+                  <IconComp size={15} />
                 </Link>
               </Tooltip.Trigger>
               <Tooltip.Content showArrow>
@@ -175,37 +227,42 @@ export default function SidebarWidget() {
         {user ? (
           <Tooltip>
             <Tooltip.Trigger>
-              <Button
-                isIconOnly
-                variant="ghost"
-                size="sm"
-                className="w-9 h-9"
-                onPress={handleLogout}
+              <button
+                type="button"
+                aria-label="退出登录"
+                onClick={handleLogout}
+                className="w-9 h-9 flex items-center justify-center rounded-full text-zinc-600 dark:text-zinc-300 hover:bg-red-50 dark:hover:bg-red-900/20 hover:text-red-600 dark:hover:text-red-400 transition-colors cursor-pointer"
               >
-                <Avatar size="sm">
+                <Avatar size="sm" className="w-6 h-6">
                   {user.avatarUrl ? (
                     <Avatar.Image src={resolveAvatarUrl(user.avatarUrl)} alt="User avatar" />
                   ) : null}
-                  <Avatar.Fallback>{user.nickname.charAt(0).toUpperCase()}</Avatar.Fallback>
+                  <Avatar.Fallback className="text-[10px]">{user.nickname.charAt(0).toUpperCase()}</Avatar.Fallback>
                 </Avatar>
-              </Button>
+              </button>
             </Tooltip.Trigger>
             <Tooltip.Content showArrow>
               点击退出登录
             </Tooltip.Content>
           </Tooltip>
         ) : (
-          <Button
-            isIconOnly
-            variant="ghost"
-            size="sm"
-            className="w-9 h-9"
-            onPress={() => setLoginModalOpen(true)}
-          >
-            <User size={15} />
-          </Button>
+          <Tooltip>
+            <Tooltip.Trigger>
+              <button
+                type="button"
+                aria-label="登录"
+                onClick={() => setLoginModalOpen(true)}
+                className="w-9 h-9 flex items-center justify-center rounded-full text-zinc-600 dark:text-zinc-300 hover:bg-zinc-100 dark:hover:bg-zinc-800 transition-colors cursor-pointer"
+              >
+                <User size={15} />
+              </button>
+            </Tooltip.Trigger>
+            <Tooltip.Content showArrow>
+              登录
+            </Tooltip.Content>
+          </Tooltip>
         )}
-      </div>
+      </nav>
 
       {/* 登录弹窗 */}
       <LoginModal isOpen={loginModalOpen} onClose={() => setLoginModalOpen(false)} />

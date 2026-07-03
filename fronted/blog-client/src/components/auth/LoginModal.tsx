@@ -145,132 +145,130 @@ export default function LoginModal({ isOpen, onClose }: LoginModalProps) {
   }
 
   return (
-    <Modal.Backdrop 
-      isOpen={isOpen} 
-      onOpenChange={(open) => { if (!open) onClose() }}
-      variant="blur"
-    >
-      <Modal.Container>
-        <Modal.Dialog className="sm:max-w-[360px]">
-          <Modal.CloseTrigger />
-          
-          <Modal.Header className="flex flex-col items-center text-center">
-            <Modal.Heading className="text-base">欢迎回来</Modal.Heading>
-            <p className="text-xs text-default-500 mt-0.5">登录您的可梵博客账号</p>
-          </Modal.Header>
+    <Modal isOpen={isOpen} onOpenChange={(open) => { if (!open) onClose() }}>
+      <Modal.Backdrop variant="blur">
+        <Modal.Container>
+          <Modal.Dialog className="sm:max-w-[360px]">
+            <Modal.CloseTrigger />
+            
+            <Modal.Header className="flex flex-col items-center text-center">
+              <Modal.Heading className="text-base">欢迎回来</Modal.Heading>
+              <p className="text-xs text-default-500 mt-0.5">登录您的可梵博客账号</p>
+            </Modal.Header>
 
-          <Modal.Body>
-            {/* 登录方式切换 */}
-            <div className="flex gap-2">
-              <Button
-                variant={mode === 'email' ? 'primary' : 'ghost'}
-                size="sm"
-                className="flex-1"
-                onPress={() => setMode('email')}
-              >
-                邮箱登录
-              </Button>
-              <Button
-                variant={mode === 'wechat' ? 'primary' : 'ghost'}
-                size="sm"
-                className="flex-1"
-                onPress={() => setMode('wechat')}
-              >
-                微信扫码
-              </Button>
-            </div>
-
-            {/* 邮箱登录表单 */}
-            {mode === 'email' && (
-              <form onSubmit={handleEmailLogin} className="flex flex-col gap-3">
-                <div className="flex flex-col gap-1">
-                  <label className="text-xs font-medium text-default-600 pl-1">用户名</label>
-                  <input
-                    type="text"
-                    placeholder="请输入登录用户名"
-                    value={usernameInput}
-                    onChange={(e) => setUsernameInput(e.target.value)}
-                    className="w-full text-sm px-3 py-2 rounded-xl border border-default-200 bg-default-50 text-foreground placeholder:text-default-400 focus:outline-none focus:border-primary transition-colors"
-                  />
-                </div>
-
-                <div className="flex flex-col gap-1">
-                  <label className="text-xs font-medium text-default-600 pl-1">密码</label>
-                  <input
-                    type="password"
-                    placeholder="请输入登录密码"
-                    value={passwordInput}
-                    onChange={(e) => setPasswordInput(e.target.value)}
-                    className="w-full text-sm px-3 py-2 rounded-xl border border-default-200 bg-default-50 text-foreground placeholder:text-default-400 focus:outline-none focus:border-primary transition-colors"
-                  />
-                </div>
-
-                {loginError && (
-                  <p className="text-xs text-danger text-center font-medium">{loginError}</p>
-                )}
-
+            <Modal.Body>
+              {/* 登录方式切换 */}
+              <div className="flex gap-2">
                 <Button
-                  type="submit"
-                  isPending={submitting}
-                  className="w-full"
+                  variant={mode === 'email' ? 'primary' : 'ghost'}
+                  size="sm"
+                  className="flex-1"
+                  onPress={() => setMode('email')}
                 >
-                  {submitting ? '安全登录中...' : '提交登录'}
+                  邮箱登录
                 </Button>
-              </form>
-            )}
-
-            {/* 微信扫码登录 */}
-            {mode === 'wechat' && (
-              <div className="flex flex-col items-center gap-4">
-                {qrLoading ? (
-                  <div className="w-48 h-48 bg-default-100 rounded-xl flex items-center justify-center">
-                    <Spinner size="lg" />
-                  </div>
-                ) : qrError ? (
-                  <div className="w-48 h-48 bg-default-100 rounded-xl flex flex-col items-center justify-center gap-2">
-                    <p className="text-xs text-danger text-center px-2">{qrError}</p>
-                    <Button
-                      size="sm"
-                      variant="ghost"
-                      onPress={refreshQRCode}
-                    >
-                      <RefreshCw size={12} />
-                      <span>重试</span>
-                    </Button>
-                  </div>
-                ) : qrCodeUrl ? (
-                  <div className="relative">
-                    <img 
-                      src={qrCodeUrl} 
-                      alt="微信登录二维码" 
-                      className="w-48 h-48 rounded-xl object-contain border border-default-200"
-                    />
-                    <Button
-                      isIconOnly
-                      size="sm"
-                      variant="ghost"
-                      className="absolute -top-2 -right-2"
-                      onPress={refreshQRCode}
-                    >
-                      <RefreshCw size={12} />
-                    </Button>
-                  </div>
-                ) : null}
-                
-                <p className="text-xs text-default-500 text-center">
-                  请使用微信扫一扫登录
-                </p>
+                <Button
+                  variant={mode === 'wechat' ? 'primary' : 'ghost'}
+                  size="sm"
+                  className="flex-1"
+                  onPress={() => setMode('wechat')}
+                >
+                  微信扫码
+                </Button>
               </div>
-            )}
-          </Modal.Body>
 
-          <Modal.Footer>
-            <Button variant="ghost" slot="close" className="w-full">
-              取消
-            </Button>
-          </Modal.Footer>
-        </Modal.Dialog>
-      </Modal.Container>
-    </Modal.Backdrop>
+              {/* 邮箱登录表单 */}
+              {mode === 'email' && (
+                <form onSubmit={handleEmailLogin} className="flex flex-col gap-3">
+                  <div className="flex flex-col gap-1">
+                    <label className="text-xs font-medium text-default-600 pl-1">用户名</label>
+                    <input
+                      type="text"
+                      placeholder="请输入登录用户名"
+                      value={usernameInput}
+                      onChange={(e) => setUsernameInput(e.target.value)}
+                      className="w-full text-sm px-3 py-2 rounded-xl border border-default-200 bg-default-50 text-foreground placeholder:text-default-400 focus:outline-none focus:border-primary transition-colors"
+                    />
+                  </div>
+
+                  <div className="flex flex-col gap-1">
+                    <label className="text-xs font-medium text-default-600 pl-1">密码</label>
+                    <input
+                      type="password"
+                      placeholder="请输入登录密码"
+                      value={passwordInput}
+                      onChange={(e) => setPasswordInput(e.target.value)}
+                      className="w-full text-sm px-3 py-2 rounded-xl border border-default-200 bg-default-50 text-foreground placeholder:text-default-400 focus:outline-none focus:border-primary transition-colors"
+                    />
+                  </div>
+
+                  {loginError && (
+                    <p className="text-xs text-danger text-center font-medium">{loginError}</p>
+                  )}
+
+                  <Button
+                    type="submit"
+                    isPending={submitting}
+                    className="w-full"
+                  >
+                    {submitting ? '安全登录中...' : '提交登录'}
+                  </Button>
+                </form>
+              )}
+
+              {/* 微信扫码登录 */}
+              {mode === 'wechat' && (
+                <div className="flex flex-col items-center gap-4">
+                  {qrLoading ? (
+                    <div className="w-48 h-48 bg-default-100 rounded-xl flex items-center justify-center">
+                      <Spinner size="lg" />
+                    </div>
+                  ) : qrError ? (
+                    <div className="w-48 h-48 bg-default-100 rounded-xl flex flex-col items-center justify-center gap-2">
+                      <p className="text-xs text-danger text-center px-2">{qrError}</p>
+                      <Button
+                        size="sm"
+                        variant="ghost"
+                        onPress={refreshQRCode}
+                      >
+                        <RefreshCw size={12} />
+                        <span>重试</span>
+                      </Button>
+                    </div>
+                  ) : qrCodeUrl ? (
+                    <div className="relative">
+                      <img 
+                        src={qrCodeUrl} 
+                        alt="微信登录二维码" 
+                        className="w-48 h-48 rounded-xl object-contain border border-default-200"
+                      />
+                      <Button
+                        isIconOnly
+                        size="sm"
+                        variant="ghost"
+                        className="absolute -top-2 -right-2"
+                        onPress={refreshQRCode}
+                      >
+                        <RefreshCw size={12} />
+                      </Button>
+                    </div>
+                  ) : null}
+                  
+                  <p className="text-xs text-default-500 text-center">
+                    请使用微信扫一扫登录
+                  </p>
+                </div>
+              )}
+            </Modal.Body>
+
+            <Modal.Footer>
+              <Button variant="ghost" slot="close" className="w-full">
+                取消
+              </Button>
+            </Modal.Footer>
+          </Modal.Dialog>
+        </Modal.Container>
+      </Modal.Backdrop>
+    </Modal>
   )
 }
