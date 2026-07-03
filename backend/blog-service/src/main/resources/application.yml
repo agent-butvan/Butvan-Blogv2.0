@@ -10,3 +10,5 @@ spring:
       - classpath:application-database.yml
       - classpath:application-routes.yml
       - classpath:application-redis.yml
+      - classpath:application-weixin.yml
+      - classpath:application-storage.yml

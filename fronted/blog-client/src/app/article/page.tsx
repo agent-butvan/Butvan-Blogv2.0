@@ -22,6 +22,7 @@ import Image from 'next/image'
 import { resolveImageUrl } from '@/lib/image-url'
 import Navbar from '@/components/common/Navbar'
 import SidebarWidget from '@/components/common/SidebarWidget'
+import SidebarLoginIcon from '@/components/auth/SidebarLoginIcon'
 import { fetchProfile } from '@/lib/profile'
 import type { ProfileVO } from '@/types/profile'
 import gsap from 'gsap'
@@ -264,6 +265,9 @@ export default function ArticleListPage() {
 
       {/* 左侧悬浮侧挂导航 */}
       <SidebarWidget />
+
+      {/* 左下角登录图标 */}
+      <SidebarLoginIcon />
 
       {/* 顶部极简居中人文页头 */}
       <header className="relative w-full max-w-5xl px-4 pt-16 pb-8 text-center flex flex-col items-center select-none">

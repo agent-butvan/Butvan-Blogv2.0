@@ -45,5 +45,12 @@
             <artifactId>spring-boot-starter-data-redis</artifactId>
             <groupId>org.springframework.boot</groupId>
         </dependency>
+
+        <!-- MinIO 对象存储 SDK -->
+        <dependency>
+            <groupId>io.minio</groupId>
+            <artifactId>minio</artifactId>
+            <version>8.5.7</version>
+        </dependency>
     </dependencies>
 </project>

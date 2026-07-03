@@ -2,12 +2,14 @@ package com.butvan.blog.service.service.impl;
 
 import com.butvan.blog.common.exception.BusinessException;
 import com.butvan.blog.common.result.PageResult;
+import com.butvan.blog.common.properties.StorageProperties;
+import com.butvan.blog.common.storage.FileStorageService;
 import com.butvan.blog.pojo.dto.media.MediaQueryDTO;
 import com.butvan.blog.pojo.entity.Media;
 import com.butvan.blog.service.repository.MediaRepository;
 import com.butvan.blog.service.service.MediaService;
+import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
-import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 import org.springframework.web.multipart.MultipartFile;
@@ -16,7 +18,7 @@ import org.springframework.data.domain.PageRequest;
 import org.springframework.data.domain.Pageable;
 import org.springframework.data.domain.Sort;
 import org.springframework.data.jpa.domain.Specification;
-import java.io.File;
+
 import java.io.IOException;
 import java.util.ArrayList;
 import java.util.Arrays;
@@ -25,13 +27,19 @@ import java.util.UUID;
 
 /**
  * 媒体资源管理服务实现类
+ * <p>
+ * 通过 {@link FileStorageService} 抽象文件存储层，
+ * 支持本地磁盘 / MinIO 对象存储的动态切换。
+ * </p>
  */
 @Service
 @Slf4j
+@RequiredArgsConstructor
 public class MediaServiceImpl implements MediaService {
 
-    @Autowired
-    private MediaRepository mediaRepository;
+    private final MediaRepository mediaRepository;
+    private final FileStorageService fileStorageService;
+    private final StorageProperties storageProperties;
 
     private static final List<String> IMAGE_EXTENSIONS = Arrays.asList("jpg", "jpeg", "png", "gif", "webp", "bmp");
 
@@ -57,42 +65,32 @@ public class MediaServiceImpl implements MediaService {
         // 2. 生成唯一的 UUID 文件名
         String newFilename = UUID.randomUUID().toString() + (extension.isEmpty() ? "" : "." + extension);
 
-        // 3. 构建本地存储路径
-        String userDir = System.getProperty("user.dir");
-        String uploadDirPath = userDir + File.separator + "uploads";
-        File uploadDir = new File(uploadDirPath);
-        if (!uploadDir.exists()) {
-            uploadDir.mkdirs();
-        }
-
-        File destFile = new File(uploadDir, newFilename);
+        // 3. 通过 FileStorageService 上传文件（自动适配本地 / MinIO）
+        String accessUrl;
         try {
-            // 4. 保存文件到本地
-            file.transferTo(destFile);
-            log.info("文件上传成功: {}", destFile.getAbsolutePath());
+            accessUrl = fileStorageService.upload(file, newFilename, file.getContentType());
+            log.info("文件上传成功: {}", accessUrl);
         } catch (IOException e) {
-            log.error("文件物理存储失败", e);
-            throw new BusinessException("文件上传写入磁盘失败：" + e.getMessage());
+            log.error("文件存储失败", e);
+            throw new BusinessException("文件上传存储失败：" + e.getMessage());
         }
 
-        // 5. 判定文件类型并拼装 URL 相对地址
+        // 5. 判定文件类型
         String fileType = "OTHER";
         if (IMAGE_EXTENSIONS.contains(extension)) {
             fileType = "IMAGE";
         }
-        
-        // 相对路径，前端可直接根据 baseURL 自行加载
-        String relativePath = "/uploads/" + newFilename;
 
         // 6. 持久化记录到数据库中
+        String bucketName = storageProperties.getType();
         Media media = Media.builder()
                 .fileName(originalFilename)
-                .filePath(destFile.getAbsolutePath())
-                .fileUrl(relativePath)
+                .filePath(newFilename)
+                .fileUrl(accessUrl)
                 .fileType(fileType)
                 .mimeType(file.getContentType())
                 .fileSize(file.getSize())
-                .bucketName("local")
+                .bucketName(bucketName)
                 .sourceType(org.springframework.util.StringUtils.hasText(sourceType) ? sourceType : "MANUAL")
                 .sourceId(sourceId)
                 .sourceDetail(sourceDetail)
@@ -133,26 +131,18 @@ public class MediaServiceImpl implements MediaService {
         // 2. 生成唯一的 UUID 文件名
         String newFilename = UUID.randomUUID().toString() + "." + extension;
 
-        // 3. 构建本地存储路径
-        String userDir = System.getProperty("user.dir");
-        String uploadDirPath = userDir + File.separator + "uploads";
-        File uploadDir = new File(uploadDirPath);
-        if (!uploadDir.exists()) {
-            uploadDir.mkdirs();
-        }
-
-        File destFile = new File(uploadDir, newFilename);
+        // 3. 通过 FileStorageService 上传文件（自动适配本地 / MinIO）
+        String accessUrl;
         try {
-            // 4. 保存文件到本地
-            file.transferTo(destFile);
-            log.info("公开接口文件上传成功: {}", destFile.getAbsolutePath());
+            accessUrl = fileStorageService.upload(file, newFilename, file.getContentType());
+            log.info("公开接口文件上传成功: {}", accessUrl);
         } catch (IOException e) {
-            log.error("文件物理存储失败", e);
-            throw new BusinessException("文件上传写入磁盘失败：" + e.getMessage());
+            log.error("文件存储失败", e);
+            throw new BusinessException("文件上传存储失败：" + e.getMessage());
         }
 
-        // 5. 返回相对路径
-        return "/uploads/" + newFilename;
+        // 4. 返回访问 URL
+        return accessUrl;
     }
 
     @Override
@@ -203,17 +193,14 @@ public class MediaServiceImpl implements MediaService {
         Media media = mediaRepository.findById(id)
                 .orElseThrow(() -> new BusinessException("媒体资源不存在或已被删除"));
 
-        // 1. 尝试物理清除本地存储中的文件，防垃圾冗余
-        String absolutePath = media.getFilePath();
-        if (org.springframework.util.StringUtils.hasText(absolutePath)) {
-            File diskFile = new File(absolutePath);
-            if (diskFile.exists() && diskFile.isFile()) {
-                boolean isDeleted = diskFile.delete();
-                if (isDeleted) {
-                    log.info("本地磁盘物理媒体文件成功删除: {}", absolutePath);
-                } else {
-                    log.warn("本地磁盘物理媒体文件删除失败: {}", absolutePath);
-                }
+        // 1. 通过 FileStorageService 删除存储中的文件（自动适配本地 / MinIO）
+        String objectName = media.getFilePath();
+        if (org.springframework.util.StringUtils.hasText(objectName)) {
+            boolean deleted = fileStorageService.delete(objectName);
+            if (deleted) {
+                log.info("存储文件删除成功: {}", objectName);
+            } else {
+                log.warn("存储文件删除失败: {}", objectName);
             }
         }
 

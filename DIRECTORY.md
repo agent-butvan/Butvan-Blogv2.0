@@ -77,6 +77,9 @@ Butvan Blog2.0/                                    # 📦 项目根目录
 │   │   │   │   ├── providers.tsx                  #         HeroUI v3 无 Provider 兼容包装器
 │   │   │   │   └── not-found.tsx                  #         自定义 404 页面
 │   │   │   ├── components/                        #     🧩 组件层（按业务领域分组）
+│   │   │   │   ├── auth/                          #       认证相关组件
+│   │   │   │   │   ├── LoginModal.tsx             #         登录弹窗（支持邮箱登录 + 微信扫码切换）
+│   │   │   │   │   ── SidebarLoginIcon.tsx       #         侧边栏底部小人图标（未登录显示，已登录显示头像）
 │   │   │   │   ├── common/                        #       通用原子组件（Button、Card、Modal、Empty 等）
 │   │   │   │   │   ├── HtmlRenderer.tsx           #         通用 HTML 解析与组件拦截器
 │   │   │   │   │   └── MarkdownCodeBlock.tsx      #         通用定制化 macOS 风格代码块组件
@@ -215,9 +218,15 @@ Butvan Blog2.0/                                    # 📦 项目根目录
     │   ├── pom.xml                                 #     Maven 子模块 POM
     │   └── src/main/java/com/butvan/blog/common/
     │       ├── config/                             #       通用配置
-    │       │   └── WebMvcConfig.java               #         MVC 配置（CORS、拦截器、消息转换器）
+    │       │   ├── WebMvcConfig.java               #         MVC 配置（CORS、拦截器、消息转换器）
+    │       │   └── RedisConfig.java                #         Redis 配置（StringRedisTemplate 自动配置）
     │       ├── constant/                           #       常量定义
     │       │   └── Constants.java                  #         全局常量（日期格式、默认分页大小等）
+    │       ├── properties/                         #       配置属性映射（@ConfigurationProperties）
+    │       │   ├── WeiXinProperties.java           #         微信配置映射（appid / appsecret）
+    │       │   └── StorageProperties.java          #         文件存储配置映射（local / minio 切换）
+    │       ├── storage/                            #       文件存储抽象层（策略模式）
+    │       │   └── FileStorageService.java         #         文件存储服务接口（upload / delete / getAccessUrl）
     │       ├── exception/                          #       异常定义
     │       │   ├── BaseException.java              #         全局业务异常基类（code + msg）
     │       │   └── BusinessException.java          #         具体业务异常（文章不存在、权限不足等）
@@ -227,7 +236,13 @@ Butvan Blog2.0/                                    # 📦 项目根目录
     │       │   ├── Result.java                     #         统一 JSON 返回包装器（code + msg + data）
     │       │   └── PageResult.java                 #         分页响应体（total + page + size + records）
     │       └── utils/                              #       通用工具类
-    │           └── SlugUtils.java                  #         中文/英文转 URL Slug 工具
+    │           ├── SlugUtils.java                  #         中文/英文转 URL Slug 工具
+    │           ├── HttpUtils.java                  #         HTTP 请求工具（GET/POST，含字节数组下载）
+    │           ├── RedisUtils.java                 #         Redis 工具类（String/对象/锁/计数器/Hash/List/Set）
+    │           ├── MinioUtils.java                 #         MinIO 对象存储工具类（Bucket/上传/下载/删除/预签名URL）
+    │           └── domain/                         #         HTTP 工具 DTO
+    │               ├── HttpDto.java                #           HTTP 请求参数封装
+    │               └── HttpVo.java                 #           HTTP 响应结果封装
     │
     ├── blog-pojo/                                  #   📦 数据模型模块（Entity / DTO / VO）
     │   ├── pom.xml                                 #     Maven 子模块 POM（依赖 JPA + Lombok + Jackson）
@@ -273,6 +288,9 @@ Butvan Blog2.0/                                    # 📦 项目根目录
             │   │   ├── config/                     #       服务层配置
             │   │   │   ├── CorsConfig.java         #         CORS 跨域配置（允许前端 dev 端口）
             │   │   │   └── SwaggerConfig.java      #         Swagger/OpenAPI 文档配置
+            │   │   ├── storage/                    #       文件存储实现层（策略模式）
+            │   │   │   ├── LocalFileStorageService.java  #   本地磁盘存储实现
+            │   │   │   └── MinioFileStorageService.java  #   MinIO 对象存储实现
             │   │   ├── controller/                 #       🌐 控制器层（REST API，仅做参数校验与路由）
             │   │   │   ├── SceneController.java    #         场景与热区 CRUD 接口（GET/POST/PUT/DELETE）
             │   │   │   ├── ArticleController.java  #         文章 CRUD + 状态变更 + 搜索接口
@@ -333,14 +351,28 @@ Butvan Blog2.0/                                    # 📦 项目根目录
             │   │   │       ├── SiteConfigServiceImpl.java
             │   │   │       ├── FriendLinkServiceImpl.java
             │   │   │       └── SubscriberServiceImpl.java
+            │   │   ├── weixin/                     #       📱 微信模块
+            │   │   │   ├── common/
+            │   │   │   │   ├── util/
+            │   │   │   │   │   ├── WeiXinBaseService.java
+            │   │   │   │   │   └── WeiXinBaseServiceImpl.java
+            │   │   │   │   └── constant/
+            │   │   │   │       └── WeiXinApiBaseUrl.java
+            │   │   │   └── service/
+            │   │   │       ├── WeiXinAuthLoginService.java
+            │   │   │       └── impl/
+            │   │   │           └── WeiXinAuthLoginServiceImpl.java
             │   │   └── security/                   #       🔒 安全模块
             │   │       ├── JwtAuthFilter.java      #         JWT 认证过滤器（每次请求校验 Token）
             │   │       ├── JwtUtil.java            #         JWT 工具类（签发、解析、校验 Token）
             │   │       └── SecurityConfig.java     #         Spring Security 配置（放行白名单、权限规则）
             │   └── resources/
-            │       ├── application.yml             #         主配置文件（导入 database 与 routes 配置文件）
+            │       ├── application.yml             #         主配置文件（导入全部子配置文件）
             │       ├── application-database.yml    #         数据库、JPA及JWT安全证书配置文件
-            │       └── application-routes.yml      #         前台页面客户端路由映射配置文件
+            │       ├── application-routes.yml      #         前台页面客户端路由映射配置文件
+            │       ├── application-redis.yml       #         Redis 连接配置（Lettuce 连接池）
+            │       ├── application-weixin.yml      #         微信配置（appid / appsecret）
+            │       └── application-storage.yml     #         文件存储配置（local / minio 切换）
             └── test/
                 └── java/com/butvan/blog/service/   #       🧪 单元测试与集成测试
 ```
@@ -421,4 +453,4 @@ Butvan Blog2.0/                                    # 📦 项目根目录
 
 ---
 
-*最后更新：2026-07-02*
+*最后更新：2026-07-03*

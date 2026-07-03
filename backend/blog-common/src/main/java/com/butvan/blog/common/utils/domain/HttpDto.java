@@ -17,4 +17,7 @@ public class HttpDto {
     Map<String,String> headers;
 
     Map<String, Object> params;
+
+    /** POST/PUT 请求体（JSON 字符串），与 params 二选一 */
+    String body;
 }
