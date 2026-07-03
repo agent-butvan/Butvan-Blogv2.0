@@ -78,11 +78,12 @@ Butvan Blog2.0/                                    # 📦 项目根目录
 │   │   │   │   └── not-found.tsx                  #         自定义 404 页面
 │   │   │   ├── components/                        #     🧩 组件层（按业务领域分组）
 │   │   │   │   ├── auth/                          #       认证相关组件
-│   │   │   │   │   ├── LoginModal.tsx             #         登录弹窗（支持邮箱登录 + 微信扫码切换）
-│   │   │   │   │   ── SidebarLoginIcon.tsx       #         侧边栏底部小人图标（未登录显示，已登录显示头像）
+│   │   │   │   │   ── LoginModal.tsx             #         登录弹窗（支持邮箱登录 + 微信扫码切换）
 │   │   │   │   ├── common/                        #       通用原子组件（Button、Card、Modal、Empty 等）
 │   │   │   │   │   ├── HtmlRenderer.tsx           #         通用 HTML 解析与组件拦截器
-│   │   │   │   │   └── MarkdownCodeBlock.tsx      #         通用定制化 macOS 风格代码块组件
+│   │   │   │   │   ├── MarkdownCodeBlock.tsx      #         通用定制化 macOS 风格代码块组件
+│   │   │   │   │   ├── Navbar.tsx                 #         顶部导航栏（动态菜单 + 用户登录状态）
+│   │   │   │   │   ── SidebarWidget.tsx          #         左侧悬浮侧挂栏（动态菜单 + 底部分隔线 + 登录图标）
 │   │   │   │   ├── layout/                        #       布局组件
 │   │   │   │   │   ├── Header.tsx                 #         全局顶栏（Logo、导航、搜索）
 │   │   │   │   │   ├── Footer.tsx                 #         全局底栏（备案号、社交链接）
