@@ -72,7 +72,7 @@ export default function SidebarLoginIcon() {
   return (
     <>
       {/* 小人图标 / 用户头像 */}
-      <div className="fixed left-5 bottom-5 z-40 hidden lg:flex flex-col gap-3.5 select-none">
+      <div className="fixed left-5 bottom-5 z-40 flex flex-col gap-3.5 select-none">
         {user ? (
           <button
             onClick={handleLogout}
