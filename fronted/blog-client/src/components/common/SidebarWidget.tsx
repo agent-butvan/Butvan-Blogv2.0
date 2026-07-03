@@ -108,6 +108,7 @@ export default function SidebarWidget() {
                   isIconOnly
                   variant="ghost"
                   size="sm"
+                  className="w-9 h-9"
                   onPress={handleLogout}
                 >
                   <Avatar size="sm">
@@ -128,6 +129,7 @@ export default function SidebarWidget() {
               isIconOnly
               variant="ghost"
               size="sm"
+              className="w-9 h-9"
               onPress={() => setLoginModalOpen(true)}
             >
               <User size={15} />
@@ -142,7 +144,7 @@ export default function SidebarWidget() {
   return (
     <>
       {/* 左侧菜单栏容器（包含菜单项 + 分隔线 + 登录图标） */}
-      <div className="fixed left-5 top-1/2 -translate-y-1/2 z-40 hidden lg:flex flex-col gap-2 bg-white/70 dark:bg-zinc-950/70 p-2 rounded-full border border-zinc-200/50 dark:border-zinc-800/60 backdrop-blur-md shadow-xs select-none">
+      <div className="fixed left-5 top-1/2 -translate-y-1/2 z-40 hidden lg:flex flex-col gap-3.5 bg-white/70 dark:bg-zinc-950/70 p-2 rounded-full border border-zinc-200/50 dark:border-zinc-800/60 backdrop-blur-md shadow-xs select-none">
         {/* 动态菜单项 */}
         {items.map((item) => {
           const IconComp = getIconComponent(item.icon)
@@ -154,6 +156,7 @@ export default function SidebarWidget() {
                     isIconOnly
                     variant="ghost"
                     size="sm"
+                    className="w-9 h-9"
                   >
                     <IconComp size={15} />
                   </Button>
@@ -168,7 +171,7 @@ export default function SidebarWidget() {
         })}
 
         {/* 分隔线 - 将菜单与登录图标隔开 */}
-        <Separator className="my-0.5" />
+        <Separator className="my-1" />
 
         {/* 登录图标 / 用户头像 */}
         {user ? (
@@ -178,6 +181,7 @@ export default function SidebarWidget() {
                 isIconOnly
                 variant="ghost"
                 size="sm"
+                className="w-9 h-9"
                 onPress={handleLogout}
               >
                 <Avatar size="sm">
@@ -198,6 +202,7 @@ export default function SidebarWidget() {
             isIconOnly
             variant="ghost"
             size="sm"
+            className="w-9 h-9"
             onPress={() => setLoginModalOpen(true)}
           >
             <User size={15} />
