@@ -23,7 +23,6 @@ import {
 import { Button, Spinner, toast } from '@heroui/react'
 import Navbar from '@/components/common/Navbar'
 import SidebarWidget from '@/components/common/SidebarWidget'
-import SidebarLoginIcon from '@/components/auth/SidebarLoginIcon'
 import HtmlRenderer from '@/components/common/HtmlRenderer'
 import CommentSection from '@/components/comment/CommentSection'
 import { MOCK_ARTICLES } from '@/lib/mock-data'
@@ -414,9 +413,6 @@ export default function ArticleDetailPage() {
 
       {/* 左侧悬浮侧挂 */}
       <SidebarWidget />
-
-      {/* 左下角登录图标 */}
-      <SidebarLoginIcon />
 
       {/* 沉浸式阅读进度指示条 */}
       <div 

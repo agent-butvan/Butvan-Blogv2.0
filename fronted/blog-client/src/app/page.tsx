@@ -8,7 +8,6 @@ import HeroSection from '@/components/home/HeroSection'
 import FeaturesSection from '@/components/home/FeaturesSection'
 import Navbar from '@/components/common/Navbar'
 import SidebarWidget from '@/components/common/SidebarWidget'
-import SidebarLoginIcon from '@/components/auth/SidebarLoginIcon'
 import { fetchProfile } from '@/lib/profile'
 import type { ProfileVO } from '@/types/profile'
 import gsap from 'gsap'
@@ -150,9 +149,6 @@ export default function HomePage() {
 
       {/* 左侧悬浮侧挂导航 */}
       <SidebarWidget />
-
-      {/* 左下角登录图标 */}
-      <SidebarLoginIcon />
 
       {/* 隐藏夜店流体动画背景以匹配图片极简灰白风格 */}
       {/* <FluidBackground /> */}
