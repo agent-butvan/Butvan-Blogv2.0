@@ -1,7 +1,8 @@
 'use client'
 
 import React, { useState, useEffect } from 'react'
-import { X, Loader2, RefreshCw } from 'lucide-react'
+import { RefreshCw } from 'lucide-react'
+import { Modal, Button, Spinner } from '@heroui/react'
 
 interface LoginModalProps {
   isOpen: boolean
@@ -12,7 +13,7 @@ type LoginMode = 'email' | 'wechat'
 
 /**
  * 登录弹窗组件
- * - 支持邮箱登录和微信扫码登录两种模式
+ * - 使用 HeroUI Modal 组件，支持邮箱登录和微信扫码登录两种模式
  * - 默认显示邮箱登录，可切换到微信扫码
  */
 export default function LoginModal({ isOpen, onClose }: LoginModalProps) {
@@ -143,130 +144,133 @@ export default function LoginModal({ isOpen, onClose }: LoginModalProps) {
     }
   }
 
-  if (!isOpen) return null
-
   return (
-    <div className="fixed inset-0 bg-zinc-950/60 backdrop-blur-xs flex items-center justify-center z-50 animate-[fadeIn_0.15s_ease-out]">
-      <div className="bg-white dark:bg-zinc-900 border border-zinc-200/60 dark:border-zinc-800/60 rounded-3xl w-full max-w-sm p-6 relative flex flex-col gap-4.5 shadow-xl select-none mx-4">
-        {/* 关闭按钮 */}
-        <button 
-          onClick={onClose}
-          className="absolute top-4.5 right-4.5 p-1 rounded-full hover:bg-zinc-100 dark:hover:bg-zinc-800 text-zinc-400 transition-colors cursor-pointer"
-        >
-          <X size={14} />
-        </button>
-        
-        {/* 标题 */}
-        <div className="flex flex-col items-center text-center mt-2.5">
-          <h3 className="text-sm font-serif font-bold text-zinc-900 dark:text-white mb-1">欢迎回来</h3>
-          <p className="text-[10px] text-zinc-400 dark:text-zinc-500 font-serif italic">登录您的可梵博客账号</p>
-        </div>
-        
-        {/* 登录方式切换 */}
-        <div className="flex gap-2">
-          <button
-            onClick={() => setMode('email')}
-            className={`flex-1 py-2 rounded-xl text-xs font-bold transition-all cursor-pointer ${
-              mode === 'email'
-                ? 'bg-[#727BBA] text-white'
-                : 'bg-zinc-100 dark:bg-zinc-800 text-zinc-500 dark:text-zinc-400 hover:bg-zinc-200 dark:hover:bg-zinc-700'
-            }`}
-          >
-            邮箱登录
-          </button>
-          <button
-            onClick={() => setMode('wechat')}
-            className={`flex-1 py-2 rounded-xl text-xs font-bold transition-all cursor-pointer ${
-              mode === 'wechat'
-                ? 'bg-[#727BBA] text-white'
-                : 'bg-zinc-100 dark:bg-zinc-800 text-zinc-500 dark:text-zinc-400 hover:bg-zinc-200 dark:hover:bg-zinc-700'
-            }`}
-          >
-            微信扫码
-          </button>
-        </div>
+    <Modal.Backdrop 
+      isOpen={isOpen} 
+      onOpenChange={(open) => { if (!open) onClose() }}
+      variant="blur"
+    >
+      <Modal.Container>
+        <Modal.Dialog className="sm:max-w-[360px]">
+          <Modal.CloseTrigger />
+          
+          <Modal.Header className="flex flex-col items-center text-center">
+            <Modal.Heading className="text-base">欢迎回来</Modal.Heading>
+            <p className="text-xs text-default-500 mt-0.5">登录您的可梵博客账号</p>
+          </Modal.Header>
 
-        {/* 邮箱登录表单 */}
-        {mode === 'email' && (
-          <form onSubmit={handleEmailLogin} className="flex flex-col gap-3.5">
-            <div className="flex flex-col gap-1">
-              <label className="text-[9px] font-bold text-zinc-400 dark:text-zinc-500 uppercase tracking-widest pl-1">用户名</label>
-              <input
-                type="text"
-                placeholder="请输入登录用户名"
-                value={usernameInput}
-                onChange={(e) => setUsernameInput(e.target.value)}
-                className="w-full text-xs px-3.5 py-2.25 rounded-xl border border-zinc-200/80 dark:border-zinc-800 bg-zinc-50 dark:bg-zinc-950 text-zinc-900 dark:text-zinc-100 placeholder:text-zinc-400 dark:placeholder:text-zinc-650 focus:outline-none focus:border-[#727BBA] transition-colors"
-              />
+          <Modal.Body>
+            {/* 登录方式切换 */}
+            <div className="flex gap-2">
+              <Button
+                variant={mode === 'email' ? 'primary' : 'ghost'}
+                size="sm"
+                className="flex-1"
+                onPress={() => setMode('email')}
+              >
+                邮箱登录
+              </Button>
+              <Button
+                variant={mode === 'wechat' ? 'primary' : 'ghost'}
+                size="sm"
+                className="flex-1"
+                onPress={() => setMode('wechat')}
+              >
+                微信扫码
+              </Button>
             </div>
 
-            <div className="flex flex-col gap-1">
-              <label className="text-[9px] font-bold text-zinc-400 dark:text-zinc-500 uppercase tracking-widest pl-1">密码</label>
-              <input
-                type="password"
-                placeholder="请输入登录密码"
-                value={passwordInput}
-                onChange={(e) => setPasswordInput(e.target.value)}
-                className="w-full text-xs px-3.5 py-2.25 rounded-xl border border-zinc-200/80 dark:border-zinc-800 bg-zinc-50 dark:bg-zinc-950 text-zinc-900 dark:text-zinc-100 placeholder:text-zinc-400 dark:placeholder:text-zinc-650 focus:outline-none focus:border-[#727BBA] transition-colors"
-              />
-            </div>
+            {/* 邮箱登录表单 */}
+            {mode === 'email' && (
+              <form onSubmit={handleEmailLogin} className="flex flex-col gap-3">
+                <div className="flex flex-col gap-1">
+                  <label className="text-xs font-medium text-default-600 pl-1">用户名</label>
+                  <input
+                    type="text"
+                    placeholder="请输入登录用户名"
+                    value={usernameInput}
+                    onChange={(e) => setUsernameInput(e.target.value)}
+                    className="w-full text-sm px-3 py-2 rounded-xl border border-default-200 bg-default-50 text-foreground placeholder:text-default-400 focus:outline-none focus:border-primary transition-colors"
+                  />
+                </div>
 
-            {loginError && (
-              <p className="text-[10px] text-rose-500 text-center font-semibold animate-pulse">{loginError}</p>
+                <div className="flex flex-col gap-1">
+                  <label className="text-xs font-medium text-default-600 pl-1">密码</label>
+                  <input
+                    type="password"
+                    placeholder="请输入登录密码"
+                    value={passwordInput}
+                    onChange={(e) => setPasswordInput(e.target.value)}
+                    className="w-full text-sm px-3 py-2 rounded-xl border border-default-200 bg-default-50 text-foreground placeholder:text-default-400 focus:outline-none focus:border-primary transition-colors"
+                  />
+                </div>
+
+                {loginError && (
+                  <p className="text-xs text-danger text-center font-medium">{loginError}</p>
+                )}
+
+                <Button
+                  type="submit"
+                  isPending={submitting}
+                  className="w-full"
+                >
+                  {submitting ? '安全登录中...' : '提交登录'}
+                </Button>
+              </form>
             )}
 
-            <button
-              type="submit"
-              disabled={submitting}
-              className="w-full py-2.25 bg-[#727BBA] hover:bg-[#5f68a3] text-white rounded-xl text-xs font-bold transition-colors cursor-pointer select-none mt-1 flex items-center justify-center gap-1.5 disabled:opacity-50"
-            >
-              {submitting && <Loader2 className="w-3.5 h-3.5 animate-spin" />}
-              <span>{submitting ? '安全登录中...' : '提交登录'}</span>
-            </button>
-          </form>
-        )}
+            {/* 微信扫码登录 */}
+            {mode === 'wechat' && (
+              <div className="flex flex-col items-center gap-4">
+                {qrLoading ? (
+                  <div className="w-48 h-48 bg-default-100 rounded-xl flex items-center justify-center">
+                    <Spinner size="lg" />
+                  </div>
+                ) : qrError ? (
+                  <div className="w-48 h-48 bg-default-100 rounded-xl flex flex-col items-center justify-center gap-2">
+                    <p className="text-xs text-danger text-center px-2">{qrError}</p>
+                    <Button
+                      size="sm"
+                      variant="ghost"
+                      onPress={refreshQRCode}
+                    >
+                      <RefreshCw size={12} />
+                      <span>重试</span>
+                    </Button>
+                  </div>
+                ) : qrCodeUrl ? (
+                  <div className="relative">
+                    <img 
+                      src={qrCodeUrl} 
+                      alt="微信登录二维码" 
+                      className="w-48 h-48 rounded-xl object-contain border border-default-200"
+                    />
+                    <Button
+                      isIconOnly
+                      size="sm"
+                      variant="ghost"
+                      className="absolute -top-2 -right-2"
+                      onPress={refreshQRCode}
+                    >
+                      <RefreshCw size={12} />
+                    </Button>
+                  </div>
+                ) : null}
+                
+                <p className="text-xs text-default-500 text-center">
+                  请使用微信扫一扫登录
+                </p>
+              </div>
+            )}
+          </Modal.Body>
 
-        {/* 微信扫码登录 */}
-        {mode === 'wechat' && (
-          <div className="flex flex-col items-center gap-4">
-            {qrLoading ? (
-              <div className="w-48 h-48 bg-zinc-100 dark:bg-zinc-800 rounded-xl flex items-center justify-center">
-                <Loader2 className="w-8 h-8 animate-spin text-zinc-400" />
-              </div>
-            ) : qrError ? (
-              <div className="w-48 h-48 bg-zinc-100 dark:bg-zinc-800 rounded-xl flex flex-col items-center justify-center gap-2">
-                <p className="text-xs text-rose-500 text-center">{qrError}</p>
-                <button
-                  onClick={refreshQRCode}
-                  className="flex items-center gap-1 px-3 py-1.5 rounded-lg bg-zinc-200 dark:bg-zinc-700 hover:bg-zinc-300 dark:hover:bg-zinc-600 text-xs font-bold transition-colors cursor-pointer"
-                >
-                  <RefreshCw size={12} />
-                  <span>重试</span>
-                </button>
-              </div>
-            ) : qrCodeUrl ? (
-              <div className="relative">
-                <img 
-                  src={qrCodeUrl} 
-                  alt="微信登录二维码" 
-                  className="w-48 h-48 rounded-xl object-contain border border-zinc-200 dark:border-zinc-700"
-                />
-                <button
-                  onClick={refreshQRCode}
-                  className="absolute -top-2 -right-2 p-1.5 rounded-full bg-white dark:bg-zinc-800 border border-zinc-200 dark:border-zinc-700 shadow-sm hover:bg-zinc-100 dark:hover:bg-zinc-700 transition-colors cursor-pointer"
-                  title="刷新二维码"
-                >
-                  <RefreshCw size={12} className="text-zinc-600 dark:text-zinc-300" />
-                </button>
-              </div>
-            ) : null}
-            
-            <p className="text-[10px] text-zinc-400 dark:text-zinc-500 text-center">
-              请使用微信扫一扫登录
-            </p>
-          </div>
-        )}
-      </div>
-    </div>
+          <Modal.Footer>
+            <Button variant="ghost" slot="close" className="w-full">
+              取消
+            </Button>
+          </Modal.Footer>
+        </Modal.Dialog>
+      </Modal.Container>
+    </Modal.Backdrop>
   )
 }
