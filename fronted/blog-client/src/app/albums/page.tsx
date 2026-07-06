@@ -12,6 +12,51 @@ import { resolveImageUrl } from '@/lib/image-url'
 import type { ProfileVO } from '@/types/profile'
 import type { PhotoWallItem } from '@/types/album'
 
+// ==================== 演示数据（测试滚动交互用） ====================
+const DEMO_PHOTOS: PhotoWallItem[] = [
+  // 7月6日
+  { id: 101, fileUrl: 'https://images.unsplash.com/photo-1506744038136-46273834b3fb?w=800', width: 800, height: 450, caption: '山间晨雾', albumTitle: '自然风光', albumSlug: 'nature', createdAt: '2026-07-06T08:00:00' },
+  { id: 102, fileUrl: 'https://images.unsplash.com/photo-1511497584788-876760111969?w=800', width: 800, height: 533, caption: '林间光影', albumTitle: '自然风光', albumSlug: 'nature', createdAt: '2026-07-06T09:00:00' },
+  { id: 103, fileUrl: 'https://images.unsplash.com/photo-1441974231531-c6227db76b6e?w=800', width: 800, height: 533, caption: '绿野仙踪', albumTitle: '自然风光', albumSlug: 'nature', createdAt: '2026-07-06T10:00:00' },
+  // 7月5日
+  { id: 104, fileUrl: 'https://images.unsplash.com/photo-1503899036084-c55cdd92da26?w=800', width: 800, height: 533, caption: '城市夜幕', albumTitle: '城市掠影', albumSlug: 'city', createdAt: '2026-07-05T20:00:00' },
+  { id: 105, fileUrl: 'https://images.unsplash.com/photo-1534067783941-51c9c23ecefd?w=800', width: 800, height: 534, caption: '霓虹街头', albumTitle: '城市掠影', albumSlug: 'city', createdAt: '2026-07-05T21:00:00' },
+  { id: 106, fileUrl: 'https://images.unsplash.com/photo-1540959733332-eab4deabeeaf?w=800', width: 800, height: 533, caption: '地铁光影', albumTitle: '城市掠影', albumSlug: 'city', createdAt: '2026-07-05T22:00:00' },
+  { id: 107, fileUrl: 'https://images.unsplash.com/photo-1493976040374-85c8e12f0c0e?w=800', width: 800, height: 533, caption: '雨后街道', albumTitle: '城市掠影', albumSlug: 'city', createdAt: '2026-07-05T23:00:00' },
+  // 7月3日
+  { id: 108, fileUrl: 'https://images.unsplash.com/photo-1501785888041-af3ef285b470?w=800', width: 800, height: 450, caption: '远山呼唤', albumTitle: '旅行记忆', albumSlug: 'travel', createdAt: '2026-07-03T14:00:00' },
+  { id: 109, fileUrl: 'https://images.unsplash.com/photo-1470071459604-3b5ec3a7fe05?w=800', width: 800, height: 533, caption: '湖心小筑', albumTitle: '旅行记忆', albumSlug: 'travel', createdAt: '2026-07-03T15:00:00' },
+  { id: 110, fileUrl: 'https://images.unsplash.com/photo-1464822759023-fed622ff2c3b?w=800', width: 800, height: 600, caption: '山巅之上', albumTitle: '旅行记忆', albumSlug: 'travel', createdAt: '2026-07-03T16:00:00' },
+  // 6月30日
+  { id: 111, fileUrl: 'https://images.unsplash.com/photo-1507525428034-b723cf961d3e?w=800', width: 800, height: 534, caption: '金色海岸', albumTitle: '夏日海滩', albumSlug: 'beach', createdAt: '2026-06-30T10:00:00' },
+  { id: 112, fileUrl: 'https://images.unsplash.com/photo-1519046904884-53103b34b206?w=800', width: 800, height: 533, caption: '浪花轻拍', albumTitle: '夏日海滩', albumSlug: 'beach', createdAt: '2026-06-30T11:00:00' },
+  { id: 113, fileUrl: 'https://images.unsplash.com/photo-1505118380757-91f5f5632de0?w=800', width: 800, height: 533, caption: '日落海滩', albumTitle: '夏日海滩', albumSlug: 'beach', createdAt: '2026-06-30T18:00:00' },
+  { id: 114, fileUrl: 'https://images.unsplash.com/photo-1473116763249-2faaef81ccda?w=800', width: 800, height: 1200, caption: '沙滩脚印', albumTitle: '夏日海滩', albumSlug: 'beach', createdAt: '2026-06-30T19:00:00' },
+  // 6月25日
+  { id: 115, fileUrl: 'https://images.unsplash.com/photo-1469474968028-56623f02e42e?w=800', width: 800, height: 534, caption: '翠谷漫步', albumTitle: '自然风光', albumSlug: 'nature', createdAt: '2026-06-25T09:00:00' },
+  { id: 116, fileUrl: 'https://images.unsplash.com/photo-1433086966358-54859d0ed716?w=800', width: 800, height: 400, caption: '瀑布飞泻', albumTitle: '自然风光', albumSlug: 'nature', createdAt: '2026-06-25T10:00:00' },
+  { id: 117, fileUrl: 'https://images.unsplash.com/photo-1446329813274-7c9036bd9a1f?w=800', width: 800, height: 533, caption: '森林浴', albumTitle: '自然风光', albumSlug: 'nature', createdAt: '2026-06-25T11:00:00' },
+  // 6月20日
+  { id: 118, fileUrl: 'https://images.unsplash.com/photo-1454496522488-7a8e488e8606?w=800', width: 800, height: 600, caption: '雪山晨曦', albumTitle: '旅行记忆', albumSlug: 'travel', createdAt: '2026-06-20T06:00:00' },
+  { id: 119, fileUrl: 'https://images.unsplash.com/photo-1464822759023-fed622ff2c3b?w=800', width: 800, height: 600, caption: '登顶之乐', albumTitle: '旅行记忆', albumSlug: 'travel', createdAt: '2026-06-20T08:00:00' },
+  // 6月15日
+  { id: 120, fileUrl: 'https://images.unsplash.com/photo-1482192505345-5655af888cc4?w=800', width: 800, height: 533, caption: '日式庭院', albumTitle: '城市掠影', albumSlug: 'city', createdAt: '2026-06-15T13:00:00' },
+  { id: 121, fileUrl: 'https://images.unsplash.com/photo-1449824913935-59a10b8d2000?w=800', width: 800, height: 400, caption: '老街一角', albumTitle: '城市掠影', albumSlug: 'city', createdAt: '2026-06-15T14:00:00' },
+  { id: 122, fileUrl: 'https://images.unsplash.com/photo-1477959858617-67f85cf4f1df?w=800', width: 800, height: 534, caption: '城市天际线', albumTitle: '城市掠影', albumSlug: 'city', createdAt: '2026-06-15T17:00:00' },
+  { id: 123, fileUrl: 'https://images.unsplash.com/photo-1480714378408-67cf0d13bc1b?w=800', width: 800, height: 533, caption: '暮色都市', albumTitle: '城市掠影', albumSlug: 'city', createdAt: '2026-06-15T19:00:00' },
+  // 6月10日
+  { id: 124, fileUrl: 'https://images.unsplash.com/photo-1445264918150-66a2371142a2?w=800', width: 800, height: 533, caption: '秋日私语', albumTitle: '自然风光', albumSlug: 'nature', createdAt: '2026-06-10T08:00:00' },
+  { id: 125, fileUrl: 'https://images.unsplash.com/photo-1442850473887-0fb77cd0b337?w=800', width: 800, height: 500, caption: '金色大道', albumTitle: '自然风光', albumSlug: 'nature', createdAt: '2026-06-10T09:00:00' },
+  { id: 126, fileUrl: 'https://images.unsplash.com/photo-1472396961693-142e6e269027?w=800', width: 800, height: 533, caption: '鹿鸣山林', albumTitle: '自然风光', albumSlug: 'nature', createdAt: '2026-06-10T10:00:00' },
+  // 6月5日
+  { id: 127, fileUrl: 'https://images.unsplash.com/photo-1465146344425-f00d5f5c8f07?w=800', width: 800, height: 534, caption: '春暖花开', albumTitle: '自然风光', albumSlug: 'nature', createdAt: '2026-06-05T07:00:00' },
+  { id: 128, fileUrl: 'https://images.unsplash.com/photo-1444021465936-c6ca81bf39ce?w=800', width: 800, height: 533, caption: '花海徜徉', albumTitle: '自然风光', albumSlug: 'nature', createdAt: '2026-06-05T08:00:00' },
+  // 6月1日
+  { id: 129, fileUrl: 'https://images.unsplash.com/photo-1414235077428-338989a2e8c0?w=800', width: 800, height: 533, caption: '烛光晚餐', albumTitle: '生活碎片', albumSlug: 'life', createdAt: '2026-06-01T19:00:00' },
+  { id: 130, fileUrl: 'https://images.unsplash.com/photo-1416339306562-f3d12fefd36f?w=800', width: 800, height: 533, caption: '咖啡时光', albumTitle: '生活碎片', albumSlug: 'life', createdAt: '2026-06-01T15:00:00' },
+  { id: 131, fileUrl: 'https://images.unsplash.com/photo-1491553895911-0055eca6402d?w=800', width: 800, height: 533, caption: '运动时刻', albumTitle: '生活碎片', albumSlug: 'life', createdAt: '2026-06-01T07:00:00' },
+]
+
 // ==================== 设计稿还原：「视界。回响」沉浸式艺术空间 ====================
 //
 // 核心交互机制（纵滚横移）：
@@ -64,9 +109,11 @@ export default function AlbumsPage() {
         fetchPublicPhotos(1, 50), // 一次性加载足够多
       ])
       setProfile(profileData)
-      const photos = photoData.records || []
+      const photos = (photoData.records && photoData.records.length > 0)
+        ? photoData.records
+        : DEMO_PHOTOS
       setAllPhotos(photos)
-      setTotal(photoData.total || 0)
+      setTotal(photoData.total || photos.length)
 
       // 按天分组，生成簇
       const groups = groupByDay(photos)
@@ -89,6 +136,26 @@ export default function AlbumsPage() {
       })))
     } catch (err) {
       handleError(err, { silent: true, fallbackMessage: '加载照片失败' })
+      // API 失败时使用演示数据
+      const photos = DEMO_PHOTOS
+      setAllPhotos(photos)
+      setTotal(photos.length)
+      const groups = groupByDay(photos)
+      setClusters(groups)
+      setLightboxPhotos(photos.map(p => ({
+        id: p.id,
+        mediaId: 0,
+        fileName: p.caption || '照片',
+        fileUrl: p.fileUrl,
+        mimeType: 'image/jpeg',
+        fileSize: 0,
+        width: p.width,
+        height: p.height,
+        altText: p.caption,
+        caption: p.caption,
+        sortOrder: 0,
+        createdAt: p.createdAt,
+      })))
     } finally {
       setLoading(false)
     }
