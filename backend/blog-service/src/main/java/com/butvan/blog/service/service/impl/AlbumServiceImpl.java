@@ -137,7 +137,12 @@ public class AlbumServiceImpl implements AlbumService {
                 .map(this::toAlbumVO)
                 .collect(Collectors.toList());
 
-        return PageResult.of(pageData.getTotalElements(), page, size, records);
+        return PageResult.builder()
+                        .total(pageData.getTotalElements())
+                        .page(page)
+                        .size(size)
+                        .records(records)
+                        .build();
     }
 
     @Override
