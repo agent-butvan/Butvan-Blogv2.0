@@ -7,7 +7,6 @@ import SidebarWidget from '@/components/common/SidebarWidget'
 import PhotoLightbox from '@/components/album/PhotoLightbox'
 import { fetchPublicPhotos } from '@/lib/album-api'
 import { fetchProfile } from '@/lib/profile'
-import { handleError } from '@/lib/error-handler'
 import { resolveImageUrl } from '@/lib/image-url'
 import type { ProfileVO } from '@/types/profile'
 import type { PhotoWallItem } from '@/types/album'
@@ -103,62 +102,47 @@ export default function AlbumsPage() {
   /** 加载全部照片并按天分组 */
   const loadData = async () => {
     setLoading(true)
+
+    // 演示数据：直接使用，保证页面始终可展示
+    let photos: PhotoWallItem[] = DEMO_PHOTOS
+
     try {
       const [profileData, photoData] = await Promise.all([
         fetchProfile('butvan'),
-        fetchPublicPhotos(1, 50), // 一次性加载足够多
+        fetchPublicPhotos(1, 50).catch(() => null),
       ])
       setProfile(profileData)
-      const photos = (photoData.records && photoData.records.length > 0)
-        ? photoData.records
-        : DEMO_PHOTOS
-      setAllPhotos(photos)
-      setTotal(photoData.total || photos.length)
 
-      // 按天分组，生成簇
-      const groups = groupByDay(photos)
-      setClusters(groups)
-
-      // 为灯箱准备数据
-      setLightboxPhotos(photos.map(p => ({
-        id: p.id,
-        mediaId: 0,
-        fileName: p.caption || '照片',
-        fileUrl: p.fileUrl,
-        mimeType: 'image/jpeg',
-        fileSize: 0,
-        width: p.width,
-        height: p.height,
-        altText: p.caption,
-        caption: p.caption,
-        sortOrder: 0,
-        createdAt: p.createdAt,
-      })))
+      // 如果后端有真实数据则使用真实数据
+      if (photoData?.records?.length) {
+        photos = photoData.records
+      }
     } catch (err) {
-      handleError(err, { silent: true, fallbackMessage: '加载照片失败' })
-      // API 失败时使用演示数据
-      const photos = DEMO_PHOTOS
-      setAllPhotos(photos)
-      setTotal(photos.length)
-      const groups = groupByDay(photos)
-      setClusters(groups)
-      setLightboxPhotos(photos.map(p => ({
-        id: p.id,
-        mediaId: 0,
-        fileName: p.caption || '照片',
-        fileUrl: p.fileUrl,
-        mimeType: 'image/jpeg',
-        fileSize: 0,
-        width: p.width,
-        height: p.height,
-        altText: p.caption,
-        caption: p.caption,
-        sortOrder: 0,
-        createdAt: p.createdAt,
-      })))
-    } finally {
-      setLoading(false)
+      // 即使 API 全部失败也不影响演示数据展示
+      console.warn('API 数据加载失败，使用演示数据:', err)
     }
+
+    setAllPhotos(photos)
+    setTotal(photos.length)
+    const groups = groupByDay(photos)
+    setClusters(groups)
+
+    setLightboxPhotos(photos.map(p => ({
+      id: p.id,
+      mediaId: 0,
+      fileName: p.caption || '照片',
+      fileUrl: p.fileUrl,
+      mimeType: 'image/jpeg',
+      fileSize: 0,
+      width: p.width,
+      height: p.height,
+      altText: p.caption,
+      caption: p.caption,
+      sortOrder: 0,
+      createdAt: p.createdAt,
+    })))
+
+    setLoading(false)
   }
 
   useEffect(() => { loadData() }, [])
