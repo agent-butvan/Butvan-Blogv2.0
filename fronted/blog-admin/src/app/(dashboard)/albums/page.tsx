@@ -1,11 +1,11 @@
 "use client";
 
-import { useEffect, useState, useRef } from "react";
+import { useEffect, useState } from "react";
 import {
   Plus, Pencil, Trash2, Image as ImageIcon,
-  Loader2, X, Check, Upload, Search, Grid3X3
+  Loader2, Check, Upload, Grid3X3
 } from "lucide-react";
-import { cn, Button, SearchField } from "@heroui/react";
+import { cn, Button, SearchField, Input, TextArea, Select, Label, ListBox, Modal } from "@heroui/react";
 import {
   fetchAlbumList, fetchAlbumDetail, createAlbum, updateAlbum, deleteAlbum,
   addPhotoToAlbum, removePhotoFromAlbum,
@@ -15,7 +15,6 @@ import { fetchMediaList, type MediaItem } from "@/lib/media-api";
 import { toast } from "@/lib/toast";
 import { resolveAssetUrl } from "@/lib/image-url";
 import ConfirmModal from "@/components/common/ConfirmModal";
-import Portal from "@/components/common/Portal";
 
 /**
  * 相册管理页面
@@ -420,157 +419,156 @@ export default function AlbumsPage() {
       </div>
 
       {/* ==== 创建/编辑相册弹窗 ==== */}
-      {showFormModal && (
-        <Portal>
-          <div className="fixed inset-0 z-50 flex items-center justify-center">
-            <div className="absolute inset-0 bg-black/45 backdrop-blur-xs" onClick={() => setShowFormModal(false)} />
-            <div className="relative z-10 w-full max-w-md mx-4 bg-white dark:bg-zinc-900 border border-zinc-200 dark:border-zinc-800 rounded-2xl shadow-xl overflow-hidden">
-              <div className="p-6 flex flex-col gap-4">
-                <div className="flex items-center justify-between">
-                  <h3 className="font-heading text-sm font-bold text-zinc-900 dark:text-zinc-150">
-                    {editingAlbum ? "编辑相册" : "新建相册"}
-                  </h3>
-                  <Button isIconOnly size="sm" variant="ghost" onPress={() => setShowFormModal(false)}
-                    className="p-1 rounded-md text-zinc-400 min-w-0 h-auto w-auto">
-                    <X size={15} />
-                  </Button>
-                </div>
-
-                {/* 标题 */}
-                <div className="flex flex-col gap-1.5">
-                  <label className="text-[10px] font-bold text-zinc-400 uppercase tracking-wide">相册标题</label>
-                  <input
-                    type="text" value={formTitle}
-                    onChange={(e) => setFormTitle(e.target.value)}
-                    placeholder="例如：2024 日本之旅"
-                    className="w-full px-3 py-2 rounded-lg border border-zinc-200 dark:border-zinc-800 bg-white dark:bg-zinc-950 text-xs text-zinc-800 dark:text-zinc-200 outline-none focus:border-primary/40 transition-colors"
-                  />
-                </div>
-
-                {/* Slug */}
-                <div className="flex flex-col gap-1.5">
-                  <label className="text-[10px] font-bold text-zinc-400 uppercase tracking-wide">URL 标识（可选）</label>
-                  <input
-                    type="text" value={formSlug}
-                    onChange={(e) => setFormSlug(e.target.value)}
-                    placeholder="留空则自动生成"
-                    className="w-full px-3 py-2 rounded-lg border border-zinc-200 dark:border-zinc-800 bg-white dark:bg-zinc-950 text-xs text-zinc-800 dark:text-zinc-200 outline-none focus:border-primary/40 transition-colors font-mono"
-                  />
-                </div>
-
-                {/* 描述 */}
-                <div className="flex flex-col gap-1.5">
-                  <label className="text-[10px] font-bold text-zinc-400 uppercase tracking-wide">描述（可选）</label>
-                  <textarea
-                    value={formDesc} onChange={(e) => setFormDesc(e.target.value)}
-                    rows={2} placeholder="相册简介..."
-                    className="w-full px-3 py-2 rounded-lg border border-zinc-200 dark:border-zinc-800 bg-white dark:bg-zinc-950 text-xs text-zinc-800 dark:text-zinc-200 outline-none focus:border-primary/40 transition-colors resize-none"
-                  />
-                </div>
-
-                {/* 状态 */}
-                <div className="flex flex-col gap-1.5">
-                  <label className="text-[10px] font-bold text-zinc-400 uppercase tracking-wide">状态</label>
-                  <select
-                    value={formStatus}
-                    onChange={(e) => setFormStatus(e.target.value)}
-                    className="w-full px-3 py-2 rounded-lg border border-zinc-200 dark:border-zinc-800 bg-white dark:bg-zinc-950 text-xs text-zinc-800 dark:text-zinc-200 outline-none focus:border-primary/40 transition-colors cursor-pointer"
-                  >
-                    <option value="DRAFT">草稿</option>
-                    <option value="PUBLISHED">已发布</option>
-                  </select>
-                </div>
+      <Modal.Backdrop isOpen={showFormModal} onOpenChange={setShowFormModal}>
+        <Modal.Container>
+          <Modal.Dialog className="sm:max-w-md">
+            <Modal.CloseTrigger />
+            <Modal.Header>
+              <Modal.Heading className="text-sm font-bold text-zinc-900 dark:text-zinc-150">
+                {editingAlbum ? "编辑相册" : "新建相册"}
+              </Modal.Heading>
+            </Modal.Header>
+            <Modal.Body className="flex flex-col gap-4">
+              {/* 标题 */}
+              <div className="flex flex-col gap-1.5">
+                <label className="text-[10px] font-bold text-zinc-400 uppercase tracking-wide">相册标题</label>
+                <Input
+                  value={formTitle}
+                  onChange={(e) => setFormTitle(e.target.value)}
+                  placeholder="例如：2024 日本之旅"
+                  className="w-full"
+                />
               </div>
 
-              <div className="px-6 py-3 bg-zinc-50/80 dark:bg-zinc-900/30 border-t border-zinc-150 dark:border-zinc-900 flex justify-end gap-2">
-                <Button size="sm" variant="ghost" onPress={() => setShowFormModal(false)}
-                  className="h-9 px-4 rounded-lg text-xs font-bold">
-                  取消
-                </Button>
-                <Button size="sm" onPress={submitForm} isDisabled={formSubmitting || !formTitle.trim()}
-                  className="h-9 px-5 rounded-lg bg-primary text-white text-xs font-bold disabled:opacity-50">
-                  {formSubmitting ? <Loader2 size={12} className="animate-spin" /> : (editingAlbum ? "保存" : "创建")}
-                </Button>
+              {/* Slug */}
+              <div className="flex flex-col gap-1.5">
+                <label className="text-[10px] font-bold text-zinc-400 uppercase tracking-wide">URL 标识（可选）</label>
+                <Input
+                  value={formSlug}
+                  onChange={(e) => setFormSlug(e.target.value)}
+                  placeholder="留空则自动生成"
+                  className="w-full font-mono"
+                />
               </div>
-            </div>
-          </div>
-        </Portal>
-      )}
+
+              {/* 描述 */}
+              <div className="flex flex-col gap-1.5">
+                <label className="text-[10px] font-bold text-zinc-400 uppercase tracking-wide">描述（可选）</label>
+                <TextArea
+                  value={formDesc}
+                  onChange={(e) => setFormDesc(e.target.value)}
+                  rows={2}
+                  placeholder="相册简介..."
+                  className="w-full"
+                />
+              </div>
+
+              {/* 状态 */}
+              <div className="flex flex-col gap-1.5">
+                <Label className="text-[10px] font-bold text-zinc-400 uppercase tracking-wide">状态</Label>
+                <Select
+                  selectedKey={formStatus}
+                  onSelectionChange={(key) => setFormStatus(key as string)}
+                  className="w-full"
+                  placeholder="选择状态"
+                >
+                  <Select.Trigger>
+                    <Select.Value />
+                    <Select.Indicator />
+                  </Select.Trigger>
+                  <Select.Popover>
+                    <ListBox>
+                      <ListBox.Item id="DRAFT" textValue="草稿">
+                        草稿
+                        <ListBox.ItemIndicator />
+                      </ListBox.Item>
+                      <ListBox.Item id="PUBLISHED" textValue="已发布">
+                        已发布
+                        <ListBox.ItemIndicator />
+                      </ListBox.Item>
+                    </ListBox>
+                  </Select.Popover>
+                </Select>
+              </div>
+            </Modal.Body>
+            <Modal.Footer>
+              <Button size="sm" variant="ghost" slot="close"
+                className="h-9 px-4 rounded-lg text-xs font-bold">
+                取消
+              </Button>
+              <Button size="sm" onPress={submitForm} isDisabled={formSubmitting || !formTitle.trim()}
+                className="h-9 px-5 rounded-lg bg-primary text-white text-xs font-bold disabled:opacity-50">
+                {formSubmitting ? <Loader2 size={12} className="animate-spin" /> : (editingAlbum ? "保存" : "创建")}
+              </Button>
+            </Modal.Footer>
+          </Modal.Dialog>
+        </Modal.Container>
+      </Modal.Backdrop>
 
       {/* ==== 媒体选择器弹窗 ==== */}
-      {showMediaPicker && (
-        <Portal>
-          <div className="fixed inset-0 z-50 flex items-center justify-center">
-            <div className="absolute inset-0 bg-black/45 backdrop-blur-xs" onClick={() => setShowMediaPicker(false)} />
-            <div className="relative z-10 w-full max-w-2xl mx-4 bg-white dark:bg-zinc-900 border border-zinc-200 dark:border-zinc-800 rounded-2xl shadow-xl overflow-hidden max-h-[80vh] flex flex-col">
-              <div className="p-4 border-b border-zinc-100 dark:border-zinc-900/60 flex items-center justify-between shrink-0">
-                <h3 className="font-heading text-sm font-bold text-zinc-900 dark:text-zinc-150">
-                  从媒体库选择图片
-                </h3>
-                <Button isIconOnly size="sm" variant="ghost" onPress={() => setShowMediaPicker(false)}
-                  className="p-1 rounded-md text-zinc-400 min-w-0 h-auto w-auto">
-                  <X size={15} />
-                </Button>
-              </div>
-
-              {/* 媒体网格 */}
-              <div className="flex-1 overflow-y-auto p-4">
-                {mediaLoading ? (
-                  <div className="flex items-center justify-center py-16">
-                    <Loader2 size={20} className="animate-spin text-zinc-350" />
-                  </div>
-                ) : (
-                  <div className="grid grid-cols-3 md:grid-cols-4 gap-3">
-                    {mediaList.map((media) => (
-                      <div
-                        key={media.id}
-                        onClick={() => setSelectedMediaId(media.id)}
-                        className={cn(
-                          "relative aspect-square rounded-xl overflow-hidden border-2 cursor-pointer transition-all",
-                          selectedMediaId === media.id
-                            ? "border-primary shadow-md ring-2 ring-primary/20"
-                            : "border-zinc-200 dark:border-zinc-700 hover:border-zinc-350"
-                        )}
-                      >
-                        <img
-                          src={resolveAssetUrl(media.fileUrl)}
-                          alt={media.fileName}
-                          className="w-full h-full object-cover"
-                        />
-                        {selectedMediaId === media.id && (
-                          <div className="absolute top-2 right-2 w-5 h-5 bg-primary rounded-full flex items-center justify-center">
-                            <Check size={11} className="text-white" />
-                          </div>
-                        )}
-                      </div>
-                    ))}
-                  </div>
-                )}
-              </div>
-
-              {/* 底部分页 + 确认按钮 */}
-              <div className="px-4 py-3 border-t border-zinc-100 dark:border-zinc-900/60 flex items-center justify-between shrink-0 bg-zinc-50/70 dark:bg-zinc-900/40">
-                <div className="flex items-center gap-2">
-                  <Button size="sm" variant="ghost" isDisabled={mediaPage <= 1}
-                    onPress={() => loadMediaList(mediaPage - 1)}
-                    className="text-xs h-7 min-w-0 px-2">上一页</Button>
-                  <span className="text-[10px] text-zinc-400">{mediaPage}/{Math.ceil(mediaTotal / 12) || 1}</span>
-                  <Button size="sm" variant="ghost" isDisabled={mediaPage >= Math.ceil(mediaTotal / 12)}
-                    onPress={() => loadMediaList(mediaPage + 1)}
-                    className="text-xs h-7 min-w-0 px-2">下一页</Button>
+      <Modal.Backdrop isOpen={showMediaPicker} onOpenChange={setShowMediaPicker}>
+        <Modal.Container>
+          <Modal.Dialog className="sm:max-w-2xl">
+            <Modal.CloseTrigger />
+            <Modal.Header>
+              <Modal.Heading className="text-sm font-bold text-zinc-900 dark:text-zinc-150">
+                从媒体库选择图片
+              </Modal.Heading>
+            </Modal.Header>
+            <Modal.Body className="max-h-[60vh] overflow-y-auto p-4">
+              {mediaLoading ? (
+                <div className="flex items-center justify-center py-16">
+                  <Loader2 size={20} className="animate-spin text-zinc-350" />
                 </div>
-                <Button
-                  size="sm" onPress={confirmAddPhoto}
-                  isDisabled={!selectedMediaId || addingPhoto}
-                  className="h-8 px-4 rounded-lg bg-primary text-white text-xs font-bold disabled:opacity-50"
-                >
-                  {addingPhoto ? <Loader2 size={12} className="animate-spin" /> : "添加到相册"}
-                </Button>
+              ) : (
+                <div className="grid grid-cols-3 md:grid-cols-4 gap-3">
+                  {mediaList.map((media) => (
+                    <div
+                      key={media.id}
+                      onClick={() => setSelectedMediaId(media.id)}
+                      className={cn(
+                        "relative aspect-square rounded-xl overflow-hidden border-2 cursor-pointer transition-all",
+                        selectedMediaId === media.id
+                          ? "border-primary shadow-md ring-2 ring-primary/20"
+                          : "border-zinc-200 dark:border-zinc-700 hover:border-zinc-350"
+                      )}
+                    >
+                      <img
+                        src={resolveAssetUrl(media.fileUrl)}
+                        alt={media.fileName}
+                        className="w-full h-full object-cover"
+                      />
+                      {selectedMediaId === media.id && (
+                        <div className="absolute top-2 right-2 w-5 h-5 bg-primary rounded-full flex items-center justify-center">
+                          <Check size={11} className="text-white" />
+                        </div>
+                      )}
+                    </div>
+                  ))}
+                </div>
+              )}
+            </Modal.Body>
+            <Modal.Footer className="flex items-center justify-between">
+              <div className="flex items-center gap-2">
+                <Button size="sm" variant="ghost" isDisabled={mediaPage <= 1}
+                  onPress={() => loadMediaList(mediaPage - 1)}
+                  className="text-xs h-7 min-w-0 px-2">上一页</Button>
+                <span className="text-[10px] text-zinc-400">{mediaPage}/{Math.ceil(mediaTotal / 12) || 1}</span>
+                <Button size="sm" variant="ghost" isDisabled={mediaPage >= Math.ceil(mediaTotal / 12)}
+                  onPress={() => loadMediaList(mediaPage + 1)}
+                  className="text-xs h-7 min-w-0 px-2">下一页</Button>
               </div>
-            </div>
-          </div>
-        </Portal>
-      )}
+              <Button
+                size="sm" onPress={confirmAddPhoto}
+                isDisabled={!selectedMediaId || addingPhoto}
+                className="h-8 px-4 rounded-lg bg-primary text-white text-xs font-bold disabled:opacity-50"
+              >
+                {addingPhoto ? <Loader2 size={12} className="animate-spin" /> : "添加到相册"}
+              </Button>
+            </Modal.Footer>
+          </Modal.Dialog>
+        </Modal.Container>
+      </Modal.Backdrop>
 
       {/* ==== 删除相册确认 ==== */}
       <ConfirmModal
@@ -628,21 +626,23 @@ function PhotoCard({
 
         <div className="flex items-center justify-end gap-1">
           {!isCover && (
-            <button
-              onClick={(e) => { e.stopPropagation(); onSetCover(); }}
-              className="p-1 rounded-md bg-white/90 hover:bg-white text-zinc-700 text-[10px] font-bold cursor-pointer"
-              title="设为封面"
+            <Button
+              onPress={onSetCover}
+              size="sm"
+              className="h-auto min-w-0 px-2 py-1 rounded-md bg-white/90 hover:bg-white text-zinc-700 text-[10px] font-bold"
             >
               封面
-            </button>
+            </Button>
           )}
-          <button
-            onClick={(e) => { e.stopPropagation(); onRemove(); }}
-            className="p-1 rounded-md bg-white/90 hover:bg-rose-50 text-zinc-700 hover:text-rose-500 cursor-pointer"
-            title="移除"
+          <Button
+            isIconOnly
+            size="sm"
+            variant="ghost"
+            onPress={onRemove}
+            className="w-auto h-auto min-w-0 p-1 rounded-md bg-white/90 hover:bg-rose-50 text-zinc-700 hover:text-rose-500"
           >
             <Trash2 size={11} />
-          </button>
+          </Button>
         </div>
       </div>
 
