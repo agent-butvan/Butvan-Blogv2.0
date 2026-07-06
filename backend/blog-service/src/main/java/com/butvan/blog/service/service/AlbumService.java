@@ -7,6 +7,8 @@ import com.butvan.blog.pojo.dto.album.AlbumPhotoSortDTO;
 import com.butvan.blog.pojo.dto.album.AlbumSaveDTO;
 import com.butvan.blog.pojo.vo.album.AlbumListVO;
 import com.butvan.blog.pojo.vo.album.AlbumVO;
+import com.butvan.blog.pojo.vo.album.PhotoWallVO;
+import org.springframework.web.multipart.MultipartFile;
 
 /**
  * 相册管理服务层接口
@@ -92,4 +94,23 @@ public interface AlbumService {
      * @param dto     排序DTO
      */
     void sortPhotos(Long albumId, AlbumPhotoSortDTO dto);
+
+    /**
+     * 分页获取已发布相册中的全部照片（跨相册聚合，按时间倒序）
+     *
+     * @param page 当前页码（1-based）
+     * @param size 每页大小
+     * @return 照片墙分页结果
+     */
+    PageResult pagePublicPhotos(int page, int size);
+
+    /**
+     * 上传图片并直接添加到相册
+     *
+     * @param albumId 相册ID
+     * @param file    上传的图片文件
+     * @param caption 照片说明（可选）
+     * @return 相册详情VO
+     */
+    AlbumVO uploadPhoto(Long albumId, MultipartFile file, String caption);
 }

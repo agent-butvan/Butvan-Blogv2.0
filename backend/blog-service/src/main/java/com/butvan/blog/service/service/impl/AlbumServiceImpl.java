@@ -12,10 +12,12 @@ import com.butvan.blog.pojo.entity.Media;
 import com.butvan.blog.pojo.vo.album.AlbumListVO;
 import com.butvan.blog.pojo.vo.album.AlbumPhotoVO;
 import com.butvan.blog.pojo.vo.album.AlbumVO;
+import com.butvan.blog.pojo.vo.album.PhotoWallVO;
 import com.butvan.blog.service.repository.AlbumPhotoRepository;
 import com.butvan.blog.service.repository.AlbumRepository;
 import com.butvan.blog.service.repository.MediaRepository;
 import com.butvan.blog.service.service.AlbumService;
+import com.butvan.blog.service.service.MediaService;
 import com.butvan.blog.common.utils.SlugUtils;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
@@ -26,6 +28,7 @@ import org.springframework.data.domain.Sort;
 import org.springframework.data.jpa.domain.Specification;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
+import org.springframework.web.multipart.MultipartFile;
 
 import java.util.ArrayList;
 import java.util.List;
@@ -43,6 +46,7 @@ public class AlbumServiceImpl implements AlbumService {
     private final AlbumRepository albumRepository;
     private final AlbumPhotoRepository albumPhotoRepository;
     private final MediaRepository mediaRepository;
+    private final MediaService mediaService;
 
     @Override
     @Transactional
@@ -244,6 +248,66 @@ public class AlbumServiceImpl implements AlbumService {
         }
 
         log.info("相册照片排序已更新: albumId={}, 更新数量={}", albumId, dto.getItems().size());
+    }
+
+    @Override
+    public PageResult pagePublicPhotos(int page, int size) {
+        int safePage = Math.max(page, 1);
+        int safeSize = Math.min(size, 50);
+        Pageable pageable = PageRequest.of(safePage - 1, safeSize);
+
+        Page<Object[]> pageData = albumPhotoRepository.findPublishedPhotosWithMedia(pageable);
+
+        List<PhotoWallVO> records = pageData.getContent().stream()
+                .map(row -> {
+                    AlbumPhoto ap = (AlbumPhoto) row[0];
+                    String fileUrl = (String) row[1];
+                    Integer width = (Integer) row[2];
+                    Integer height = (Integer) row[3];
+                    String albumTitle = (String) row[4];
+                    String albumSlug = (String) row[5];
+
+                    return PhotoWallVO.builder()
+                            .id(ap.getId())
+                            .fileUrl(fileUrl)
+                            .width(width)
+                            .height(height)
+                            .caption(ap.getCaption())
+                            .albumTitle(albumTitle)
+                            .albumSlug(albumSlug)
+                            .createdAt(ap.getCreatedAt())
+                            .build();
+                })
+                .collect(Collectors.toList());
+
+        return PageResult.builder()
+                .total(pageData.getTotalElements())
+                .page(safePage)
+                .size(safeSize)
+                .records(records)
+                .build();
+    }
+
+    @Override
+    @Transactional
+    public AlbumVO uploadPhoto(Long albumId, MultipartFile file, String caption) {
+        Album album = albumRepository.findById(albumId)
+                .orElseThrow(() -> new BusinessException("相册不存在"));
+
+        // 1. 上传文件到媒体资源库（标记来源为 ALBUM 模块）
+        Media media = mediaService.uploadFile(file, "ALBUM", albumId, caption);
+
+        // 2. 建立相册-照片关联
+        AlbumPhoto albumPhoto = AlbumPhoto.builder()
+                .albumId(albumId)
+                .mediaId(media.getId())
+                .caption(caption)
+                .sortOrder(0)
+                .build();
+        albumPhotoRepository.save(albumPhoto);
+
+        log.info("直接上传照片到相册成功: albumId={}, mediaId={}, fileName={}", albumId, media.getId(), media.getFileName());
+        return toAlbumVO(album);
     }
 
     // ==================== 私有转换方法 ====================

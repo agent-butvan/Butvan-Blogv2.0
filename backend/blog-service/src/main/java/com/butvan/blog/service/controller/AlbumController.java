@@ -8,11 +8,13 @@ import com.butvan.blog.pojo.dto.album.AlbumQueryDTO;
 import com.butvan.blog.pojo.dto.album.AlbumSaveDTO;
 import com.butvan.blog.pojo.vo.album.AlbumListVO;
 import com.butvan.blog.pojo.vo.album.AlbumVO;
+import com.butvan.blog.pojo.vo.album.PhotoWallVO;
 import com.butvan.blog.service.service.AlbumService;
 import jakarta.validation.Valid;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
 import org.springframework.web.bind.annotation.*;
+import org.springframework.web.multipart.MultipartFile;
 
 import java.util.List;
 
@@ -141,6 +143,24 @@ public class AlbumController {
         return Result.success();
     }
 
+    /**
+     * 【管理后台】上传图片并直接添加到相册
+     *
+     * @param id      相册ID
+     * @param file    上传的图片文件
+     * @param caption 照片说明（可选）
+     * @return 相册详情VO
+     */
+    @PostMapping("/admin/albums/{id}/photos/upload")
+    public Result<AlbumVO> uploadPhoto(
+            @PathVariable Long id,
+            @RequestParam("file") MultipartFile file,
+            @RequestParam(value = "caption", required = false) String caption) {
+        log.info("管理后台上传照片到相册: albumId={}, fileName={}", id, file.getOriginalFilename());
+        AlbumVO vo = albumService.uploadPhoto(id, file, caption);
+        return Result.success(vo);
+    }
+
     // ==================== 客户端公开接口 ====================
 
     /**
@@ -166,5 +186,21 @@ public class AlbumController {
         log.info("前台获取相册详情: slug={}", slug);
         AlbumVO vo = albumService.getAlbumBySlug(slug);
         return Result.success(vo);
+    }
+
+    /**
+     * 【公开】分页获取全部已发布相册中的照片（时间线照片墙）
+     *
+     * @param page 页码（默认1）
+     * @param size 每页大小（默认20，最大50）
+     * @return 照片墙分页结果
+     */
+    @GetMapping("/public/photos")
+    public Result<PageResult> pagePublicPhotos(
+            @RequestParam(defaultValue = "1") int page,
+            @RequestParam(defaultValue = "20") int size) {
+        log.info("前台分页获取照片墙: page={}, size={}", page, size);
+        PageResult pageResult = albumService.pagePublicPhotos(page, size);
+        return Result.success(pageResult);
     }
 }

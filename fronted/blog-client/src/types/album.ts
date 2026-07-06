@@ -38,3 +38,23 @@ export interface AlbumDetail extends AlbumItem {
   photos: AlbumPhoto[]
   updatedAt: string
 }
+
+/** 照片墙条目（跨相册聚合，按时间排列，公开接口返回） */
+export interface PhotoWallItem {
+  id: number
+  fileUrl: string
+  width?: number
+  height?: number
+  caption?: string
+  albumTitle: string
+  albumSlug: string
+  createdAt: string
+}
+
+/** 照片墙分页结果 */
+export interface PhotoWallPage {
+  records: PhotoWallItem[]
+  total: number
+  page: number
+  size: number
+}

@@ -136,3 +136,26 @@ export async function removePhotoFromAlbum(albumId: number, photoId: number): Pr
 export async function sortAlbumPhotos(albumId: number, items: { photoId: number; sortOrder: number }[]): Promise<void> {
   await apiClient.put(`/admin/albums/${albumId}/photos/sort`, { items });
 }
+
+/**
+ * 上传图片并直接添加到相册（无需预先上传到媒体库）
+ *
+ * @param albumId 相册ID
+ * @param file    图片文件
+ * @param caption 照片说明（可选）
+ * @returns 相册详情（含最新照片列表）
+ */
+export async function uploadPhotoToAlbum(
+  albumId: number,
+  file: File,
+  caption?: string
+): Promise<AlbumDetail> {
+  const formData = new FormData();
+  formData.append("file", file);
+  if (caption) formData.append("caption", caption);
+
+  const res = await apiClient.post(`/admin/albums/${albumId}/photos/upload`, formData, {
+    headers: { "Content-Type": "multipart/form-data" },
+  });
+  return res.data.data;
+}

@@ -1,7 +1,10 @@
 package com.butvan.blog.service.repository;
 
 import com.butvan.blog.pojo.entity.AlbumPhoto;
+import org.springframework.data.domain.Page;
+import org.springframework.data.domain.Pageable;
 import org.springframework.data.jpa.repository.JpaRepository;
+import org.springframework.data.jpa.repository.Query;
 import org.springframework.stereotype.Repository;
 
 import java.util.List;
@@ -43,4 +46,18 @@ public interface AlbumPhotoRepository extends JpaRepository<AlbumPhoto, Long> {
      * @return 是否存在
      */
     boolean existsByAlbumIdAndMediaId(Long albumId, Long mediaId);
+
+    /**
+     * 分页查询所有已发布相册中的照片（JOIN 媒体资源 + 相册，按添加时间倒序）
+     *
+     * @param pageable 分页参数
+     * @return 分页结果（Object[]: AlbumPhoto, Media, Album.title, Album.slug）
+     */
+    @Query("SELECT ap, m.fileUrl, m.width, m.height, a.title, a.slug " +
+           "FROM AlbumPhoto ap " +
+           "JOIN Media m ON ap.mediaId = m.id " +
+           "JOIN Album a ON ap.albumId = a.id " +
+           "WHERE a.status = 'PUBLISHED' " +
+           "ORDER BY ap.createdAt DESC")
+    Page<Object[]> findPublishedPhotosWithMedia(Pageable pageable);
 }

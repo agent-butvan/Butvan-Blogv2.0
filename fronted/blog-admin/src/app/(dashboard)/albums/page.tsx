@@ -1,17 +1,16 @@
 "use client";
 
-import { useEffect, useState } from "react";
+import { useEffect, useState, useRef } from "react";
 import {
   Plus, Pencil, Trash2, Image as ImageIcon,
-  Loader2, Check, Upload, Grid3X3
+  Loader2, Upload, Grid3X3
 } from "lucide-react";
 import { cn, Button, SearchField, Input, TextArea, Select, Label, ListBox, Modal } from "@heroui/react";
 import {
   fetchAlbumList, fetchAlbumDetail, createAlbum, updateAlbum, deleteAlbum,
-  addPhotoToAlbum, removePhotoFromAlbum,
+  removePhotoFromAlbum, uploadPhotoToAlbum,
   type AlbumItem, type AlbumDetail, type AlbumPhotoItem
 } from "@/lib/album-api";
-import { fetchMediaList, type MediaItem } from "@/lib/media-api";
 import { toast } from "@/lib/toast";
 import { resolveAssetUrl } from "@/lib/image-url";
 import ConfirmModal from "@/components/common/ConfirmModal";
@@ -42,14 +41,9 @@ export default function AlbumsPage() {
   const [formStatus, setFormStatus] = useState("DRAFT");
   const [formSubmitting, setFormSubmitting] = useState(false);
 
-  // 媒体选择器弹窗（相册添加照片用）
-  const [showMediaPicker, setShowMediaPicker] = useState(false);
-  const [mediaList, setMediaList] = useState<MediaItem[]>([]);
-  const [mediaPage, setMediaPage] = useState(1);
-  const [mediaTotal, setMediaTotal] = useState(0);
-  const [mediaLoading, setMediaLoading] = useState(false);
-  const [selectedMediaId, setSelectedMediaId] = useState<number | null>(null);
-  const [addingPhoto, setAddingPhoto] = useState(false);
+  // 照片上传状态
+  const fileInputRef = useRef<HTMLInputElement>(null);
+  const [uploadingPhoto, setUploadingPhoto] = useState(false);
 
   // 删除确认
   const [confirmDeleteId, setConfirmDeleteId] = useState<number | null>(null);
@@ -167,41 +161,33 @@ export default function AlbumsPage() {
 
   /** 打开媒体选择器 */
   const openMediaPicker = async () => {
-    setShowMediaPicker(true);
-    setSelectedMediaId(null);
-    setMediaPage(1);
-    await loadMediaList(1);
+    // 触发隐藏的文件输入
+    fileInputRef.current?.click();
   };
 
-  /** 加载媒体列表（仅图片） */
-  const loadMediaList = async (p: number) => {
-    setMediaLoading(true);
-    try {
-      const data = await fetchMediaList({ page: p, size: 12, fileType: "IMAGE" });
-      setMediaList(data.records || []);
-      setMediaTotal(data.total || 0);
-      setMediaPage(p);
-    } catch (err) {
-      console.error("加载媒体列表失败:", err);
-    } finally {
-      setMediaLoading(false);
+  /** 选择文件后直接上传到当前相册 */
+  const handleFileUpload = async (e: React.ChangeEvent<HTMLInputElement>) => {
+    const file = e.target.files?.[0];
+    if (!file || !selectedId) return;
+
+    // 校验文件类型
+    if (!file.type.startsWith("image/")) {
+      toast.error("仅支持上传图片文件");
+      e.target.value = "";
+      return;
     }
-  };
 
-  /** 确认添加照片到相册 */
-  const confirmAddPhoto = async () => {
-    if (!selectedId || !selectedMediaId) return;
-    setAddingPhoto(true);
+    setUploadingPhoto(true);
     try {
-      await addPhotoToAlbum(selectedId, selectedMediaId);
-      toast.success("照片已添加到相册");
-      setShowMediaPicker(false);
+      await uploadPhotoToAlbum(selectedId, file);
+      toast.success("照片已上传并添加到相册");
       selectAlbum(selectedId);
     } catch (err: any) {
-      console.error("添加照片失败:", err);
-      toast.error(err.response?.data?.msg || "添加照片失败");
+      console.error("上传照片失败:", err);
+      toast.error(err.response?.data?.msg || "上传照片失败");
     } finally {
-      setAddingPhoto(false);
+      setUploadingPhoto(false);
+      e.target.value = ""; // 重置 input 以便重复选择同一文件
     }
   };
 
@@ -385,10 +371,15 @@ export default function AlbumsPage() {
                 <Button
                   size="sm"
                   onPress={openMediaPicker}
-                  className="flex items-center gap-1 h-8 px-3 rounded-lg bg-primary text-white text-xs font-bold"
+                  isDisabled={uploadingPhoto}
+                  className="flex items-center gap-1 h-8 px-3 rounded-lg bg-primary text-white text-xs font-bold disabled:opacity-50"
                 >
-                  <Upload size={12} />
-                  添加照片
+                  {uploadingPhoto ? (
+                    <Loader2 size={12} className="animate-spin" />
+                  ) : (
+                    <Upload size={12} />
+                  )}
+                  上传图片
                 </Button>
               </div>
 
@@ -505,70 +496,14 @@ export default function AlbumsPage() {
         </Modal.Container>
       </Modal.Backdrop>
 
-      {/* ==== 媒体选择器弹窗 ==== */}
-      <Modal.Backdrop isOpen={showMediaPicker} onOpenChange={setShowMediaPicker}>
-        <Modal.Container>
-          <Modal.Dialog className="sm:max-w-2xl">
-            <Modal.CloseTrigger />
-            <Modal.Header>
-              <Modal.Heading className="text-sm font-bold text-zinc-900 dark:text-zinc-150">
-                从媒体库选择图片
-              </Modal.Heading>
-            </Modal.Header>
-            <Modal.Body className="max-h-[60vh] overflow-y-auto p-4">
-              {mediaLoading ? (
-                <div className="flex items-center justify-center py-16">
-                  <Loader2 size={20} className="animate-spin text-zinc-350" />
-                </div>
-              ) : (
-                <div className="grid grid-cols-3 md:grid-cols-4 gap-3">
-                  {mediaList.map((media) => (
-                    <div
-                      key={media.id}
-                      onClick={() => setSelectedMediaId(media.id)}
-                      className={cn(
-                        "relative aspect-square rounded-xl overflow-hidden border-2 cursor-pointer transition-all",
-                        selectedMediaId === media.id
-                          ? "border-primary shadow-md ring-2 ring-primary/20"
-                          : "border-zinc-200 dark:border-zinc-700 hover:border-zinc-350"
-                      )}
-                    >
-                      <img
-                        src={resolveAssetUrl(media.fileUrl)}
-                        alt={media.fileName}
-                        className="w-full h-full object-cover"
-                      />
-                      {selectedMediaId === media.id && (
-                        <div className="absolute top-2 right-2 w-5 h-5 bg-primary rounded-full flex items-center justify-center">
-                          <Check size={11} className="text-white" />
-                        </div>
-                      )}
-                    </div>
-                  ))}
-                </div>
-              )}
-            </Modal.Body>
-            <Modal.Footer className="flex items-center justify-between">
-              <div className="flex items-center gap-2">
-                <Button size="sm" variant="ghost" isDisabled={mediaPage <= 1}
-                  onPress={() => loadMediaList(mediaPage - 1)}
-                  className="text-xs h-7 min-w-0 px-2">上一页</Button>
-                <span className="text-[10px] text-zinc-400">{mediaPage}/{Math.ceil(mediaTotal / 12) || 1}</span>
-                <Button size="sm" variant="ghost" isDisabled={mediaPage >= Math.ceil(mediaTotal / 12)}
-                  onPress={() => loadMediaList(mediaPage + 1)}
-                  className="text-xs h-7 min-w-0 px-2">下一页</Button>
-              </div>
-              <Button
-                size="sm" onPress={confirmAddPhoto}
-                isDisabled={!selectedMediaId || addingPhoto}
-                className="h-8 px-4 rounded-lg bg-primary text-white text-xs font-bold disabled:opacity-50"
-              >
-                {addingPhoto ? <Loader2 size={12} className="animate-spin" /> : "添加到相册"}
-              </Button>
-            </Modal.Footer>
-          </Modal.Dialog>
-        </Modal.Container>
-      </Modal.Backdrop>
+      {/* ==== 隐藏的文件上传 input ==== */}
+      <input
+        ref={fileInputRef}
+        type="file"
+        accept="image/*"
+        onChange={handleFileUpload}
+        className="hidden"
+      />
 
       {/* ==== 删除相册确认 ==== */}
       <ConfirmModal
