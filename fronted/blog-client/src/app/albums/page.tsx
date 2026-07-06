@@ -171,9 +171,9 @@ export default function AlbumsPage() {
       const waveY = Math.sin(progress * Math.PI * 2) * 50
       track.style.transform = `translateX(-${progress * maxTrackMove}px) translateY(${waveY}px)`
 
-      // 背景文字视差
-      setBgOffset1(-progress * 500)
-      setBgOffset2(progress * 300)
+      // 背景文字视差（增强滚动感）
+      setBgOffset1(-progress * 1200)  // 向左移动更远
+      setBgOffset2(progress * 800)    // 向右移动更远
 
       // 各簇独立缩放（越靠近中心越大）
       const clusters = track.querySelectorAll<HTMLElement>('.photo-cluster')
@@ -222,7 +222,7 @@ export default function AlbumsPage() {
       <div className="fixed inset-0 z-[-1] pointer-events-none overflow-hidden" style={{ perspective: '1000px' }}>
         {/* 巨型视差文字 */}
         <span
-          className="absolute text-[35vw] font-extrabold text-zinc-100 dark:text-zinc-900 whitespace-nowrap leading-none select-none"
+          className="absolute text-[60vw] font-extrabold text-zinc-100 dark:text-zinc-900 whitespace-nowrap leading-none select-none"
           style={{
             top: '10%',
             left: '-10%',
@@ -233,7 +233,7 @@ export default function AlbumsPage() {
           butvan
         </span>
         <span
-          className="absolute text-[35vw] font-extrabold whitespace-nowrap leading-none select-none"
+          className="absolute text-[60vw] font-extrabold whitespace-nowrap leading-none select-none"
           style={{
             bottom: '5%',
             right: '-5%',
