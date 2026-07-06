@@ -18,6 +18,7 @@ import {
   X,
 } from 'lucide-react'
 import Navbar from '@/components/common/Navbar'
+import SidebarWidget from '@/components/common/SidebarWidget'
 import { toast, Avatar, Button, Spinner, Tooltip, cn } from '@heroui/react'
 import { fetchProfile } from '@/lib/profile'
 import { applyFriendLink, uploadPublicImage, fetchWebMeta } from '@/lib/friend-api'
@@ -255,7 +256,7 @@ export default function FriendApplyPage() {
   // 加载中状态：与全站一致的紧凑 spinner
   if (loading) {
     return (
-      <div className="min-h-screen bg-[#f6f6f6] dark:bg-zinc-950 font-body text-zinc-900 dark:text-zinc-50 transition-colors">
+      <div className="min-h-screen bg-transparent font-body text-zinc-900 dark:text-zinc-50 transition-colors">
         <Navbar profile={null} />
         <div className="flex items-center justify-center py-32" role="status" aria-label="加载中">
           <Spinner size="lg" />
@@ -267,7 +268,7 @@ export default function FriendApplyPage() {
   // 提交成功状态
   if (submitted) {
     return (
-      <div className="min-h-screen bg-[#f6f6f6] dark:bg-zinc-950 font-body text-zinc-900 dark:text-zinc-50 transition-colors">
+      <div className="min-h-screen bg-transparent font-body text-zinc-900 dark:text-zinc-50 transition-colors">
         <Navbar profile={profile} />
         <div className="pt-20 pb-16 px-4">
           <div className="apply-hero max-w-md mx-auto text-center">
@@ -303,8 +304,11 @@ export default function FriendApplyPage() {
 
   // 表单主视图
   return (
-    <div className="min-h-screen bg-[#f6f6f6] dark:bg-zinc-950 font-body text-zinc-900 dark:text-zinc-50 transition-colors">
+    <div className="min-h-screen bg-transparent font-body text-zinc-900 dark:text-zinc-50 transition-colors">
       <Navbar profile={profile} />
+
+      {/* 左侧悬浮侧挂导航 */}
+      <SidebarWidget />
 
       {/* Hero 区域：与友链目录页统一节奏 */}
       <section className="apply-hero pt-16 md:pt-20 pb-5 px-4">

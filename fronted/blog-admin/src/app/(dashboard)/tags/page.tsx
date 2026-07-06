@@ -3,7 +3,7 @@
 import { useEffect, useState, useMemo } from "react";
 import { useRouter } from "next/navigation";
 import { Plus, Search, Edit, Trash2, Loader2, X, AlertCircle } from "lucide-react";
-import { cn, Input, Button } from "@heroui/react";
+import { cn, Button, SearchField } from "@heroui/react";
 import { fetchTagsList, createTag, updateTag, deleteTag, fetchArticles as fetchArticlesApi } from "@/lib/article-api";
 import { toast } from "@/lib/toast";
 import ConfirmModal from "@/components/common/ConfirmModal";
@@ -193,27 +193,20 @@ export default function TagsPage() {
         </Button>
       </div>
 
-      {/* 模糊检索栏 */}
+      {/* 模糊检索栏 — HeroUI SearchField */}
       <div className="flex items-center gap-3">
-          <div className="relative w-full max-w-xs h-9 rounded-xl border border-zinc-200/60 dark:border-zinc-800 bg-white dark:bg-zinc-950 hover:border-zinc-300 dark:hover:border-zinc-700 focus-within:border-primary focus-within:ring-2 focus-within:ring-primary/20 transition-all flex items-center px-3">
-            <Search size={14} className="text-zinc-400 dark:text-zinc-550 shrink-0" />
-            <Input
-              type="text"
-              value={keyword}
-              onChange={(e) => setKeyword(e.target.value)}
-              placeholder="搜索标签名称或标识..."
-              className="flex-1 border-0 bg-transparent p-0 text-xs outline-none placeholder-zinc-400 dark:placeholder-zinc-650 focus:ring-0 leading-normal ml-2"
-            />
-            {keyword && (
-              <button
-                type="button"
-                onClick={() => setKeyword("")}
-                className="text-zinc-400 hover:text-zinc-650 cursor-pointer"
-              >
-                <X size={12} />
-              </button>
-            )}
-          </div>
+          <SearchField
+            value={keyword}
+            onChange={setKeyword}
+            onClear={() => setKeyword("")}
+            className="w-full max-w-xs"
+          >
+            <SearchField.Group>
+              <SearchField.SearchIcon />
+              <SearchField.Input placeholder="搜索标签名称或标识..." />
+              <SearchField.ClearButton />
+            </SearchField.Group>
+          </SearchField>
       </div>
 
       {/* 标签表格 */}
@@ -335,7 +328,7 @@ export default function TagsPage() {
                     <label className="text-[11px] font-bold text-zinc-500 dark:text-zinc-400 tracking-wider">
                       标签名称
                     </label>
-                    <Input
+                    <input
                       type="text"
                       disabled={submitting}
                       value={formData.name}
@@ -350,7 +343,7 @@ export default function TagsPage() {
                     <label className="text-[11px] font-bold text-zinc-500 dark:text-zinc-400 tracking-wider">
                       唯一标识 (Slug)
                     </label>
-                    <Input
+                    <input
                       type="text"
                       disabled={submitting}
                       value={formData.slug}

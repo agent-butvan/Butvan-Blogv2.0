@@ -50,6 +50,12 @@ export default function SettingsPage() {
   const [saving, setSaving] = useState(false);
   const [uploading, setUploading] = useState(false);
 
+  // --- 站点全局背景图片状态 ---
+  const [bgImageUrl, setBgImageUrl] = useState("");
+  const [bgImageSaving, setBgImageSaving] = useState(false);
+  const [bgImageUploading, setBgImageUploading] = useState(false);
+  const bgFileInputRef = useRef<HTMLInputElement>(null);
+
   // --- 解析后端图片相对 URL 路径 ---
   const resolveUrl = (url: string) => {
     if (!url) return "";
@@ -107,6 +113,21 @@ export default function SettingsPage() {
     fetchProfileData();
   }, []);
 
+  // --- 获取当前站点背景图片配置 ---
+  useEffect(() => {
+    const fetchBgImage = async () => {
+      try {
+        const res = await apiClient.get("/admin/site-config/background_image_url");
+        if (res.data.code === 200 || res.data.code === 0) {
+          setBgImageUrl(res.data.data?.configValue || "");
+        }
+      } catch (err) {
+        console.error("获取站点背景图片配置失败", err);
+      }
+    };
+    fetchBgImage();
+  }, []);
+
   // --- 头像上传 ---
   const handleAvatarClick = () => {
     fileInputRef.current?.click();
@@ -129,7 +150,7 @@ export default function SettingsPage() {
       formData.append("sourceType", "SYSTEM_CONFIG");
       formData.append("sourceDetail", "系统配置");
       const res = await apiClient.post("/admin/media/upload", formData, {
-        headers: { "Content-Type": "multipart/form-data" },
+        timeout: 120000,
       });
       if (res.data.code === 200 || res.data.code === 0) {
         toast.success("头像上传成功，点击下方按钮保存生效");
@@ -143,6 +164,89 @@ export default function SettingsPage() {
     } finally {
       setUploading(false);
       e.target.value = "";
+    }
+  };
+
+  // --- 站点背景图片上传 ---
+  const handleBgImageClick = () => {
+    bgFileInputRef.current?.click();
+  };
+
+  const handleBgFileChange = async (e: React.ChangeEvent<HTMLInputElement>) => {
+    const files = e.target.files;
+    if (!files || files.length === 0) return;
+
+    const file = files[0];
+    if (!file.type.startsWith("image/")) {
+      toast.warning("请选择图片格式文件进行上传");
+      return;
+    }
+
+    setBgImageUploading(true);
+    try {
+      const formData = new FormData();
+      formData.append("file", file);
+      formData.append("sourceType", "SYSTEM_CONFIG");
+      formData.append("sourceDetail", "站点全局背景图片");
+      const res = await apiClient.post("/admin/media/upload", formData, {
+        timeout: 120000,
+      });
+      if (res.data.code === 200 || res.data.code === 0) {
+        const fileUrl = res.data.data.fileUrl;
+        setBgImageUrl(fileUrl);
+        toast.success("背景图片上传成功，正在保存配置...");
+        // 自动保存背景图配置到站点配置表
+        await saveBgImageConfig(fileUrl);
+      } else {
+        toast.error(res.data.msg || "背景图片上传失败");
+      }
+    } catch (err) {
+      console.error(err);
+      toast.error("上传背景图片接口异常，请确认后端媒体服务开启");
+    } finally {
+      setBgImageUploading(false);
+      e.target.value = "";
+    }
+  };
+
+  /** 保存背景图 URL 到站点配置表 */
+  const saveBgImageConfig = async (url: string) => {
+    setBgImageSaving(true);
+    try {
+      const res = await apiClient.put("/admin/site-config/background_image_url", {
+        configValue: url,
+      });
+      if (res.data.code === 200 || res.data.code === 0) {
+        toast.success("站点全局背景图片已生效");
+      } else {
+        toast.error(res.data.msg || "保存背景图片配置失败");
+      }
+    } catch (err) {
+      console.error(err);
+      toast.error("保存背景图片配置接口异常");
+    } finally {
+      setBgImageSaving(false);
+    }
+  };
+
+  /** 清除站点背景图片 */
+  const handleClearBgImage = async () => {
+    setBgImageSaving(true);
+    try {
+      const res = await apiClient.put("/admin/site-config/background_image_url", {
+        configValue: "",
+      });
+      if (res.data.code === 200 || res.data.code === 0) {
+        setBgImageUrl("");
+        toast.success("站点背景图片已清除");
+      } else {
+        toast.error(res.data.msg || "清除背景图片配置失败");
+      }
+    } catch (err) {
+      console.error(err);
+      toast.error("清除背景图片配置接口异常");
+    } finally {
+      setBgImageSaving(false);
     }
   };
 
@@ -468,6 +572,100 @@ export default function SettingsPage() {
                   />
                 </div>
               </div>
+            </div>
+
+            {/* 分割线 */}
+            <div className="border-t border-zinc-100 dark:border-zinc-900 pt-4" />
+
+            {/* 分区 5：站点全局背景图片 */}
+            <div className="flex flex-col gap-3">
+              <div className="flex flex-col gap-0.5">
+                <h3 className="text-xs font-semibold text-zinc-900 dark:text-zinc-50">
+                  5. 站点全局背景图片
+                </h3>
+                <p className="text-xs text-zinc-555 dark:text-zinc-400">
+                  上传图片作为博客前台全局背景，留空则不展示背景图。上传后自动保存生效。
+                </p>
+              </div>
+              <div className="flex flex-col gap-3 pt-1">
+                {/* 背景图预览区 */}
+                <div className="flex items-center gap-4">
+                  <div
+                    onClick={handleBgImageClick}
+                    className="relative w-[240px] h-[120px] rounded-lg border-2 border-dashed border-zinc-300 dark:border-zinc-700 bg-zinc-50/50 dark:bg-zinc-900/30 overflow-hidden cursor-pointer hover:border-primary/40 hover:bg-primary/5 dark:hover:bg-primary/5 transition-all group flex items-center justify-center"
+                  >
+                    {bgImageUrl ? (
+                      <>
+                        <img
+                          src={resolveUrl(bgImageUrl)}
+                          alt="背景图预览"
+                          className="w-full h-full object-cover"
+                        />
+                        {/* Hover 更换蒙层 */}
+                        <div className="absolute inset-0 bg-black/40 opacity-0 group-hover:opacity-100 flex items-center justify-center transition-opacity duration-200">
+                          <span className="text-white text-xs font-semibold flex items-center gap-1">
+                            <Upload size={12} />
+                            {bgImageUploading ? "上传中..." : "更换背景图片"}
+                          </span>
+                        </div>
+                      </>
+                    ) : (
+                      <div className="flex flex-col items-center gap-1.5 text-zinc-400 dark:text-zinc-500 group-hover:text-primary transition-colors">
+                        {bgImageUploading ? (
+                          <Loader2 size={18} className="animate-spin" />
+                        ) : (
+                          <Upload size={18} />
+                        )}
+                        <span className="text-[10px] font-semibold">
+                          {bgImageUploading ? "上传中..." : "点击上传背景图片"}
+                        </span>
+                      </div>
+                    )}
+                  </div>
+
+                  {/* 操作按钮列 */}
+                  <div className="flex flex-col gap-2">
+                    <button
+                      type="button"
+                      onClick={handleBgImageClick}
+                      disabled={bgImageUploading || bgImageSaving}
+                      className="flex items-center gap-1.5 px-3 py-1.5 rounded-lg text-xs font-semibold border border-zinc-200 dark:border-zinc-800 bg-white dark:bg-zinc-900 hover:bg-zinc-50 dark:hover:bg-zinc-800 disabled:opacity-50 disabled:cursor-not-allowed transition-all cursor-pointer"
+                    >
+                      <Upload size={11} />
+                      {bgImageUploading ? "上传中..." : "上传背景图"}
+                    </button>
+                    {bgImageUrl && (
+                      <button
+                        type="button"
+                        onClick={handleClearBgImage}
+                        disabled={bgImageSaving}
+                        className="flex items-center gap-1.5 px-3 py-1.5 rounded-lg text-xs font-semibold border border-red-200 dark:border-red-900/40 bg-white dark:bg-zinc-900 text-red-500 hover:bg-red-50 dark:hover:bg-red-950/20 disabled:opacity-50 disabled:cursor-not-allowed transition-all cursor-pointer"
+                      >
+                        {bgImageSaving ? (
+                          <Loader2 size={11} className="animate-spin" />
+                        ) : (
+                          <span>✕</span>
+                        )}
+                        {bgImageSaving ? "清除中..." : "清除背景图"}
+                      </button>
+                    )}
+                    {bgImageUrl && (
+                      <span className="text-[10px] text-zinc-400 dark:text-zinc-500 truncate max-w-[180px]" title={bgImageUrl}>
+                        当前已设置背景图
+                      </span>
+                    )}
+                  </div>
+                </div>
+              </div>
+
+              {/* 隐藏的背景图文件选择 input */}
+              <input
+                type="file"
+                ref={bgFileInputRef}
+                onChange={handleBgFileChange}
+                accept="image/*"
+                className="hidden"
+              />
             </div>
 
           </div>

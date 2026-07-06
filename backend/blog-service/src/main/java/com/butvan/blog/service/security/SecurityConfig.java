@@ -104,6 +104,8 @@ public class SecurityConfig {
                     .requestMatchers(HttpMethod.GET, "/api/scenes/active").permitAll()
                     // 放行前台获取公开用户资料 API
                     .requestMatchers(HttpMethod.GET, "/api/profile/public/**").permitAll()
+                    // 放行前台公开站点配置查询 API（如背景图片URL等）
+                    .requestMatchers(HttpMethod.GET, "/api/site-config/public/**").permitAll()
                     // 放行前台文章、分类、标签的 GET 查询请求
                     .requestMatchers(HttpMethod.GET, "/api/articles/**").permitAll()
                     .requestMatchers(HttpMethod.GET, "/api/categories/**").permitAll()
@@ -116,6 +118,8 @@ public class SecurityConfig {
                     .requestMatchers(HttpMethod.GET, "/api/friends/**").permitAll()
                     .requestMatchers(HttpMethod.POST, "/api/friends/apply").permitAll()
                     .requestMatchers(HttpMethod.POST, "/api/friends/fetch-meta").permitAll()
+                    // 放行微信登录二维码获取接口（无需登录即可扫码）
+                    .requestMatchers(HttpMethod.POST, "/api/weixin/login").permitAll()
                     // 放行公开图片上传接口（友链头像等无需登录的场景）
                     .requestMatchers(HttpMethod.POST, "/api/public/upload/image").permitAll()
                     // 放行本地静态图片映射路径

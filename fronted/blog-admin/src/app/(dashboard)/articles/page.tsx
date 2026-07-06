@@ -5,7 +5,6 @@ import { useRouter } from "next/navigation";
 import Link from "next/link";
 import {
   Plus,
-  Search,
   Edit,
   Trash2,
   Filter,
@@ -24,7 +23,7 @@ import {
   MessageSquare,
   Heart
 } from "lucide-react";
-import { cn, Input, Button, Select, Label, ListBox } from "@heroui/react";
+import { cn, Button, Select, Label, ListBox, SearchField } from "@heroui/react";
 import {
   fetchArticles as fetchArticlesApi,
   fetchArticleDetail,
@@ -359,60 +358,63 @@ export default function ArticlesPage() {
         </div>
       )}
 
-      {/* 筛选 + 搜索栏 - 使用 HeroUI 组件 */}
+      {/* 筛选 + 搜索栏 - 使用 HeroUI 原生 SearchField */}
       <div className="flex flex-wrap items-center gap-3">
-        {/* 搜索框 */}
-        <div className="relative w-full sm:max-w-xs h-9 rounded-xl border border-zinc-200/60 dark:border-zinc-800 bg-white dark:bg-zinc-950 hover:border-zinc-300 dark:hover:border-zinc-700 focus-within:border-primary focus-within:ring-2 focus-within:ring-primary/20 transition-all flex items-center px-3">
-          <Search size={14} className="text-zinc-400 dark:text-zinc-500 shrink-0" />
-          <Input
-            type="text"
-            value={keyword}
-            onChange={(e) => { setKeyword(e.target.value); setPage(1); }}
-            placeholder="搜索文章标题..."
-            className="flex-1 border-0 bg-transparent p-0 text-xs outline-none placeholder-zinc-400 dark:placeholder-zinc-650 focus:ring-0 leading-normal ml-2"
-          />
-        </div>
-        
-        {/* 状态筛选 - 使用 HeroUI Select */}
-        <Select
-          selectedKey={statusFilter || "all"}
-          onSelectionChange={(key) => {
-            const value = key as string;
-            setStatusFilter(value === "all" ? "" : value);
-            setPage(1);
-          }}
-          className="w-32 h-9"
+        {/* 搜索框 — HeroUI SearchField 原生支持搜索图标 + 清除按钮 */}
+        <SearchField
+          value={keyword}
+          onChange={(value) => { setKeyword(value); setPage(1); }}
+          className="w-full sm:max-w-xs"
         >
-          <Label className="text-xs">状态</Label>
-          <Select.Trigger className="h-9 rounded-xl border-zinc-200/60 dark:border-zinc-800 bg-white dark:bg-zinc-950 text-xs">
-            <Select.Value />
-            <Select.Indicator />
-          </Select.Trigger>
-          <Select.Popover>
-            <ListBox aria-label="状态筛选">
-              <ListBox.Item id="all" textValue="全部状态">
-                全部状态
-                <ListBox.ItemIndicator />
-              </ListBox.Item>
-              <ListBox.Item id="PUBLISHED" textValue="已发布">
-                已发布
-                <ListBox.ItemIndicator />
-              </ListBox.Item>
-              <ListBox.Item id="DRAFT" textValue="草稿">
-                草稿
-                <ListBox.ItemIndicator />
-              </ListBox.Item>
-              <ListBox.Item id="PRIVATE" textValue="私密">
-                私密
-                <ListBox.ItemIndicator />
-              </ListBox.Item>
-              <ListBox.Item id="ARCHIVED" textValue="已归档">
-                已归档
-                <ListBox.ItemIndicator />
-              </ListBox.Item>
-            </ListBox>
-          </Select.Popover>
-        </Select>
+          <SearchField.Group>
+            <SearchField.SearchIcon />
+            <SearchField.Input placeholder="搜索文章标题..." />
+            <SearchField.ClearButton />
+          </SearchField.Group>
+        </SearchField>
+        
+        {/* 状态筛选 - HeroUI Select */}
+        <div className="flex items-end gap-1.5">
+          <Label className="text-xs text-zinc-500 dark:text-zinc-400 pb-2">状态</Label>
+          <Select
+            selectedKey={statusFilter || "all"}
+            onSelectionChange={(key) => {
+              const value = key as string;
+              setStatusFilter(value === "all" ? "" : value);
+              setPage(1);
+            }}
+            className="w-32"
+          >
+            <Select.Trigger className="h-9 rounded-xl border border-zinc-200/60 dark:border-zinc-800 bg-white dark:bg-zinc-950 text-xs">
+              <Select.Value />
+              <Select.Indicator />
+            </Select.Trigger>
+            <Select.Popover>
+              <ListBox aria-label="状态筛选">
+                <ListBox.Item id="all" textValue="全部状态">
+                  全部状态
+                  <ListBox.ItemIndicator />
+                </ListBox.Item>
+                <ListBox.Item id="PUBLISHED" textValue="已发布">
+                  已发布
+                  <ListBox.ItemIndicator />
+                </ListBox.Item>
+                <ListBox.Item id="DRAFT" textValue="草稿">
+                  草稿
+                  <ListBox.ItemIndicator />
+                </ListBox.Item>
+                <ListBox.Item id="PRIVATE" textValue="私密">
+                  私密
+                  <ListBox.ItemIndicator />
+                </ListBox.Item>
+                <ListBox.Item id="ARCHIVED" textValue="已归档">
+                  已归档
+                  <ListBox.ItemIndicator />
+                </ListBox.Item>
+              </ListBox>
+            </Select.Popover>
+          </Select>
+        </div>
       </div>
 
       {/* 文章表格 - 极简精致大厂排版 */}

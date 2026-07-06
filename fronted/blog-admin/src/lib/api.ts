@@ -29,6 +29,11 @@ apiClient.interceptors.request.use(
         config.headers.Authorization = `Bearer ${token}`;
       }
     }
+    // 当请求体为 FormData 时，删除手动设置的 Content-Type，
+    // 让浏览器/axios 自动添加带 boundary 的 multipart/form-data
+    if (config.data instanceof FormData) {
+      delete config.headers["Content-Type"];
+    }
     return config;
   },
   (error) => Promise.reject(error)

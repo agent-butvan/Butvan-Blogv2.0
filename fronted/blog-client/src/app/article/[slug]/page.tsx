@@ -407,7 +407,7 @@ export default function ArticleDetailPage() {
   }
 
   return (
-    <main className="relative min-h-screen w-full bg-[#f6f6f6] dark:bg-zinc-950 text-zinc-900 dark:text-zinc-50 font-body transition-colors duration-200 flex flex-col items-center">
+    <main className="relative min-h-screen w-full bg-transparent text-zinc-900 dark:text-zinc-50 font-body transition-colors duration-200 flex flex-col items-center">
       {/* 顶部主导航 */}
       <Navbar profile={profile} />
 

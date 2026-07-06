@@ -27,6 +27,32 @@
   }
 }
 
+/* ==========================================================================
+   磨砂纹理层 — 细微颗粒感让背景图呈现哑光质感，但不遮挡内容
+   使用 SVG feTurbulence 生成类胶片颗粒，opacity 4% 确保极克制
+   ========================================================================== */
+.bg-grain {
+  position: fixed;
+  inset: 0;
+  z-index: 0;
+  pointer-events: none;
+  opacity: 0.04;
+  background-image: url("data:image/svg+xml,%3Csvg viewBox='0 0 256 256' xmlns='http://www.w3.org/2000/svg'%3E%3Cfilter id='n'%3E%3CfeTurbulence type='fractalNoise' baseFrequency='0.75' numOctaves='4' stitchTiles='stitch'/%3E%3C/filter%3E%3Crect width='100%25' height='100%25' filter='url(%23n)'/%3E%3C/svg%3E");
+  background-repeat: repeat;
+  background-size: 256px 256px;
+}
+
+/* 暗色模式磨砂纹理稍强，补偿低亮度下人眼对纹理的敏感度下降 */
+.dark .bg-grain {
+  opacity: 0.06;
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .bg-grain {
+    /* 纹理不涉及动画，但保留以备后续 */
+  }
+}
+
 body {
   background: var(--background);
   color: var(--foreground);
@@ -460,40 +486,68 @@ h1, h2, h3, h4, h5, h6 {
   color: #f43f5e;
 }
 
-/* ===== 友链气泡 hover 辉光效果（静谧深海） ===== */
-.friend-bubble-glow {
-  transition: box-shadow 200ms ease-out, background-color 200ms ease-out;
+/* ===== 友链编辑式刊头样式 ===== */
+
+/* 条目容器 */
+.friend-entry {
+  transition: transform 250ms ease, background-color 300ms ease;
+  position: relative;
 }
 
-.friend-bubble-glow:hover {
-  box-shadow: 0 0 20px rgba(114, 123, 186, 0.15);
+/* 左侧品牌色强调线 */
+.friend-entry::before {
+  content: '';
+  position: absolute;
+  left: -1px;
+  top: 8px;
+  bottom: 8px;
+  width: 2px;
+  border-radius: 0 2px 2px 0;
+  background: #727BBA;
+  transform: scaleY(0);
+  transition: transform 280ms cubic-bezier(0.22, 1, 0.36, 1);
 }
 
-.dark .friend-bubble-glow:hover {
-  box-shadow: 0 0 20px rgba(114, 123, 186, 0.2);
+.friend-entry:hover::before {
+  transform: scaleY(1);
 }
 
-/* 气泡入场淡入（无编排式序列动画） */
-.friend-bubble-enter {
+.friend-entry:hover {
+  transform: translateX(2px);
+  background-color: rgba(114, 123, 186, 0.03);
+}
+
+.dark .friend-entry:hover {
+  background-color: rgba(114, 123, 186, 0.05);
+}
+
+/* 条目入场 */
+.friend-page-enter {
   opacity: 0;
-  animation: friendFadeIn 400ms ease-out forwards;
+  flex: 1;
+  animation: friendPageFadeIn 500ms ease-out forwards;
 }
 
-@keyframes friendFadeIn {
+@keyframes friendPageFadeIn {
   from {
     opacity: 0;
-    transform: translate(-50%, -50%) scale(0.92);
+    transform: translateY(8px);
   }
   to {
     opacity: 1;
-    transform: translate(-50%, -50%) scale(1);
+    transform: translateY(0);
   }
 }
 
 @media (prefers-reduced-motion: reduce) {
-  .friend-bubble-enter {
+  .friend-entry,
+  .friend-entry::before {
+    transition: none;
+  }
+  .friend-page-enter {
     animation: none;
     opacity: 1;
+    transform: translateY(0);
   }
 }
 

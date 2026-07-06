@@ -2,7 +2,6 @@
 
 import React, { useState, useEffect, useMemo } from 'react'
 import {
-  Search,
   X,
   Check,
   XIcon,
@@ -12,7 +11,6 @@ import {
   Globe,
   Mail,
   Calendar,
-  MoreHorizontal,
   RefreshCw
 } from 'lucide-react'
 import {
@@ -20,9 +18,9 @@ import {
   Chip,
   Tooltip,
   Spinner,
-  Dropdown,
+  AlertDialog,
   Button,
-  Input
+  SearchField
 } from '@heroui/react'
 import { cn } from '@heroui/react'
 import apiClient from '@/lib/api'
@@ -100,13 +98,16 @@ export default function FriendsPage() {
   const [currentTab, setCurrentTab] = useState('all')
   const [actionLoadingMap, setActionLoadingMap] = useState<Record<number, boolean>>({})
 
-  // 确认弹窗状态
+  // 确认弹窗状态（审核通过/拒绝）
   const [confirmModal, setConfirmModal] = useState<{
     open: boolean
     friendId: number | null
     friendName: string
-    type: 'approve' | 'reject' | 'delete'
+    type: 'approve' | 'reject'
   }>({ open: false, friendId: null, friendName: '', type: 'approve' })
+
+  // 删除确认目标（HeroUI AlertDialog 受控状态）
+  const [deleteTarget, setDeleteTarget] = useState<{ friendId: number; friendName: string } | null>(null)
 
   /** 加载友链数据 */
   const loadFriends = async () => {
@@ -193,23 +194,17 @@ export default function FriendsPage() {
   }
 
   /** 打开确认弹窗 */
-  const openConfirm = (friend: FriendLink, type: 'approve' | 'reject' | 'delete') => {
+  const openConfirm = (friend: FriendLink, type: 'approve' | 'reject') => {
     setConfirmModal({ open: true, friendId: friend.id, friendName: friend.name, type })
   }
 
   /** 执行确认操作 */
   const handleConfirmAction = () => {
     if (!confirmModal.friendId) return
-    switch (confirmModal.type) {
-      case 'approve':
-        handleApprove(confirmModal.friendId)
-        break
-      case 'reject':
-        handleReject(confirmModal.friendId)
-        break
-      case 'delete':
-        handleDelete(confirmModal.friendId)
-        break
+    if (confirmModal.type === 'approve') {
+      handleApprove(confirmModal.friendId)
+    } else {
+      handleReject(confirmModal.friendId)
     }
     setConfirmModal(prev => ({ ...prev, open: false, friendId: null }))
   }
@@ -247,12 +242,6 @@ export default function FriendsPage() {
       description: `"${confirmModal.friendName}" 将被标记为已拒绝状态，不会在前台展示。`,
       confirmLabel: '确认拒绝',
       variant: 'warning' as const
-    },
-    delete: {
-      title: '确认删除此友链？',
-      description: `"${confirmModal.friendName}" 将被永久删除，此操作不可撤销。`,
-      confirmLabel: '确认删除',
-      variant: 'danger' as const
     }
   }
 
@@ -333,32 +322,26 @@ export default function FriendsPage() {
           })}
         </div>
 
-        {/* 搜索框 - 使用 HeroUI Input */}
+        {/* 搜索框 - HeroUI SearchField 原生支持图标 + 清除 */}
         <form onSubmit={handleSearch} className="flex items-center gap-2">
-          <div className="relative w-full sm:w-60 h-8 rounded-lg border border-zinc-200/65 dark:border-zinc-800 bg-white dark:bg-zinc-950 hover:border-zinc-300 dark:hover:border-zinc-700 focus-within:border-primary focus-within:ring-2 focus-within:ring-primary/20 transition-all flex items-center px-2.5">
-            <Search size={13} className="text-zinc-400 shrink-0" />
-            <Input
-              type="text"
-              value={searchVal}
-              onChange={(e) => setSearchVal(e.target.value)}
-              placeholder="搜索友链名称、描述或地址..."
-              className="flex-1 border-0 bg-transparent p-0 text-xs outline-none placeholder-zinc-400 dark:placeholder-zinc-600 focus:ring-0 leading-normal ml-1.5"
-            />
-            {searchVal && (
-              <button
-                type="button"
-                onClick={handleClearSearch}
-                className="text-zinc-400 hover:text-zinc-650 cursor-pointer shrink-0"
-              >
-                <X size={12} />
-              </button>
-            )}
-          </div>
+          <SearchField
+            value={searchVal}
+            onChange={setSearchVal}
+            onSubmit={() => { setSearchQuery(searchVal.trim()); }}
+            onClear={handleClearSearch}
+            className="sm:w-60"
+          >
+            <SearchField.Group>
+              <SearchField.SearchIcon />
+              <SearchField.Input placeholder="搜索友链名称、描述或地址..." />
+              <SearchField.ClearButton />
+            </SearchField.Group>
+          </SearchField>
           <Button
             type="submit"
             size="sm"
             variant="primary"
-            className="h-8 px-3 text-xs font-bold"
+            className="h-9 px-3 text-xs font-bold shrink-0"
           >
             搜索
           </Button>
@@ -484,7 +467,7 @@ export default function FriendsPage() {
                   </div>
 
                   {/* 右侧操作区 - 固定宽度防止挤压 */}
-                  <div className="flex items-center gap-1 shrink-0 select-none w-[140px] justify-end">
+                  <div className="flex items-center gap-1 shrink-0 select-none w-[108px] justify-end">
                     {/* 操作加载指示 */}
                     {isActionLoading && (
                       <Spinner size="sm" color="current" className="text-primary mr-1" />
@@ -535,45 +518,19 @@ export default function FriendsPage() {
                       </Tooltip.Content>
                     </Tooltip>
 
-                    {/* 更多操作下拉 */}
-                    <Dropdown>
-                      <Button
-                        aria-label="更多操作"
-                        variant="tertiary"
-                        size="sm"
-                        isIconOnly
-                        className="h-7 w-7 min-w-0 p-0 text-zinc-400 hover:text-zinc-600 dark:hover:text-zinc-300"
-                        isDisabled={isActionLoading}
+                    {/* 删除按钮 */}
+                    <Tooltip delay={0}>
+                      <button
+                        onClick={() => setDeleteTarget({ friendId: friend.id, friendName: friend.name })}
+                        disabled={isActionLoading}
+                        className="h-7 w-7 flex items-center justify-center rounded-lg text-red-400 hover:bg-red-50 dark:hover:bg-red-950/20 hover:text-red-500 transition-colors cursor-pointer disabled:opacity-40"
                       >
-                        <MoreHorizontal size={15} />
-                      </Button>
-                      <Dropdown.Popover>
-                        <Dropdown.Menu
-                          onAction={(key) => {
-                            if (key === 'delete') openConfirm(friend, 'delete')
-                            if (key === 'approve' && isPending) openConfirm(friend, 'approve')
-                            if (key === 'reject' && isPending) openConfirm(friend, 'reject')
-                          }}
-                        >
-                          {isPending && (
-                            <>
-                              <Dropdown.Item id="approve" textValue="审核通过" className="gap-2">
-                                <Check size={14} className="text-emerald-500 shrink-0" />
-                                <span className="text-xs flex-1">审核通过</span>
-                              </Dropdown.Item>
-                              <Dropdown.Item id="reject" textValue="拒绝申请" className="gap-2">
-                                <XIcon size={14} className="text-red-400 shrink-0" />
-                                <span className="text-xs flex-1">拒绝申请</span>
-                              </Dropdown.Item>
-                            </>
-                          )}
-                          <Dropdown.Item id="delete" textValue="删除友链" variant="danger" className="gap-2">
-                            <Trash2 size={14} className="shrink-0" />
-                            <span className="text-xs flex-1">删除友链</span>
-                          </Dropdown.Item>
-                        </Dropdown.Menu>
-                      </Dropdown.Popover>
-                    </Dropdown>
+                        <Trash2 size={15} />
+                      </button>
+                      <Tooltip.Content>
+                        <p>删除友链</p>
+                      </Tooltip.Content>
+                    </Tooltip>
                   </div>
                 </div>
               </div>
@@ -602,6 +559,47 @@ export default function FriendsPage() {
         onConfirm={handleConfirmAction}
         onCancel={() => setConfirmModal(prev => ({ ...prev, open: false, friendId: null }))}
       />
+
+      {/* ── 删除确认弹窗 (HeroUI AlertDialog) ── */}
+      <AlertDialog.Backdrop
+        isOpen={deleteTarget !== null}
+        onOpenChange={(open) => { if (!open) setDeleteTarget(null) }}
+      >
+        <AlertDialog.Container>
+          <AlertDialog.Dialog className="sm:max-w-[400px]">
+            {({ close }) => (
+              <>
+                <AlertDialog.CloseTrigger />
+                <AlertDialog.Header>
+                  <AlertDialog.Icon status="danger" />
+                  <AlertDialog.Heading>确认删除此友链？</AlertDialog.Heading>
+                </AlertDialog.Header>
+                <AlertDialog.Body>
+                  <p>
+                    「{deleteTarget?.friendName}」将被永久删除，此操作不可撤销。
+                  </p>
+                </AlertDialog.Body>
+                <AlertDialog.Footer>
+                  <Button variant="tertiary" onPress={close}>
+                    取消
+                  </Button>
+                  <Button
+                    variant="danger"
+                    onPress={() => {
+                      if (deleteTarget) {
+                        handleDelete(deleteTarget.friendId)
+                        close()
+                      }
+                    }}
+                  >
+                    确认删除
+                  </Button>
+                </AlertDialog.Footer>
+              </>
+            )}
+          </AlertDialog.Dialog>
+        </AlertDialog.Container>
+      </AlertDialog.Backdrop>
     </div>
   )
 }

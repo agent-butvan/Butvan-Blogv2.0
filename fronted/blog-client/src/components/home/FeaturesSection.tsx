@@ -97,7 +97,7 @@ export default function FeaturesSection({ profile }: { profile: ProfileVO | null
   const startYear = links.footerStartDate ? links.footerStartDate.substring(0, 4) : '2022'
 
   return (
-    <footer className="w-full bg-[#f6f6f6] dark:bg-zinc-950 border-t border-zinc-200/80 dark:border-zinc-900/60 transition-colors py-12 px-6 md:px-16 lg:px-24 text-left font-body text-zinc-600 dark:text-zinc-400 select-none">
+    <footer className="w-full bg-transparent border-t border-zinc-200/80 dark:border-zinc-900/60 transition-colors py-12 px-6 md:px-16 lg:px-24 text-left font-body text-zinc-600 dark:text-zinc-400 select-none">
       <div className="max-w-6xl mx-auto flex flex-col gap-10">
         
         {/* 上半部分：4栏流式布局 */}

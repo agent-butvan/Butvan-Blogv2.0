@@ -22,8 +22,12 @@ import { AppError, classifyError, classifyNetworkError } from './error-handler'
 
 // ---- 配置常量 -----------------------------------------------------------
 
-/** 后端 API 基地址 */
-const API_BASE = process.env.NEXT_PUBLIC_API_BASE_URL || 'http://localhost:8080/api'
+/** 后端 API 基地址
+ * 使用相对路径，兼容所有部署环境：
+ * - 开发环境：通过 Next.js rewrites 代理到 localhost:8080
+ * - 生产环境：通过 Nginx 反向代理到后端服务
+ * 如需直连后端（如局域网调试），设置环境变量 NEXT_PUBLIC_API_BASE_URL */
+const API_BASE = process.env.NEXT_PUBLIC_API_BASE_URL || '/api'
 
 /** 默认请求超时（毫秒） */
 const DEFAULT_TIMEOUT = 15000

@@ -36,6 +36,13 @@ const nextConfig: NextConfig = {
         port: backendPort,
         pathname: "/uploads/**",
       },
+      // MinIO 对象存储预签名 URL（生产环境图片直接由 MinIO 提供）
+      {
+        protocol: "http",
+        hostname: "47.102.205.85",
+        port: "19000",
+        pathname: "/blog2/**",
+      },
     ],
     deviceSizes: [640, 750, 828, 1080, 1200, 1920, 2048, 3840],
     imageSizes: [32, 48, 64, 96, 128, 256, 384],

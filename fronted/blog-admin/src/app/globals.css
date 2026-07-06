@@ -7,11 +7,11 @@
 /* Google 字体：Archivo (标题) + Space Grotesk (正文) */
 @import url("https://fonts.googleapis.com/css2?family=Archivo:wght@300;400;500;600;700&family=Space+Grotesk:wght@300;400;500;600;700&display=swap");
 
-/* Tailwind CSS v4 */
+/* Tailwind CSS v4 — 必须在 HeroUI 之前导入 */
 @import "tailwindcss";
 
-/* HeroUI 主题类扫描 */
-@source "../../node_modules/@heroui/theme/dist/**/*.{js,ts,jsx,tsx}";
+/* HeroUI v3 组件样式 — 基于 React Aria + Tailwind v4 */
+@import "@heroui/styles";
 
 /* ============================================================================
  * 主题变量（静谧深海配色）

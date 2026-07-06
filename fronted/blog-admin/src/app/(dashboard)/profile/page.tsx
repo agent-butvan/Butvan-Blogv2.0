@@ -16,7 +16,7 @@ import {
   Smartphone,
   User,
 } from "lucide-react";
-import { cn, Input, Button } from "@heroui/react";
+import { cn, Button } from "@heroui/react";
 import QRCode from "qrcode";
 import apiClient from "@/lib/api";
 import { setUser } from "@/lib/auth";
@@ -487,18 +487,20 @@ export default function ProfilePage() {
             <form onSubmit={handleSaveProfile} className="flex flex-col gap-4 p-5">
               <div className="grid grid-cols-1 gap-4 md:grid-cols-2">
                 <Field label="昵称" required>
-                  <Input
+                  <input
+                    type="text"
                     value={profileForm.nickname}
                     onChange={(event) => updateProfileField("nickname", event.target.value)}
-                    className="h-10 rounded-lg border border-zinc-200 bg-white px-3 text-sm outline-none transition focus:border-primary dark:border-zinc-800 dark:bg-zinc-900"
+                    className="h-10 w-full rounded-lg border border-zinc-200 bg-white px-3 text-sm outline-none transition focus:border-primary dark:border-zinc-800 dark:bg-zinc-900"
                     placeholder="请输入昵称"
                   />
                 </Field>
                 <Field label="头像地址">
-                  <Input
+                  <input
+                    type="text"
                     value={profileForm.avatarUrl}
                     onChange={(event) => updateProfileField("avatarUrl", event.target.value)}
-                    className="h-10 rounded-lg border border-zinc-200 bg-white px-3 text-sm outline-none transition focus:border-primary dark:border-zinc-800 dark:bg-zinc-900"
+                    className="h-10 w-full rounded-lg border border-zinc-200 bg-white px-3 text-sm outline-none transition focus:border-primary dark:border-zinc-800 dark:bg-zinc-900"
                     placeholder="https:// 或 /uploads/..."
                   />
                 </Field>
@@ -535,29 +537,29 @@ export default function ProfilePage() {
                 <span>修改密码后当前 Token 仍可继续使用；重新登录时请使用新密码。</span>
               </div>
               <Field label="当前密码" required>
-                <Input
+                <input
                   type="password"
                   value={passwordForm.currentPassword}
                   onChange={(event) => setPasswordForm((prev) => ({ ...prev, currentPassword: event.target.value }))}
-                  className="h-10 rounded-lg border border-zinc-200 bg-white px-3 text-sm outline-none transition focus:border-primary dark:border-zinc-800 dark:bg-zinc-900"
+                  className="h-10 w-full rounded-lg border border-zinc-200 bg-white px-3 text-sm outline-none transition focus:border-primary dark:border-zinc-800 dark:bg-zinc-900"
                   placeholder="请输入当前密码"
                 />
               </Field>
               <Field label="新密码" required>
-                <Input
+                <input
                   type="password"
                   value={passwordForm.newPassword}
                   onChange={(event) => setPasswordForm((prev) => ({ ...prev, newPassword: event.target.value }))}
-                  className="h-10 rounded-lg border border-zinc-200 bg-white px-3 text-sm outline-none transition focus:border-primary dark:border-zinc-800 dark:bg-zinc-900"
+                  className="h-10 w-full rounded-lg border border-zinc-200 bg-white px-3 text-sm outline-none transition focus:border-primary dark:border-zinc-800 dark:bg-zinc-900"
                   placeholder="至少 6 个字符"
                 />
               </Field>
               <Field label="确认新密码" required>
-                <Input
+                <input
                   type="password"
                   value={passwordForm.confirmPassword}
                   onChange={(event) => setPasswordForm((prev) => ({ ...prev, confirmPassword: event.target.value }))}
-                  className="h-10 rounded-lg border border-zinc-200 bg-white px-3 text-sm outline-none transition focus:border-primary dark:border-zinc-800 dark:bg-zinc-900"
+                  className="h-10 w-full rounded-lg border border-zinc-200 bg-white px-3 text-sm outline-none transition focus:border-primary dark:border-zinc-800 dark:bg-zinc-900"
                   placeholder="再次输入新密码"
                 />
               </Field>
@@ -603,11 +605,11 @@ export default function ProfilePage() {
                 <h3 className="mb-2 text-xs font-bold text-zinc-950 dark:text-zinc-50">邮箱绑定管理</h3>
                 <form onSubmit={handleSaveProfile} className="grid grid-cols-1 gap-3 md:grid-cols-[1fr_auto]">
                   <Field label="修改或绑定邮箱">
-                    <Input
+                    <input
                       type="email"
                       value={profileForm.email}
                       onChange={(event) => updateProfileField("email", event.target.value)}
-                      className="h-10 rounded-lg border border-zinc-200 bg-white px-3 text-sm outline-none transition focus:border-primary dark:border-zinc-800 dark:bg-zinc-900"
+                      className="h-10 w-full rounded-lg border border-zinc-200 bg-white px-3 text-sm outline-none transition focus:border-primary dark:border-zinc-800 dark:bg-zinc-900"
                       placeholder="name@example.com"
                     />
                   </Field>
@@ -732,7 +734,7 @@ export default function ProfilePage() {
             </p>
             <form onSubmit={handleConfirmBindGithub} className="mt-4 space-y-4">
               <Field label="GitHub 用户名">
-                <Input
+                <input
                   type="text"
                   value={ghUsernameInput}
                   onChange={(e) => setGhUsernameInput(e.target.value)}
@@ -801,7 +803,7 @@ export default function ProfilePage() {
               )}
 
               <Field label="6 位身份验证码">
-                <Input
+                <input
                   type="text"
                   value={totpCodeInput}
                   onChange={(e) => setTotpCodeInput(e.target.value.replace(/\D/g, "").slice(0, 6))}

@@ -143,7 +143,7 @@ export default function HomePage() {
   }, [loading, router])
 
   return (
-    <main className="relative w-full min-h-screen overflow-x-hidden bg-[#f6f6f6] dark:bg-zinc-950 font-body selection:bg-primary/20 text-zinc-900 dark:text-zinc-50 transition-colors">
+    <main className="relative w-full min-h-screen overflow-x-hidden bg-transparent font-body selection:bg-primary/20 text-zinc-900 dark:text-zinc-50 transition-colors">
       {/* 顶部动态主导航栏 */}
       <Navbar profile={profile} />
 

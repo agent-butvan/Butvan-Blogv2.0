@@ -1,6 +1,7 @@
 import type { Metadata } from "next";
 import "./globals.css";
 import { Providers } from "./providers";
+import BackgroundWrapper from "@/components/common/BackgroundWrapper";
 
 export const metadata: Metadata = {
   title: "可梵的个人博客 | 首页",
@@ -15,7 +16,9 @@ export default function RootLayout({
   return (
     <html lang="zh" className="h-full" suppressHydrationWarning>
       <body className="min-h-full bg-background text-foreground antialiased">
-        <Providers>{children}</Providers>
+        <BackgroundWrapper>
+          <Providers>{children}</Providers>
+        </BackgroundWrapper>
       </body>
     </html>
   );

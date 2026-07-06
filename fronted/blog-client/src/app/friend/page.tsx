@@ -4,6 +4,7 @@ import React, { useState, useEffect, useMemo } from 'react'
 import Link from 'next/link'
 import { ArrowUpRight, Users, Plus } from 'lucide-react'
 import Navbar from '@/components/common/Navbar'
+import SidebarWidget from '@/components/common/SidebarWidget'
 import { Spinner } from '@heroui/react'
 import { fetchFriendLinks } from '@/lib/friend-api'
 import { fetchProfile } from '@/lib/profile'
@@ -13,63 +14,26 @@ import type { ProfileVO } from '@/types/profile'
 import type { FriendLink } from '@/types/friend'
 import { FRIEND_CATEGORIES } from '@/types/friend'
 
-/**
- * 简易确定性伪随机数生成器（基于 index + id）
- * 保证同一条友链每次渲染位置一致，不随重渲染跳动
- */
-function seededRandom(seed: number): () => number {
-  let s = seed
-  return () => {
-    s = (s * 1664525 + 1013904223) & 0xffffffff
-    return (s >>> 0) / 0xffffffff
-  }
-}
+/** 分类 value → label 映射 */
+const CATEGORY_LABEL_MAP: Record<string, string> = Object.fromEntries(
+  FRIEND_CATEGORIES.map((c) => [c.value, c.label])
+)
 
 /**
- * 为每个友链气泡计算有机流式布局的微偏移与旋转角度
- * 采用稀疏网格 + 小幅度抖动，营造深海星轨般的自然韵律
- */
-function computeBubbleLayout(index: number, id: number, total: number) {
-  const rng = seededRandom(id * 31 + index * 17)
-
-  const cols = Math.max(3, Math.ceil(Math.sqrt(total * 0.8)))
-  const col = index % cols
-  const row = Math.floor(index / cols)
-  const totalRows = Math.ceil(total / cols)
-
-  const baseX = totalRows <= 1 ? 50 : (col / Math.max(cols - 1, 1)) * 100
-  const baseY = totalRows <= 1 ? 50 : (row / Math.max(totalRows - 1, 1)) * 100
-
-  // 控制抖动范围：±28%，减少重叠、保持可扫描
-  const jitterX = (rng() - 0.5) * 56
-  const jitterY = (rng() - 0.5) * 56
-
-  // 旋转角度：-2.5° ~ 2.5°，更微妙
-  const rotation = (rng() - 0.5) * 5
-
-  const clamp = (v: number, min: number, max: number) => Math.max(min, Math.min(max, v))
-
-  return {
-    xPercent: clamp(baseX + jitterX, 10, 90),
-    yPercent: clamp(baseY + jitterY, 8, 92),
-    rotation,
-  }
-}
-
-/**
- * 友链页面 —— 深海星轨
+ * 友链页面 —— 编辑式刊头
  *
- * 设计语言：静谧深海（Quiet Deep Sea）
- * 友链以 rounded-full 药丸气泡散布于容器中，
- * 确定性伪随机定位 + 微妙旋转，形成有机但可扫描的视觉韵律。
- * hover 时归正旋转并亮起深海辉光，移动端降级为简洁列表。
+ * 设计语言：Swiss Editorial Grid（瑞士编辑式网格）
+ * 以超大分类水印作为章节锚点，友链条目排列于非对称双栏网格中。
+ * 每一行是纯粹的排版单元：头像 → 名称 → 描述 → 外链箭头。
+ * hover 时左侧浮现品牌色强调线 + 微幅右移，克制且精准。
+ *
+ * 无卡片、无模块化布局 —— 一切由排版、间距和横线定义。
  */
 export default function FriendPage() {
   const [profile, setProfile] = useState<ProfileVO | null>(null)
   const [friends, setFriends] = useState<FriendLink[]>([])
   const [loading, setLoading] = useState(true)
   const [selectedCategory, setSelectedCategory] = useState<string | null>(null)
-  const [hoveredId, setHoveredId] = useState<number | null>(null)
   const [visible, setVisible] = useState(false)
 
   // 加载数据
@@ -91,18 +55,20 @@ export default function FriendPage() {
     loadData()
   }, [selectedCategory])
 
-  // 简化入场：仅 opacity 过渡，无编排式序列动画
+  // 入场渐变
   useEffect(() => {
     const timer = requestAnimationFrame(() => setVisible(true))
     return () => cancelAnimationFrame(timer)
   }, [])
 
-  // 计算每个气泡的布局（仅在 friends 变化时重新计算）
-  const bubbleLayouts = useMemo(() => {
-    return friends.map((friend, index) => ({
-      ...computeBubbleLayout(index, friend.id, friends.length),
-      friend,
-    }))
+  // 按分类分组
+  const groupedFriends = useMemo(() => {
+    const groups: Record<string, FriendLink[]> = {}
+    for (const f of friends) {
+      if (!groups[f.category]) groups[f.category] = []
+      groups[f.category].push(f)
+    }
+    return groups
   }, [friends])
 
   // 提取域名
@@ -117,19 +83,27 @@ export default function FriendPage() {
   // 分类筛选
   const handleCategoryClick = (category: string | null) => {
     setSelectedCategory(category === selectedCategory ? null : category)
-    setHoveredId(null)
   }
 
+  // 分类展示顺序（筛选模式下仅展示选中分类）
+  const categoryOrder = FRIEND_CATEGORIES.map((c) => c.value)
+  const orderedCategories = selectedCategory
+    ? [selectedCategory]
+    : categoryOrder.filter((c) => groupedFriends[c]?.length > 0)
+
   return (
-    <div className="min-h-screen bg-[#f6f6f6] dark:bg-zinc-950 font-body text-zinc-900 dark:text-zinc-50 transition-colors">
+    <div className="min-h-screen flex flex-col bg-transparent font-body text-zinc-900 dark:text-zinc-50 transition-colors">
       <Navbar profile={profile} />
 
-      {/* 页头 —— 简洁排版，无 eyebrow */}
+      {/* 左侧悬浮侧挂导航 */}
+      <SidebarWidget />
+
+      {/* 页头 —— 简洁居中排版 */}
       <header
-        className="w-full max-w-3xl mx-auto px-4 pt-16 pb-8 text-center transition-opacity duration-500"
+        className="w-full max-w-3xl mx-auto px-4 pt-16 pb-6 text-center transition-opacity duration-500"
         style={{ opacity: visible ? 1 : 0 }}
       >
-        <div className="flex items-center justify-center gap-3 mb-1.5">
+        <div className="flex items-center justify-center gap-3">
           <Users size={17} className="text-[#727BBA]/70" />
           <h1 className="text-xl md:text-2xl font-heading font-bold text-zinc-900 dark:text-zinc-50 tracking-tight">
             友链
@@ -146,9 +120,9 @@ export default function FriendPage() {
         </div>
       </header>
 
-      {/* 分类筛选 —— 更紧凑的 pill 导航 */}
+      {/* 分类筛选 —— 极简文字导航 */}
       <nav
-        className="w-full max-w-3xl mx-auto px-4 pb-6 transition-opacity duration-500 delay-100"
+        className="w-full max-w-3xl mx-auto px-4 pb-8 transition-opacity duration-500 delay-100"
         style={{ opacity: visible ? 1 : 0 }}
         aria-label="友链分类筛选"
       >
@@ -179,11 +153,11 @@ export default function FriendPage() {
         </div>
       </nav>
 
-      {/* 气泡区域 + 列表 */}
-      <section className="w-full max-w-3xl mx-auto px-4 pb-10" aria-label="友链列表">
+      {/* 主内容区 */}
+      <section className="flex-1 flex flex-col w-full max-w-5xl mx-auto px-4 pb-10" aria-label="友链列表">
         {loading ? (
-          /* 骨架屏 */
-          <div className="min-h-[28rem] flex items-center justify-center">
+          /* 加载态 */
+          <div className="min-h-[24rem] flex items-center justify-center">
             <div className="flex flex-col items-center gap-3">
               <Spinner size="md" />
               <span className="text-xs text-zinc-400 dark:text-zinc-500">加载中...</span>
@@ -191,164 +165,126 @@ export default function FriendPage() {
           </div>
         ) : friends.length === 0 ? (
           /* 空状态 */
-          <div className="min-h-[28rem] flex items-center justify-center">
+          <div className="flex-1 min-h-[24rem] flex items-center justify-center">
             <p className="text-sm font-heading text-zinc-400 dark:text-zinc-500">
               暂无友链
             </p>
           </div>
         ) : (
-          <>
-            {/* ===== 桌面端：浮动气泡（无容器边框） ===== */}
-            <div
-              className="hidden sm:block relative min-h-[34rem] overflow-hidden"
-              style={{ opacity: visible ? 1 : 0, transition: 'opacity 500ms ease-out' }}
-            >
-              {/* 深海氛围层 */}
-              <div
-                className="absolute inset-0 pointer-events-none opacity-30 dark:opacity-20"
-                style={{
-                  background:
-                    'radial-gradient(ellipse 60% 50% at 50% 50%, rgba(114,123,186,0.12) 0%, transparent 70%)',
-                }}
-                aria-hidden="true"
-              />
+          <div
+            className="friend-page-enter"
+            style={{ opacity: visible ? undefined : 0 }}
+          >
+            {orderedCategories.map((catKey) => {
+              const catFriends = groupedFriends[catKey]
+              if (!catFriends?.length) return null
+              const catLabel = CATEGORY_LABEL_MAP[catKey] || catKey
 
-              {bubbleLayouts.map(({ xPercent, yPercent, rotation, friend }) => {
-                const avatarUrl = resolveImageUrl(friend.avatarUrl || '')
-                const isHovered = hoveredId === friend.id
-
-                return (
-                  <div
-                    key={friend.id}
-                    className="absolute transition-all duration-500 ease-out"
-                    style={{
-                      left: `${xPercent}%`,
-                      top: `${yPercent}%`,
-                      transform: `translate(-50%, -50%) scale(${isHovered ? 1.04 : 1})`,
-                      zIndex: isHovered ? 20 : 10,
-                      transitionProperty: 'transform, z-index',
-                      transitionDuration: isHovered ? '200ms' : '350ms',
-                      transitionTimingFunction: 'cubic-bezier(0.22, 1, 0.36, 1)',
-                    }}
-                    onMouseEnter={() => setHoveredId(friend.id)}
-                    onMouseLeave={() => setHoveredId(null)}
+              return (
+                <section key={catKey} className="mb-16 last:mb-0">
+                  {/* 分类水印 —— 超大字号、极低透明度品牌色，作为章节视觉锚点 */}
+                  <h2
+                    className="text-[clamp(2rem,5vw,3.5rem)] font-heading font-bold leading-none tracking-[-0.02em] text-[#727BBA]/[0.06] dark:text-[#727BBA]/[0.08] mb-8 select-none pointer-events-none"
+                    aria-hidden="true"
                   >
-                    <div
-                      className="transition-transform duration-200 ease-out"
-                      style={{
-                        transform: `rotate(${isHovered ? 0 : rotation}deg)`,
-                      }}
-                    >
-                      <a
-                        href={friend.url}
-                        target="_blank"
-                        rel="noopener noreferrer"
-                        className={`group inline-flex items-center gap-2.5 w-auto max-w-[calc(100%-2rem)] rounded-full pl-0 pr-4 py-0 cursor-pointer transition-all duration-200 ${
-                          isHovered
-                            ? 'bg-white dark:bg-zinc-800 shadow-[0_0_20px_rgba(114,123,186,0.15)] dark:shadow-[0_0_20px_rgba(114,123,186,0.2)]'
-                            : 'bg-white/85 dark:bg-zinc-900/75 hover:bg-white dark:hover:bg-zinc-800'
-                        }`}
-                      >
-                        {/* 头像 */}
-                        <div
-                          className={`shrink-0 h-12 w-12 rounded-full overflow-hidden ring-1 transition-all duration-200 ${
-                            isHovered
-                              ? 'ring-[#727BBA]/40'
-                              : 'ring-zinc-200/60 dark:ring-white/10'
-                          }`}
+                    {catLabel}
+                  </h2>
+
+                  {/* 友链卡片网格 */}
+                  <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4">
+                    {catFriends.map((friend) => {
+                      const avatarUrl = resolveImageUrl(friend.avatarUrl || '')
+                      const domain = extractDomain(friend.url)
+
+                      return (
+                        <a
+                          key={friend.id}
+                          href={friend.url}
+                          target="_blank"
+                          rel="noopener noreferrer"
+                          className="group relative flex flex-col p-5 rounded-xl border border-zinc-200/60 bg-white/40 dark:border-zinc-800 dark:bg-zinc-900/40 backdrop-blur-sm transition-all duration-500 hover:border-[#727BBA]/40 hover:shadow-[8px_8px_0px_rgba(114,123,186,0.08)] dark:hover:shadow-[8px_8px_0px_rgba(114,123,186,0.03)] overflow-hidden cursor-pointer"
                         >
-                          {avatarUrl ? (
-                            <img
-                              src={avatarUrl}
-                              alt={`${friend.name} 的头像`}
-                              className="h-full w-full object-cover"
-                              loading="lazy"
-                            />
-                          ) : (
-                            <div className="h-full w-full flex items-center justify-center text-sm font-bold text-zinc-400 bg-zinc-100 dark:bg-zinc-800 uppercase select-none">
-                              {friend.name.charAt(0)}
+                          {/* 右上角渐变光晕 */}
+                          <div className="absolute top-0 right-0 w-16 h-16 bg-gradient-to-bl from-[#727BBA]/5 to-transparent opacity-0 group-hover:opacity-100 transition-opacity duration-700"></div>
+
+                          {/* 右上角外链图标 */}
+                          <div className="absolute top-4 right-4 opacity-0 group-hover:opacity-100 translate-x-1 -translate-y-1 group-hover:translate-x-0 group-hover:translate-y-0 transition-all duration-300 text-[#727BBA]">
+                            <ArrowUpRight size={14} />
+                          </div>
+
+                          {/* 头像 + 信息 */}
+                          <div className="flex items-center gap-4 mb-4 relative z-10">
+                            {/* 圆形头像 */}
+                            <div className="w-13 h-13 rounded-full bg-zinc-50 dark:bg-zinc-950 flex-shrink-0 border border-zinc-200/80 dark:border-zinc-700/80 group-hover:border-[#727BBA]/40 transition-all duration-500 overflow-hidden ring-4 ring-transparent group-hover:ring-[#727BBA]/5">
+                              {avatarUrl ? (
+                                <img
+                                  src={avatarUrl}
+                                  alt={`${friend.name} 的头像`}
+                                  className="w-full h-full object-cover grayscale-[0.4] group-hover:grayscale-0 group-hover:scale-110 transition-all duration-700 ease-out"
+                                  loading="lazy"
+                                />
+                              ) : (
+                                <div className="w-full h-full flex items-center justify-center text-xs font-bold text-zinc-400 uppercase select-none">
+                                  {friend.name.charAt(0)}
+                                </div>
+                              )}
                             </div>
-                          )}
-                        </div>
 
-                        {/* 信息 */}
-                        <div className="min-w-0 max-w-[10rem] sm:max-w-[13rem] lg:max-w-[16rem]">
-                          <h2 className="break-words text-sm font-heading font-semibold tracking-tight text-zinc-900 dark:text-zinc-100">
-                            {friend.name}
-                          </h2>
-                          <p className="mt-0.5 line-clamp-1 break-words text-xs leading-5 text-zinc-500 dark:text-zinc-400">
-                            {friend.description || extractDomain(friend.url)}
+                            {/* 名称 + 分类标签 */}
+                            <div className="min-w-0">
+                              <h3 className="font-bold text-zinc-900 dark:text-zinc-100 text-sm tracking-wide truncate group-hover:text-[#727BBA] transition-colors">
+                                {friend.name}
+                              </h3>
+                              <div className="mt-0.5 flex items-center gap-2">
+                                <span className="text-[9px] text-zinc-400 dark:text-zinc-500 font-mono uppercase tracking-widest">
+                                  {catLabel}
+                                </span>
+                              </div>
+                            </div>
+                          </div>
+
+                          {/* 描述 */}
+                          <p className="text-[13px] text-zinc-500 dark:text-zinc-400 leading-relaxed line-clamp-2 h-10 relative z-10">
+                            {friend.description || domain}
                           </p>
-                        </div>
-                      </a>
-                    </div>
+                        </a>
+                      )
+                    })}
                   </div>
-                )
-              })}
-            </div>
-
-            {/* ===== 移动端：简洁列表（无容器边框） ===== */}
-            <div
-              className="sm:hidden divide-y divide-zinc-200/40 dark:divide-zinc-800/40"
-              style={{ opacity: visible ? 1 : 0, transition: 'opacity 500ms ease-out' }}
-            >
-              {friends.map((friend) => {
-                const avatarUrl = resolveImageUrl(friend.avatarUrl || '')
-                const domain = extractDomain(friend.url)
-
-                return (
-                  <a
-                    key={friend.id}
-                    href={friend.url}
-                    target="_blank"
-                    rel="noopener noreferrer"
-                    className="group flex items-center gap-3 py-3.5 px-5 hover:bg-[#E9EEE8]/40 dark:hover:bg-zinc-800/30 cursor-pointer transition-colors duration-200"
-                  >
-                    <div className="shrink-0 w-10 h-10 rounded-full overflow-hidden bg-zinc-100 dark:bg-zinc-800 flex items-center justify-center ring-1 ring-zinc-200/60 dark:ring-white/10">
-                      {avatarUrl ? (
-                        <img src={avatarUrl} alt={`${friend.name} 的头像`} className="w-full h-full object-cover" loading="lazy" />
-                      ) : (
-                        <span className="text-sm font-bold text-zinc-400 uppercase select-none">
-                          {friend.name.charAt(0)}
-                        </span>
-                      )}
-                    </div>
-                    <div className="flex-1 min-w-0">
-                      <h3 className="text-sm font-heading font-semibold text-zinc-900 dark:text-zinc-100 truncate group-hover:text-[#727BBA] transition-colors duration-200">
-                        {friend.name}
-                      </h3>
-                      <p className="text-xs text-zinc-500 dark:text-zinc-400 truncate mt-0.5">
-                        {friend.description || domain}
-                      </p>
-                    </div>
-                    <ArrowUpRight size={16} className="shrink-0 text-zinc-300 dark:text-zinc-600 group-hover:text-[#727BBA] transition-colors duration-200" />
-                  </a>
-                )
-              })}
-            </div>
-          </>
+                </section>
+              )
+            })}
+          </div>
         )}
 
-        {/* 申请入口 —— 修复 ghost-card，纯色底替代 */}
-        <div className="mt-8">
+        {/* 申请入口 —— 置于底部 */}
+        <div className="mt-auto pt-8 border-t border-zinc-200/40 dark:border-zinc-800/40">
           <Link
             href="/friend/apply"
-            className="group flex items-center justify-between px-5 py-3.5 rounded-2xl bg-white/60 dark:bg-zinc-900/40 hover:bg-white dark:hover:bg-zinc-900 border border-zinc-200/50 dark:border-zinc-800/50 hover:border-[#727BBA]/25 dark:hover:border-[#727BBA]/20 transition-all duration-200 cursor-pointer"
+            className="group relative flex items-center gap-4 p-5 rounded-xl border border-dashed border-zinc-300/60 bg-white/20 dark:border-zinc-700/60 dark:bg-zinc-900/20 backdrop-blur-sm transition-all duration-500 hover:border-[#09B38A]/60 hover:shadow-[8px_8px_0px_rgba(9,179,138,0.08)] dark:hover:shadow-[8px_8px_0px_rgba(9,179,138,0.03)] overflow-hidden cursor-pointer"
           >
-            <div className="flex items-center gap-3 min-w-0">
-              <div className="shrink-0 w-10 h-10 rounded-full bg-[#09B38A]/10 flex items-center justify-center">
-                <Plus size={18} className="text-[#09B38A]" />
-              </div>
-              <div className="min-w-0">
-                <span className="text-sm font-heading font-semibold text-zinc-900 dark:text-zinc-50">
-                  申请加入友链
-                </span>
-                <span className="text-xs text-zinc-500 dark:text-zinc-400 ml-2 hidden sm:inline">
-                  审核通过后展示在此处
-                </span>
-              </div>
+            {/* 右上角渐变光晕 */}
+            <div className="absolute top-0 right-0 w-16 h-16 bg-gradient-to-bl from-[#09B38A]/5 to-transparent opacity-0 group-hover:opacity-100 transition-opacity duration-700"></div>
+
+            {/* 加号图标 */}
+            <div className="shrink-0 w-13 h-13 rounded-full bg-[#09B38A]/10 flex items-center justify-center group-hover:bg-[#09B38A]/20 transition-colors duration-300">
+              <Plus size={20} className="text-[#09B38A]" />
             </div>
-            <ArrowUpRight size={16} className="shrink-0 text-zinc-400 dark:text-zinc-500 group-hover:text-[#727BBA] transition-all duration-200 group-hover:translate-x-0.5 group-hover:-translate-y-0.5" />
+
+            {/* 文字内容 */}
+            <div className="flex-1 min-w-0">
+              <span className="block text-sm font-heading font-semibold text-zinc-700 dark:text-zinc-300 group-hover:text-[#09B38A] transition-colors duration-200">
+                申请加入友链
+              </span>
+              <span className="block text-xs text-zinc-400 dark:text-zinc-500 mt-1">
+                审核通过后展示在此处
+              </span>
+            </div>
+
+            {/* 外链箭头 */}
+            <div className="shrink-0 opacity-0 group-hover:opacity-100 translate-x-1 -translate-y-1 group-hover:translate-x-0 group-hover:translate-y-0 transition-all duration-300 text-[#09B38A]">
+              <ArrowUpRight size={14} />
+            </div>
           </Link>
         </div>
       </section>

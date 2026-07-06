@@ -17,7 +17,7 @@ import {
   User,
   FileText
 } from "lucide-react";
-import { cn, Input, Button } from "@heroui/react";
+import { cn, Button, SearchField } from "@heroui/react";
 import { fetchAdminLikes, deleteLikes, LikeItem } from "@/lib/likes-api";
 import { toast } from "@/lib/toast";
 import ConfirmModal from "@/components/common/ConfirmModal";
@@ -221,35 +221,27 @@ export default function LikesPage() {
       {/* 筛选 + 搜索栏与辅助状态工具栏 - 与 articles 高度统一 */}
       <div className="flex flex-wrap items-center justify-between gap-3">
         <div className="flex items-center gap-2 flex-1 max-w-xs">
-          <div className="flex h-9 items-center gap-2 rounded-xl border border-zinc-200/60 dark:border-zinc-800 bg-white dark:bg-zinc-950 px-3 py-1.5 w-full transition-all focus-within:ring-2 focus-within:ring-rose-500/15 focus-within:border-rose-500/60">
-            <Search size={14} className="text-zinc-400 dark:text-zinc-500 shrink-0" />
-            <Input
-              type="text"
-              value={searchVal}
-              onChange={(e) => {
-                setSearchVal(e.target.value);
-                setKeyword(e.target.value.trim());
-                setPage(1);
-              }}
-              placeholder="搜索 IP 地址 / 文章标题..."
-              className="flex-1 border-0 bg-transparent p-0 text-xs text-zinc-800 dark:text-zinc-100 outline-none placeholder-zinc-400 dark:placeholder-zinc-650 focus:ring-0 leading-normal"
-            />
-            {searchVal && (
-              <Button
-                isIconOnly
-                size="sm"
-                variant="ghost"
-                onPress={() => {
-                  setSearchVal("");
-                  setKeyword("");
-                  setPage(1);
-                }}
-                className="text-zinc-400 hover:text-zinc-655 dark:hover:text-zinc-200 min-w-0 h-auto w-auto p-0"
-              >
-                <X size={13} />
-              </Button>
-            )}
-          </div>
+          {/* 搜索框 — HeroUI SearchField 原生支持图标 + 清除 */}
+          <SearchField
+            value={searchVal}
+            onChange={(value) => {
+              setSearchVal(value);
+              setKeyword(value.trim());
+              setPage(1);
+            }}
+            onClear={() => {
+              setSearchVal("");
+              setKeyword("");
+              setPage(1);
+            }}
+            className="w-full"
+          >
+            <SearchField.Group>
+              <SearchField.SearchIcon />
+              <SearchField.Input placeholder="搜索 IP 地址 / 文章标题..." />
+              <SearchField.ClearButton />
+            </SearchField.Group>
+          </SearchField>
         </div>
 
         {/* 辅助状态与工具区 */}

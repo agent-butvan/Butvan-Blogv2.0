@@ -45,6 +45,7 @@ Butvan Blog2.0/                                    # 📦 项目根目录
 │       ├── migration-v0.7.sql                     #   数据库迁移脚本 (v0.7 版本，安全插入后台“资源管理 -> 媒体内容管理”菜单)
 │       ├── migration-v0.8.sql                     #   数据库迁移脚本 (v0.8 版本，文章点赞记录管理及菜单安全配置)
 │       └── migration-v0.9.sql                     #   数据库迁移脚本 (v0.9 版本，实现 GitHub 和 2FA 安全绑定与双重认证)
+│       └── migration-v1.1-background-image.sql     #   数据库迁移脚本 (v1.1 版本，预置站点全局背景图片配置项)
 │
 ├── fronted/                                       # 🖥️【前端】Next.js 16 + TypeScript + HeroUI v3 + Tailwind v4
 │   │
@@ -69,7 +70,7 @@ Butvan Blog2.0/                                    # 📦 项目根目录
 │   │   │   │   │   └── [slug]/                    #         系列详情（含目录导航）
 │   │   │   │   │       └── page.tsx
 │   │   │   │   ├── friend/                        #       🔗 友链模块
-│   │   │   │   │   ├── page.tsx                   #         友链目录页 — 「深海星轨」浮动气泡布局（确定性伪随机定位+辉光hover+移动端列表降级）
+│   │   │   │   │   ├── page.tsx                   #         友链目录页 — 「编辑式刊头」瑞士网格布局（分类水印+双栏条目+hover强调线）
 │   │   │   │   │   └── apply/                     #         友链申请子路由
 │   │   │   │   │       └── page.tsx               #           友链申请表单页（编辑式分栏布局+实时预览+URL自动抓取+头像上传）
 │   │   │   │   ├── layout.tsx                     #         根布局：字体加载、全局 Metadata
@@ -82,6 +83,7 @@ Butvan Blog2.0/                                    # 📦 项目根目录
 │   │   │   │   ├── common/                        #       通用原子组件（Button、Card、Modal、Empty 等）
 │   │   │   │   │   ├── HtmlRenderer.tsx           #         通用 HTML 解析与组件拦截器
 │   │   │   │   │   ├── MarkdownCodeBlock.tsx      #         通用定制化 macOS 风格代码块组件
+│   │   │   │   │   ├── BackgroundWrapper.tsx      #         站点全局背景图片包装组件（条件渲染 body 背景）
 │   │   │   │   │   ├── Navbar.tsx                 #         顶部导航栏（动态菜单 + 用户登录状态）
 │   │   │   │   │   ── SidebarWidget.tsx          #         左侧悬浮侧挂栏（动态菜单 + 底部分隔线 + 登录图标）
 │   │   │   │   ├── layout/                        #       布局组件
@@ -272,12 +274,16 @@ Butvan Blog2.0/                                    # 📦 项目根目录
     │       │   ├── auth/                           #         认证相关：LoginDTO, RegisterDTO, CurrentUserUpdateDTO, PasswordChangeDTO
     │       │   ├── scene/                          #         场景相关：SceneSaveDTO, HotspotSaveDTO
     │       │   ├── page/                           #         独立页相关：PageSaveDTO
+    │       │   ├── site/                           #         站点配置相关：SiteConfigUpdateDTO
+    │       │   ├── profile/                        #         个人资料相关：ProfileUpdateDTO
     │       │   └── common/                         #         通用：PageQueryDTO, BatchDeleteDTO
     │       └── vo/                                 #       视图对象（返回前端展示）
     │           ├── article/                        #         文章相关：ArticleDetailVO, ArticleListVO
     │           ├── home/                           #         首页相关：HomeSceneVO, HotspotVO
     │           ├── comment/                        #         评论相关：CommentVO
     │           ├── auth/                           #         认证相关：LoginVO, CurrentUserVO
+    │           ├── site/                           #         站点配置相关：SiteConfigVO
+    │           ├── profile/                        #         个人资料相关：ProfileVO
     │           └── common/                         #         通用：PageVO, StatisticsVO
     │
     └── blog-service/                               #   📦 主业务服务模块（启动入口 + 业务逻辑）
@@ -454,4 +460,4 @@ Butvan Blog2.0/                                    # 📦 项目根目录
 
 ---
 
-*最后更新：2026-07-03*
+*最后更新：2026-07-05*

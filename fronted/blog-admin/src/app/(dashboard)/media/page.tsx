@@ -15,7 +15,7 @@ import {
   ExternalLink,
   Filter
 } from "lucide-react";
-import { cn, Input, Button } from "@heroui/react";
+import { cn, Button, SearchField } from "@heroui/react";
 import { fetchMediaList, deleteMediaItem, uploadMediaFile, type MediaItem } from "@/lib/media-api";
 import { toast } from "@/lib/toast";
 import ConfirmModal from "@/components/common/ConfirmModal";
@@ -425,33 +425,25 @@ export default function MediaPage() {
             </select>
           </div>
 
-          {/* 模糊名称搜索 */}
+          {/* 模糊名称搜索 — HeroUI SearchField */}
           <form onSubmit={handleSearchSubmit} className="flex items-center gap-2">
-            <div className="flex h-8 items-center gap-2 rounded-lg border border-zinc-200/65 dark:border-zinc-800 bg-white dark:bg-zinc-950 px-2.5 w-48 md:w-56 focus-within:ring-2 focus-within:ring-primary/20 focus-within:border-primary transition-all">
-              <Search size={13} className="text-zinc-400 shrink-0" />
-              <Input
-                type="text"
-                value={searchVal}
-                onChange={(e) => setSearchVal(e.target.value)}
-                placeholder="按文件名模糊匹配..."
-                className="flex-1 border-0 bg-transparent p-0 text-xs text-zinc-850 dark:text-zinc-150 outline-none placeholder-zinc-400 dark:placeholder-zinc-650 focus:ring-0 leading-normal"
-              />
-              {searchVal && (
-                <Button
-                  isIconOnly
-                  size="sm"
-                  variant="ghost"
-                  onPress={handleClearSearch}
-                  className="text-zinc-400 hover:text-zinc-655 min-w-0 h-auto w-auto p-0"
-                >
-                  <X size={12} />
-                </Button>
-              )}
-            </div>
+            <SearchField
+              value={searchVal}
+              onChange={setSearchVal}
+              onSubmit={() => { setKeyword(searchVal.trim()); setPage(1); }}
+              onClear={handleClearSearch}
+              className="w-48 md:w-56"
+            >
+              <SearchField.Group>
+                <SearchField.SearchIcon />
+                <SearchField.Input placeholder="按文件名模糊匹配..." />
+                <SearchField.ClearButton />
+              </SearchField.Group>
+            </SearchField>
             <Button
               type="submit"
               size="sm"
-              className="h-8 px-3.5 rounded-lg bg-zinc-850 hover:bg-zinc-800 dark:bg-zinc-800 dark:hover:bg-zinc-750 text-white text-xs font-bold"
+              className="h-9 px-3.5 rounded-lg bg-zinc-850 hover:bg-zinc-800 dark:bg-zinc-800 dark:hover:bg-zinc-750 text-white text-xs font-bold shrink-0"
             >
               搜索
             </Button>
