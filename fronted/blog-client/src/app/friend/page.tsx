@@ -257,35 +257,41 @@ export default function FriendPage() {
           </div>
         )}
 
-        {/* 申请入口 —— 置于底部 */}
-        <div className="mt-auto pt-8 border-t border-zinc-200/40 dark:border-zinc-800/40">
-          <Link
-            href="/friend/apply"
-            className="group relative flex items-center gap-4 p-5 rounded-xl border border-dashed border-zinc-300/60 bg-white/20 dark:border-zinc-700/60 dark:bg-zinc-900/20 backdrop-blur-sm transition-all duration-500 hover:border-[#09B38A]/60 hover:shadow-[8px_8px_0px_rgba(9,179,138,0.08)] dark:hover:shadow-[8px_8px_0px_rgba(9,179,138,0.03)] overflow-hidden cursor-pointer"
-          >
-            {/* 右上角渐变光晕 */}
-            <div className="absolute top-0 right-0 w-16 h-16 bg-gradient-to-bl from-[#09B38A]/5 to-transparent opacity-0 group-hover:opacity-100 transition-opacity duration-700"></div>
+        {/* 友链说明 + 申请入口 —— 参考 grtsinry43.com 设计 */}
+        <div className="mt-auto pt-16">
+          <div className="p-8 rounded-xl border border-dashed border-zinc-200/70 bg-zinc-50/40 dark:border-zinc-700/60 dark:bg-zinc-900/30 max-w-2xl mx-auto w-full">
+            {/* 标题 */}
+            <h2 className="text-sm font-bold text-zinc-800 dark:text-zinc-200 uppercase tracking-widest mb-6 font-mono text-center">
+              友链说明
+            </h2>
 
-            {/* 加号图标 */}
-            <div className="shrink-0 w-13 h-13 rounded-full bg-[#09B38A]/10 flex items-center justify-center group-hover:bg-[#09B38A]/20 transition-colors duration-300">
-              <Plus size={20} className="text-[#09B38A]" />
-            </div>
+            {/* 规则列表 */}
+            <ul className="text-xs text-zinc-500 dark:text-zinc-400 space-y-3">
+              <li className="flex gap-2">
+                <span className="text-[#727BBA]/60 shrink-0">•</span>
+                <span>优先考虑经常更新、内容优质的技术博客或生活记录。</span>
+              </li>
+              <li className="flex gap-2">
+                <span className="text-[#727BBA]/60 shrink-0">•</span>
+                <span>站点需支持 HTTPS，排版整洁，无大量广告或误导性内容。</span>
+              </li>
+              <li className="flex gap-2">
+                <span className="text-[#727BBA]/60 shrink-0">•</span>
+                <span>申请前请先在贵站添加本站链接，这将视作一种友好的相互确认。</span>
+              </li>
+            </ul>
 
-            {/* 文字内容 */}
-            <div className="flex-1 min-w-0">
-              <span className="block text-sm font-heading font-semibold text-zinc-700 dark:text-zinc-300 group-hover:text-[#09B38A] transition-colors duration-200">
-                申请加入友链
-              </span>
-              <span className="block text-xs text-zinc-400 dark:text-zinc-500 mt-1">
-                审核通过后展示在此处
-              </span>
+            {/* 申请按钮 */}
+            <div className="mt-10 flex justify-center">
+              <Link
+                href="/friend/apply"
+                className="flex items-center gap-2 px-4 py-2 bg-zinc-800 dark:bg-zinc-200 text-white dark:text-zinc-900 rounded-lg hover:bg-[#09B38A] dark:hover:bg-[#09B38A] dark:hover:text-white transition-all duration-300 font-bold text-[11px] shadow-sm group"
+              >
+                <Plus size={14} className="group-hover:rotate-90 transition-transform duration-300" />
+                申请加入
+              </Link>
             </div>
-
-            {/* 外链箭头 */}
-            <div className="shrink-0 opacity-0 group-hover:opacity-100 translate-x-1 -translate-y-1 group-hover:translate-x-0 group-hover:translate-y-0 transition-all duration-300 text-[#09B38A]">
-              <ArrowUpRight size={14} />
-            </div>
-          </Link>
+          </div>
         </div>
       </section>
 
