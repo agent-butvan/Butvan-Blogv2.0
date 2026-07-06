@@ -118,6 +118,8 @@ public class SecurityConfig {
                     .requestMatchers(HttpMethod.GET, "/api/friends/**").permitAll()
                     .requestMatchers(HttpMethod.POST, "/api/friends/apply").permitAll()
                     .requestMatchers(HttpMethod.POST, "/api/friends/fetch-meta").permitAll()
+                    // 放行前台相册公开接口（GET 查询）
+                    .requestMatchers(HttpMethod.GET, "/api/public/albums/**").permitAll()
                     // 放行微信登录二维码获取接口（无需登录即可扫码）
                     .requestMatchers(HttpMethod.POST, "/api/weixin/login").permitAll()
                     // 放行公开图片上传接口（友链头像等无需登录的场景）
