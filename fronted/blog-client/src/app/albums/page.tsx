@@ -29,10 +29,10 @@ import type { PhotoWallItem } from '@/types/album'
 // - 透视网格线增强纵深感
 // ===================================================================
 
-/** 月份分组后的簇数据 */
+/** 按天分组后的簇数据 */
 interface PhotoCluster {
-  monthKey: string
-  monthLabel: string
+  dayKey: string
+  dayLabel: string
   chapterNum: number
   photos: PhotoWallItem[]
 }
@@ -55,7 +55,7 @@ export default function AlbumsPage() {
   const [bgOffset1, setBgOffset1] = useState(0)
   const [bgOffset2, setBgOffset2] = useState(0)
 
-  /** 加载全部照片并按月份分组 */
+  /** 加载全部照片并按天分组 */
   const loadData = async () => {
     setLoading(true)
     try {
@@ -68,8 +68,8 @@ export default function AlbumsPage() {
       setAllPhotos(photos)
       setTotal(photoData.total || 0)
 
-      // 按月份分组，生成簇
-      const groups = groupByMonth(photos)
+      // 按天分组，生成簇
+      const groups = groupByDay(photos)
       setClusters(groups)
 
       // 为灯箱准备数据
@@ -173,7 +173,7 @@ export default function AlbumsPage() {
             transition: 'transform 0.1s linear',
           }}
         >
-          暗夜画廊
+          butvan
         </span>
         <span
           className="absolute text-[35vw] font-extrabold whitespace-nowrap leading-none select-none"
@@ -185,7 +185,7 @@ export default function AlbumsPage() {
             transition: 'transform 0.1s linear',
           }}
         >
-          TIMELINE
+          albums
         </span>
 
         {/* 透视网格线 */}
@@ -248,7 +248,7 @@ export default function AlbumsPage() {
               >
                 {clusters.map((cluster) => (
                   <PhotoClusterCard
-                    key={cluster.monthKey}
+                    key={cluster.dayKey}
                     cluster={cluster}
                     onPhotoClick={openLightbox}
                   />
@@ -289,7 +289,7 @@ function PhotoClusterCard({
 
   return (
     <section
-      className={`photo-cluster flex-shrink-0 relative group photo-cluster-${cluster.monthKey}`}
+      className={`photo-cluster flex-shrink-0 relative group photo-cluster-${cluster.dayKey}`}
       style={{
         width: '280px',
         height: '350px',
@@ -299,7 +299,7 @@ function PhotoClusterCard({
     >
       {/* 簇元信息 */}
       <div
-        className={`absolute -top-20 left-0 opacity-50 transition-all duration-700 select-none cm-${cluster.monthKey}`}
+        className={`absolute -top-20 left-0 opacity-50 transition-all duration-700 select-none cm-${cluster.dayKey}`}
         style={{
           transitionTimingFunction: 'cubic-bezier(0.19, 1, 0.22, 1)',
         }}
@@ -308,7 +308,7 @@ function PhotoClusterCard({
           CHAPTER.{String(cluster.chapterNum).padStart(2, '0')}
         </span>
         <h3 className="font-heading text-[2rem] tracking-[-1px] leading-tight mt-1 text-zinc-900 dark:text-zinc-100">
-          {cluster.monthLabel}
+          {cluster.dayLabel}
         </h3>
       </div>
 
@@ -319,7 +319,7 @@ function PhotoClusterCard({
         return (
           <div
             key={photo.id}
-            className={`art-card ac-${cluster.monthKey} absolute inset-0 bg-white dark:bg-zinc-900 p-1.5 shadow-lg cursor-pointer overflow-hidden`}
+            className={`art-card ac-${cluster.dayKey} absolute inset-0 bg-white dark:bg-zinc-900 p-1.5 shadow-lg cursor-pointer overflow-hidden`}
             style={{
               boxShadow: '0 10px 30px rgba(0,0,0,0.05)',
               transition: 'all 0.8s cubic-bezier(0.68, -0.6, 0.32, 1.6)',
@@ -341,24 +341,24 @@ function PhotoClusterCard({
       {/* CSS hover 爆发效果 */}
       <style dangerouslySetInnerHTML={{
         __html: `
-          .photo-cluster-${cluster.monthKey}:hover .ac-${cluster.monthKey}:nth-child(1) {
+          .photo-cluster-${cluster.dayKey}:hover .ac-${cluster.dayKey}:nth-child(1) {
             transform: translate(-150px, -70px) rotate(-12deg) scale(1.08) !important;
           }
-          .photo-cluster-${cluster.monthKey}:hover .ac-${cluster.monthKey}:nth-child(2) {
+          .photo-cluster-${cluster.dayKey}:hover .ac-${cluster.dayKey}:nth-child(2) {
             transform: translate(125px, -105px) rotate(8deg) scale(0.9) !important;
           }
-          .photo-cluster-${cluster.monthKey}:hover .ac-${cluster.monthKey}:nth-child(3) {
+          .photo-cluster-${cluster.dayKey}:hover .ac-${cluster.dayKey}:nth-child(3) {
             transform: translate(35px, 125px) rotate(-5deg) scale(1.03) !important;
           }
-          .photo-cluster-${cluster.monthKey}:hover .ac-${cluster.monthKey}:nth-child(4) {
+          .photo-cluster-${cluster.dayKey}:hover .ac-${cluster.dayKey}:nth-child(4) {
             opacity: 1 !important;
             transform: translate(-70px, 140px) rotate(5deg) !important;
           }
-          .photo-cluster-${cluster.monthKey}:hover .cm-${cluster.monthKey} {
+          .photo-cluster-${cluster.dayKey}:hover .cm-${cluster.dayKey} {
             opacity: 1 !important;
             transform: translateY(-10px) !important;
           }
-          .ac-${cluster.monthKey}:nth-child(4) {
+          .ac-${cluster.dayKey}:nth-child(4) {
             opacity: 0;
           }
         `
@@ -427,28 +427,27 @@ function Ruler({ clustersCount }: { clustersCount: number }) {
 
 // ==================== 工具函数 ====================
 
-/** 按月份分组，并标注章节编号 */
-function groupByMonth(photos: PhotoWallItem[]): PhotoCluster[] {
+/** 按天分组，并标注章节编号 */
+function groupByDay(photos: PhotoWallItem[]): PhotoCluster[] {
   const map = new Map<string, PhotoWallItem[]>()
 
   for (const photo of photos) {
     const date = new Date(photo.createdAt)
-    const key = `${date.getFullYear()}-${String(date.getMonth() + 1).padStart(2, '0')}`
+    const key = `${date.getFullYear()}-${String(date.getMonth() + 1).padStart(2, '0')}-${String(date.getDate()).padStart(2, '0')}`
     if (!map.has(key)) map.set(key, [])
     map.get(key)!.push(photo)
   }
 
   let chapterNum = 1
-  return Array.from(map.entries()).map(([monthKey, photos]) => ({
-    monthKey,
-    monthLabel: formatMonthLabel(monthKey),
+  return Array.from(map.entries()).map(([dayKey, photos]) => ({
+    dayKey,
+    dayLabel: formatDayLabel(dayKey),
     chapterNum: chapterNum++,
     photos,
   }))
 }
 
-function formatMonthLabel(key: string): string {
-  const [year, month] = key.split('-')
-  const monthNames = ['一月', '二月', '三月', '四月', '五月', '六月', '七月', '八月', '九月', '十月', '十一月', '十二月']
-  return `${year} · ${monthNames[parseInt(month) - 1]}`
+function formatDayLabel(key: string): string {
+  const [year, month, day] = key.split('-')
+  return `${year}年${parseInt(month)}月${parseInt(day)}日`
 }
