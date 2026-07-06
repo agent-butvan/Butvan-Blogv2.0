@@ -291,15 +291,15 @@ function PhotoClusterCard({
     <section
       className={`photo-cluster flex-shrink-0 relative group photo-cluster-${cluster.monthKey}`}
       style={{
-        width: '400px',
-        height: '500px',
-        marginRight: '50vw',
+        width: '280px',
+        height: '350px',
+        marginRight: '40vw',
         transformStyle: 'preserve-3d',
       }}
     >
       {/* 簇元信息 */}
       <div
-        className={`absolute -top-24 left-0 opacity-50 transition-all duration-700 select-none cm-${cluster.monthKey}`}
+        className={`absolute -top-20 left-0 opacity-50 transition-all duration-700 select-none cm-${cluster.monthKey}`}
         style={{
           transitionTimingFunction: 'cubic-bezier(0.19, 1, 0.22, 1)',
         }}
@@ -307,7 +307,7 @@ function PhotoClusterCard({
         <span className="text-[0.7rem] tracking-[5px] text-[#3dc1d3] font-heading">
           CHAPTER.{String(cluster.chapterNum).padStart(2, '0')}
         </span>
-        <h3 className="font-heading text-[2.5rem] tracking-[-1px] leading-tight mt-1 text-zinc-900 dark:text-zinc-100">
+        <h3 className="font-heading text-[2rem] tracking-[-1px] leading-tight mt-1 text-zinc-900 dark:text-zinc-100">
           {cluster.monthLabel}
         </h3>
       </div>
@@ -319,7 +319,7 @@ function PhotoClusterCard({
         return (
           <div
             key={photo.id}
-            className={`art-card ac-${cluster.monthKey} absolute inset-0 bg-white dark:bg-zinc-900 p-2.5 shadow-lg cursor-pointer overflow-hidden`}
+            className={`art-card ac-${cluster.monthKey} absolute inset-0 bg-white dark:bg-zinc-900 p-1.5 shadow-lg cursor-pointer overflow-hidden`}
             style={{
               boxShadow: '0 10px 30px rgba(0,0,0,0.05)',
               transition: 'all 0.8s cubic-bezier(0.68, -0.6, 0.32, 1.6)',
@@ -332,10 +332,6 @@ function PhotoClusterCard({
               src={resolveImageUrl(photo.fileUrl)}
               alt={photo.caption || photo.albumTitle}
               className="w-full h-full object-cover"
-              style={{
-                filter: 'saturate(0)',
-                transition: 'filter 1s cubic-bezier(0.19, 1, 0.22, 1)',
-              }}
               loading="lazy"
             />
           </div>
@@ -346,20 +342,17 @@ function PhotoClusterCard({
       <style dangerouslySetInnerHTML={{
         __html: `
           .photo-cluster-${cluster.monthKey}:hover .ac-${cluster.monthKey}:nth-child(1) {
-            transform: translate(-220px, -100px) rotate(-12deg) scale(1.1) !important;
+            transform: translate(-150px, -70px) rotate(-12deg) scale(1.08) !important;
           }
           .photo-cluster-${cluster.monthKey}:hover .ac-${cluster.monthKey}:nth-child(2) {
-            transform: translate(180px, -150px) rotate(8deg) scale(0.9) !important;
+            transform: translate(125px, -105px) rotate(8deg) scale(0.9) !important;
           }
           .photo-cluster-${cluster.monthKey}:hover .ac-${cluster.monthKey}:nth-child(3) {
-            transform: translate(50px, 180px) rotate(-5deg) scale(1.05) !important;
+            transform: translate(35px, 125px) rotate(-5deg) scale(1.03) !important;
           }
           .photo-cluster-${cluster.monthKey}:hover .ac-${cluster.monthKey}:nth-child(4) {
             opacity: 1 !important;
-            transform: translate(-100px, 200px) rotate(5deg) !important;
-          }
-          .photo-cluster-${cluster.monthKey}:hover .ac-${cluster.monthKey} img {
-            filter: saturate(1) !important;
+            transform: translate(-70px, 140px) rotate(5deg) !important;
           }
           .photo-cluster-${cluster.monthKey}:hover .cm-${cluster.monthKey} {
             opacity: 1 !important;
