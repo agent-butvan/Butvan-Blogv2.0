@@ -105,6 +105,7 @@ export default function AlbumsPage() {
 
     // 演示数据：直接使用，保证页面始终可展示
     let photos: PhotoWallItem[] = DEMO_PHOTOS
+    console.log('[Albums] 初始演示数据:', DEMO_PHOTOS.length, '张')
 
     try {
       const [profileData, photoData] = await Promise.all([
@@ -113,18 +114,23 @@ export default function AlbumsPage() {
       ])
       setProfile(profileData)
 
-      // 如果后端有真实数据则使用真实数据
-      if (photoData?.records?.length) {
+      // 如果后端有足够多的真实数据（>10张）则使用真实数据，否则使用演示数据
+      if (photoData?.records?.length && photoData.records.length > 10) {
+        console.log('[Albums] 使用后端数据:', photoData.records.length, '张')
         photos = photoData.records
+      } else {
+        console.log('[Albums] 后端数据不足（', photoData?.records?.length || 0, '张），使用演示数据（31张）')
       }
     } catch (err) {
       // 即使 API 全部失败也不影响演示数据展示
       console.warn('API 数据加载失败，使用演示数据:', err)
     }
 
+    console.log('[Albums] 最终照片数:', photos.length)
     setAllPhotos(photos)
     setTotal(photos.length)
     const groups = groupByDay(photos)
+    console.log('[Albums] 分组后簇数量:', groups.length)
     setClusters(groups)
 
     setLightboxPhotos(photos.map(p => ({
