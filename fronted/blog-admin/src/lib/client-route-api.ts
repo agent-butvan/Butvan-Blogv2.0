@@ -19,6 +19,7 @@ const STATIC_CLIENT_ROUTES: ClientRoute[] = [
   { path: '/article', label: '文章列表', category: '页面', dynamic: false },
   { path: '/friend', label: '友链大树', category: '页面', dynamic: false },
   { path: '/friend/apply', label: '申请友链', category: '页面', dynamic: false },
+  { path: '/albums', label: '相册画廊', category: '页面', dynamic: false },
   { path: '/archive', label: '文章归档', category: '页面', dynamic: false },
   { path: '/categories', label: '分类列表', category: '页面', dynamic: false },
   { path: '/projects', label: '项目展示', category: '页面', dynamic: false },
@@ -26,6 +27,7 @@ const STATIC_CLIENT_ROUTES: ClientRoute[] = [
   { path: '/categories/[slug]', label: '分类文章', category: '动态路由', dynamic: true },
   { path: '/tags/[slug]', label: '标签文章', category: '动态路由', dynamic: true },
   { path: '/series/[slug]', label: '系列文章', category: '动态路由', dynamic: true },
+  { path: '/albums/[slug]', label: '相册详情', category: '动态路由', dynamic: true },
 ]
 
 /** 获取全部客户端可跳转路由（含页面 + 动态路由分组） */

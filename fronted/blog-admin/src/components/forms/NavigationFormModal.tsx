@@ -24,6 +24,7 @@ const POPULAR_ICONS = [
   { value: "MessageSquare", label: "评论管理" },
   { value: "HardDrive", label: "资源管理" },
   { value: "Image", label: "媒体内容" },
+  { value: "Camera", label: "相册 / 照片" },
   { value: "Wallpaper", label: "场景空间 / 热区" },
   { value: "Settings", label: "系统设置" },
   { value: "Compass", label: "导航配置" },
