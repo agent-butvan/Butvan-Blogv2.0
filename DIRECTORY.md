@@ -10,7 +10,7 @@ Butvan Blog2.0/                                    # 📦 项目根目录
 ├── AGENTS.md                                      # AI 开发助手指引（技术栈、规范、工作流）
 ├── DIRECTORY.md                                   # 项目目录结构说明（本文件）
 ├── PRODUCT.md                                     # 产品迭代需求文档（v0.1 / v0.2）
-├── DATA_MODEL.md                                  # 数据库模型完整设计（10模块19张表）
+├── DATA_MODEL.md                                  # 数据库模型完整设计（11模块21张表）
 ├── fWdgJuAOF.jpeg                                 # 默认「Cozy Room」场景高清背景图
 ├── .graphifyignore                                # 🔍 Graphify 本地提取忽略规则配置（剔除文档/媒体文件以实现免 LLM 提取）
 │
@@ -46,6 +46,7 @@ Butvan Blog2.0/                                    # 📦 项目根目录
 │       ├── migration-v0.8.sql                     #   数据库迁移脚本 (v0.8 版本，文章点赞记录管理及菜单安全配置)
 │       └── migration-v0.9.sql                     #   数据库迁移脚本 (v0.9 版本，实现 GitHub 和 2FA 安全绑定与双重认证)
 │       └── migration-v1.1-background-image.sql     #   数据库迁移脚本 (v1.1 版本，预置站点全局背景图片配置项)
+│       └── migration-v1.2-album.sql               #   数据库迁移脚本 (v1.2 版本，相册模块建表与菜单注册)
 │
 ├── fronted/                                       # 🖥️【前端】Next.js 16 + TypeScript + HeroUI v3 + Tailwind v4
 │   │
@@ -73,6 +74,10 @@ Butvan Blog2.0/                                    # 📦 项目根目录
 │   │   │   │   │   ├── page.tsx                   #         友链目录页 — 「编辑式刊头」瑞士网格布局（分类水印+双栏条目+hover强调线）
 │   │   │   │   │   └── apply/                     #         友链申请子路由
 │   │   │   │   │       └── page.tsx               #           友链申请表单页（编辑式分栏布局+实时预览+URL自动抓取+头像上传）
+│   │   │   │   ├── albums/                        #       🖼️ 相册模块
+│   │   │   │   │   ├── page.tsx                   #         「暗夜画廊」相册列表页（非对称编辑式网格+IntersectionObserver入场+金色光晕交互）
+│   │   │   │   │   └── [slug]/                    #         相册详情页
+│   │   │   │   │   │   └── page.tsx               #           「光影长廊」视差横幅+瀑布流照片墙+弹性灯箱
 │   │   │   │   ├── layout.tsx                     #         根布局：字体加载、全局 Metadata
 │   │   │   │   ├── globals.css                    #         全局样式：静谧深海色彩变量、发光阴影
 │   │   │   │   ├── providers.tsx                  #         HeroUI v3 无 Provider 兼容包装器
@@ -104,6 +109,11 @@ Butvan Blog2.0/                                    # 📦 项目根目录
 │   │   │   │   ├── friend/                        #       友链组件
 │   │   │   │   │   ├── FriendTree.tsx            #         友链大树（旧版，SVG 树骨架 + HTML 卡片叶子）
 │   │   │   │   │   └── FriendLinks.tsx            #         友链目录（旧版备用列表组件）
+│   │   │   │   ├── album/                         #       相册组件
+│   │   │   │   │   ├── AlbumGrid.tsx              #         非对称编辑式网格（IntersectionObserver入场+封面去灰+金色光晕）
+│   │   │   │   │   ├── AlbumHero.tsx              #         详情页视差横幅（毛玻璃标题叠层+滚动视差）
+│   │   │   │   │   ├── PhotoLightbox.tsx          #         弹性灯箱（弹簧缩放动画+键盘导航+页码指示器）
+│   │   │   │   │   └── AlbumSkeleton.tsx          #         骨架屏（列表+详情加载态占位）
 │   │   │   │   └── series/                        #       系列组件
 │   │   │   │       └── SeriesNavigation.tsx       #         系列目录导航（上一篇/下一篇）
 │   │   │   ├── hooks/                             #     🪝 自定义 Hooks
@@ -115,12 +125,14 @@ Butvan Blog2.0/                                    # 📦 项目根目录
 │   │   │   │   ├── error-handler.ts               #       全局错误处理器（AppError 类、错误分类、统一 toast 提示、SSR 安全）
 │   │   │   │   ├── profile.ts                     #       用户资料 API（公开资料、导航菜单）
 │   │   │   │   ├── friend-api.ts                  #       友链 API（列表查询、申请、图片上传、网站元数据抓取）
+│   │   │   │   ├── album-api.ts                   #       相册 API（公开列表查询、slug 相册详情）
 │   │   │   │   ├── api.ts                         #       Axios/fetch 封装（baseURL、拦截器、错误处理）
 │   │   │   │   ├── constants.ts                   #       前端常量（站点名、分页大小等）
 │   │   │   │   └── image-url.ts                   #       图片 URL 解析工具函数（支持相对路径与绝对路径）
 │   │   │   ├── types/                             #     📐 TypeScript 类型定义
 │   │   │   │   ├── scene.ts                       #       场景/热区类型
 │   │   │   │   ├── article.ts                     #       文章/分类/标签类型
+│   │   │   │   ├── album.ts                       #       相册类型（AlbumItem/AlbumPhoto/AlbumDetail）
 │   │   │   │   └── common.ts                      #       通用类型（分页、API 响应等）
 │   │   │   └── styles/                            #     🎨 额外样式（Tailwind 无法覆盖的复杂样式）
 │   │   ├── next.config.ts                         #     Next.js 配置（图片域名、重定向等）
@@ -165,6 +177,8 @@ Butvan Blog2.0/                                    # 📦 项目根目录
 │       │   │   │   │   └── page.tsx               #           关于我/友链等页面编辑
 │       │   │   │   ├── navigation/                #         导航菜单管理
 │       │   │   │   │   └── page.tsx               #           多级菜单树（拖拽排序、链接配置）
+│       │   │   │   ├── albums/                    #         相册管理
+│       │   │   │   │   └── page.tsx               #           左栏列表+右栏照片网格（CRUD+媒体选择器+封面设置）
 │       │   │   │   ├── series/                    #         系列/专题管理
 │       │   │   │   │   └── page.tsx               #           系列CRUD + 文章拖入排序
 │       │   │   │   ├── subscribers/               #         订阅者管理
@@ -201,7 +215,8 @@ Butvan Blog2.0/                                    # 📦 项目根目录
 │       │   │   ├── auth.ts                        #       Token 存储/刷新/过期处理
 │       │   │   ├── account-api.ts                 #       当前登录账号资料、改密、个人中心相关 API 封装
 │       │   │   ├── article-api.ts                 #       文章、分类、标签相关的 API 请求统一封装
-│       │   │   └── comments-api.ts                #       评论、审核、快捷回复相关的 API 请求统一封装
+│       │   │   ├── comments-api.ts                #       评论、审核、快捷回复相关的 API 请求统一封装
+│       │   │   └── album-api.ts                   #       相册管理 API（CRUD、照片添加/移除/排序）
 │       │   └── types/                             #     📐 TypeScript 类型定义（与 blog-client 共享结构）
 │       ├── next.config.ts
 │       ├── postcss.config.mjs
@@ -250,7 +265,7 @@ Butvan Blog2.0/                                    # 📦 项目根目录
     ├── blog-pojo/                                  #   📦 数据模型模块（Entity / DTO / VO）
     │   ├── pom.xml                                 #     Maven 子模块 POM（依赖 JPA + Lombok + Jackson）
     │   └── src/main/java/com/butvan/blog/pojo/
-    │       ├── entity/                             #       数据库实体（JPA @Entity，19 张表一一映射）
+    │       ├── entity/                             #       数据库实体（JPA @Entity，21 张表一一映射）
     │       │   ├── Scene.java                      #         blog_homepage_scene — 首页场景
     │       │   ├── Hotspot.java                    #         blog_homepage_hotspot — 交互热区/物品
     │       │   ├── User.java                       #         blog_user — 用户
@@ -261,6 +276,8 @@ Butvan Blog2.0/                                    # 📦 项目根目录
     │       │   ├── Series.java                     #         blog_series — 文章系列/专题
     │       │   ├── Comment.java                    #         blog_comment — 评论
     │       │   ├── Media.java                      #         blog_media — 媒体资源
+│       │   ├── Album.java                      #         blog_album — 相册
+│       │   ├── AlbumPhoto.java                 #         blog_album_photo — 相册照片关联
     │       │   ├── Page.java                       #         blog_page — 独立页面
     │       │   ├── Navigation.java                 #         blog_navigation — 导航菜单
     │       │   ├── SiteConfig.java                 #         blog_site_config — 站点配置
@@ -276,6 +293,7 @@ Butvan Blog2.0/                                    # 📦 项目根目录
     │       │   ├── page/                           #         独立页相关：PageSaveDTO
     │       │   ├── site/                           #         站点配置相关：SiteConfigUpdateDTO
     │       │   ├── profile/                        #         个人资料相关：ProfileUpdateDTO
+│       │   ├── album/                          #         相册相关：AlbumSaveDTO, AlbumQueryDTO, AlbumPhotoSaveDTO, AlbumPhotoSortDTO
     │       │   └── common/                         #         通用：PageQueryDTO, BatchDeleteDTO
     │       └── vo/                                 #       视图对象（返回前端展示）
     │           ├── article/                        #         文章相关：ArticleDetailVO, ArticleListVO
@@ -284,6 +302,7 @@ Butvan Blog2.0/                                    # 📦 项目根目录
     │           ├── auth/                           #         认证相关：LoginVO, CurrentUserVO
     │           ├── site/                           #         站点配置相关：SiteConfigVO
     │           ├── profile/                        #         个人资料相关：ProfileVO
+│           ├── album/                          #         相册相关：AlbumVO, AlbumListVO, AlbumPhotoVO
     │           └── common/                         #         通用：PageVO, StatisticsVO
     │
     └── blog-service/                               #   📦 主业务服务模块（启动入口 + 业务逻辑）
@@ -311,6 +330,7 @@ Butvan Blog2.0/                                    # 📦 项目根目录
             │   │   │   ├── AuthController.java      #         登录注册、当前账号资料、个人中心资料保存与密码修改接口
             │   │   │   ├── SiteConfigController.java #       站点配置管理接口
             │   │   │   ├── FriendLinkController.java #       友链管理接口
+│   │   │   ├── AlbumController.java       #       相册管理接口（管理端+公开端）
             │   │   │   └── SubscriberController.java #      订阅管理接口
             │   │   ├── repository/                 #       🗄️ 数据访问层（JPA Repository 接口）
             │   │   │   ├── SceneRepository.java    #         场景 Repository（查询启用场景）
@@ -327,6 +347,8 @@ Butvan Blog2.0/                                    # 📦 项目根目录
             │   │   │   ├── NavigationRepository.java #       导航 Repository（按位置查询树形菜单）
             │   │   │   ├── SiteConfigRepository.java #       配置 Repository（按 key 查询）
             │   │   │   ├── FriendLinkRepository.java #      友链 Repository
+│   │   │   ├── AlbumRepository.java      #      相册 Repository（按状态/排序查询）
+│   │   │   ├── AlbumPhotoRepository.java  #      相册照片关联 Repository（按相册查询+排序）
             │   │   │   ├── SubscriberRepository.java #      订阅 Repository
             │   │   │   ├── OperationLogRepository.java #    操作日志 Repository
             │   │   │   └── VisitLogRepository.java  #       访问日志 Repository
@@ -343,6 +365,7 @@ Butvan Blog2.0/                                    # 📦 项目根目录
             │   │   │   ├── AuthService.java         #         认证与当前账号个人中心业务接口
             │   │   │   ├── SiteConfigService.java  #         配置业务接口
             │   │   │   ├── FriendLinkService.java  #         友链业务接口
+│   │   │   ├── AlbumService.java       #         相册业务接口
             │   │   │   ├── SubscriberService.java  #         订阅业务接口
             │   │   │   └── impl/                   #         业务逻辑实现层（@Service + @Transactional）
             │   │   │       ├── SceneServiceImpl.java
@@ -357,6 +380,7 @@ Butvan Blog2.0/                                    # 📦 项目根目录
             │   │   │       ├── AuthServiceImpl.java
             │   │   │       ├── SiteConfigServiceImpl.java
             │   │   │       ├── FriendLinkServiceImpl.java
+│   │   │       ├── AlbumServiceImpl.java
             │   │   │       └── SubscriberServiceImpl.java
             │   │   ├── weixin/                     #       📱 微信模块
             │   │   │   ├── common/
@@ -424,9 +448,9 @@ Butvan Blog2.0/                                    # 📦 项目根目录
 |-----------|------|------|
 | `AGENTS.md` | 根目录 | AI 开发助手指引（技术栈、规范、工作流） |
 | `PRODUCT.md` | 根目录 | 产品定义及版本计划需求文档 |
-| `DATA_MODEL.md` | 根目录 | 数据库模型完整设计（10 模块 19 张表、ER 图、索引） |
+| `DATA_MODEL.md` | 根目录 | 数据库模型完整设计（11 模块 21 张表、ER 图、索引） |
 | `design-system/butvan-blog/MASTER.md` | 设计系统 | 静谧深海色彩规范、排版规则、发光/动效参数 |
-| `docx/database/schema.sql` | 数据库 | PostgreSQL 完整 DDL（19 张表，含注释与索引） |
+| `docx/database/schema.sql` | 数据库 | PostgreSQL 完整 DDL（21 张表，含注释与索引） |
 | `docx/database/migration-v0.3.sql` | 数据库 | PostgreSQL v0.3 迁移脚本（添加 height_percent 高度百分比字段） |
 | `docx/database/migration-v0.5.sql` | 数据库 | PostgreSQL v0.5 迁移脚本（文章分类标签建表与初始数据） |
 | `docx/database/migration-v0.6.sql` | 数据库 | PostgreSQL v0.6 迁移脚本（安全插入后台评论管理侧边栏菜单） |
@@ -446,7 +470,7 @@ Butvan Blog2.0/                                    # 📦 项目根目录
 | `backend/blog-service/.../BlogApplication.java` | 后端-入口 | Spring Boot 启动类，JPA 多包扫描 |
 | `backend/blog-common/.../GlobalExceptionHandler.java` | 后端-通用 | 全局异常统一拦截，映射为标准 Result 结构 |
 | `backend/blog-common/.../Result.java` | 后端-通用 | 统一 JSON 响应体 `{code, msg, data}` |
-| `backend/blog-pojo/.../entity/` | 后端-模型 | 19 个 JPA 实体类，与数据库表一一对应 |
+| `backend/blog-pojo/.../entity/` | 后端-模型 | 21 个 JPA 实体类，与数据库表一一对应 |
 | `backend/blog-service/.../security/JwtAuthFilter.java` | 后端-安全 | JWT 认证过滤器，每次请求校验 Token |
 | `backend/blog-service/.../security/SecurityConfig.java` | 后端-安全 | Spring Security 配置，白名单与权限规则 |
 | `.graphifyignore` | 根目录 | Graphify 排除非代码静态资源的规则配置文件（避免免 Key 模式下提取报错） |

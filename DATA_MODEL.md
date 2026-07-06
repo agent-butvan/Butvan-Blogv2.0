@@ -505,6 +505,60 @@ CREATE INDEX idx_visit_time    ON blog_visit_log (created_at);
 
 ---
 
+
+## 十一、相册模块
+
+### 20. `blog_album` — 相册表
+
+管理相册的基本信息，复用 `blog_media` 表存储封面图和照片文件。
+
+| 字段 | 类型 | 约束 | 说明 |
+|------|------|------|------|
+| `id` | BIGSERIAL | PK | 主键 |
+| `title` | VARCHAR(100) | NOT NULL | 相册标题 |
+| `slug` | VARCHAR(100) | UNIQUE, NOT NULL | URL 友好标识（自动或手动生成） |
+| `description` | VARCHAR(500) | — | 相册描述 |
+| `cover_image_id` | BIGINT | FK→blog_media | 封面图媒体 ID |
+| `status` | VARCHAR(20) | NOT NULL, DEFAULT 'DRAFT' | 状态：`DRAFT`（草稿）\| `PUBLISHED`（已发布） |
+| `sort_order` | INTEGER | DEFAULT 0 | 排序权重（数值越小越靠前） |
+| `view_count` | BIGINT | DEFAULT 0 | 累计浏览次数 |
+| `created_at` | TIMESTAMP | NOT NULL | 创建时间（自动填充） |
+| `updated_at` | TIMESTAMP | NOT NULL | 更新时间（自动更新） |
+
+**索引**：
+```sql
+CREATE UNIQUE INDEX idx_album_slug ON blog_album (slug);
+CREATE INDEX idx_album_status_sort ON blog_album (status, sort_order);
+```
+
+---
+
+### 21. `blog_album_photo` — 相册照片关联表
+
+维护相册与照片（`blog_media`）的多对多关联关系，照片文件本身复用 `blog_media` 表存储。
+
+| 字段 | 类型 | 约束 | 说明 |
+|------|------|------|------|
+| `id` | BIGSERIAL | PK | 主键 |
+| `album_id` | BIGINT | FK→blog_album, NOT NULL, ON DELETE CASCADE | 所属相册 |
+| `media_id` | BIGINT | FK→blog_media, NOT NULL, ON DELETE CASCADE | 关联的媒体资源 |
+| `caption` | VARCHAR(255) | — | 照片说明文字 |
+| `sort_order` | INTEGER | DEFAULT 0 | 照片在相册中的排序权重 |
+| `created_at` | TIMESTAMP | NOT NULL | 添加时间 |
+
+**索引**：
+```sql
+CREATE INDEX idx_album_photo_album ON blog_album_photo (album_id, sort_order);
+CREATE UNIQUE INDEX uk_album_photo ON blog_album_photo (album_id, media_id);
+```
+
+**设计说明**：
+- 照片文件通过 `blog_media` 表统一管理，`blog_album_photo` 仅维护关联关系
+- 同一张照片不可在同一相册中重复添加（`uk_album_photo` 唯一约束）
+- 删除相册时级联删除关联记录（`ON DELETE CASCADE`），但不删除媒体文件
+- 删除媒体文件时级联删除关联记录，注意检查是否被其他相册引用
+
+---
 ## 模块总览
 
 | 序号 | 模块 | 表数 | 表名列表 |
@@ -519,7 +573,8 @@ CREATE INDEX idx_visit_time    ON blog_visit_log (created_at);
 | 8 | 系统 | 2 | `blog_site_config`, `blog_friend_link` |
 | 9 | 订阅 | 1 | `blog_subscriber` |
 | 10 | 日志 | 2 | `blog_operation_log`, `blog_visit_log` |
-| **合计** | **10 模块** | **19 张表** | |
+| 11 | 相册 | 2 | `blog_album`, `blog_album_photo` |
+| **合计** | **11 模块** | **21 张表** | |
 
 ---
 
@@ -592,6 +647,17 @@ CREATE INDEX idx_visit_time    ON blog_visit_log (created_at);
    │ blog_site_config │        │ blog_subscriber  │
    │  (站点配置)       │        │  (邮件订阅)      │
    └──────────────────┘        └──────────────────┘
+
+   ┌──────────────┐        ┌──────────────────┐
+   │  blog_album  │1─────N│ blog_album_photo │
+   │   (相册)     │        │  (相册照片关联)   │
+   └──────┬───────┘        └────────┬─────────┘
+          │                         │
+          │ N                       │ N
+   ┌──────▼──────┐          ┌──────▼──────┐
+   │ blog_media  │          │ blog_media  │
+   │ (封面图)    │          │ (照片文件)   │
+   └─────────────┘          └─────────────┘
 ```
 
 ---
@@ -626,7 +692,7 @@ CREATE INDEX idx_visit_time    ON blog_visit_log (created_at);
 
 ## 后续实施步骤
 
-1. **schema.sql** — 将 19 张表的 DDL 写入 `backend/schema.sql`
+1. **schema.sql** — 将 21 张表的 DDL 写入 `backend/schema.sql`
 2. **Java Entity** — 在 `blog-pojo` 模块创建对应的 JPA 实体类
 3. **Repository** — 在 `blog-service` 模块创建对应 JPA Repository 接口
 4. **VO/DTO** — 按需创建视图对象和数据传输对象
@@ -634,4 +700,4 @@ CREATE INDEX idx_visit_time    ON blog_visit_log (created_at);
 
 ---
 
-*最后更新：2026-06-14*
+*最后更新：2026-07-06*
