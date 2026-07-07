@@ -227,8 +227,6 @@ export default function NotesFragmentsPage() {
 
   const pageSize = 10
   const canvasRef = useRef<HTMLDivElement>(null)
-  const [hasLoadedOnce, setHasLoadedOnce] = useState(false) // 标记是否已完成首次加载（区分筛选切换的视觉表现）
-  const hasAnimated = useRef(false) // 标记 GSAP 入场动画是否已执行
 
   /** 加载手记列表 */
   const loadNotes = useCallback(async () => {
@@ -355,41 +353,36 @@ export default function NotesFragmentsPage() {
     }
   }, [notes])
 
-  // ==================== GSAP 入场动画（仅在首次加载时执行）====================
+  // ==================== GSAP：页头 & 筛选栏入场动画（仅挂载时执行一次）====================
 
   useEffect(() => {
-    if (loading || hasAnimated.current || notes.length === 0) return
-
-    // 标记动画已执行 + 首次加载完成
-    hasAnimated.current = true
-    setHasLoadedOnce(true)
-
-    // 尊重用户 reduced-motion 偏好：跳过入场动画，直接显示内容
-    const motionQuery = window.matchMedia('(prefers-reduced-motion: reduce)')
-    if (motionQuery.matches) {
-      document.querySelectorAll('.animate-header-item, .fragment-card-wrapper, .animate-pagination').forEach((el) => {
-        ;(el as HTMLElement).style.opacity = '1'
-        ;(el as HTMLElement).style.transform = 'none'
-      })
-      return
-    }
-
     const ctx = gsap.context(() => {
       gsap.fromTo('.animate-header-item',
         { y: 12, opacity: 0 },
         { y: 0, opacity: 1, duration: 0.8, stagger: 0.15, ease: 'power2.out' },
       )
+    })
+
+    return () => ctx.revert()
+  }, [])
+
+  // ==================== GSAP：卡片列表入场动画（每次数据变化时平滑渐入）====================
+
+  useEffect(() => {
+    if (loading) return
+
+    const ctx = gsap.context(() => {
       gsap.fromTo('.fragment-card-wrapper',
-        { y: 30, opacity: 0 },
-        { y: 0, opacity: 1, duration: 0.75, stagger: 0.1, ease: 'power3.out', delay: 0.3 },
+        { y: 24, opacity: 0 },
+        { y: 0, opacity: 1, duration: 0.65, stagger: 0.07, ease: 'power3.out' },
       )
       gsap.fromTo('.animate-pagination',
         { y: 10, opacity: 0 },
-        { y: 0, opacity: 1, duration: 0.5, ease: 'power2.out', delay: 0.5 },
+        { y: 0, opacity: 1, duration: 0.5, ease: 'power2.out', delay: 0.25 },
       )
     })
-    // 不返回 cleanup：动画仅执行一次，完成后内联样式（opacity:1）需保持
-    // 若 cleanup 回退样式，配合 hasAnimated 守卫会导致筛选切换后元素不可见
+
+    return () => ctx.revert()
   }, [loading, notes])
 
   // ==================== 格式化日期 ====================
@@ -444,12 +437,6 @@ export default function NotesFragmentsPage() {
           <span className="text-[10px] font-heading font-bold tracking-wider text-zinc-400 dark:text-zinc-500 uppercase mr-2">
             心境
           </span>
-          {/* 筛选加载指示器 */}
-          {loading && hasLoadedOnce && (
-            <span className="inline-flex items-center gap-1">
-              <Spinner size="sm" color="accent" />
-            </span>
-          )}
           {MOOD_FILTER_OPTIONS.map((opt) => {
             const Icon = opt.icon
             return (
@@ -516,7 +503,7 @@ export default function NotesFragmentsPage() {
             <div
               ref={canvasRef}
               className={`relative grid grid-cols-12 gap-0 transition-opacity duration-300 ${
-                loading && !hasLoadedOnce ? 'opacity-35 blur-[0.5px] pointer-events-none' : 'opacity-100'
+                loading ? 'opacity-35 blur-[0.5px] pointer-events-none' : 'opacity-100'
               }`}
             >
               {/* 中央装饰竖线（虚线节奏） */}
