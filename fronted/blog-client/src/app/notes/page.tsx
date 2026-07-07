@@ -542,21 +542,21 @@ export default function NotesFragmentsPage() {
                       aria-label={`阅读手记：${note.title}`}
                       className="fragment-card group block bg-white dark:bg-zinc-900/90 border border-zinc-100 dark:border-zinc-800/60 hover:border-zinc-200 dark:hover:border-zinc-700/60 transition-colors duration-200 motion-safe:transition-all motion-safe:duration-300 ease-[cubic-bezier(0.23,1,0.32,1)] motion-safe:hover:-translate-y-2.5 motion-safe:hover:scale-[1.02] hover:shadow-[8px_16px_40px_rgba(0,0,0,0.05)] dark:hover:shadow-[8px_16px_40px_rgba(0,0,0,0.25)] relative overflow-hidden focus-visible:outline-2 focus-visible:outline-offset-4 focus-visible:outline-[#727BBA]"
                     >
-                      {/* ===== 心境标签：右上角竖排展示 ===== */}
-                      {moodCfg && MoodIcon && (
-                        <div className="absolute top-0 right-6 z-10">
-                          <div className={`flex flex-col items-center gap-1 px-2 py-3 ${moodCfg.color} bg-white/80 dark:bg-zinc-950/80 backdrop-blur-sm`}>
-                            <MoodIcon size={14} />
-                            <span className="text-[10px] font-bold tracking-widest [writing-mode:vertical-rl] text-zinc-700 dark:text-zinc-200" style={{ writingMode: 'vertical-rl' }}>
-                              {moodCfg.label}
-                            </span>
-                          </div>
-                        </div>
-                      )}
-
                       {/* ===== 配图区：三图拼贴布局 ===== */}
                       {hasImages ? (
                         <div className="relative h-[280px] overflow-hidden bg-zinc-50 dark:bg-zinc-950">
+                          {/* 心境标签：有配图时在图片区域右上角 */}
+                          {moodCfg && MoodIcon && (
+                            <div className="absolute top-0 right-6 z-10">
+                              <div className={`flex flex-col items-center gap-1 px-2 py-3 ${moodCfg.color} bg-white/80 dark:bg-zinc-950/80 backdrop-blur-sm`}>
+                                <MoodIcon size={14} />
+                                <span className="text-[10px] font-bold tracking-widest [writing-mode:vertical-rl] text-zinc-700 dark:text-zinc-200" style={{ writingMode: 'vertical-rl' }}>
+                                  {moodCfg.label}
+                                </span>
+                              </div>
+                            </div>
+                          )}
+
                           {images.length === 1 ? (
                             /* 单图模式：全宽展示 */
                             <img
@@ -604,18 +604,31 @@ export default function NotesFragmentsPage() {
                       ) : null /* 无配图时完全隐藏封面区域 */}
 
                       {/* ===== 正文区 ===== */}
-                      <div className="relative px-7 py-6">
-                        {/* 日期（有配图时在右上角，无配图时在左上角） */}
-                        <span className={`absolute font-light tracking-wide ${
-                          hasImages 
-                            ? 'top-6 right-7 text-[11px] text-zinc-500 dark:text-zinc-500'
-                            : 'top-6 left-7 text-xs text-zinc-400 dark:text-zinc-500'
-                        }`}>
-                          {formatShortDate(publishedDate)}
-                        </span>
+                      <div className="relative px-7 py-6 pr-16">
+                        {/* 无配图时的心境标签和日期：右侧垂直排列 */}
+                        {!hasImages && moodCfg && MoodIcon && (
+                          <div className="absolute top-6 right-7 flex flex-col items-center gap-2">
+                            <div className={`flex flex-col items-center gap-1 px-2 py-2 ${moodCfg.color} bg-white/80 dark:bg-zinc-950/80 backdrop-blur-sm`}>
+                              <MoodIcon size={14} />
+                              <span className="text-[10px] font-bold tracking-widest [writing-mode:vertical-rl] text-zinc-700 dark:text-zinc-200" style={{ writingMode: 'vertical-rl' }}>
+                                {moodCfg.label}
+                              </span>
+                            </div>
+                            <span className="text-[10px] text-zinc-400 dark:text-zinc-500 font-light tracking-wide rotate-0">
+                              {formatShortDate(publishedDate)}
+                            </span>
+                          </div>
+                        )}
+
+                        {/* 有配图时的日期：右上角 */}
+                        {hasImages && (
+                          <span className="absolute top-6 right-7 text-[11px] text-zinc-500 dark:text-zinc-500 font-light tracking-wide">
+                            {formatShortDate(publishedDate)}
+                          </span>
+                        )}
 
                         {/* 标题 */}
-                        <h2 className="font-serif text-lg md:text-xl font-semibold text-zinc-800 dark:text-zinc-100 group-hover:text-[#727BBA] transition-colors duration-300 mb-3.5 leading-snug">
+                        <h2 className="font-serif text-lg md:text-xl font-semibold text-zinc-800 dark:text-zinc-100 group-hover:text-[#727BBA] transition-colors duration-300 mb-3.5 leading-snug pr-20">
                           {note.title}
                         </h2>
 
