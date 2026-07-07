@@ -605,8 +605,12 @@ export default function NotesFragmentsPage() {
 
                       {/* ===== 正文区 ===== */}
                       <div className="relative px-7 py-6">
-                        {/* 日期（绝对定位右上角） */}
-                        <span className="absolute top-6 right-7 text-[11px] text-zinc-500 dark:text-zinc-500 font-light tracking-wide">
+                        {/* 日期（有配图时在右上角，无配图时在左上角） */}
+                        <span className={`absolute font-light tracking-wide ${
+                          hasImages 
+                            ? 'top-6 right-7 text-[11px] text-zinc-500 dark:text-zinc-500'
+                            : 'top-6 left-7 text-xs text-zinc-400 dark:text-zinc-500'
+                        }`}>
                           {formatShortDate(publishedDate)}
                         </span>
 
