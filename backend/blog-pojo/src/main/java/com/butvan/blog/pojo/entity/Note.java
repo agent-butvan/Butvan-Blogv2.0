@@ -42,7 +42,10 @@ public class Note {
     private String summary; // 手记摘要简介
 
     @Column(name = "cover_image_url", length = 500)
-    private String coverImageUrl; // 配图 URL 地址
+    private String coverImageUrl; // 配图 URL 地址（单图兼容，多图时使用逗号分隔）
+
+    @Column(name = "cover_image_urls", columnDefinition = "jsonb")
+    private java.util.List<String> coverImageUrls; // 多张配图 URL 数组（JSONB 存储，最多3张）
 
     @Column(name = "mood", length = 50)
     private String mood; // 心情标记：开心/思考中/忙碌/放松/感动/平静

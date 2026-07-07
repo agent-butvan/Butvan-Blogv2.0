@@ -23,7 +23,9 @@ public class NoteItemVO {
 
     private String summary; // 摘要简介
 
-    private String coverImageUrl; // 配图 URL
+    private String coverImageUrl; // 配图 URL（单图兼容）
+
+    private java.util.List<String> coverImageUrls; // 多张配图 URL 数组（最多3张）
 
     private String mood; // 心情标记
 

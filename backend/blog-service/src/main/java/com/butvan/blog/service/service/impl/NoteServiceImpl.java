@@ -132,6 +132,7 @@ public class NoteServiceImpl implements NoteService {
                 .content(dto.getContent())
                 .contentHtml(dto.getContent()) // contentHtml 先保存 Markdown，由前端渲染
                 .coverImageUrl(dto.getCoverImageUrl())
+                .coverImageUrls(dto.getCoverImageUrls()) // 多张配图 URL 数组
                 .mood(dto.getMood())
                 .weather(dto.getWeather())
                 .location(dto.getLocation())
@@ -165,6 +166,7 @@ public class NoteServiceImpl implements NoteService {
         note.setContent(dto.getContent());
         note.setContentHtml(dto.getContent());
         note.setCoverImageUrl(dto.getCoverImageUrl());
+        note.setCoverImageUrls(dto.getCoverImageUrls()); // 多张配图 URL 数组
         note.setMood(dto.getMood());
         note.setWeather(dto.getWeather());
         note.setLocation(dto.getLocation());
@@ -202,6 +204,7 @@ public class NoteServiceImpl implements NoteService {
                 .slug(note.getSlug())
                 .summary(note.getSummary())
                 .coverImageUrl(note.getCoverImageUrl())
+                .coverImageUrls(note.getCoverImageUrls()) // 多张配图 URL 数组
                 .mood(note.getMood())
                 .weather(note.getWeather())
                 .location(note.getLocation())
@@ -227,6 +230,7 @@ public class NoteServiceImpl implements NoteService {
                 .slug(note.getSlug())
                 .summary(note.getSummary())
                 .coverImageUrl(note.getCoverImageUrl())
+                .coverImageUrls(note.getCoverImageUrls()) // 多张配图 URL 数组
                 .mood(note.getMood())
                 .weather(note.getWeather())
                 .location(note.getLocation())

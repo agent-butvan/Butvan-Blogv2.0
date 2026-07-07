@@ -79,7 +79,11 @@ const MOCK_NOTES: NoteItem[] = [
   {
     id: 101, title: '在焦虑与代码中缓慢前行', slug: 'mock-anxiety-code',
     summary: '继续写代码，继续跑步，继续睡不着的时候翻来覆去。生活不是完美的闭环，而是由无数碎裂的片段拼凑而成的叙事。',
-    coverImageUrl: 'https://images.unsplash.com/photo-1516483638261-f4dbaf036963?auto=format&fit=crop&w=800',
+    coverImageUrls: [
+      'https://images.unsplash.com/photo-1516483638261-f4dbaf036963?auto=format&fit=crop&w=800',
+      'https://images.unsplash.com/photo-1517694712202-14dd9538aa97?auto=format&fit=crop&w=800',
+      'https://images.unsplash.com/photo-1555066931-4365d14bab8c?auto=format&fit=crop&w=800',
+    ],
     mood: '忙碌', weather: '多云', location: '杭州 · 西溪',
     authorName: 'Butvan', isPinned: true,
     viewCount: 342, likeCount: 28, commentCount: 6,
@@ -88,7 +92,11 @@ const MOCK_NOTES: NoteItem[] = [
   {
     id: 102, title: '关于"白"的某种偏执', slug: 'mock-white-obsession',
     summary: '原研哉对"白"的理解深刻影响了我。在网页设计中，留白不是空间的浪费，而是赋予了存在的物体以重力。极简并非空无一物，而是让每一像素都有其存在的理由。',
-    coverImageUrl: 'https://images.unsplash.com/photo-1494438639946-1ebd1d20bf85?auto=format&fit=crop&w=800',
+    coverImageUrls: [
+      'https://images.unsplash.com/photo-1494438639946-1ebd1d20bf85?auto=format&fit=crop&w=800',
+      'https://images.unsplash.com/photo-1501785888041-af3ef285b470?auto=format&fit=crop&w=800',
+      'https://images.unsplash.com/photo-1523712999610-f77fbcfc3843?auto=format&fit=crop&w=800',
+    ],
     mood: '思考中', weather: '晴', location: '上海 · 静安寺',
     authorName: 'Butvan', isPinned: false,
     viewCount: 521, likeCount: 43, commentCount: 12,
@@ -97,7 +105,9 @@ const MOCK_NOTES: NoteItem[] = [
   {
     id: 103, title: '凌晨三点的逻辑空洞', slug: 'mock-logic-void',
     summary: '当所有的变量都已就绪，唯独缺失了那一点点灵感。或许最好的代码不在屏幕里，而在那些发呆的间隙。',
-    coverImageUrl: 'https://images.unsplash.com/photo-1501785888041-af3ef285b470?auto=format&fit=crop&w=800',
+    coverImageUrls: [
+      'https://images.unsplash.com/photo-1517694712202-14dd9538aa97?auto=format&fit=crop&w=800',
+    ],
     mood: '平静', weather: '阴', location: '',
     authorName: 'Butvan', isPinned: false,
     viewCount: 128, likeCount: 16, commentCount: 3,
@@ -106,7 +116,11 @@ const MOCK_NOTES: NoteItem[] = [
   {
     id: 104, title: '重构与新生的瞬间', slug: 'mock-refactor-rebirth',
     summary: '删除掉最后一行冗余的代码时，我听到了呼吸的声音。那是一种久违的轻盈，像冬日清晨推开窗的瞬间。',
-    coverImageUrl: 'https://images.unsplash.com/photo-1517694712202-14dd9538aa97?auto=format&fit=crop&w=800',
+    coverImageUrls: [
+      'https://images.unsplash.com/photo-1499750310107-5fef28a66643?auto=format&fit=crop&w=800',
+      'https://images.unsplash.com/photo-1470071459604-3b5ec3a7fe05?auto=format&fit=crop&w=800',
+      'https://images.unsplash.com/photo-1555066931-4365d14bab8c?auto=format&fit=crop&w=800',
+    ],
     mood: '开心', weather: '风', location: '北京 · 望京',
     authorName: 'Butvan', isPinned: false,
     viewCount: 89, likeCount: 22, commentCount: 5,
@@ -115,7 +129,11 @@ const MOCK_NOTES: NoteItem[] = [
   {
     id: 105, title: '雨天的咖啡馆与一段对话', slug: 'mock-rainy-cafe',
     summary: '窗外的雨不急不缓地下着，对面坐着一位刚认识的设计师朋友。我们聊了很多关于"美"这件事——它不是装饰，而是一种让事物回归本质的力量。',
-    coverImageUrl: 'https://images.unsplash.com/photo-1523712999610-f77fbcfc3843?auto=format&fit=crop&w=800',
+    coverImageUrls: [
+      'https://images.unsplash.com/photo-1523712999610-f77fbcfc3843?auto=format&fit=crop&w=800',
+      'https://images.unsplash.com/photo-1494438639946-1ebd1d20bf85?auto=format&fit=crop&w=800',
+      'https://images.unsplash.com/photo-1501785888041-af3ef285b470?auto=format&fit=crop&w=800',
+    ],
     mood: '放松', weather: '雨', location: '成都 · 太古里',
     authorName: 'Butvan', isPinned: true,
     viewCount: 256, likeCount: 37, commentCount: 8,
@@ -124,7 +142,7 @@ const MOCK_NOTES: NoteItem[] = [
   {
     id: 106, title: '写给十年后的自己', slug: 'mock-letter-future',
     summary: '不知道你还会不会记得今天写下这段话时的心情。但我想告诉你——那些曾经让你焦虑到失眠的 bug，最终都会变成茶余饭后的笑谈。',
-    coverImageUrl: '',
+    // 无配图
     mood: '感动', weather: '雪', location: '',
     authorName: 'Butvan', isPinned: false,
     viewCount: 667, likeCount: 58, commentCount: 15,
@@ -133,7 +151,11 @@ const MOCK_NOTES: NoteItem[] = [
   {
     id: 107, title: '一次失败的部署与三杯咖啡', slug: 'mock-deploy-failure',
     summary: '凌晨两点，生产环境挂了。三杯美式下去，终于在一个被遗忘的配置项里找到了罪魁祸首。运维的艺术，大概就是在混乱中保持冷静。',
-    coverImageUrl: 'https://images.unsplash.com/photo-1499750310107-5fef28a66643?auto=format&fit=crop&w=800',
+    coverImageUrls: [
+      'https://images.unsplash.com/photo-1499750310107-5fef28a66643?auto=format&fit=crop&w=800',
+      'https://images.unsplash.com/photo-1516483638261-f4dbaf036963?auto=format&fit=crop&w=800',
+      'https://images.unsplash.com/photo-1470071459604-3b5ec3a7fe05?auto=format&fit=crop&w=800',
+    ],
     mood: '忙碌', weather: '阴', location: '深圳 · 科技园',
     authorName: 'Butvan', isPinned: false,
     viewCount: 189, likeCount: 31, commentCount: 9,
@@ -142,7 +164,11 @@ const MOCK_NOTES: NoteItem[] = [
   {
     id: 108, title: '骑行穿越西湖的黄昏', slug: 'mock-westlake-cycling',
     summary: '沿着杨公堤一路向南，夕阳把湖面染成了琥珀色。耳机里随机到了一首七八年前的老歌，忽然觉得时间好像停在了某个地方。',
-    coverImageUrl: 'https://images.unsplash.com/photo-1470071459604-3b5ec3a7fe05?auto=format&fit=crop&w=800',
+    coverImageUrls: [
+      'https://images.unsplash.com/photo-1470071459604-3b5ec3a7fe05?auto=format&fit=crop&w=800',
+      'https://images.unsplash.com/photo-1523712999610-f77fbcfc3843?auto=format&fit=crop&w=800',
+      'https://images.unsplash.com/photo-1494438639946-1ebd1d20bf85?auto=format&fit=crop&w=800',
+    ],
     mood: '放松', weather: '晴', location: '杭州 · 西湖',
     authorName: 'Butvan', isPinned: false,
     viewCount: 432, likeCount: 49, commentCount: 11,
@@ -151,7 +177,7 @@ const MOCK_NOTES: NoteItem[] = [
   {
     id: 109, title: '读完《雪国》的那个午后', slug: 'mock-snow-country',
     summary: '川端康成的文字像一层薄雪，轻轻地覆盖在心上。读到结尾时窗外正好飘起了南京今年的第一场雪——这种巧合让我呆坐了很久。',
-    coverImageUrl: '',
+    // 无配图
     mood: '平静', weather: '雪', location: '南京 · 鼓楼',
     authorName: 'Butvan', isPinned: false,
     viewCount: 298, likeCount: 41, commentCount: 7,
@@ -160,7 +186,11 @@ const MOCK_NOTES: NoteItem[] = [
   {
     id: 110, title: '开源项目收到第一个 PR', slug: 'mock-first-pr',
     summary: '来自一位完全陌生的德国开发者。他用不是特别流利的英文在 PR 描述里写了一大段感谢的话。那一刻觉得，所有的熬夜和周末都值了。',
-    coverImageUrl: 'https://images.unsplash.com/photo-1555066931-4365d14bab8c?auto=format&fit=crop&w=800',
+    coverImageUrls: [
+      'https://images.unsplash.com/photo-1555066931-4365d14bab8c?auto=format&fit=crop&w=800',
+      'https://images.unsplash.com/photo-1517694712202-14dd9538aa97?auto=format&fit=crop&w=800',
+      'https://images.unsplash.com/photo-1501785888041-af3ef285b470?auto=format&fit=crop&w=800',
+    ],
     mood: '开心', weather: '风', location: '',
     authorName: 'Butvan', isPinned: false,
     viewCount: 891, likeCount: 102, commentCount: 24,
@@ -477,6 +507,12 @@ export default function NotesFragmentsPage() {
                 const MoodIcon = moodCfg?.icon
                 const WeatherIcon = weatherCfg?.icon
                 const publishedDate = note.publishedAt || note.createdAt
+                
+                // 获取图片数组（优先使用 coverImageUrls，否则回退到单图）
+                const images = note.coverImageUrls && note.coverImageUrls.length > 0 
+                  ? note.coverImageUrls 
+                  : (note.coverImageUrl ? [note.coverImageUrl] : [])
+                const hasImages = images.length > 0
 
                 return (
                   <div
@@ -492,37 +528,72 @@ export default function NotesFragmentsPage() {
                       className="fragment-card group block bg-white dark:bg-zinc-900/90 border border-zinc-100 dark:border-zinc-800/60 hover:border-zinc-200 dark:hover:border-zinc-700/60 transition-all duration-700 ease-[cubic-bezier(0.23,1,0.32,1)] hover:-translate-y-2.5 hover:scale-[1.02] hover:shadow-[20px_30px_60px_rgba(0,0,0,0.06)] dark:hover:shadow-[20px_30px_60px_rgba(0,0,0,0.25)] relative overflow-hidden"
                       style={{ boxShadow: '2px 2px 0px rgba(0,0,0,0.01)' }}
                     >
-                      {/* ===== 配图区：压缩横幅 ===== */}
-                      {note.coverImageUrl ? (
-                        <div className="relative h-[140px] overflow-hidden bg-zinc-50 dark:bg-zinc-950">
-                          <img
-                            src={resolveImageUrl(note.coverImageUrl)}
-                            alt={note.title}
-                            className="w-full h-full object-cover transition-all duration-800 ease-[cubic-bezier(0.23,1,0.32,1)] group-hover:scale-110"
-                            loading="lazy"
-                            style={{ filter: 'grayscale(8%)' }}
-                          />
-                          {/* 底部渐变叠加层，提升文字可读性 */}
-                          <div className="absolute inset-x-0 bottom-0 h-12 bg-gradient-to-t from-white/30 dark:from-zinc-900/30 to-transparent pointer-events-none" />
-                        </div>
-                      ) : (
-                        /* 无配图时使用装饰性渐变条 */
-                        <div className="h-[140px] bg-gradient-to-br from-[#727BBA]/5 via-[#727BBA]/3 to-transparent dark:from-[#727BBA]/10 dark:via-[#727BBA]/5 dark:to-transparent flex items-center justify-center">
-                          <div className="flex gap-0.5">
-                            <div className="w-8 h-px bg-[#727BBA]/20" />
-                            <div className="w-8 h-px bg-[#727BBA]/30" />
-                            <div className="w-12 h-px bg-[#727BBA]/20" />
+                      {/* ===== 心境标签：右上角竖排展示 ===== */}
+                      {moodCfg && MoodIcon && (
+                        <div className="absolute top-0 right-6 z-10">
+                          <div className={`flex flex-col items-center gap-1 px-2 py-3 rounded-b-lg ${moodCfg.color} bg-current/5`}>
+                            <MoodIcon size={14} />
+                            <span className="text-[10px] font-medium tracking-widest [writing-mode:vertical-rl]" style={{ writingMode: 'vertical-rl' }}>
+                              {moodCfg.label}
+                            </span>
                           </div>
                         </div>
                       )}
 
+                      {/* ===== 配图区：三图拼贴布局 ===== */}
+                      {hasImages ? (
+                        <div className="relative h-[280px] overflow-hidden bg-zinc-50 dark:bg-zinc-950">
+                          {images.length === 1 ? (
+                            /* 单图模式：全宽展示 */
+                            <img
+                              src={resolveImageUrl(images[0])}
+                              alt={note.title}
+                              className="w-full h-full object-cover transition-all duration-800 ease-[cubic-bezier(0.23,1,0.32,1)] group-hover:scale-110"
+                              loading="lazy"
+                              style={{ filter: 'grayscale(8%)' }}
+                            />
+                          ) : (
+                            /* 多图拼贴模式：左侧2/3两张竖图，右侧1/3一张横图 */
+                            <div className="grid grid-cols-3 h-full">
+                              {/* 左侧第一张 */}
+                              <div className="col-span-1 relative overflow-hidden">
+                                <img
+                                  src={resolveImageUrl(images[0])}
+                                  alt={`${note.title} - 1`}
+                                  className="w-full h-full object-cover transition-all duration-800 ease-[cubic-bezier(0.23,1,0.32,1)] group-hover:scale-110"
+                                  loading="lazy"
+                                  style={{ filter: 'grayscale(8%)' }}
+                                />
+                              </div>
+                              {/* 左侧第二张 */}
+                              <div className="col-span-1 relative overflow-hidden">
+                                <img
+                                  src={resolveImageUrl(images[1])}
+                                  alt={`${note.title} - 2`}
+                                  className="w-full h-full object-cover transition-all duration-800 ease-[cubic-bezier(0.23,1,0.32,1)] group-hover:scale-110"
+                                  loading="lazy"
+                                  style={{ filter: 'grayscale(8%)' }}
+                                />
+                              </div>
+                              {/* 右侧大图 */}
+                              <div className="col-span-1 relative overflow-hidden">
+                                <img
+                                  src={resolveImageUrl(images[2] || images[0])}
+                                  alt={`${note.title} - 3`}
+                                  className="w-full h-full object-cover transition-all duration-800 ease-[cubic-bezier(0.23,1,0.32,1)] group-hover:scale-110"
+                                  loading="lazy"
+                                  style={{ filter: 'grayscale(8%)' }}
+                                />
+                              </div>
+                            </div>
+                          )}
+                          {/* 底部渐变叠加层，提升文字可读性 */}
+                          <div className="absolute inset-x-0 bottom-0 h-20 bg-gradient-to-t from-white/50 dark:from-zinc-900/50 to-transparent pointer-events-none" />
+                        </div>
+                      ) : null /* 无配图时完全隐藏封面区域 */}
+
                       {/* ===== 正文区 ===== */}
                       <div className="relative px-7 py-6">
-                        {/* 序号标签 */}
-                        <span className="block font-mono text-[11px] text-[#727BBA] dark:text-[#727BBA]/80 tracking-[0.15em] mb-3.5 font-medium">
-                          SEQ_{String(i + 1).padStart(2, '0')} / {note.mood?.toUpperCase() || 'LIFE'}
-                        </span>
-
                         {/* 日期（绝对定位右上角） */}
                         <span className="absolute top-6 right-7 text-[11px] text-zinc-300 dark:text-zinc-600 font-light tracking-wide">
                           {formatShortDate(publishedDate)}
@@ -540,14 +611,8 @@ export default function NotesFragmentsPage() {
                           </p>
                         )}
 
-                        {/* 心情/天气/位置 标签行 */}
+                        {/* 天气/位置 标签行 */}
                         <div className="flex flex-wrap items-center gap-2 mb-4">
-                          {MoodIcon && (
-                            <span className={`inline-flex items-center gap-1 px-1.5 py-0.5 rounded-full text-[10px] font-medium bg-current/5 ${moodCfg?.color}`}>
-                              <MoodIcon size={11} />
-                              {moodCfg?.label}
-                            </span>
-                          )}
                           {WeatherIcon && (
                             <span className="inline-flex items-center gap-1 px-1.5 py-0.5 rounded-full text-[10px] font-medium text-zinc-500 dark:text-zinc-400 bg-zinc-100 dark:bg-zinc-800/60">
                               <WeatherIcon size={11} />

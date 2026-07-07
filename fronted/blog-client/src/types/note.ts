@@ -8,7 +8,8 @@ export interface NoteItem {
   title: string
   slug: string
   summary?: string
-  coverImageUrl?: string
+  coverImageUrl?: string // 单图兼容
+  coverImageUrls?: string[] // 多张配图 URL 数组（最多3张）
   mood?: string
   weather?: string
   location?: string

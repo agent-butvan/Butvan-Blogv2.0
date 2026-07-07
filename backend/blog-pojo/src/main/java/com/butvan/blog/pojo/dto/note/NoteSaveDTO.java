@@ -22,7 +22,9 @@ public class NoteSaveDTO {
 
     private String content; // Markdown 原文内容
 
-    private String coverImageUrl; // 配图地址
+    private String coverImageUrl; // 配图地址（单图兼容）
+
+    private java.util.List<String> coverImageUrls; // 多张配图 URL 数组（最多3张）
 
     private String mood; // 心情标记：开心/思考中/忙碌/放松/感动/平静
 
