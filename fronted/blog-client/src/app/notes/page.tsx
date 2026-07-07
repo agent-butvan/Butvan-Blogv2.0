@@ -545,7 +545,7 @@ export default function NotesFragmentsPage() {
                       {/* ===== 心境标签：右上角竖排展示 ===== */}
                       {moodCfg && MoodIcon && (
                         <div className="absolute top-0 right-6 z-10">
-                          <div className={`flex flex-col items-center gap-1 px-2 py-3 ${moodCfg.color} bg-white/80 dark:bg-zinc-950/80 backdrop-blur-sm border-x border-b border-current/10`}>
+                          <div className={`flex flex-col items-center gap-1 px-2 py-3 ${moodCfg.color} bg-white/80 dark:bg-zinc-950/80 backdrop-blur-sm`}>
                             <MoodIcon size={14} />
                             <span className="text-[10px] font-bold tracking-widest [writing-mode:vertical-rl] text-zinc-700 dark:text-zinc-200" style={{ writingMode: 'vertical-rl' }}>
                               {moodCfg.label}
@@ -605,12 +605,8 @@ export default function NotesFragmentsPage() {
 
                       {/* ===== 正文区 ===== */}
                       <div className="relative px-7 py-6">
-                        {/* 日期（绝对定位右上角，无配图时向下偏移避免与心境标签重叠） */}
-                        <span className={`absolute right-7 font-light tracking-wide transition-all duration-200 ${
-                          hasImages 
-                            ? 'top-6 text-[11px] text-zinc-500 dark:text-zinc-500'
-                            : (moodCfg ? 'top-[72px] text-[11px] text-zinc-500 dark:text-zinc-500' : 'top-6 text-[11px] text-zinc-500 dark:text-zinc-500')
-                        }`}>
+                        {/* 日期（绝对定位右上角） */}
+                        <span className="absolute top-6 right-7 text-[11px] text-zinc-500 dark:text-zinc-500 font-light tracking-wide">
                           {formatShortDate(publishedDate)}
                         </span>
 
