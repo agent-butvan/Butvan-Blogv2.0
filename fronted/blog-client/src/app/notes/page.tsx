@@ -388,7 +388,8 @@ export default function NotesFragmentsPage() {
         { y: 0, opacity: 1, duration: 0.5, ease: 'power2.out', delay: 0.5 },
       )
     })
-    return () => ctx.revert()
+    // 不返回 cleanup：动画仅执行一次，完成后内联样式（opacity:1）需保持
+    // 若 cleanup 回退样式，配合 hasAnimated 守卫会导致筛选切换后元素不可见
   }, [loading, notes])
 
   // ==================== 格式化日期 ====================
