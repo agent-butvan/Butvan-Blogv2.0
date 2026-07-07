@@ -224,10 +224,11 @@ export default function NotesFragmentsPage() {
   const [page, setPage] = useState(1)
   const [totalPages, setTotalPages] = useState(1)
   const [moodFilter, setMoodFilter] = useState('')
-  const [hasLoadedOnce, setHasLoadedOnce] = useState(false) // 标记是否已首次加载
 
   const pageSize = 10
   const canvasRef = useRef<HTMLDivElement>(null)
+  const [hasLoadedOnce, setHasLoadedOnce] = useState(false) // 标记是否已完成首次加载（区分筛选切换的视觉表现）
+  const hasAnimated = useRef(false) // 标记 GSAP 入场动画是否已执行
 
   /** 加载手记列表 */
   const loadNotes = useCallback(async () => {
@@ -272,7 +273,6 @@ export default function NotesFragmentsPage() {
       }
     } finally {
       setLoading(false)
-      setHasLoadedOnce(true) // 标记已完成首次加载
     }
   }, [page, moodFilter])
 
@@ -355,15 +355,14 @@ export default function NotesFragmentsPage() {
     }
   }, [notes])
 
-  // ==================== GSAP 入场动画（仅首次加载播放）====================
-
-  const animationPlayedRef = useRef(false) // 防止筛选/翻页时重复播放入场动画
+  // ==================== GSAP 入场动画（仅在首次加载时执行）====================
 
   useEffect(() => {
-    if (loading || !hasLoadedOnce) return
-    if (animationPlayedRef.current) return // 已播放过入场动画，后续筛选/翻页不再播放
+    if (loading || hasAnimated.current || notes.length === 0) return
 
-    animationPlayedRef.current = true
+    // 标记动画已执行 + 首次加载完成
+    hasAnimated.current = true
+    setHasLoadedOnce(true)
 
     // 尊重用户 reduced-motion 偏好：跳过入场动画，直接显示内容
     const motionQuery = window.matchMedia('(prefers-reduced-motion: reduce)')
@@ -390,7 +389,7 @@ export default function NotesFragmentsPage() {
       )
     })
     return () => ctx.revert()
-  }, [loading, hasLoadedOnce])
+  }, [loading, notes])
 
   // ==================== 格式化日期 ====================
 
@@ -444,6 +443,12 @@ export default function NotesFragmentsPage() {
           <span className="text-[10px] font-heading font-bold tracking-wider text-zinc-400 dark:text-zinc-500 uppercase mr-2">
             心境
           </span>
+          {/* 筛选加载指示器 */}
+          {loading && hasLoadedOnce && (
+            <span className="inline-flex items-center gap-1">
+              <Spinner size="sm" color="accent" />
+            </span>
+          )}
           {MOOD_FILTER_OPTIONS.map((opt) => {
             const Icon = opt.icon
             return (
@@ -509,8 +514,8 @@ export default function NotesFragmentsPage() {
           <>
             <div
               ref={canvasRef}
-              className={`relative grid grid-cols-12 gap-0 transition-opacity duration-500 ${
-                loading ? 'opacity-35 blur-[0.5px] pointer-events-none' : 'opacity-100'
+              className={`relative grid grid-cols-12 gap-0 transition-opacity duration-300 ${
+                loading && !hasLoadedOnce ? 'opacity-35 blur-[0.5px] pointer-events-none' : 'opacity-100'
               }`}
             >
               {/* 中央装饰竖线（虚线节奏） */}
