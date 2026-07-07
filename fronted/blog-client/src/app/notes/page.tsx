@@ -544,8 +544,8 @@ export default function NotesFragmentsPage() {
                     >
                       {/* ===== 心境标签：右上角竖排展示 ===== */}
                       {moodCfg && MoodIcon && (
-                        <div className={`absolute top-0 right-6 z-10 ${hasImages ? '' : 'mt-2'}`}>
-                          <div className={`flex flex-col items-center gap-1 px-2 py-3 rounded-b-lg shadow-sm ${moodCfg.color} bg-white/80 dark:bg-zinc-950/80 backdrop-blur-sm border-x border-b border-current/10`}>
+                        <div className="absolute top-0 right-6 z-10">
+                          <div className={`flex flex-col items-center gap-1 px-2 py-3 ${moodCfg.color} bg-white/80 dark:bg-zinc-950/80 backdrop-blur-sm border-x border-b border-current/10`}>
                             <MoodIcon size={14} />
                             <span className="text-[10px] font-bold tracking-widest [writing-mode:vertical-rl] text-zinc-700 dark:text-zinc-200" style={{ writingMode: 'vertical-rl' }}>
                               {moodCfg.label}
