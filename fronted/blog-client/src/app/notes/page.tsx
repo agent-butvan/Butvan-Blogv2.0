@@ -224,6 +224,7 @@ export default function NotesFragmentsPage() {
   const [page, setPage] = useState(1)
   const [totalPages, setTotalPages] = useState(1)
   const [moodFilter, setMoodFilter] = useState('')
+  const [hasLoadedOnce, setHasLoadedOnce] = useState(false) // 标记是否已首次加载
 
   const pageSize = 10
   const canvasRef = useRef<HTMLDivElement>(null)
@@ -271,6 +272,7 @@ export default function NotesFragmentsPage() {
       }
     } finally {
       setLoading(false)
+      setHasLoadedOnce(true) // 标记已完成首次加载
     }
   }, [page, moodFilter])
 
@@ -353,10 +355,15 @@ export default function NotesFragmentsPage() {
     }
   }, [notes])
 
-  // ==================== GSAP 入场动画 ====================
+  // ==================== GSAP 入场动画（仅首次加载播放）====================
+
+  const animationPlayedRef = useRef(false) // 防止筛选/翻页时重复播放入场动画
 
   useEffect(() => {
-    if (loading) return
+    if (loading || !hasLoadedOnce) return
+    if (animationPlayedRef.current) return // 已播放过入场动画，后续筛选/翻页不再播放
+
+    animationPlayedRef.current = true
 
     // 尊重用户 reduced-motion 偏好：跳过入场动画，直接显示内容
     const motionQuery = window.matchMedia('(prefers-reduced-motion: reduce)')
@@ -383,7 +390,7 @@ export default function NotesFragmentsPage() {
       )
     })
     return () => ctx.revert()
-  }, [loading, notes])
+  }, [loading, hasLoadedOnce])
 
   // ==================== 格式化日期 ====================
 
