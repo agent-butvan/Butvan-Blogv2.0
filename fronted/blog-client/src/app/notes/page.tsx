@@ -443,10 +443,10 @@ export default function NotesFragmentsPage() {
               <button
                 key={opt.value || 'all'}
                 onClick={() => { setMoodFilter(opt.value); setPage(1) }}
-                className={`inline-flex items-center gap-1.5 px-3 py-2 rounded-full text-xs font-medium transition-colors duration-200 cursor-pointer min-h-[44px] ${
+                className={`inline-flex items-center gap-1.5 px-3 py-2 rounded-full text-xs font-medium transition-colors duration-150 cursor-pointer min-h-[44px] ${
                   moodFilter === opt.value
-                    ? 'bg-[#727BBA]/10 text-[#727BBA] font-bold shadow-sm'
-                    : 'text-zinc-500 hover:text-zinc-800 dark:text-zinc-400 dark:hover:text-zinc-100 hover:bg-zinc-100 dark:hover:bg-zinc-900/60'
+                    ? 'text-[#727BBA] font-bold'
+                    : 'text-zinc-500 hover:text-zinc-800 dark:text-zinc-400 dark:hover:text-zinc-100'
                 }`}
               >
                 {Icon && <Icon size={13} />}
