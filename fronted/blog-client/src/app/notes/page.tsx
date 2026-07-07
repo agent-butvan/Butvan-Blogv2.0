@@ -288,13 +288,16 @@ export default function NotesFragmentsPage() {
   useEffect(() => {
     if (notes.length === 0) return
 
+    // 尊重用户 reduced-motion 偏好，跳过视差效果
+    const motionQuery = window.matchMedia('(prefers-reduced-motion: reduce)')
+    if (motionQuery.matches) return
+
     const wrappers = document.querySelectorAll<HTMLElement>('.fragment-card-wrapper')
     let rafId: number
 
     const handleScroll = () => {
       wrappers.forEach((wrapper, i) => {
         // 奇偶卡片移动方向相反，营造错位纵深感
-        // 减小速度系数，避免与相邻卡片重叠
         const speed = (i % 2 === 0) ? 0.02 : -0.02
         const yPos = window.pageYOffset * speed
         wrapper.style.transform = `translateY(${yPos}px)`
@@ -354,6 +357,17 @@ export default function NotesFragmentsPage() {
 
   useEffect(() => {
     if (loading) return
+
+    // 尊重用户 reduced-motion 偏好：跳过入场动画，直接显示内容
+    const motionQuery = window.matchMedia('(prefers-reduced-motion: reduce)')
+    if (motionQuery.matches) {
+      document.querySelectorAll('.animate-header-item, .fragment-card-wrapper, .animate-pagination').forEach((el) => {
+        ;(el as HTMLElement).style.opacity = '1'
+        ;(el as HTMLElement).style.transform = 'none'
+      })
+      return
+    }
+
     const ctx = gsap.context(() => {
       gsap.fromTo('.animate-header-item',
         { y: 12, opacity: 0 },
@@ -429,7 +443,7 @@ export default function NotesFragmentsPage() {
               <button
                 key={opt.value || 'all'}
                 onClick={() => { setMoodFilter(opt.value); setPage(1) }}
-                className={`inline-flex items-center gap-1 px-2.5 py-1 rounded-full text-xs font-medium transition-all duration-200 cursor-pointer ${
+                className={`inline-flex items-center gap-1.5 px-3 py-2 rounded-full text-xs font-medium transition-colors duration-200 cursor-pointer min-h-[44px] ${
                   moodFilter === opt.value
                     ? 'bg-[#727BBA]/10 text-[#727BBA] font-bold shadow-sm'
                     : 'text-zinc-500 hover:text-zinc-800 dark:text-zinc-400 dark:hover:text-zinc-100 hover:bg-zinc-100 dark:hover:bg-zinc-900/60'
@@ -525,8 +539,8 @@ export default function NotesFragmentsPage() {
                   >
                     <Link
                       href={`/notes/${note.slug}`}
-                      className="fragment-card group block bg-white dark:bg-zinc-900/90 border border-zinc-100 dark:border-zinc-800/60 hover:border-zinc-200 dark:hover:border-zinc-700/60 transition-all duration-700 ease-[cubic-bezier(0.23,1,0.32,1)] hover:-translate-y-2.5 hover:scale-[1.02] hover:shadow-[20px_30px_60px_rgba(0,0,0,0.06)] dark:hover:shadow-[20px_30px_60px_rgba(0,0,0,0.25)] relative overflow-hidden"
-                      style={{ boxShadow: '2px 2px 0px rgba(0,0,0,0.01)' }}
+                      aria-label={`阅读手记：${note.title}`}
+                      className="fragment-card group block bg-white dark:bg-zinc-900/90 border border-zinc-100 dark:border-zinc-800/60 hover:border-zinc-200 dark:hover:border-zinc-700/60 transition-colors duration-200 motion-safe:transition-all motion-safe:duration-300 ease-[cubic-bezier(0.23,1,0.32,1)] motion-safe:hover:-translate-y-2.5 motion-safe:hover:scale-[1.02] hover:shadow-[8px_16px_40px_rgba(0,0,0,0.05)] dark:hover:shadow-[8px_16px_40px_rgba(0,0,0,0.25)] relative overflow-hidden focus-visible:outline-2 focus-visible:outline-offset-4 focus-visible:outline-[#727BBA]"
                     >
                       {/* ===== 心境标签：右上角竖排展示 ===== */}
                       {moodCfg && MoodIcon && (
@@ -548,41 +562,38 @@ export default function NotesFragmentsPage() {
                             <img
                               src={resolveImageUrl(images[0])}
                               alt={note.title}
-                              className="w-full h-full object-cover transition-all duration-800 ease-[cubic-bezier(0.23,1,0.32,1)] group-hover:scale-110"
+                              className="w-full h-full object-cover motion-safe:transition-transform motion-safe:duration-500 ease-[cubic-bezier(0.23,1,0.32,1)] group-hover:scale-105"
                               loading="lazy"
-                              style={{ filter: 'grayscale(8%)' }}
                             />
                           ) : (
-                            /* 多图拼贴模式：左侧2/3两张竖图，右侧1/3一张横图 */
-                            <div className="grid grid-cols-3 h-full">
-                              {/* 左侧第一张 */}
-                              <div className="col-span-1 relative overflow-hidden">
-                                <img
-                                  src={resolveImageUrl(images[0])}
-                                  alt={`${note.title} - 1`}
-                                  className="w-full h-full object-cover transition-all duration-800 ease-[cubic-bezier(0.23,1,0.32,1)] group-hover:scale-110"
-                                  loading="lazy"
-                                  style={{ filter: 'grayscale(8%)' }}
-                                />
-                              </div>
-                              {/* 左侧第二张 */}
-                              <div className="col-span-1 relative overflow-hidden">
-                                <img
-                                  src={resolveImageUrl(images[1])}
-                                  alt={`${note.title} - 2`}
-                                  className="w-full h-full object-cover transition-all duration-800 ease-[cubic-bezier(0.23,1,0.32,1)] group-hover:scale-110"
-                                  loading="lazy"
-                                  style={{ filter: 'grayscale(8%)' }}
-                                />
+                            /* 多图拼贴模式：左侧2/3两图纵向堆叠，右侧1/3一张全高大图 */
+                            <div className="grid grid-cols-3 h-full gap-px bg-white/20 dark:bg-zinc-900/20">
+                              {/* 左侧两图纵向堆叠 */}
+                              <div className="col-span-2 grid grid-rows-2 gap-px bg-white/20 dark:bg-zinc-900/20">
+                                <div className="relative overflow-hidden">
+                                  <img
+                                    src={resolveImageUrl(images[0])}
+                                    alt={`${note.title} - 1`}
+                                    className="w-full h-full object-cover motion-safe:transition-transform motion-safe:duration-500 ease-[cubic-bezier(0.23,1,0.32,1)] group-hover:scale-105"
+                                    loading="lazy"
+                                  />
+                                </div>
+                                <div className="relative overflow-hidden">
+                                  <img
+                                    src={resolveImageUrl(images[1])}
+                                    alt={`${note.title} - 2`}
+                                    className="w-full h-full object-cover motion-safe:transition-transform motion-safe:duration-500 ease-[cubic-bezier(0.23,1,0.32,1)] group-hover:scale-105"
+                                    loading="lazy"
+                                  />
+                                </div>
                               </div>
                               {/* 右侧大图 */}
                               <div className="col-span-1 relative overflow-hidden">
                                 <img
                                   src={resolveImageUrl(images[2] || images[0])}
                                   alt={`${note.title} - 3`}
-                                  className="w-full h-full object-cover transition-all duration-800 ease-[cubic-bezier(0.23,1,0.32,1)] group-hover:scale-110"
+                                  className="w-full h-full object-cover motion-safe:transition-transform motion-safe:duration-500 ease-[cubic-bezier(0.23,1,0.32,1)] group-hover:scale-105"
                                   loading="lazy"
-                                  style={{ filter: 'grayscale(8%)' }}
                                 />
                               </div>
                             </div>
@@ -595,7 +606,7 @@ export default function NotesFragmentsPage() {
                       {/* ===== 正文区 ===== */}
                       <div className="relative px-7 py-6">
                         {/* 日期（绝对定位右上角） */}
-                        <span className="absolute top-6 right-7 text-[11px] text-zinc-300 dark:text-zinc-600 font-light tracking-wide">
+                        <span className="absolute top-6 right-7 text-[11px] text-zinc-500 dark:text-zinc-500 font-light tracking-wide">
                           {formatShortDate(publishedDate)}
                         </span>
 
@@ -606,7 +617,7 @@ export default function NotesFragmentsPage() {
 
                         {/* 摘要 */}
                         {note.summary && (
-                          <p className="font-serif text-[13px] md:text-sm text-zinc-500 dark:text-zinc-400 leading-relaxed text-justify mb-5 line-clamp-3">
+                          <p className="font-serif text-[13px] md:text-sm text-zinc-500 dark:text-zinc-400 leading-relaxed text-pretty mb-5 line-clamp-3">
                             {note.summary}
                           </p>
                         )}
@@ -628,7 +639,7 @@ export default function NotesFragmentsPage() {
                         </div>
 
                         {/* ===== 卡片页脚 ===== */}
-                        <div className="flex items-center justify-between pt-4 border-t border-zinc-50 dark:border-zinc-800/30 text-[10px] text-zinc-400 dark:text-zinc-500 uppercase tracking-wider font-medium">
+                        <div className="flex items-center justify-between pt-4 border-t border-zinc-200/50 dark:border-zinc-800/50 text-[11px] text-zinc-500 dark:text-zinc-500 uppercase tracking-wider font-medium">
                           {/* 左侧：浏览数据 */}
                           <div className="flex items-center gap-4">
                             <span className="inline-flex items-center gap-1">
