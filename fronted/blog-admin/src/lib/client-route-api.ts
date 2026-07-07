@@ -22,12 +22,14 @@ const STATIC_CLIENT_ROUTES: ClientRoute[] = [
   { path: '/albums', label: '相册画廊', category: '页面', dynamic: false },
   { path: '/archive', label: '文章归档', category: '页面', dynamic: false },
   { path: '/categories', label: '分类列表', category: '页面', dynamic: false },
+  { path: '/notes', label: '手记列表', category: '页面', dynamic: false },
   { path: '/projects', label: '项目展示', category: '页面', dynamic: false },
   { path: '/article/[slug]', label: '文章详情', category: '动态路由', dynamic: true },
   { path: '/categories/[slug]', label: '分类文章', category: '动态路由', dynamic: true },
   { path: '/tags/[slug]', label: '标签文章', category: '动态路由', dynamic: true },
   { path: '/series/[slug]', label: '系列文章', category: '动态路由', dynamic: true },
   { path: '/albums/[slug]', label: '相册详情', category: '动态路由', dynamic: true },
+  { path: '/notes/[slug]', label: '手记详情', category: '动态路由', dynamic: true },
 ]
 
 /** 获取全部客户端可跳转路由（含页面 + 动态路由分组） */
