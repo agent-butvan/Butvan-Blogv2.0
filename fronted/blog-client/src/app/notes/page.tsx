@@ -545,12 +545,14 @@ export default function NotesFragmentsPage() {
                       {/* ===== 配图区：三图拼贴布局 ===== */}
                       {hasImages ? (
                         <div className="relative h-[280px] overflow-hidden bg-zinc-50 dark:bg-zinc-950">
-                          {/* 心境标签：左上角胶囊样式（有封面时） */}
+                          {/* 心境标签：左上角竖排（有封面时） */}
                           {moodCfg && MoodIcon && (
                             <div className="absolute top-4 left-4 z-10">
-                              <div className={`flex items-center gap-1.5 px-3 py-1.5 rounded-full text-xs font-medium backdrop-blur-md bg-white/80 dark:bg-zinc-900/80 border border-white/20 dark:border-zinc-700/20 shadow-sm ${moodCfg.color}`}>
-                                <MoodIcon size={14} />
-                                <span>{moodCfg.label}</span>
+                              <div className={`flex flex-col items-center gap-1.5 px-2 py-3 rounded-lg ${moodCfg.color} bg-white dark:bg-zinc-900 shadow-md border border-zinc-200/50 dark:border-zinc-700/50`}>
+                                <MoodIcon size={16} />
+                                <span className="text-[11px] font-medium tracking-wider [writing-mode:vertical-rl]" style={{ writingMode: 'vertical-rl' }}>
+                                  {moodCfg.label}
+                                </span>
                               </div>
                             </div>
                           )}
