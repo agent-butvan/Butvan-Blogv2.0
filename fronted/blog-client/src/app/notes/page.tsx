@@ -61,11 +61,11 @@ const MOOD_FILTER_OPTIONS = [
 
 /** 基于卡片索引的 12 列栅格定位模式（5 种循环） */
 const GRID_PATTERNS = [
-  { gridColumn: '1 / 6',  marginTop: '2.5rem' },
-  { gridColumn: '7 / 12', marginTop: '9rem' },
-  { gridColumn: '2 / 6',  marginTop: '-1rem' },
-  { gridColumn: '8 / 13', marginTop: '2rem' },
-  { gridColumn: '3 / 10', marginTop: '5rem' },
+  { gridColumn: '1 / 6',  marginTop: '4rem' },   // 左侧宽卡
+  { gridColumn: '7 / 12', marginTop: '12rem' },  // 右侧宽卡（更大间距）
+  { gridColumn: '2 / 6',  marginTop: '8rem' },   // 左侧窄卡（居中偏左）
+  { gridColumn: '8 / 13', marginTop: '10rem' },  // 右侧窄卡（居中偏右）
+  { gridColumn: '3 / 10', marginTop: '14rem' },  // 中央全宽卡（最大间距）
 ]
 
 /** 根据索引获取栅格定位样式 */
@@ -264,7 +264,8 @@ export default function NotesFragmentsPage() {
     const handleScroll = () => {
       wrappers.forEach((wrapper, i) => {
         // 奇偶卡片移动方向相反，营造错位纵深感
-        const speed = (i % 2 === 0) ? 0.04 : -0.04
+        // 减小速度系数，避免与相邻卡片重叠
+        const speed = (i % 2 === 0) ? 0.02 : -0.02
         const yPos = window.pageYOffset * speed
         wrapper.style.transform = `translateY(${yPos}px)`
       })
@@ -282,6 +283,40 @@ export default function NotesFragmentsPage() {
     return () => {
       window.removeEventListener('scroll', onScroll)
       if (rafId) cancelAnimationFrame(rafId)
+    }
+  }, [notes])
+
+  // ==================== 响应式栅格布局（桌面端应用错位样式）====================
+
+  useEffect(() => {
+    if (notes.length === 0) return
+
+    const applyGridStyles = () => {
+      const isDesktop = window.innerWidth >= 768 // md breakpoint
+      const wrappers = document.querySelectorAll<HTMLElement>('.fragment-card-wrapper')
+      
+      wrappers.forEach((wrapper, i) => {
+        if (isDesktop) {
+          // 桌面端：应用错位栅格样式
+          const gridStyle = getCardGridStyle(i)
+          wrapper.style.gridColumn = gridStyle.gridColumn
+          wrapper.style.marginTop = gridStyle.marginTop
+        } else {
+          // 移动端：全宽统一间距
+          wrapper.style.gridColumn = '1 / -1'
+          wrapper.style.marginTop = '2rem'
+        }
+      })
+    }
+
+    // 初始应用
+    applyGridStyles()
+
+    // 监听窗口大小变化
+    window.addEventListener('resize', applyGridStyles)
+
+    return () => {
+      window.removeEventListener('resize', applyGridStyles)
     }
   }, [notes])
 
@@ -446,10 +481,9 @@ export default function NotesFragmentsPage() {
                 return (
                   <div
                     key={note.id}
-                    className="fragment-card-wrapper mb-20 md:mb-0"
+                    className="fragment-card-wrapper mb-16 md:mb-0"
                     style={{
-                      gridColumn: gridStyle.gridColumn,
-                      marginTop: gridStyle.marginTop,
+                      // 移动端：全宽显示，统一间距；桌面端：错位栅格（通过 useEffect 动态设置）
                       willChange: 'transform',
                     }}
                   >
