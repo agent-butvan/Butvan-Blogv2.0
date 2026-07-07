@@ -542,21 +542,21 @@ export default function NotesFragmentsPage() {
                       aria-label={`阅读手记：${note.title}`}
                       className="fragment-card group block bg-white dark:bg-zinc-900/90 border border-zinc-100 dark:border-zinc-800/60 hover:border-zinc-200 dark:hover:border-zinc-700/60 transition-colors duration-200 motion-safe:transition-all motion-safe:duration-300 ease-[cubic-bezier(0.23,1,0.32,1)] motion-safe:hover:-translate-y-2.5 motion-safe:hover:scale-[1.02] hover:shadow-[8px_16px_40px_rgba(0,0,0,0.05)] dark:hover:shadow-[8px_16px_40px_rgba(0,0,0,0.25)] relative overflow-hidden focus-visible:outline-2 focus-visible:outline-offset-4 focus-visible:outline-[#727BBA]"
                     >
+                      {/* ===== 心境标签：右上角竖排展示 ===== */}
+                      {moodCfg && MoodIcon && (
+                        <div className={`absolute top-0 right-6 z-10 ${hasImages ? '' : 'mt-2'}`}>
+                          <div className={`flex flex-col items-center gap-1 px-2 py-3 rounded-b-lg shadow-sm ${moodCfg.color} bg-white/80 dark:bg-zinc-950/80 backdrop-blur-sm border-x border-b border-current/10`}>
+                            <MoodIcon size={14} />
+                            <span className="text-[10px] font-bold tracking-widest [writing-mode:vertical-rl] text-zinc-700 dark:text-zinc-200" style={{ writingMode: 'vertical-rl' }}>
+                              {moodCfg.label}
+                            </span>
+                          </div>
+                        </div>
+                      )}
+
                       {/* ===== 配图区：三图拼贴布局 ===== */}
                       {hasImages ? (
                         <div className="relative h-[280px] overflow-hidden bg-zinc-50 dark:bg-zinc-950">
-                          {/* 心境标签：左上角竖排（有封面时） */}
-                          {moodCfg && MoodIcon && (
-                            <div className="absolute top-4 left-4 z-10">
-                              <div className={`flex flex-col items-center gap-1.5 px-2 py-3 rounded-lg ${moodCfg.color} bg-white dark:bg-zinc-900 shadow-md border border-zinc-200/50 dark:border-zinc-700/50`}>
-                                <MoodIcon size={16} />
-                                <span className="text-[11px] font-medium tracking-wider [writing-mode:vertical-rl]" style={{ writingMode: 'vertical-rl' }}>
-                                  {moodCfg.label}
-                                </span>
-                              </div>
-                            </div>
-                          )}
-
                           {images.length === 1 ? (
                             /* 单图模式：全宽展示 */
                             <img
@@ -605,23 +605,17 @@ export default function NotesFragmentsPage() {
 
                       {/* ===== 正文区 ===== */}
                       <div className="relative px-7 py-6">
-                        {/* 日期（绝对定位右上角） */}
-                        <span className="absolute top-6 right-7 text-[11px] text-zinc-500 dark:text-zinc-500 font-light tracking-wide">
+                        {/* 日期（绝对定位右上角，无配图时向下偏移避免与心境标签重叠） */}
+                        <span className={`absolute right-7 font-light tracking-wide transition-all duration-200 ${
+                          hasImages 
+                            ? 'top-6 text-[11px] text-zinc-500 dark:text-zinc-500'
+                            : (moodCfg ? 'top-[72px] text-[11px] text-zinc-500 dark:text-zinc-500' : 'top-6 text-[11px] text-zinc-500 dark:text-zinc-500')
+                        }`}>
                           {formatShortDate(publishedDate)}
                         </span>
 
-                        {/* 心境标签：标题旁 inline 徽章（无封面时） */}
-                        {!hasImages && moodCfg && MoodIcon && (
-                          <div className="inline-flex items-center gap-1 mb-3">
-                            <span className={`inline-flex items-center gap-1 px-2.5 py-1 rounded-full text-[11px] font-medium ${moodCfg.color} bg-current/10 border border-current/20`}>
-                              <MoodIcon size={12} />
-                              {moodCfg.label}
-                            </span>
-                          </div>
-                        )}
-
                         {/* 标题 */}
-                        <h2 className={`font-serif text-lg md:text-xl font-semibold text-zinc-800 dark:text-zinc-100 group-hover:text-[#727BBA] transition-colors duration-300 leading-snug ${!hasImages && moodCfg ? 'mb-3' : 'mb-3.5'}`}>
+                        <h2 className="font-serif text-lg md:text-xl font-semibold text-zinc-800 dark:text-zinc-100 group-hover:text-[#727BBA] transition-colors duration-300 mb-3.5 leading-snug">
                           {note.title}
                         </h2>
 
