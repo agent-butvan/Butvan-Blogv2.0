@@ -41,8 +41,66 @@ import { fetchNoteBySlug } from '@/lib/note-api'
 import { fetchProfile } from '@/lib/profile'
 import { resolveImageUrl } from '@/lib/image-url'
 import type { ProfileVO } from '@/types/profile'
-import type { NoteDetail } from '@/types/note'
+import type { NoteDetail, NoteItem } from '@/types/note'
 import gsap from 'gsap'
+
+// ==================== Mock 数据（测试用）====================
+
+const MOCK_NOTES: (NoteItem & Partial<NoteDetail>)[] = [
+  {
+    id: 101, title: '在焦虑与代码中缓慢前行', slug: 'mock-anxiety-code',
+    summary: '继续写代码，继续跑步，继续睡不着的时候翻来覆去。生活不是完美的闭环，而是由无数碎裂的片段拼凑而成的叙事。',
+    content: `## 在焦虑与代码中缓慢前行\n\n继续写代码，继续跑步，继续睡不着的时候翻来覆去。\n\n生活不是完美的闭环，而是由无数碎裂的片段拼凑而成的叙事。有时候我觉得自己像是一个被推着走的齿轮，在既定的轨道上重复着相似的节奏。\n\n### 关于焦虑\n\n焦虑似乎成了现代人的标配。它不是一种病，而是一种状态——一种对未来的不确定性和对当下的无力感交织而成的复杂情绪。\n\n> "焦虑是自由的眩晕。" —— 克尔凯郭尔\n\n### 代码与生活\n\n写代码的时候，世界变得简单了。输入、处理、输出，一切都有明确的因果。但生活不是这样，生活充满了模糊的边界和无法预测的变量。\n\n也许最好的方式就是接受这种不确定性，在焦虑中前行，在代码中寻找片刻的宁静。`,
+    contentHtml: `<h2>在焦虑与代码中缓慢前行</h2><p>继续写代码，继续跑步，继续睡不着的时候翻来覆去。</p><p>生活不是完美的闭环，而是由无数碎裂的片段拼凑而成的叙事。有时候我觉得自己像是一个被推着走的齿轮，在既定的轨道上重复着相似的节奏。</p><h3>关于焦虑</h3><p>焦虑似乎成了现代人的标配。它不是一种病，而是一种状态——一种对未来的不确定性和对当下的无力感交织而成的复杂情绪。</p><blockquote><p>"焦虑是自由的眩晕。" —— 克尔凯郭尔</p></blockquote><h3>代码与生活</h3><p>写代码的时候，世界变得简单了。输入、处理、输出，一切都有明确的因果。但生活不是这样，生活充满了模糊的边界和无法预测的变量。</p><p>也许最好的方式就是接受这种不确定性，在焦虑中前行，在代码中寻找片刻的宁静。</p>`,
+    coverImageUrls: [
+      'https://images.unsplash.com/photo-1516483638261-f4dbaf036963?auto=format&fit=crop&w=800',
+      'https://images.unsplash.com/photo-1517694712202-14dd9538aa97?auto=format&fit=crop&w=800',
+      'https://images.unsplash.com/photo-1555066931-4365d14bab8c?auto=format&fit=crop&w=800',
+    ],
+    mood: '忙碌', weather: '多云', location: '杭州 · 西溪',
+    authorName: 'Butvan', isPinned: true,
+    viewCount: 342, likeCount: 28, commentCount: 6,
+    wordCount: 256, readingTime: 2,
+    publishedAt: '2026-07-03T10:30:00Z', createdAt: '2026-07-03T10:00:00Z',
+  },
+  {
+    id: 102, title: '关于"白"的某种偏执', slug: 'mock-white-obsession',
+    summary: '原研哉对"白"的理解深刻影响了我。在网页设计中，留白不是空间的浪费，而是赋予了存在的物体以重力。极简并非空无一物，而是让每一像素都有其存在的理由。',
+    content: `## 关于"白"的某种偏执\n\n原研哉在《设计中的设计》里说："白不是一种颜色，而是一种感受性。"\n\n这句话在我做前端开发的过程中反复回响。我们总是倾向于填满每一个像素，仿佛空白是一种罪过。但实际上，留白才是设计的灵魂。\n\n### 留白的力量\n\n留白不是"没有东西"，而是"有意的缺席"。它让重要的内容得以呼吸，让用户的视线有所停留。\n\n> "少即是多" —— Mies van der Rohe\n\n### 我的实践\n\n在这个博客项目中，我尝试了大量使用留白。标题周围的 padding，段落之间的 margin，卡片之间的 gap——这些都是经过深思熟虑的。\n\n不是为了"好看"，而是为了让阅读体验更舒适，让信息层次更清晰。\n\n### 结语\n\n白，是一种态度。是对复杂世界的简化，是对本质的回归。`,
+    contentHtml: `<h2>关于"白"的某种偏执</h2><p>原研哉在《设计中的设计》里说："白不是一种颜色，而是一种感受性。"</p><p>这句话在我做前端开发的过程中反复回响。我们总是倾向于填满每一个像素，仿佛空白是一种罪过。但实际上，留白才是设计的灵魂。</p><h3>留白的力量</h3><p>留白不是"没有东西"，而是"有意的缺席"。它让重要的内容得以呼吸，让用户的视线有所停留。</p><blockquote><p>"少即是多" —— Mies van der Rohe</p></blockquote><h3>我的实践</h3><p>在这个博客项目中，我尝试了大量使用留白。标题周围的 padding，段落之间的 margin，卡片之间的 gap——这些都是经过深思熟虑的。</p><p>不是为了"好看"，而是为了让阅读体验更舒适，让信息层次更清晰。</p><h3>结语</h3><p>白，是一种态度。是对复杂世界的简化，是对本质的回归。</p>`,
+    coverImageUrls: [
+      'https://images.unsplash.com/photo-1494438639946-1ebd1d20bf85?auto=format&fit=crop&w=800',
+      'https://images.unsplash.com/photo-1501785888041-af3ef285b470?auto=format&fit=crop&w=800',
+      'https://images.unsplash.com/photo-1523712999610-f77fbcfc3843?auto=format&fit=crop&w=800',
+    ],
+    mood: '思考中', weather: '晴', location: '上海 · 静安寺',
+    authorName: 'Butvan', isPinned: false,
+    viewCount: 521, likeCount: 43, commentCount: 12,
+    wordCount: 312, readingTime: 3,
+    publishedAt: '2026-06-14T15:20:00Z', createdAt: '2026-06-14T15:00:00Z',
+  },
+  {
+    id: 103, title: '凌晨三点的逻辑空洞', slug: 'mock-logic-void',
+    summary: '当所有的变量都已就绪，唯独缺失了那一点点灵感。或许最好的代码不在屏幕里，而在那些发呆的间隙。',
+    content: `## 凌晨三点的逻辑空洞\n\n又是一个失眠的夜晚。打开电脑，面对着一堆已经写好的代码，却迟迟无法继续。\n\n所有的变量都已就绪，所有的函数都已定义，唯独缺失了那一点点灵感——那个能把所有碎片串联起来的线索。\n\n### 灵感的悖论\n\n灵感这个东西很奇妙。你越是刻意寻找，它越是躲着你。反而是当你放弃寻找，去做别的事情的时候，它突然就出现了。\n\n就像现在，我只是坐在这里发呆，看着窗外的夜色，突然就想通了那个困扰我一整天的问题。\n\n### 发呆的价值\n\n或许最好的代码不在屏幕里，而在那些发呆的间隙。在那些看似"浪费时间"的时刻，大脑其实在后台默默地工作着，把散落的知识点连接成网络。\n\n所以，允许自己发呆吧。那是创造力在酝酿。`,
+    contentHtml: `<h2>凌晨三点的逻辑空洞</h2><p>又是一个失眠的夜晚。打开电脑，面对着一堆已经写好的代码，却迟迟无法继续。</p><p>所有的变量都已就绪，所有的函数都已定义，唯独缺失了那一点点灵感——那个能把所有碎片串联起来的线索。</p><h3>灵感的悖论</h3><p>灵感这个东西很奇妙。你越是刻意寻找，它越是躲着你。反而是当你放弃寻找，去做别的事情的时候，它突然就出现了。</p><p>就像现在，我只是坐在这里发呆，看着窗外的夜色，突然就想通了那个困扰我一整天的问题。</p><h3>发呆的价值</h3><p>或许最好的代码不在屏幕里，而在那些发呆的间隙。在那些看似"浪费时间"的时刻，大脑其实在后台默默地工作着，把散落的知识点连接成网络。</p><p>所以，允许自己发呆吧。那是创造力在酝酿。</p>`,
+    coverImageUrls: [
+      'https://images.unsplash.com/photo-1517694712202-14dd9538aa97?auto=format&fit=crop&w=800',
+    ],
+    mood: '平静', weather: '阴', location: '',
+    authorName: 'Butvan', isPinned: false,
+    viewCount: 128, likeCount: 16, commentCount: 3,
+    wordCount: 198, readingTime: 2,
+    publishedAt: '2026-05-20T03:15:00Z', createdAt: '2026-05-20T03:00:00Z',
+  },
+]
+
+/**
+ * 根据 slug 从 Mock 数据中查找手记（测试用）
+ */
+function getMockNoteBySlug(slug: string): (NoteItem & Partial<NoteDetail>) | null {
+  return MOCK_NOTES.find(n => n.slug === slug) || null
+}
 
 // ==================== 图标映射 ====================
 
@@ -100,20 +158,36 @@ export default function NoteDetailPage() {
       setError(null)
 
       try {
+        // 先尝试从后端获取数据
         const [profileData, noteData] = await Promise.all([
           fetchProfile('butvan'),
           fetchNoteBySlug(slug),
         ])
         setProfile(profileData)
         if (noteData) {
-          setNote(noteData)
+          setNote(noteData as NoteDetail)
           setLikeCount(noteData.likeCount || 0)
         } else {
-          setError('手记不存在或已被删除')
+          throw new Error('手记不存在')
         }
-      } catch (err: any) {
-        console.warn('加载手记详情失败:', err)
-        setError('无法加载手记详情，请稍后再试')
+      } catch (err) {
+        console.warn('从后端加载手记详情失败，尝试使用 Mock 数据:', err instanceof Error ? err.message : String(err))
+        
+        // 如果后端请求失败，尝试使用 Mock 数据（仅开发环境）
+        if (process.env.NODE_ENV === 'development') {
+          const mockNote = getMockNoteBySlug(slug)
+          if (mockNote) {
+            console.log('使用 Mock 数据:', mockNote.title)
+            // Mock 数据不需要 profile，设置默认值
+            setProfile({ nickname: '可梵', avatarUrl: '' } as ProfileVO)
+            setNote(mockNote as NoteDetail)
+            setLikeCount(mockNote.likeCount || 0)
+            return
+          }
+        }
+        
+        // 如果 Mock 数据也找不到，显示错误
+        setError(err instanceof Error ? err.message : '无法加载手记详情，请稍后再试')
       } finally {
         setLoading(false)
       }
@@ -124,15 +198,15 @@ export default function NoteDetailPage() {
 
   // 从 localStorage 检查点赞状态
   useEffect(() => {
-    if (note?.id && typeof window !== 'undefined') {
-      try {
-        const likedList = JSON.parse(localStorage.getItem('liked_notes') || '[]')
-        if (Array.isArray(likedList) && likedList.includes(note.id)) {
-          setLiked(true)
-        }
-      } catch { /* ignore */ }
-    }
-  }, [note])
+    if (!note?.id || typeof window === 'undefined') return
+    
+    try {
+      const likedList = JSON.parse(localStorage.getItem('liked_notes') || '[]')
+      if (Array.isArray(likedList) && likedList.includes(note.id)) {
+        setLiked(true)
+      }
+    } catch { /* ignore */ }
+  }, [note?.id])
 
   // ==================== GSAP 入场动画 ====================
 
