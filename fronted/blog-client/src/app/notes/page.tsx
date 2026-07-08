@@ -298,7 +298,7 @@ export default function NotesFragmentsPage() {
     const handleScroll = () => {
       wrappers.forEach((wrapper, i) => {
         // 奇偶卡片移动方向相反，营造错位纵深感（参考 ai_studio_code 设计稿的速度参数）
-        const speed = (i % 2 === 0) ? 0.05 : -0.05
+        const speed = (i % 2 === 0) ? 0.08 : -0.08
         const yPos = window.pageYOffset * speed
         wrapper.style.transform = `translateY(${yPos}px)`
       })
