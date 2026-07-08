@@ -125,14 +125,12 @@ const WEATHER_ICONS: Record<string, { icon: React.ElementType; label: string }> 
 // ==================== 页面组件 ====================
 
 /**
- * 手记详情页 — 单栏叙事布局
+ * 手记详情页 — 三栏布局（与文章详情页一致）
  *
- * 与文章详情页的区别：
- * - 无 TOC 右侧栏、无 PC 左侧浮动操作栏
- * - 日期大号日记风格展示
- * - 心情/天气/位置标签更突出
- * - 操作行内联于正文下方
- * - 无上一篇/下一篇导航
+ * 布局结构：
+ * - 左侧：PC端 Sticky 悬浮操作栏（点赞、赞赏、分享）
+ * - 中间：正文阅读区
+ * - 右侧：无 TOC（手记不需要目录）
  */
 export default function NoteDetailPage() {
   const params = useParams()
@@ -148,6 +146,8 @@ export default function NoteDetailPage() {
   const [likeCount, setLikeCount] = useState(0)
   const [rewardOpen, setRewardOpen] = useState(false)
 
+  // Ref 定义
+  const articleContentRef = useRef<HTMLDivElement>(null)
   const heartRef = useRef<HTMLButtonElement>(null)
 
   // ==================== 数据加载 ====================
@@ -294,17 +294,6 @@ export default function NoteDetailPage() {
     }
   }
 
-  /** 简短日期：06.06（日记风格） */
-  const formatShortDate = (isoString: string) => {
-    if (!isoString) return ''
-    try {
-      const date = new Date(isoString)
-      return `${String(date.getMonth() + 1).padStart(2, '0')}.${String(date.getDate()).padStart(2, '0')}`
-    } catch {
-      return isoString
-    }
-  }
-
   const moodCfg = note?.mood ? MOOD_ICONS[note.mood] : null
   const weatherCfg = note?.weather ? WEATHER_ICONS[note.weather] : null
   const MoodIcon = moodCfg?.icon
@@ -320,9 +309,10 @@ export default function NoteDetailPage() {
       {/* 沉浸式阅读进度条 */}
       <ScrollProgress />
 
-      <div className="w-full max-w-3xl px-6 py-10">
+      {/* 主体布局架构 */}
+      <div className="w-full max-w-5xl px-6 py-10 flex flex-col gap-6">
         {loading ? (
-          <DetailLoadingState message="正在加载手记..." />
+          <DetailLoadingState message="正在加载手记详情，请稍候..." />
         ) : error || !note ? (
           <DetailErrorState
             title="无法加载手记"
@@ -331,158 +321,192 @@ export default function NoteDetailPage() {
             backText="返回手记列表"
           />
         ) : (
-          /* ================= 单栏叙事布局 ================= */
-          <article className="flex flex-col">
-            {/* 面包屑导航 */}
-            <div className="animate-detail-item opacity-0 flex items-center justify-between w-full mb-6 text-xs text-zinc-400 dark:text-zinc-500 font-mono h-6 select-none">
-              <Link
-                href="/notes"
-                className="inline-flex items-center gap-1 hover:text-[#727BBA] transition-colors group cursor-pointer h-full"
-              >
-                <ArrowLeft size={13} className="group-hover:-translate-x-0.5 transition-transform" />
-                <span className="leading-none">返回时间轴</span>
-              </Link>
-              <div className="inline-flex items-center gap-1.5 select-none h-full">
-                <span className="leading-none">手记</span>
-                <ChevronRight size={12} className="text-zinc-400" />
-                <span className="truncate max-w-40 select-none text-zinc-500 dark:text-zinc-400 leading-none">{note.title}</span>
+          /* ================= 详情核心渲染（三栏布局）================== */
+          <div className="relative w-full grid grid-cols-1 lg:grid-cols-[auto_1fr_210px] gap-8 items-start justify-center">
+            
+            {/* 1. PC端左侧 Sticky 悬浮控制操作栏 */}
+            <aside className="hidden lg:flex sticky top-28 flex-col items-center gap-5 w-12 z-20 animate-detail-item opacity-0 select-none">
+              {/* 点赞比心 */}
+              <div className="flex flex-col items-center gap-1">
+                <button
+                  ref={heartRef}
+                  onClick={handleLike}
+                  className={`w-10 h-10 rounded-full flex items-center justify-center border transition-all duration-300 cursor-pointer ${
+                    liked 
+                      ? 'bg-rose-50/80 border-rose-200 text-rose-500 shadow-md shadow-rose-500/10 dark:bg-rose-950/20 dark:border-rose-900/40' 
+                      : 'bg-white/70 dark:bg-zinc-900/50 border-zinc-200/50 dark:border-zinc-800/60 text-zinc-400 dark:text-zinc-500 hover:text-rose-500 hover:border-rose-200 dark:hover:border-rose-950'
+                  }`}
+                  title="点赞"
+                >
+                  <Heart size={16} fill={liked ? 'currentColor' : 'none'} className="transition-colors" />
+                </button>
+                <span className="text-[10px] font-mono font-bold text-zinc-400 dark:text-zinc-500">{likeCount}</span>
               </div>
-            </div>
 
-            {/* 心情 / 天气 / 位置标签行 — 突出展示 */}
-            <div className="animate-detail-item opacity-0 flex flex-wrap items-center gap-3 mb-5 select-none">
-              {MoodIcon && (
-                <span className={`inline-flex items-center gap-1.5 px-3 py-1.5 text-xs font-bold border rounded ${moodCfg?.color} bg-current/5 border-current/20`}>
-                  <MoodIcon size={14} />
-                  {moodCfg?.label}
-                </span>
-              )}
-              {WeatherIcon && (
-                <span className="inline-flex items-center gap-1.5 px-3 py-1.5 text-xs font-semibold text-zinc-500 dark:text-zinc-400 bg-zinc-100 dark:bg-zinc-900/60 border border-zinc-200/50 dark:border-zinc-800/50 rounded">
-                  <WeatherIcon size={13} />
-                  {weatherCfg?.label}
-                </span>
-              )}
-              {note.location && (
-                <span className="inline-flex items-center gap-1.5 px-3 py-1.5 text-xs font-semibold text-zinc-500 dark:text-zinc-400 bg-zinc-100 dark:bg-zinc-900/60 border border-zinc-200/50 dark:border-zinc-800/50 rounded">
-                  <MapPin size={12} />
-                  {note.location}
-                </span>
-              )}
-            </div>
-
-            {/* 日期 — 大号日记风格 */}
-            <div className="animate-detail-item opacity-0 mb-3 select-none">
-              <span className="text-5xl md:text-6xl font-serif font-bold text-[#727BBA] tracking-wide">
-                {formatShortDate(note.publishedAt || note.createdAt)}
-              </span>
-            </div>
-
-            {/* 标题 */}
-            <h1 className="animate-detail-item opacity-0 font-serif text-2xl sm:text-3xl md:text-[34px] md:leading-[1.25] font-bold text-zinc-900 dark:text-white tracking-wide mb-5">
-              {note.title}
-            </h1>
-
-            {/* 元数据行 — 轻量展示 */}
-            <div className="animate-detail-item opacity-0 flex flex-wrap items-center gap-x-5 gap-y-2 text-xs text-zinc-400 dark:text-zinc-500 font-mono pb-7 border-b border-zinc-200/50 dark:border-zinc-900/60 select-none">
-              <div className="flex items-center gap-1.5">
-                <Calendar size={13} strokeWidth={1.5} />
-                <span>{formatFullDate(note.publishedAt || note.createdAt)}</span>
+              {/* 扫码赞赏 */}
+              <div className="flex flex-col items-center gap-1">
+                <button
+                  onClick={() => setRewardOpen(true)}
+                  className="w-10 h-10 rounded-full flex items-center justify-center border border-zinc-200/50 dark:border-zinc-800/60 bg-white/70 dark:bg-zinc-900/50 text-zinc-400 dark:text-zinc-500 hover:text-[#727BBA] hover:border-[#727BBA]/40 transition-all cursor-pointer"
+                  title="赞赏作者"
+                >
+                  <Coffee size={15} />
+                </button>
+                <span className="text-[10px] font-mono font-bold text-zinc-400 dark:text-zinc-500">赞赏</span>
               </div>
-              <div className="flex items-center gap-1.5">
-                <Eye size={13} strokeWidth={1.5} />
-                <span>{note.viewCount} 次浏览</span>
-              </div>
-              {note.wordCount > 0 && (
-                <div className="flex items-center gap-1.5">
-                  <FileText size={13} strokeWidth={1.5} />
-                  <span>{note.wordCount} 字</span>
-                </div>
-              )}
-              {note.readingTime > 0 && (
-                <div className="flex items-center gap-1.5">
-                  <Clock size={13} strokeWidth={1.5} />
-                  <span>预计阅读 {note.readingTime} 分钟</span>
-                </div>
-              )}
-            </div>
-
-            {/* 配图 — 全宽展示 */}
-            {note.coverImageUrl && (
-              <div className="animate-detail-item opacity-0 mt-8 rounded-2xl overflow-hidden border border-zinc-200/30 dark:border-zinc-800/30">
-                <img
-                  src={resolveImageUrl(note.coverImageUrl)}
-                  alt={note.title}
-                  className="w-full max-h-[420px] object-cover"
-                />
-              </div>
-            )}
-
-            {/* 正文内容 */}
-            <div className="animate-detail-item opacity-0 py-8">
-              <HtmlRenderer html={note.contentHtml || note.content} />
-            </div>
-
-            {/* 操作行 — PC & 移动端共用，内联于正文下方 */}
-            <div className="animate-detail-item opacity-0 flex items-center justify-center gap-8 py-6 border-y border-zinc-200/30 dark:border-zinc-900/40 mt-4 mb-2 select-none">
-              {/* 点赞 */}
-              <button
-                ref={heartRef}
-                onClick={handleLike}
-                className={`inline-flex items-center gap-2 px-5 py-2.5 rounded-xl text-sm font-semibold transition-all duration-300 cursor-pointer ${
-                  liked
-                    ? 'bg-rose-50/80 text-rose-500 border border-rose-200 dark:bg-rose-950/20 dark:border-rose-900/40'
-                    : 'bg-zinc-50/80 dark:bg-zinc-900/60 text-zinc-500 dark:text-zinc-400 border border-zinc-200/50 dark:border-zinc-800/60 hover:text-rose-500 hover:border-rose-200'
-                }`}
-                title="点赞"
-              >
-                <Heart size={17} fill={liked ? 'currentColor' : 'none'} className="transition-colors" />
-                <span>点赞</span>
-                <span className="text-[11px] font-mono opacity-60">{likeCount}</span>
-              </button>
-
-              {/* 赞赏 */}
-              <button
-                onClick={() => setRewardOpen(true)}
-                className="inline-flex items-center gap-2 px-5 py-2.5 rounded-xl text-sm font-semibold bg-zinc-50/80 dark:bg-zinc-900/60 text-zinc-500 dark:text-zinc-400 border border-zinc-200/50 dark:border-zinc-800/60 hover:text-[#727BBA] hover:border-[#727BBA]/40 transition-all duration-300 cursor-pointer"
-                title="赞赏作者"
-              >
-                <Coffee size={16} />
-                <span>赞赏</span>
-              </button>
 
               {/* 分享 */}
-              <button
-                onClick={handleShare}
-                className="inline-flex items-center gap-2 px-5 py-2.5 rounded-xl text-sm font-semibold bg-zinc-50/80 dark:bg-zinc-900/60 text-zinc-500 dark:text-zinc-400 border border-zinc-200/50 dark:border-zinc-800/60 hover:text-[#727BBA] hover:border-[#727BBA]/40 transition-all duration-300 cursor-pointer"
-                title="分享链接"
+              <div className="flex flex-col items-center gap-1">
+                <button
+                  onClick={handleShare}
+                  className="w-10 h-10 rounded-full flex items-center justify-center border border-zinc-200/50 dark:border-zinc-800/60 bg-white/70 dark:bg-zinc-900/50 text-zinc-400 dark:text-zinc-500 hover:text-[#727BBA] hover:border-[#727BBA]/40 transition-all cursor-pointer"
+                  title="分享链接"
+                >
+                  <Share2 size={14} />
+                </button>
+                <span className="text-[10px] font-mono font-bold text-zinc-400 dark:text-zinc-500">分享</span>
+              </div>
+            </aside>
+
+            {/* 2. 中央正文阅读区 */}
+            <article className="w-full max-w-2xl mx-auto flex flex-col">
+              {/* 面包屑与返回 */}
+              <div className="animate-detail-item opacity-0 flex items-center justify-between w-full mb-4 text-xs text-zinc-400 dark:text-zinc-500 font-mono h-6 select-none">
+                <Link 
+                  href="/notes" 
+                  className="inline-flex items-center gap-1 hover:text-[#727BBA] transition-colors group cursor-pointer h-full"
+                >
+                  <ArrowLeft size={13} className="group-hover:-translate-x-0.5 transition-transform" />
+                  <span className="leading-none">返回时间轴</span>
+                </Link>
+                <div className="inline-flex items-center gap-1.5 select-none h-full">
+                  <span className="leading-none">手记</span>
+                  <ChevronRight size={12} className="text-zinc-400" />
+                  <span className="truncate max-w-40 select-none text-zinc-500 dark:text-zinc-400 leading-none">{note?.title}</span>
+                </div>
+              </div>
+
+              {/* 顶部标题与元数据页头 */}
+              <header className="animate-detail-item opacity-0 border-b border-zinc-200/50 dark:border-zinc-900/60 pb-7 select-none">
+                {/* 心情 / 天气 / 位置标签行 */}
+                <div className="flex flex-wrap items-center gap-2 mb-3">
+                  {MoodIcon && (
+                    <span className={`inline-flex items-center gap-1.5 px-2.5 py-0.5 text-[10px] font-bold border rounded ${moodCfg?.color} bg-current/5 border-current/20`}>
+                      <MoodIcon size={12} />
+                      {moodCfg?.label}
+                    </span>
+                  )}
+                  {WeatherIcon && (
+                    <span className="inline-flex items-center gap-1.5 px-2.5 py-0.5 text-[10px] font-semibold text-zinc-500 dark:text-zinc-400 bg-zinc-100 dark:bg-zinc-900/60 border border-zinc-200/50 dark:border-zinc-800/50 rounded">
+                      <WeatherIcon size={11} />
+                      {weatherCfg?.label}
+                    </span>
+                  )}
+                  {note.location && (
+                    <span className="inline-flex items-center gap-1.5 px-2.5 py-0.5 text-[10px] font-semibold text-zinc-500 dark:text-zinc-400 bg-zinc-100 dark:bg-zinc-900/60 border border-zinc-200/50 dark:border-zinc-800/50 rounded">
+                      <MapPin size={10} />
+                      {note.location}
+                    </span>
+                  )}
+                </div>
+
+                <h1 className="font-serif text-2xl sm:text-3xl md:text-[32px] md:leading-[1.3] font-bold text-zinc-900 dark:text-white tracking-wide mb-5">
+                  {note.title}
+                </h1>
+
+                {/* 元数据行 */}
+                <div className="flex flex-wrap items-center gap-x-5 gap-y-2 text-xs text-zinc-400 dark:text-zinc-500 font-mono">
+                  <div className="flex items-center gap-1.5">
+                    <Calendar size={13} strokeWidth={1.5} />
+                    <span>{formatFullDate(note.publishedAt || note.createdAt)}</span>
+                  </div>
+                  <div className="flex items-center gap-1.5">
+                    <Eye size={13} strokeWidth={1.5} />
+                    <span>{note.viewCount} 次浏览</span>
+                  </div>
+                  {note.wordCount > 0 && (
+                    <div className="flex items-center gap-1.5">
+                      <FileText size={13} strokeWidth={1.5} />
+                      <span>{note.wordCount} 字</span>
+                    </div>
+                  )}
+                  {note.readingTime > 0 && (
+                    <div className="flex items-center gap-1.5">
+                      <Clock size={13} strokeWidth={1.5} />
+                      <span>预计阅读 {note.readingTime} 分钟</span>
+                    </div>
+                  )}
+                </div>
+              </header>
+
+              {/* 配图 — 全宽展示 */}
+              {note.coverImageUrl && (
+                <div className="animate-detail-item opacity-0 mt-8 rounded-2xl overflow-hidden border border-zinc-200/30 dark:border-zinc-800/30">
+                  <img
+                    src={resolveImageUrl(note.coverImageUrl)}
+                    alt={note.title}
+                    className="w-full max-h-[420px] object-cover"
+                  />
+                </div>
+              )}
+
+              {/* 核心正文 Markdown/HTML 内容 */}
+              <div 
+                ref={articleContentRef}
+                className="animate-detail-item opacity-0 py-8"
               >
-                <Share2 size={15} />
-                <span>分享</span>
-              </button>
-            </div>
+                <HtmlRenderer html={note.contentHtml || note.content} />
+              </div>
 
-            {/* 版权声明 */}
-            <div className="animate-detail-item opacity-0">
-              <Copyright authorName={profile?.nickname || '可梵'} />
-            </div>
+              {/* 移动端/小屏底部悬浮栏 (点赞、赞赏、分享) */}
+              <div className="flex lg:hidden items-center justify-around py-4 border-t border-zinc-200/50 dark:border-zinc-900/60 mt-6 text-zinc-500 select-none">
+                <button onClick={handleLike} className="flex items-center gap-1.5 text-xs font-semibold cursor-pointer">
+                  <Heart size={15} fill={liked ? 'currentColor' : 'none'} className={liked ? 'text-rose-500' : ''} />
+                  <span>点赞 ({likeCount})</span>
+                </button>
+                <button onClick={() => setRewardOpen(true)} className="flex items-center gap-1.5 text-xs font-semibold cursor-pointer">
+                  <Coffee size={15} />
+                  <span>赞赏</span>
+                </button>
+                <button onClick={handleShare} className="flex items-center gap-1.5 text-xs font-semibold cursor-pointer">
+                  <Share2 size={14} />
+                  <span>分享</span>
+                </button>
+              </div>
 
-            {/* 返回手记时间轴 */}
-            <div className="animate-detail-item opacity-0 mt-8 text-center select-none">
-              <Link
-                href="/notes"
-                className="inline-flex items-center gap-2 px-6 py-3 rounded-2xl border border-zinc-200/30 dark:border-zinc-800/30 bg-zinc-150/15 dark:bg-zinc-900/15 hover:bg-[#E9EEE8]/30 dark:hover:bg-[#727BBA]/5 hover:border-[#727BBA]/30 dark:hover:border-[#727BBA]/20 transition-all duration-300 text-sm font-serif text-zinc-500 dark:text-zinc-400 hover:text-[#727BBA] cursor-pointer"
-              >
-                <ArrowLeft size={14} />
-                <span>返回手记时间轴</span>
-              </Link>
-            </div>
+              {/* 版权声明 */}
+              <div className="animate-detail-item opacity-0">
+                <Copyright authorName={profile?.nickname || '可梵'} />
+              </div>
 
-            {/* 评论区 */}
-            <CommentSection articleId={note.id} isAllowComment={true} />
+              {/* 返回手记时间轴按钮 */}
+              <nav className="animate-detail-item opacity-0 mt-8 pt-8 border-t border-zinc-200/50 dark:border-zinc-900/60 select-none">
+                <Link 
+                  href="/notes"
+                  className="group flex flex-col gap-1.5 p-5 rounded-2xl border border-zinc-200/30 dark:border-zinc-800/30 bg-zinc-150/15 dark:bg-zinc-900/15 hover:bg-[#E9EEE8]/30 dark:hover:bg-[#727BBA]/5 hover:border-[#727BBA]/30 dark:hover:border-[#727BBA]/20 transition-all duration-300 text-left cursor-pointer"
+                >
+                  <span className="text-[10px] font-mono text-zinc-400 dark:text-zinc-500 uppercase tracking-widest">
+                    ← 返回手记时间轴
+                  </span>
+                  <span className="font-serif text-sm font-bold text-zinc-850 dark:text-zinc-200 group-hover:text-[#727BBA] line-clamp-1 transition-colors">
+                    浏览更多手记内容
+                  </span>
+                </Link>
+              </nav>
 
-          </article>
+              {/* 评论区交流讨论 */}
+              <CommentSection articleId={note.id} isAllowComment={true} />
+
+            </article>
+
+            {/* 3. PC端右侧空占位（保持对称布局，无TOC） */}
+            <aside className="hidden lg:block sticky top-28 w-[210px] pr-2 z-20 animate-detail-item opacity-0 select-none">
+              {/* 手记不需要目录树，保留空占位以维持布局平衡 */}
+            </aside>
+
+          </div>
         )}
+
       </div>
 
       {/* 赞赏弹窗 */}
