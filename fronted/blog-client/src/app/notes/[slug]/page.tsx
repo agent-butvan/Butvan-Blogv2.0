@@ -44,6 +44,14 @@ import type { ProfileVO } from '@/types/profile'
 import type { NoteDetail, NoteItem } from '@/types/note'
 import gsap from 'gsap'
 
+// ==================== 类型定义 ====================
+
+interface TocItem {
+  id: string
+  text: string
+  level: number
+}
+
 // ==================== Mock 数据（测试用）====================
 
 const MOCK_NOTES: (NoteItem & Partial<NoteDetail>)[] = [
@@ -145,6 +153,8 @@ export default function NoteDetailPage() {
   const [liked, setLiked] = useState(false)
   const [likeCount, setLikeCount] = useState(0)
   const [rewardOpen, setRewardOpen] = useState(false)
+  const [toc, setToc] = useState<TocItem[]>([])
+  const [activeTocId, setActiveTocId] = useState<string>('')
 
   // Ref 定义
   const articleContentRef = useRef<HTMLDivElement>(null)
@@ -221,6 +231,59 @@ export default function NoteDetailPage() {
     return () => ctx.revert()
   }, [loading, note])
 
+  // 动态生成目录 TOC 并绑定随屏点亮 Observer
+  useEffect(() => {
+    if (loading || !note || !articleContentRef.current) return
+
+    const timer = setTimeout(() => {
+      if (!articleContentRef.current) return
+      const contentDiv = articleContentRef.current
+
+      // 动态生成目录 TOC
+      const headings = contentDiv.querySelectorAll('h2, h3')
+      const tocItems: TocItem[] = []
+      
+      headings.forEach((heading, idx) => {
+        const level = parseInt(heading.tagName.substring(1), 10)
+        let id = heading.id
+        if (!id) {
+          id = `toc-heading-${idx}`
+          heading.id = id
+        }
+        tocItems.push({
+          id,
+          text: (heading as HTMLElement).innerText || '',
+          level
+        })
+      })
+      setToc(tocItems)
+
+      // Intersection Observer 大纲目录随屏滚动点亮
+      const observerOptions = {
+        root: null,
+        rootMargin: '0px 0px -60% 0px',
+        threshold: 0
+      }
+
+      const observer = new IntersectionObserver((entries) => {
+        entries.forEach((entry) => {
+          if (entry.isIntersecting) {
+            setActiveTocId(entry.target.id)
+          }
+        })
+      }, observerOptions)
+
+      headings.forEach((heading) => {
+        observer.observe(heading)
+      })
+
+      return () => {
+        observer.disconnect()
+        clearTimeout(timer)
+      }
+    }, 100)
+  }, [loading, note])
+
   // 动态标题
   useEffect(() => {
     if (note?.title) {
@@ -278,6 +341,21 @@ export default function NoteDetailPage() {
       toast.success('手记链接已复制到剪贴板')
     } catch {
       toast.danger('复制链接失败')
+    }
+  }
+
+  /** 处理目录点击平滑滚动 */
+  const handleTocClick = (e: React.MouseEvent, id: string) => {
+    e.preventDefault()
+    const target = document.getElementById(id)
+    if (target) {
+      const navbarHeight = 70
+      const targetPosition = target.getBoundingClientRect().top + window.scrollY - navbarHeight
+      window.scrollTo({
+        top: targetPosition,
+        behavior: 'smooth'
+      })
+      setActiveTocId(id)
     }
   }
 
@@ -499,9 +577,33 @@ export default function NoteDetailPage() {
 
             </article>
 
-            {/* 3. PC端右侧空占位（保持对称布局，无TOC） */}
+            {/* 3. PC端右侧 Sticky 大纲目录树 (TOC) */}
             <aside className="hidden lg:block sticky top-28 w-[210px] pr-2 z-20 animate-detail-item opacity-0 select-none">
-              {/* 手记不需要目录树，保留空占位以维持布局平衡 */}
+              <div className="flex items-center gap-1.5 text-[10px] font-heading font-extrabold text-zinc-400 dark:text-zinc-500 uppercase tracking-widest border-b border-zinc-200/50 dark:border-zinc-950/60 pb-2 mb-3">
+                <span>手记目录</span>
+              </div>
+              {toc.length > 0 ? (
+                <div className="flex flex-col gap-2 max-h-[calc(100vh-180px)] overflow-y-auto overflow-x-hidden pr-1">
+                  {toc.map((item) => (
+                    <a
+                      key={item.id}
+                      href={`#${item.id}`}
+                      onClick={(e) => handleTocClick(e, item.id)}
+                      className={`block text-[11px] leading-relaxed transition-all duration-200 hover:text-[#727BBA] cursor-pointer ${
+                        item.level === 3 ? 'pl-3.5 border-l border-zinc-200 dark:border-zinc-900 text-zinc-450 dark:text-zinc-500' : 'font-medium text-zinc-600 dark:text-zinc-400'
+                      } ${
+                        activeTocId === item.id 
+                          ? '!text-[#727BBA] font-extrabold !border-[#727BBA] translate-x-1.5' 
+                          : ''
+                      }`}
+                    >
+                      {item.text}
+                    </a>
+                  ))}
+                </div>
+              ) : (
+                <p className="text-[11px] text-zinc-450 dark:text-zinc-500 italic">暂无目录</p>
+              )}
             </aside>
 
           </div>
