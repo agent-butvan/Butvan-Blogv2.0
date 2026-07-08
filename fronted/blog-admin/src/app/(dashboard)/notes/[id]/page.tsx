@@ -86,6 +86,7 @@ export default function EditNotePage() {
     summary: note?.summary,
     content: note?.content || "",
     coverImageUrl: note?.coverImageUrl,
+    coverImageUrls: note?.coverImageUrls,
     mood: note?.mood,
     weather: note?.weather,
     location: note?.location,

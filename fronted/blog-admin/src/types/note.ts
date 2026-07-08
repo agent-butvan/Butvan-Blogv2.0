@@ -12,6 +12,8 @@ export interface NoteItem {
   slug: string;
   summary?: string;
   coverImageUrl?: string;
+  /** 多图封面 URL 数组 */
+  coverImageUrls?: string[];
   mood?: string;
   weather?: string;
   location?: string;
