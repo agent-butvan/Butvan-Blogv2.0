@@ -2,8 +2,8 @@
 
 import React, { useState, useEffect } from 'react'
 import * as Icons from 'lucide-react'
-import { HelpCircle, User, LogOut } from 'lucide-react'
-import { Button, Tooltip, Avatar, Separator, Dropdown, Label, toast } from '@heroui/react'
+import { HelpCircle, User, LogOut, Upload } from 'lucide-react'
+import { Button, Tooltip, Avatar, Separator, Dropdown, Label, toast, Input, Modal } from '@heroui/react'
 import { fetchNavigations } from '@/lib/profile'
 import Link from 'next/link'
 import { usePathname } from 'next/navigation'
@@ -35,8 +35,10 @@ export default function SidebarWidget() {
   const [items, setItems] = useState<NavigationItem[]>([])
   const [loading, setLoading] = useState(true)
   // 登录状态
-  const [user, setUser] = useState<{ nickname: string; avatarUrl?: string | null; username?: string | null } | null>(null)
+  const [user, setUser] = useState<{ nickname: string; avatarUrl?: string | null; username?: string | null; email?: string | null } | null>(null)
   const [loginModalOpen, setLoginModalOpen] = useState(false)
+  const [uploadAvatarModalOpen, setUploadAvatarModalOpen] = useState(false)
+  const [selectedFile, setSelectedFile] = useState<File | null>(null)
   // 当前路由路径，用于高亮激活菜单项
   const pathname = usePathname()
 
@@ -56,6 +58,10 @@ export default function SidebarWidget() {
             localStorage.removeItem('user_info')
             setUser(null)
           } else {
+            // 兼容旧数据：若缺少 email 字段，尝试从其他位置获取
+            if (!parsed.email && parsed.username?.includes('@')) {
+              parsed.email = parsed.username
+            }
             setUser(parsed)
           }
         } catch {
@@ -89,6 +95,55 @@ export default function SidebarWidget() {
     setUser(null)
     window.dispatchEvent(new Event('auth-change'))
     toast.success('已退出登录')
+  }
+
+  /**
+   * 处理头像上传
+   */
+  const handleAvatarUpload = async () => {
+    if (!selectedFile) {
+      toast.warning('请选择要上传的图片')
+      return
+    }
+
+    try {
+      const token = localStorage.getItem('token')
+      if (!token) {
+        toast.danger('请先登录')
+        return
+      }
+
+      const formData = new FormData()
+      formData.append('avatar', selectedFile)
+
+      const response = await fetch(`${process.env.NEXT_PUBLIC_API_BASE_URL || 'http://localhost:8080/api'}/users/avatar`, {
+        method: 'POST',
+        headers: {
+          Authorization: `Bearer ${token}`
+        },
+        body: formData
+      })
+
+      if (!response.ok) {
+        throw new Error('上传失败')
+      }
+
+      const json = await response.json()
+      if (json.code === 200 && json.data) {
+        // 更新本地用户信息
+        const updatedUser = { ...user!, avatarUrl: json.data.avatarUrl }
+        setUser(updatedUser)
+        localStorage.setItem('user_info', JSON.stringify(updatedUser))
+        toast.success('头像上传成功')
+        setUploadAvatarModalOpen(false)
+        setSelectedFile(null)
+      } else {
+        throw new Error(json.msg || '上传失败')
+      }
+    } catch (error) {
+      console.error('上传头像失败:', error)
+      toast.danger(error instanceof Error ? error.message : '上传失败')
+    }
   }
 
   /**
@@ -162,27 +217,34 @@ export default function SidebarWidget() {
                   </Avatar.Fallback>
                 </Avatar>
               </Dropdown.Trigger>
-              <Dropdown.Popover placement="right" className="min-w-[180px]">
+              <Dropdown.Popover placement="right" className="min-w-[200px]">
                 <div className="px-3 pt-3 pb-2">
                   <div className="flex items-center gap-2.5">
                     <Avatar size="sm" className="w-8 h-8">
                       {user.avatarUrl ? (
                         <Avatar.Image src={resolveAvatarUrl(user.avatarUrl)} alt="User avatar" />
                       ) : null}
-                      <Avatar.Fallback className="text-xs font-bold bg-[#727BBA]/15 text-[#727BBA]">
+                      <Avatar.Fallback className="text-xs font-bold bg-[#727BBA]/15 text-[#727BBA] flex items-center justify-center">
                         {(user.nickname || '?').charAt(0).toUpperCase()}
                       </Avatar.Fallback>
                     </Avatar>
-                    <div className="flex flex-col gap-0">
-                      <p className="text-sm leading-5 font-semibold text-zinc-800 dark:text-zinc-200">{user.nickname || '用户'}</p>
-                      {user.username && (
-                        <p className="text-[11px] leading-none text-zinc-400 dark:text-zinc-500">@{user.username}</p>
+                    <div className="flex flex-col gap-0.5 min-w-0">
+                      <p className="text-sm leading-5 font-semibold text-zinc-800 dark:text-zinc-200 truncate">{user.nickname || '用户'}</p>
+                      {user.email && (
+                        <p className="text-[11px] leading-none text-zinc-400 dark:text-zinc-500 truncate">{user.email}</p>
                       )}
                     </div>
                   </div>
                 </div>
                 <Separator className="my-1" />
-                <Dropdown.Menu onAction={(key) => { if (key === 'logout') handleLogout() }}>
+                <Dropdown.Menu onAction={(key) => { 
+                  if (key === 'upload') setUploadAvatarModalOpen(true)
+                  if (key === 'logout') handleLogout() 
+                }}>
+                  <Dropdown.Item id="upload" textValue="上传头像">
+                    <Upload className="size-4 shrink-0 text-zinc-600 dark:text-zinc-300" />
+                    <Label>上传头像</Label>
+                  </Dropdown.Item>
                   <Dropdown.Item id="logout" textValue="退出登录" variant="danger">
                     <LogOut className="size-4 shrink-0 text-danger" />
                     <Label>退出登录</Label>
@@ -263,27 +325,34 @@ export default function SidebarWidget() {
                 </Avatar.Fallback>
               </Avatar>
             </Dropdown.Trigger>
-            <Dropdown.Popover placement="right" className="min-w-[180px]">
+            <Dropdown.Popover placement="right" className="min-w-[200px]">
               <div className="px-3 pt-3 pb-2">
                 <div className="flex items-center gap-2.5">
                   <Avatar size="sm" className="w-8 h-8">
                     {user.avatarUrl ? (
                       <Avatar.Image src={resolveAvatarUrl(user.avatarUrl)} alt="User avatar" />
                     ) : null}
-                    <Avatar.Fallback className="text-xs font-bold bg-[#727BBA]/15 text-[#727BBA]">
+                    <Avatar.Fallback className="text-xs font-bold bg-[#727BBA]/15 text-[#727BBA] flex items-center justify-center">
                       {(user.nickname || '?').charAt(0).toUpperCase()}
                     </Avatar.Fallback>
                   </Avatar>
-                  <div className="flex flex-col gap-0">
-                    <p className="text-sm leading-5 font-semibold text-zinc-800 dark:text-zinc-200">{user.nickname || '用户'}</p>
-                    {user.username && (
-                      <p className="text-[11px] leading-none text-zinc-400 dark:text-zinc-500">@{user.username}</p>
+                  <div className="flex flex-col gap-0.5 min-w-0">
+                    <p className="text-sm leading-5 font-semibold text-zinc-800 dark:text-zinc-200 truncate">{user.nickname || '用户'}</p>
+                    {user.email && (
+                      <p className="text-[11px] leading-none text-zinc-400 dark:text-zinc-500 truncate">{user.email}</p>
                     )}
                   </div>
                 </div>
               </div>
               <Separator className="my-1" />
-              <Dropdown.Menu onAction={(key) => { if (key === 'logout') handleLogout() }}>
+              <Dropdown.Menu onAction={(key) => { 
+                if (key === 'upload') setUploadAvatarModalOpen(true)
+                if (key === 'logout') handleLogout() 
+              }}>
+                <Dropdown.Item id="upload" textValue="上传头像">
+                  <Upload className="size-4 shrink-0 text-zinc-600 dark:text-zinc-300" />
+                  <Label>上传头像</Label>
+                </Dropdown.Item>
                 <Dropdown.Item id="logout" textValue="退出登录" variant="danger">
                   <LogOut className="size-4 shrink-0 text-danger" />
                   <Label>退出登录</Label>
@@ -312,6 +381,63 @@ export default function SidebarWidget() {
 
       {/* 登录弹窗 */}
       <LoginModal isOpen={loginModalOpen} onClose={() => setLoginModalOpen(false)} />
+
+      {/* 上传头像弹窗 */}
+      <Modal>
+        <Modal.Backdrop isOpen={uploadAvatarModalOpen} onOpenChange={(open) => !open && setUploadAvatarModalOpen(false)}>
+          <Modal.Container size="sm">
+            <Modal.Dialog className="sm:max-w-[360px]">
+              <Modal.CloseTrigger />
+              <Modal.Header>
+                <Modal.Icon className="bg-[#727BBA]/15 text-[#727BBA]">
+                  <Upload className="size-5" />
+                </Modal.Icon>
+                <Modal.Heading>上传头像</Modal.Heading>
+              </Modal.Header>
+              <Modal.Body>
+                <div className="flex flex-col gap-4">
+                  <div className="flex justify-center">
+                    <Avatar size="lg" className="w-20 h-20">
+                      {selectedFile ? (
+                        <Avatar.Image src={URL.createObjectURL(selectedFile)} alt="Preview avatar" />
+                      ) : user?.avatarUrl ? (
+                        <Avatar.Image src={resolveAvatarUrl(user.avatarUrl)} alt="Current avatar" />
+                      ) : null}
+                      <Avatar.Fallback className="text-lg font-bold bg-[#727BBA]/15 text-[#727BBA] flex items-center justify-center">
+                        {(user?.nickname || '?').charAt(0).toUpperCase()}
+                      </Avatar.Fallback>
+                    </Avatar>
+                  </div>
+                  <Input
+                    type="file"
+                    accept="image/*"
+                    variant="secondary"
+                    onChange={(e) => {
+                      const file = e.target.files?.[0]
+                      if (file) setSelectedFile(file)
+                    }}
+                  />
+                  <p className="text-xs text-zinc-500 dark:text-zinc-400">
+                    支持 JPG、PNG 格式，建议尺寸 200x200 像素
+                  </p>
+                </div>
+              </Modal.Body>
+              <Modal.Footer>
+                <Button slot="close" variant="secondary" onPress={() => setUploadAvatarModalOpen(false)}>
+                  取消
+                </Button>
+                <Button 
+                  slot="close" 
+                  onPress={handleAvatarUpload}
+                  isDisabled={!selectedFile}
+                >
+                  确认上传
+                </Button>
+              </Modal.Footer>
+            </Modal.Dialog>
+          </Modal.Container>
+        </Modal.Backdrop>
+      </Modal>
     </>
   )
 }

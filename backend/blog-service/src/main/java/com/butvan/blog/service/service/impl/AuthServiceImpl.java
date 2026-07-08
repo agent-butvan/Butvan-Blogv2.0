@@ -1,6 +1,7 @@
 package com.butvan.blog.service.service.impl;
 
 import com.butvan.blog.common.exception.BusinessException;
+import com.butvan.blog.common.storage.FileStorageService;
 import com.butvan.blog.pojo.dto.auth.CurrentUserUpdateDTO;
 import com.butvan.blog.pojo.dto.auth.LoginDTO;
 import com.butvan.blog.pojo.dto.auth.PasswordChangeDTO;
@@ -20,9 +21,11 @@ import lombok.extern.slf4j.Slf4j;
 import org.springframework.security.crypto.password.PasswordEncoder;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
+import org.springframework.web.multipart.MultipartFile;
 import java.time.LocalDateTime;
 import java.util.Map;
 import java.util.HashMap;
+import java.util.UUID;
 
 /**
  * 账号认证与权限业务逻辑层实现类
@@ -35,6 +38,7 @@ public class AuthServiceImpl implements AuthService {
     private final UserRepository userRepository;
     private final PasswordEncoder passwordEncoder;
     private final JwtUtil jwtUtil;
+    private final FileStorageService fileStorageService;
 
     /**
      * 管理后台账号注册核心业务实现
@@ -342,5 +346,89 @@ public class AuthServiceImpl implements AuthService {
         user.setGithubUsername(null);
         userRepository.save(user);
         log.info("用户 [{}] 成功解绑 GitHub 账号", username);
+    }
+
+    /**
+     * 上传用户头像
+     *
+     * @param username 当前登录用户名
+     * @param file     上传的头像文件
+     * @return 更新后的当前账号资料视图对象
+     */
+    @Override
+    @Transactional
+    public CurrentUserVO uploadAvatar(String username, MultipartFile file) {
+        // 1. 校验文件是否为空
+        if (file == null || file.isEmpty()) {
+            throw new BusinessException(400, "上传的文件不能为空");
+        }
+
+        // 2. 校验文件类型（仅允许图片）
+        String contentType = file.getContentType();
+        if (contentType == null || !contentType.startsWith("image/")) {
+            throw new BusinessException(400, "只支持上传图片文件");
+        }
+
+        // 3. 校验文件大小（最大 5MB）
+        long maxSize = 5 * 1024 * 1024;
+        if (file.getSize() > maxSize) {
+            throw new BusinessException(400, "图片大小不能超过 5MB");
+        }
+
+        // 4. 查找用户
+        User user = findActiveUser(username);
+
+        // 5. 生成唯一文件名（UUID + 扩展名）
+        String originalFilename = file.getOriginalFilename();
+        String extension = originalFilename != null && originalFilename.contains(".")
+                ? originalFilename.substring(originalFilename.lastIndexOf("."))
+                : ".jpg";
+        String objectName = "avatars/" + UUID.randomUUID().toString() + extension;
+
+        try {
+            // 6. 删除旧头像（如果存在）
+            if (user.getAvatarUrl() != null && !user.getAvatarUrl().isEmpty()) {
+                // 从 URL 中提取 objectName
+                String oldObjectName = extractObjectNameFromUrl(user.getAvatarUrl());
+                if (oldObjectName != null) {
+                    fileStorageService.delete(oldObjectName);
+                    log.info("已删除用户 [{}] 的旧头像: {}", username, oldObjectName);
+                }
+            }
+
+            // 7. 上传新头像
+            String accessUrl = fileStorageService.upload(file, objectName, contentType);
+            log.info("用户 [{}] 头像上传成功: {}", username, accessUrl);
+
+            // 8. 更新数据库中的头像 URL
+            user.setAvatarUrl(accessUrl);
+            User savedUser = userRepository.save(user);
+
+            return toCurrentUserVO(savedUser);
+        } catch (Exception e) {
+            log.error("用户 [{}] 头像上传失败: {}", username, e.getMessage(), e);
+            throw new BusinessException(500, "头像上传失败，请稍后重试");
+        }
+    }
+
+    /**
+     * 从 URL 中提取 objectName
+     * 例如：http://localhost:9000/blog/avatars/xxx.jpg -> avatars/xxx.jpg
+     *      /uploads/avatars/xxx.jpg -> uploads/avatars/xxx.jpg
+     */
+    private String extractObjectNameFromUrl(String url) {
+        if (url == null || url.isEmpty()) {
+            return null;
+        }
+        // 如果是完整 URL，提取路径部分
+        if (url.startsWith("http://") || url.startsWith("https://")) {
+            int idx = url.indexOf("/avatars/");
+            if (idx >= 0) {
+                return url.substring(idx + 1); // 去掉开头的 /
+            }
+            return null;
+        }
+        // 如果是相对路径，直接返回（去掉开头的 /）
+        return url.startsWith("/") ? url.substring(1) : url;
     }
 }

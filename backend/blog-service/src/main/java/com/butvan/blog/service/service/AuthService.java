@@ -9,6 +9,7 @@ import com.butvan.blog.pojo.dto.auth.TwoFactorDisableDTO;
 import com.butvan.blog.pojo.dto.auth.GithubBindDTO;
 import com.butvan.blog.pojo.vo.auth.CurrentUserVO;
 import com.butvan.blog.pojo.vo.auth.LoginVO;
+import org.springframework.web.multipart.MultipartFile;
 import java.util.Map;
 
 /**
@@ -94,4 +95,13 @@ public interface AuthService {
      * @param username 当前登录用户名
      */
     void unbindGithub(String username);
+
+    /**
+     * 上传用户头像
+     *
+     * @param username 当前登录用户名
+     * @param file     上传的头像文件
+     * @return 更新后的当前账号资料视图对象
+     */
+    CurrentUserVO uploadAvatar(String username, MultipartFile file);
 }

@@ -1,4 +1,4 @@
-    package com.butvan.blog.service.controller;
+package com.butvan.blog.service.controller;
 
 import com.butvan.blog.common.result.Result;
 import com.butvan.blog.pojo.dto.auth.CurrentUserUpdateDTO;
@@ -15,6 +15,7 @@ import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;   
 import org.springframework.validation.annotation.Validated;
 import org.springframework.web.bind.annotation.*;
+import org.springframework.web.multipart.MultipartFile;
 import java.security.Principal;
 import java.util.Map;
 
@@ -156,5 +157,22 @@ public class AuthController {
         log.info("用户 [{}] 解绑 GitHub 账号", principal.getName());
         authService.unbindGithub(principal.getName());
         return Result.success();
+    }
+
+    /**
+     * 上传当前登录用户的头像
+     *
+     * @param file      上传的头像文件
+     * @param principal 当前登录安全凭证
+     * @return 更新后的当前账号资料视图对象
+     */
+    @PostMapping("/me/avatar")
+    public Result<CurrentUserVO> uploadAvatar(
+            @RequestParam("avatar") MultipartFile file,
+            Principal principal
+    ) {
+        log.info("用户 [{}] 请求上传头像", principal.getName());
+        CurrentUserVO updatedUser = authService.uploadAvatar(principal.getName(), file);
+        return Result.success(updatedUser);
     }
 }
