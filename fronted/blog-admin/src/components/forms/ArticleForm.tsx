@@ -1,6 +1,6 @@
 "use client";
 
-import { useState, useEffect, type FormEvent } from "react";
+import { useState, useEffect, useCallback, type FormEvent } from "react";
 import { createPortal } from "react-dom";
 import { useRouter } from "next/navigation";
 import { cn } from "@heroui/react";
@@ -81,21 +81,15 @@ export default function ArticleForm({ initialData, onSave, saving = false }: Art
   // 用户是否手动修改过封面（手动修改后不再自动提取）
   const [coverManuallySet, setCoverManuallySet] = useState(false);
   
-  // 自动从编辑器内容中提取所有图片作为封面候选（Set 去重 + 标准化 URL）
-  useEffect(() => {
-    if (coverManuallySet) return; // 用户已手动设置，不自动提取
-    // 匹配所有 Markdown 图片语法 ![...](url)，支持 http/https 及相对路径
-    const imgRegex = /!\[.*?\]\(((?:https?:\/\/|\/)[^\s)]+)\)/g;
-    const urlSet = new Set<string>();
-    let match;
-    while ((match = imgRegex.exec(content)) !== null) {
-      // 标准化 URL：去除尾部空格，确保精确去重
-      const url = match[1].trim();
-      urlSet.add(url);
+  /**
+   * 编辑器图片变化回调：直接从 ProseMirror 文档提取图片 URL
+   * 仅当用户未手动设置封面时才自动更新
+   */
+  const handleImageChange = useCallback((urls: string[]) => {
+    if (!coverManuallySet) {
+      setCoverImageUrls(urls);
     }
-    const urls = Array.from(urlSet);
-    setCoverImageUrls(urls);
-  }, [content, coverManuallySet]);
+  }, [coverManuallySet]);
   
   // 数据库字段映射与联动
   const [categoryId, setCategoryId] = useState<number | undefined>(initialData?.categoryId);
@@ -308,6 +302,7 @@ export default function ArticleForm({ initialData, onSave, saving = false }: Art
           <MarkdownEditor
             value={content}
             onChange={setContent}
+            onImageChange={handleImageChange}
             height={640}
           />
 

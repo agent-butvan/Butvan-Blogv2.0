@@ -43,6 +43,8 @@ const lowlight = createLowlight(all);
 export interface MarkdownEditorProps {
   value: string;
   onChange: (value: string) => void;
+  /** 当编辑器内图片发生变化时回调，直接传递从文档节点提取的图片 URL 数组（避免 markdown 序列化差异） */
+  onImageChange?: (urls: string[]) => void;
   height?: number;
   placeholder?: string;
   preview?: "edit" | "live" | "preview";
@@ -58,11 +60,37 @@ export interface MarkdownEditorProps {
 export default function MarkdownEditor({
   value,
   onChange,
+  onImageChange,
   height = 500,
   placeholder = "输入 / 唤起快捷命令，输入 #+空格 快速创建标题...",
   preview = "edit",
 }: MarkdownEditorProps) {
   const [colorMode, setColorMode] = useState<"light" | "dark">("light");
+
+  // 保持最新 onImageChange 引用，避免 useEditor 闭包陷阱
+  const onImageChangeRef = useRef(onImageChange);
+  useEffect(() => {
+    onImageChangeRef.current = onImageChange;
+  }, [onImageChange]);
+
+  /**
+   * 从 ProseMirror 文档中直接提取所有图片节点的 src URL
+   * 绕过 markdown 序列化，避免 getMarkdown() 导致 URL 编码差异
+   */
+  const extractImagesFromDoc = useCallback((editorInstance: any) => {
+    if (!onImageChangeRef.current || !editorInstance) return;
+    const doc = editorInstance.state.doc;
+    const urls: string[] = [];
+    doc.descendants((node: any) => {
+      if (node.type.name === "image" && node.attrs?.src) {
+        const src = node.attrs.src.trim();
+        if (src && !urls.includes(src)) {
+          urls.push(src);
+        }
+      }
+    });
+    onImageChangeRef.current(urls);
+  }, []);
 
   // Slash 菜单浮层状态
   const [menuOpen, setMenuOpen] = useState(false);
@@ -482,6 +510,8 @@ export default function MarkdownEditor({
       // 实时反向生成 Markdown 文本回传给 Form 表单
       const markdown = currEditor.getMarkdown();
       onChange(markdown || "");
+      // 从 ProseMirror 文档直接提取图片 URL 回调
+      extractImagesFromDoc(currEditor);
       handleSlashDetection(currEditor);
     },
     onSelectionUpdate: ({ editor: currEditor }) => {
@@ -503,8 +533,10 @@ export default function MarkdownEditor({
           contentType: "markdown",
         });
       }
+      // 初始加载或外部数据变化时，也提取图片 URL
+      extractImagesFromDoc(editor);
     }
-  }, [value, editor]);
+  }, [value, editor, extractImagesFromDoc]);
 
   if (!editor) return null;
 
