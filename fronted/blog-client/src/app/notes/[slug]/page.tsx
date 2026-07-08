@@ -443,16 +443,7 @@ export default function NoteDetailPage() {
                 </div>
               </header>
 
-              {/* 配图 — 全宽展示 */}
-              {note.coverImageUrl && (
-                <div className="animate-detail-item opacity-0 mt-8 rounded-2xl overflow-hidden border border-zinc-200/30 dark:border-zinc-800/30">
-                  <img
-                    src={resolveImageUrl(note.coverImageUrl)}
-                    alt={note.title}
-                    className="w-full max-h-[420px] object-cover"
-                  />
-                </div>
-              )}
+              {/* 注意：封面图来自正文插图，正文 Markdown 中已包含所有图片，不再单独展示避免重复 */}
 
               {/* 核心正文 Markdown/HTML 内容 */}
               <div 
