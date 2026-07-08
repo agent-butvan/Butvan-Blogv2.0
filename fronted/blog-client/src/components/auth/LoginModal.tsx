@@ -1,8 +1,15 @@
 'use client'
 
 import React, { useState, useEffect } from 'react'
-import { RefreshCw, Lock, User, Eye, EyeOff, MessageCircle, Mail, AtSign } from 'lucide-react'
+import { RefreshCw, Lock, User, Eye, EyeOff, Mail, AtSign } from 'lucide-react'
 import { Modal, Spinner } from '@heroui/react'
+
+/** 微信官方 SVG 图标 */
+const WechatIcon = ({ size = 18, className = '' }: { size?: number; className?: string }) => (
+  <svg width={size} height={size} viewBox="0 0 24 24" className={className} fill="currentColor">
+    <path d="M8.691 2.188C3.891 2.188 0 5.476 0 9.53c0 2.212 1.17 4.203 3.002 5.55a.59.59 0 0 1 .213.665l-.39 1.48c-.019.07-.048.141-.048.213 0 .163.13.295.29.295a.326.326 0 0 0 .167-.054l1.903-1.114a.864.864 0 0 1 .717-.098 10.16 10.16 0 0 0 2.837.403c.276 0 .543-.027.811-.05a6.084 6.084 0 0 1-.248-1.727c0-3.572 3.218-6.467 7.188-6.467.256 0 .507.018.755.04C16.452 4.858 12.891 2.188 8.691 2.188zm-2.35 4.09c.606 0 1.098.494 1.098 1.1 0 .609-.492 1.1-1.099 1.1-.606 0-1.098-.491-1.098-1.1 0-.606.492-1.1 1.098-1.1zm4.703 0c.606 0 1.098.494 1.098 1.1 0 .609-.492 1.1-1.098 1.1-.607 0-1.099-.491-1.099-1.1 0-.606.492-1.1 1.099-1.1zM16.442 9.18c-3.5 0-6.342 2.533-6.342 5.66 0 3.128 2.842 5.66 6.342 5.66.652 0 1.28-.084 1.878-.24a.723.723 0 0 1 .6.082l1.26.738a.272.272 0 0 0 .14.045c.133 0 .241-.11.241-.245 0-.06-.024-.12-.04-.178l-.258-.983a.49.49 0 0 1 .177-.554C21.913 18.19 22.784 16.502 22.784 14.84c0-3.127-2.84-5.66-6.342-5.66zm-2.145 3.356c.504 0 .913.41.913.915 0 .507-.41.915-.913.915a.916.916 0 0 1-.913-.915c0-.506.41-.915.913-.915zm4.29 0c.505 0 .913.41.913.915 0 .507-.408.915-.913.915a.916.916 0 0 1-.913-.915c0-.506.41-.915.913-.915z" />
+  </svg>
+)
 
 interface LoginModalProps {
   isOpen: boolean
@@ -213,13 +220,13 @@ export default function LoginModal({ isOpen, onClose }: LoginModalProps) {
             {/* ===== 标题区域 ===== */}
             <div className="flex flex-col space-y-1.5 p-6 pb-4">
               <h2 className="text-2xl font-semibold text-zinc-900 dark:text-zinc-100 tracking-tight leading-none">
-                {panel === 'register' ? '创建账号' : panel === 'wechat' ? '微信扫码登录' : '使用邮箱登录'}
+                {panel === 'register' ? '创建账号' : panel === 'wechat' ? '微信扫码' : '邮箱登录'}
               </h2>
               <p className="text-sm text-zinc-500 dark:text-zinc-400">
                 {panel === 'register'
                   ? '注册您的可梵博客账号，开始创作之旅。'
                   : panel === 'wechat'
-                    ? '使用微信扫描下方二维码完成登录。'
+                    ? '扫描下方二维码，已有账号自动登录，新用户自动注册。'
                     : '登录您的可梵博客账号，将文字、数据与团队汇聚一处。'
                 }
               </p>
@@ -228,39 +235,55 @@ export default function LoginModal({ isOpen, onClose }: LoginModalProps) {
             {/* ===== 内容区域 ===== */}
             <div className="px-6 space-y-4">
 
-              {/* ---- 登录模式：显示邮箱/微信 Tab ---- */}
-              {panel !== 'register' && (
-                <>
-                  {/* Tab 切换 */}
-                  <div className="flex gap-1 p-1 bg-zinc-100 dark:bg-zinc-900 rounded-lg">
-                    <button
-                      type="button"
-                      onClick={() => switchPanel('email')}
-                      className={`flex-1 flex items-center justify-center gap-1.5 py-2 text-sm font-medium rounded-md transition-all ${
-                        panel === 'email'
-                          ? 'bg-white dark:bg-zinc-800 text-zinc-900 dark:text-zinc-100 shadow-sm'
-                          : 'text-zinc-500 dark:text-zinc-400 hover:text-zinc-700 dark:hover:text-zinc-200'
-                      }`}
-                    >
-                      <Mail size={14} />
-                      邮箱登录
-                    </button>
-                    <button
-                      type="button"
-                      onClick={() => switchPanel('wechat')}
-                      className={`flex-1 flex items-center justify-center gap-1.5 py-2 text-sm font-medium rounded-md transition-all ${
-                        panel === 'wechat'
-                          ? 'bg-white dark:bg-zinc-800 text-zinc-900 dark:text-zinc-100 shadow-sm'
-                          : 'text-zinc-500 dark:text-zinc-400 hover:text-zinc-700 dark:hover:text-zinc-200'
-                      }`}
-                    >
-                      <MessageCircle size={14} />
-                      微信登录
-                    </button>
-                  </div>
+              {/* ---- 登录方式 icon 按钮组（所有模式都显示） ---- */}
+              <div className="space-y-2">
+                <label className="text-xs text-zinc-500 dark:text-zinc-400">
+                  {panel === 'register' ? '快捷注册' : '登录方式'}
+                </label>
+                <div className="grid grid-cols-2 gap-2">
+                  {/* 邮箱 */}
+                  <button
+                    type="button"
+                    onClick={() => switchPanel(panel === 'register' ? 'register' : 'email')}
+                    className={`inline-flex items-center justify-center gap-2 h-9 rounded-lg border shadow-sm transition-colors text-sm font-medium ${
+                      panel === 'email' || panel === 'register'
+                        ? 'border-zinc-900 dark:border-zinc-100 bg-zinc-900 dark:bg-zinc-100 text-zinc-50 dark:text-zinc-900'
+                        : 'border-zinc-200 dark:border-zinc-700 bg-white dark:bg-zinc-950 text-zinc-600 dark:text-zinc-300 hover:bg-zinc-50 dark:hover:bg-zinc-900'
+                    }`}
+                  >
+                    <Mail size={16} />
+                    邮箱
+                  </button>
+                  {/* 微信 */}
+                  <button
+                    type="button"
+                    onClick={() => switchPanel('wechat')}
+                    className={`inline-flex items-center justify-center gap-2 h-9 rounded-lg border shadow-sm transition-colors text-sm font-medium ${
+                      panel === 'wechat'
+                        ? 'border-green-600 bg-green-600 text-white'
+                        : 'border-zinc-200 dark:border-zinc-700 bg-white dark:bg-zinc-950 text-zinc-600 dark:text-zinc-300 hover:bg-zinc-50 dark:hover:bg-zinc-900'
+                    }`}
+                  >
+                    <WechatIcon size={16} />
+                    微信
+                  </button>
+                </div>
+              </div>
 
-                  {/* ---- 邮箱登录表单 ---- */}
-                  {panel === 'email' && (
+              {/* 分隔线 */}
+              {panel !== 'wechat' && (
+                <div className="relative">
+                  <div className="absolute inset-0 flex items-center">
+                    <span className="w-full border-t border-zinc-200 dark:border-zinc-800" />
+                  </div>
+                  <div className="relative flex justify-center text-xs uppercase">
+                    <span className="bg-white dark:bg-zinc-950 px-2 text-zinc-500 dark:text-zinc-400">或</span>
+                  </div>
+                </div>
+              )}
+
+              {/* ---- 邮箱登录表单 ---- */}
+              {panel === 'email' && (
                     <form onSubmit={handleEmailLogin} className="space-y-4">
                       <div className="space-y-2">
                         <label htmlFor="login-username" className={labelCls}>用户名</label>
@@ -352,12 +375,10 @@ export default function LoginModal({ isOpen, onClose }: LoginModalProps) {
                         </div>
                       ) : null}
                       <p className="text-xs text-zinc-500 dark:text-zinc-400 mt-3">
-                        打开微信 → 扫一扫 → 扫描上方二维码登录
+                        打开微信 → 扫一扫 → 扫码登录或注册
                       </p>
                     </div>
                   )}
-                </>
-              )}
 
               {/* ---- 注册模式：注册表单 ---- */}
               {panel === 'register' && (
