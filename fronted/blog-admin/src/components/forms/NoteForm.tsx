@@ -80,7 +80,10 @@ export default function NoteForm({ initialData, onSave, saving = false }: NoteFo
     return [...new Set(raw)];
   });
   // 封面展示数量（1-4张）
-  const [coverCount, setCoverCount] = useState<number>(1);
+  // 封面展示数量初始化为已有封面图数量（编辑模式），避免多图被截断为1张
+  const [coverCount, setCoverCount] = useState<number>(
+    () => Math.min(initialData?.coverImageUrls?.length || 1, 4)
+  );
   // 用户是否手动修改过封面（手动修改后不再自动提取）
   const [coverManuallySet, setCoverManuallySet] = useState(false);
   
@@ -91,6 +94,8 @@ export default function NoteForm({ initialData, onSave, saving = false }: NoteFo
   const handleImageChange = useCallback((urls: string[]) => {
     if (!coverManuallySet) {
       setCoverImageUrls(urls);
+      // 自动同步封面展示数量为提取到的图片数（上限4张）
+      setCoverCount(Math.min(urls.length, 4) || 1);
     }
   }, [coverManuallySet]);
   

@@ -110,8 +110,17 @@ public class NoteServiceImpl implements NoteService {
         }
 
         if (note == null) {
-            note = noteRepository.findBySlug(idOrSlug)
-                    .orElseThrow(() -> new BusinessException("手记不存在或已被删除"));
+            note = noteRepository.findBySlug(idOrSlug).orElse(null);
+        }
+
+        if (note == null) {
+            // 尝试将 idOrSlug 转换为 URL 编码的 slug 形式（比如前端传过来的是已解码的中文标题）
+            String encodedSlug = SlugUtils.toSlug(idOrSlug);
+            note = noteRepository.findBySlug(encodedSlug).orElse(null);
+        }
+
+        if (note == null) {
+            throw new BusinessException("手记不存在或已被删除");
         }
         return toDetailVO(note);
     }
@@ -175,6 +184,8 @@ public class NoteServiceImpl implements NoteService {
 
         if (StringUtils.hasText(dto.getSlug())) {
             note.setSlug(dto.getSlug());
+        } else {
+            note.setSlug(SlugUtils.toSlug(dto.getTitle()));
         }
 
         Note updated = noteRepository.save(note);

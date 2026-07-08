@@ -409,8 +409,28 @@ export default function NotesFragmentsPage() {
                               className="w-full h-full object-cover motion-safe:transition-transform motion-safe:duration-500 ease-[cubic-bezier(0.23,1,0.32,1)] group-hover:scale-105"
                               loading="lazy"
                             />
+                          ) : images.length === 2 ? (
+                            /* 双图模式：左右平分展示 */
+                            <div className="grid grid-cols-2 h-full gap-px bg-white/20 dark:bg-zinc-900/20">
+                              <div className="relative overflow-hidden">
+                                <img
+                                  src={resolveImageUrl(images[0])}
+                                  alt={`${note.title} - 1`}
+                                  className="w-full h-full object-cover motion-safe:transition-transform motion-safe:duration-500 ease-[cubic-bezier(0.23,1,0.32,1)] group-hover:scale-105"
+                                  loading="lazy"
+                                />
+                              </div>
+                              <div className="relative overflow-hidden">
+                                <img
+                                  src={resolveImageUrl(images[1])}
+                                  alt={`${note.title} - 2`}
+                                  className="w-full h-full object-cover motion-safe:transition-transform motion-safe:duration-500 ease-[cubic-bezier(0.23,1,0.32,1)] group-hover:scale-105"
+                                  loading="lazy"
+                                />
+                              </div>
+                            </div>
                           ) : (
-                            /* 多图拼贴模式：左侧2/3两图纵向堆叠，右侧1/3一张全高大图 */
+                            /* 三图及以上拼贴模式：左侧2/3两图纵向堆叠，右侧1/3一张全高大图 */
                             <div className="grid grid-cols-3 h-full gap-px bg-white/20 dark:bg-zinc-900/20">
                               {/* 左侧两图纵向堆叠 */}
                               <div className="col-span-2 grid grid-rows-2 gap-px bg-white/20 dark:bg-zinc-900/20">
@@ -434,7 +454,7 @@ export default function NotesFragmentsPage() {
                               {/* 右侧大图 */}
                               <div className="col-span-1 relative overflow-hidden">
                                 <img
-                                  src={resolveImageUrl(images[2] || images[0])}
+                                  src={resolveImageUrl(images[2])}
                                   alt={`${note.title} - 3`}
                                   className="w-full h-full object-cover motion-safe:transition-transform motion-safe:duration-500 ease-[cubic-bezier(0.23,1,0.32,1)] group-hover:scale-105"
                                   loading="lazy"

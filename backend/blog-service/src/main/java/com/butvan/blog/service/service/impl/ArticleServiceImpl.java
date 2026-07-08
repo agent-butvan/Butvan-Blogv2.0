@@ -131,8 +131,17 @@ public class ArticleServiceImpl implements ArticleService {
         }
         
         if (article == null) {
-            article = articleRepository.findBySlug(idOrSlug)
-                    .orElseThrow(() -> new BusinessException("文章不存在或已被删除"));
+            article = articleRepository.findBySlug(idOrSlug).orElse(null);
+        }
+
+        if (article == null) {
+            // 尝试将 idOrSlug 转换为 URL 编码的 slug 形式（比如前端传过来的是已解码的中文标题）
+            String encodedSlug = SlugUtils.toSlug(idOrSlug);
+            article = articleRepository.findBySlug(encodedSlug).orElse(null);
+        }
+
+        if (article == null) {
+            throw new BusinessException("文章不存在或已被删除");
         }
         return toDetailVO(article);
     }
@@ -222,6 +231,8 @@ public class ArticleServiceImpl implements ArticleService {
         
         if (StringUtils.hasText(dto.getSlug())) {
             article.setSlug(dto.getSlug());
+        } else {
+            article.setSlug(SlugUtils.toSlug(dto.getTitle()));
         }
         
         // 2. 覆盖分类关联
