@@ -71,29 +71,30 @@ export default function ArticleForm({ initialData, onSave, saving = false }: Art
   const [slug, setSlug] = useState(initialData?.slug || "");
   const [summary, setSummary] = useState(initialData?.summary || "");
   const [content, setContent] = useState(initialData?.content || "");
-  const [coverImageUrls, setCoverImageUrls] = useState<string[]>(
-    initialData?.coverImageUrls || (initialData?.coverImageUrl ? [initialData.coverImageUrl] : [])
-  );
+  const [coverImageUrls, setCoverImageUrls] = useState<string[]>(() => {
+    // 初始化时去重：优先使用 coverImageUrls 数组，其次回退到单图 coverImageUrl
+    const raw = initialData?.coverImageUrls || (initialData?.coverImageUrl ? [initialData.coverImageUrl] : []);
+    return [...new Set(raw)];
+  });
   // 封面展示数量（1-4张）
   const [coverCount, setCoverCount] = useState<number>(1);
   // 用户是否手动修改过封面（手动修改后不再自动提取）
   const [coverManuallySet, setCoverManuallySet] = useState(false);
   
-  // 自动从编辑器内容中提取所有图片作为封面候选
+  // 自动从编辑器内容中提取所有图片作为封面候选（Set 去重 + 标准化 URL）
   useEffect(() => {
     if (coverManuallySet) return; // 用户已手动设置，不自动提取
     // 匹配所有 Markdown 图片语法 ![...](url)，支持 http/https 及相对路径
     const imgRegex = /!\[.*?\]\(((?:https?:\/\/|\/)[^\s)]+)\)/g;
-    const urls: string[] = [];
+    const urlSet = new Set<string>();
     let match;
     while ((match = imgRegex.exec(content)) !== null) {
-      if (!urls.includes(match[1])) {
-        urls.push(match[1]);
-      }
+      // 标准化 URL：去除尾部空格，确保精确去重
+      const url = match[1].trim();
+      urlSet.add(url);
     }
-    if (urls.length > 0) {
-      setCoverImageUrls(urls);
-    }
+    const urls = Array.from(urlSet);
+    setCoverImageUrls(urls);
   }, [content, coverManuallySet]);
   
   // 数据库字段映射与联动
