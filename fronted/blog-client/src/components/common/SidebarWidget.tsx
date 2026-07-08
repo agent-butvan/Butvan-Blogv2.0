@@ -39,6 +39,7 @@ export default function SidebarWidget() {
   const [loginModalOpen, setLoginModalOpen] = useState(false)
   const [uploadAvatarModalOpen, setUploadAvatarModalOpen] = useState(false)
   const [selectedFile, setSelectedFile] = useState<File | null>(null)
+  const [userInfoModalOpen, setUserInfoModalOpen] = useState(false)
   // 当前路由路径，用于高亮激活菜单项
   const pathname = usePathname()
 
@@ -116,7 +117,7 @@ export default function SidebarWidget() {
       const formData = new FormData()
       formData.append('avatar', selectedFile)
 
-      const response = await fetch(`${process.env.NEXT_PUBLIC_API_BASE_URL || 'http://localhost:8080/api'}/users/avatar`, {
+      const response = await fetch(`${process.env.NEXT_PUBLIC_API_BASE_URL || 'http://localhost:8080/api'}/auth/me/avatar`, {
         method: 'POST',
         headers: {
           Authorization: `Bearer ${token}`
@@ -206,52 +207,28 @@ export default function SidebarWidget() {
           aria-label="侧边栏"
         >
           {user ? (
-            <Dropdown>
-              <Dropdown.Trigger className="rounded-full cursor-pointer flex items-center justify-center">
-                <Avatar size="sm" className="w-6 h-6">
-                  {user.avatarUrl ? (
-                    <Avatar.Image src={resolveAvatarUrl(user.avatarUrl)} alt="User avatar" />
-                  ) : null}
-                  <Avatar.Fallback className="text-[10px] font-bold bg-[#727BBA]/15 text-[#727BBA] flex items-center justify-center">
-                    {(user.nickname || '?').charAt(0).toUpperCase()}
-                  </Avatar.Fallback>
-                </Avatar>
-              </Dropdown.Trigger>
-              <Dropdown.Popover placement="right" className="min-w-[200px]">
-                <div className="px-3 pt-3 pb-2">
-                  <div className="flex items-center gap-2.5">
-                    <Avatar size="sm" className="w-8 h-8">
-                      {user.avatarUrl ? (
-                        <Avatar.Image src={resolveAvatarUrl(user.avatarUrl)} alt="User avatar" />
-                      ) : null}
-                      <Avatar.Fallback className="text-xs font-bold bg-[#727BBA]/15 text-[#727BBA] flex items-center justify-center">
-                        {(user.nickname || '?').charAt(0).toUpperCase()}
-                      </Avatar.Fallback>
-                    </Avatar>
-                    <div className="flex flex-col gap-0.5 min-w-0">
-                      <p className="text-sm leading-5 font-semibold text-zinc-800 dark:text-zinc-200 truncate">{user.nickname || '用户'}</p>
-                      {user.email && (
-                        <p className="text-[11px] leading-none text-zinc-400 dark:text-zinc-500 truncate">{user.email}</p>
-                      )}
-                    </div>
-                  </div>
-                </div>
-                <Separator className="my-1" />
-                <Dropdown.Menu onAction={(key) => { 
-                  if (key === 'upload') setUploadAvatarModalOpen(true)
-                  if (key === 'logout') handleLogout() 
-                }}>
-                  <Dropdown.Item id="upload" textValue="上传头像">
-                    <Upload className="size-4 shrink-0 text-zinc-600 dark:text-zinc-300" />
-                    <Label>上传头像</Label>
-                  </Dropdown.Item>
-                  <Dropdown.Item id="logout" textValue="退出登录" variant="danger">
-                    <LogOut className="size-4 shrink-0 text-danger" />
-                    <Label>退出登录</Label>
-                  </Dropdown.Item>
-                </Dropdown.Menu>
-              </Dropdown.Popover>
-            </Dropdown>
+            <Tooltip>
+              <Tooltip.Trigger>
+                <button
+                  type="button"
+                  aria-label="查看个人信息"
+                  onClick={() => setUserInfoModalOpen(true)}
+                  className="w-9 h-9 flex items-center justify-center rounded-full text-zinc-600 dark:text-zinc-300 hover:bg-zinc-100 dark:hover:bg-zinc-800 transition-colors cursor-pointer"
+                >
+                  <Avatar size="sm" className="w-6 h-6">
+                    {user.avatarUrl ? (
+                      <Avatar.Image src={resolveAvatarUrl(user.avatarUrl)} alt="User avatar" />
+                    ) : null}
+                    <Avatar.Fallback className="text-[10px] font-bold bg-[#727BBA]/15 text-[#727BBA] flex items-center justify-center">
+                      {(user.nickname || '?').charAt(0).toUpperCase()}
+                    </Avatar.Fallback>
+                  </Avatar>
+                </button>
+              </Tooltip.Trigger>
+              <Tooltip.Content showArrow>
+                个人信息
+              </Tooltip.Content>
+            </Tooltip>
           ) : (
             <Tooltip>
               <Tooltip.Trigger>
@@ -314,52 +291,28 @@ export default function SidebarWidget() {
 
         {/* 登录图标 / 用户头像 */}
         {user ? (
-          <Dropdown>
-            <Dropdown.Trigger className="rounded-full cursor-pointer flex items-center justify-center">
-              <Avatar size="sm" className="w-6 h-6">
-                {user.avatarUrl ? (
-                  <Avatar.Image src={resolveAvatarUrl(user.avatarUrl)} alt="User avatar" />
-                ) : null}
-                <Avatar.Fallback className="text-[10px] font-bold bg-[#727BBA]/15 text-[#727BBA] flex items-center justify-center">
-                  {(user.nickname || '?').charAt(0).toUpperCase()}
-                </Avatar.Fallback>
-              </Avatar>
-            </Dropdown.Trigger>
-            <Dropdown.Popover placement="right" className="min-w-[200px]">
-              <div className="px-3 pt-3 pb-2">
-                <div className="flex items-center gap-2.5">
-                  <Avatar size="sm" className="w-8 h-8">
-                    {user.avatarUrl ? (
-                      <Avatar.Image src={resolveAvatarUrl(user.avatarUrl)} alt="User avatar" />
-                    ) : null}
-                    <Avatar.Fallback className="text-xs font-bold bg-[#727BBA]/15 text-[#727BBA] flex items-center justify-center">
-                      {(user.nickname || '?').charAt(0).toUpperCase()}
-                    </Avatar.Fallback>
-                  </Avatar>
-                  <div className="flex flex-col gap-0.5 min-w-0">
-                    <p className="text-sm leading-5 font-semibold text-zinc-800 dark:text-zinc-200 truncate">{user.nickname || '用户'}</p>
-                    {user.email && (
-                      <p className="text-[11px] leading-none text-zinc-400 dark:text-zinc-500 truncate">{user.email}</p>
-                    )}
-                  </div>
-                </div>
-              </div>
-              <Separator className="my-1" />
-              <Dropdown.Menu onAction={(key) => { 
-                if (key === 'upload') setUploadAvatarModalOpen(true)
-                if (key === 'logout') handleLogout() 
-              }}>
-                <Dropdown.Item id="upload" textValue="上传头像">
-                  <Upload className="size-4 shrink-0 text-zinc-600 dark:text-zinc-300" />
-                  <Label>上传头像</Label>
-                </Dropdown.Item>
-                <Dropdown.Item id="logout" textValue="退出登录" variant="danger">
-                  <LogOut className="size-4 shrink-0 text-danger" />
-                  <Label>退出登录</Label>
-                </Dropdown.Item>
-              </Dropdown.Menu>
-            </Dropdown.Popover>
-          </Dropdown>
+          <Tooltip>
+            <Tooltip.Trigger>
+              <button
+                type="button"
+                aria-label="查看个人信息"
+                onClick={() => setUserInfoModalOpen(true)}
+                className="w-9 h-9 flex items-center justify-center rounded-full text-zinc-600 dark:text-zinc-300 hover:bg-zinc-100 dark:hover:bg-zinc-800 transition-colors cursor-pointer"
+              >
+                <Avatar size="sm" className="w-6 h-6">
+                  {user.avatarUrl ? (
+                    <Avatar.Image src={resolveAvatarUrl(user.avatarUrl)} alt="User avatar" />
+                  ) : null}
+                  <Avatar.Fallback className="text-[10px] font-bold bg-[#727BBA]/15 text-[#727BBA] flex items-center justify-center">
+                    {(user.nickname || '?').charAt(0).toUpperCase()}
+                  </Avatar.Fallback>
+                </Avatar>
+              </button>
+            </Tooltip.Trigger>
+            <Tooltip.Content showArrow>
+              个人信息
+            </Tooltip.Content>
+          </Tooltip>
         ) : (
           <Tooltip>
             <Tooltip.Trigger>
@@ -432,6 +385,89 @@ export default function SidebarWidget() {
                   isDisabled={!selectedFile}
                 >
                   确认上传
+                </Button>
+              </Modal.Footer>
+            </Modal.Dialog>
+          </Modal.Container>
+        </Modal.Backdrop>
+      </Modal>
+
+      {/* 用户信息弹窗 */}
+      <Modal>
+        <Modal.Backdrop isOpen={userInfoModalOpen} onOpenChange={(open) => !open && setUserInfoModalOpen(false)}>
+          <Modal.Container size="sm">
+            <Modal.Dialog className="sm:max-w-[360px]">
+              <Modal.CloseTrigger />
+              <Modal.Header>
+                <Modal.Heading>个人信息</Modal.Heading>
+              </Modal.Header>
+              <Modal.Body>
+                <div className="flex flex-col items-center gap-4">
+                  {/* 用户头像 */}
+                  <div className="flex justify-center">
+                    <Avatar size="lg" className="w-24 h-24">
+                      {user?.avatarUrl ? (
+                        <Avatar.Image src={resolveAvatarUrl(user.avatarUrl)} alt="User avatar" />
+                      ) : null}
+                      <Avatar.Fallback className="text-2xl font-bold bg-[#727BBA]/15 text-[#727BBA] flex items-center justify-center">
+                        {(user?.nickname || '?').charAt(0).toUpperCase()}
+                      </Avatar.Fallback>
+                    </Avatar>
+                  </div>
+                  
+                  {/* 用户昵称 */}
+                  <div className="text-center w-full">
+                    <h3 className="text-xl font-semibold text-zinc-800 dark:text-zinc-200 mb-1">
+                      {user?.nickname || '用户'}
+                    </h3>
+                    {user?.username && (
+                      <p className="text-sm text-zinc-500 dark:text-zinc-400">@{user.username}</p>
+                    )}
+                  </div>
+
+                  {/* 分隔线 */}
+                  <Separator className="my-2" />
+
+                  {/* 邮箱信息 */}
+                  <div className="w-full space-y-3">
+                    <div className="flex items-start gap-3">
+                      <div className="shrink-0 w-8 h-8 rounded-lg bg-[#727BBA]/10 flex items-center justify-center">
+                        <svg className="w-4 h-4 text-[#727BBA]" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                          <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M3 8l7.89 5.26a2 2 0 002.22 0L21 8M5 19h14a2 2 0 002-2V7a2 2 0 00-2-2H5a2 2 0 00-2 2v10a2 2 0 002 2z" />
+                        </svg>
+                      </div>
+                      <div className="flex-1 min-w-0">
+                        <p className="text-xs text-zinc-500 dark:text-zinc-400 mb-0.5">邮箱</p>
+                        <p className="text-sm font-medium text-zinc-800 dark:text-zinc-200 truncate">
+                          {user?.email || '未设置'}
+                        </p>
+                      </div>
+                    </div>
+                  </div>
+                </div>
+              </Modal.Body>
+              <Modal.Footer className="flex-col gap-2">
+                <Button 
+                  className="w-full"
+                  variant="secondary"
+                  onPress={() => {
+                    setUserInfoModalOpen(false)
+                    setUploadAvatarModalOpen(true)
+                  }}
+                >
+                  <Upload className="size-4 mr-2" />
+                  更换头像
+                </Button>
+                <Button 
+                  className="w-full"
+                  variant="danger"
+                  onPress={() => {
+                    setUserInfoModalOpen(false)
+                    handleLogout()
+                  }}
+                >
+                  <LogOut className="size-4 mr-2" />
+                  退出登录
                 </Button>
               </Modal.Footer>
             </Modal.Dialog>
