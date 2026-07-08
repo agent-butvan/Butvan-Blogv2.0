@@ -41,6 +41,8 @@ export interface NoteSaveDTO {
   summary?: string;
   content: string;
   coverImageUrl?: string;
+  /** 多图封面 URL 数组 */
+  coverImageUrls?: string[];
   mood?: string;
   weather?: string;
   location?: string;

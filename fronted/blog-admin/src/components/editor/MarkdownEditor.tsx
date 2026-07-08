@@ -305,7 +305,7 @@ export default function MarkdownEditor({
       }),
       Image.configure({
         HTMLAttributes: {
-          class: "max-w-full h-auto rounded-xl border border-zinc-200 dark:border-zinc-800 my-4 inline-block",
+          class: "max-w-[280px] h-auto rounded-lg border border-zinc-200 dark:border-zinc-800 my-2 inline-block shadow-sm",
         },
       }),
       Placeholder.configure({

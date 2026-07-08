@@ -52,6 +52,8 @@ export interface ArticleSaveDTO {
   summary?: string;
   content: string;
   coverImageUrl?: string;
+  /** 多图封面 URL 数组 */
+  coverImageUrls?: string[];
   categoryId?: number;
   tagIds?: number[];
   status: ArticleStatus;

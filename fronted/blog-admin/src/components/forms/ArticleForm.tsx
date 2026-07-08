@@ -71,7 +71,30 @@ export default function ArticleForm({ initialData, onSave, saving = false }: Art
   const [slug, setSlug] = useState(initialData?.slug || "");
   const [summary, setSummary] = useState(initialData?.summary || "");
   const [content, setContent] = useState(initialData?.content || "");
-  const [coverImageUrl, setCoverImageUrl] = useState(initialData?.coverImageUrl || "");
+  const [coverImageUrls, setCoverImageUrls] = useState<string[]>(
+    initialData?.coverImageUrls || (initialData?.coverImageUrl ? [initialData.coverImageUrl] : [])
+  );
+  // 封面展示数量（1-4张）
+  const [coverCount, setCoverCount] = useState<number>(1);
+  // 用户是否手动修改过封面（手动修改后不再自动提取）
+  const [coverManuallySet, setCoverManuallySet] = useState(false);
+  
+  // 自动从编辑器内容中提取所有图片作为封面候选
+  useEffect(() => {
+    if (coverManuallySet) return; // 用户已手动设置，不自动提取
+    // 匹配所有 Markdown 图片语法 ![...](url)，支持 http/https 及相对路径
+    const imgRegex = /!\[.*?\]\(((?:https?:\/\/|\/)[^\s)]+)\)/g;
+    const urls: string[] = [];
+    let match;
+    while ((match = imgRegex.exec(content)) !== null) {
+      if (!urls.includes(match[1])) {
+        urls.push(match[1]);
+      }
+    }
+    if (urls.length > 0) {
+      setCoverImageUrls(urls);
+    }
+  }, [content, coverManuallySet]);
   
   // 数据库字段映射与联动
   const [categoryId, setCategoryId] = useState<number | undefined>(initialData?.categoryId);
@@ -150,7 +173,8 @@ export default function ArticleForm({ initialData, onSave, saving = false }: Art
       slug: slug || undefined,
       summary: summary || undefined,
       content,
-      coverImageUrl: coverImageUrl || undefined,
+      coverImageUrl: coverImageUrls.length > 0 ? coverImageUrls[0] : undefined,
+      coverImageUrls: coverImageUrls.length > 0 ? coverImageUrls.slice(0, coverCount) : undefined,
       categoryId: categoryId || undefined,
       tagIds: tagIds.length > 0 ? tagIds : undefined,
       status,
@@ -175,8 +199,8 @@ export default function ArticleForm({ initialData, onSave, saving = false }: Art
   return (
     <form onSubmit={handleSubmit} className="flex flex-col h-full w-full bg-transparent min-h-[calc(100vh-140px)]">
       
-      {/* 顶栏吸顶 Header：集成标题与所有核心工作流控制 */}
-      <header className="sticky top-0 bg-background/80 backdrop-blur-md border-b border-zinc-200/50 dark:border-zinc-900/60 py-3 mb-5 flex flex-col gap-4 sm:flex-row sm:items-center sm:justify-between z-20 select-none">
+      {/* 顶栏 Header：集成标题与所有核心工作流控制 */}
+      <header className="bg-background/80 backdrop-blur-md border-b border-zinc-200/50 dark:border-zinc-900/60 py-3 mb-5 flex flex-col gap-4 sm:flex-row sm:items-center sm:justify-between z-20 select-none">
         
         {/* 左侧：返回列表与无框扁平大标题输入 */}
         <div className="flex flex-1 items-center gap-3">
@@ -533,26 +557,79 @@ export default function ArticleForm({ initialData, onSave, saving = false }: Art
               </div>
 
               {/* 封面图片 */}
-              <div className="space-y-1.5">
-                <label className="block text-[10px] font-bold text-zinc-400 dark:text-zinc-500 uppercase tracking-widest">
-                  封面图 URL
-                </label>
-                <input
-                  type="url"
-                  value={coverImageUrl}
-                  onChange={(e) => setCoverImageUrl(e.target.value)}
-                  placeholder="https://example.com/cover.jpg"
-                  className="w-full rounded-xl border border-zinc-200/60 dark:border-zinc-800 bg-white dark:bg-zinc-900 px-3 py-2 text-xs text-zinc-850 dark:text-zinc-200 placeholder-zinc-400 dark:placeholder-zinc-650 outline-none focus:border-primary focus:ring-2 focus:ring-primary/10 transition-all"
-                />
-                {coverImageUrl && (
-                  <div className="relative rounded-xl overflow-hidden border border-zinc-200 dark:border-zinc-800 mt-2">
-                    <img
-                      src={coverImageUrl}
-                      alt="封面预览"
-                      className="h-24 w-full object-cover"
-                    />
+              <div className="space-y-2">
+                <div className="flex items-center justify-between">
+                  <label className="text-[10px] font-bold text-zinc-400 dark:text-zinc-500 uppercase tracking-widest flex items-center gap-1.5">
+                    <Layout size={11} />
+                    <span>封面图</span>
+                    {coverImageUrls.length > 0 && (
+                      <span className="text-zinc-400 dark:text-zinc-600 normal-case tracking-normal">({coverImageUrls.length}张)</span>
+                    )}
+                  </label>
+                  {/* 封面展示数量选择器 */}
+                  {coverImageUrls.length > 1 && (
+                    <div className="flex items-center gap-1 text-[10px] text-zinc-500 dark:text-zinc-400">
+                      <span>展示</span>
+                      <select
+                        value={coverCount}
+                        onChange={(e) => setCoverCount(Number(e.target.value))}
+                        className="rounded-lg border border-zinc-200 dark:border-zinc-800 bg-white dark:bg-zinc-900 px-1.5 py-0.5 text-[10px] outline-none cursor-pointer"
+                      >
+                        {Array.from({ length: Math.min(coverImageUrls.length, 4) }, (_, i) => i + 1).map(n => (
+                          <option key={n} value={n}>{n}张</option>
+                        ))}
+                      </select>
+                    </div>
+                  )}
+                </div>
+                {/* 封面画廊预览 */}
+                {coverImageUrls.length > 0 ? (
+                  <div className={cn(
+                    "grid gap-1.5 rounded-xl overflow-hidden border border-zinc-200 dark:border-zinc-800",
+                    coverCount === 1 ? "grid-cols-1" :
+                    coverCount === 2 ? "grid-cols-2" :
+                    "grid-cols-2"
+                  )}>
+                    {coverImageUrls.slice(0, coverCount).map((url, i) => (
+                      <div key={i} className="relative aspect-video overflow-hidden bg-zinc-100 dark:bg-zinc-900">
+                        <img
+                          src={url}
+                          alt={`封面${i + 1}`}
+                          className="w-full h-full object-cover"
+                        />
+                        {/* 移除按钮 */}
+                        <button
+                          type="button"
+                          onClick={() => {
+                            setCoverManuallySet(true);
+                            setCoverImageUrls(prev => prev.filter((_, idx) => idx !== i));
+                          }}
+                          className="absolute top-1 right-1 w-4 h-4 rounded-full bg-black/60 text-white flex items-center justify-center hover:bg-black/80 transition-colors cursor-pointer"
+                        >
+                          <X size={10} />
+                        </button>
+                      </div>
+                    ))}
                   </div>
+                ) : (
+                  <p className="text-[10px] text-zinc-400 dark:text-zinc-600 italic">在编辑器中插入图片后会自动提取为封面</p>
                 )}
+                {/* 手动添加封面 URL */}
+                <div className="flex items-center gap-1.5">
+                  <input
+                    type="url"
+                    value=""
+                    onChange={(e) => {
+                      if (e.target.value) {
+                        setCoverManuallySet(true);
+                        setCoverImageUrls(prev => [...prev, e.target.value]);
+                        e.target.value = "";
+                      }
+                    }}
+                    placeholder="手动添加封面图 URL..."
+                    className="flex-1 rounded-xl border border-zinc-200/60 dark:border-zinc-800 bg-white dark:bg-zinc-900 px-3 py-1.5 text-[11px] text-zinc-850 dark:text-zinc-200 placeholder-zinc-400 dark:placeholder-zinc-650 outline-none focus:border-primary focus:ring-2 focus:ring-primary/10 transition-all"
+                  />
+                </div>
               </div>
 
               {/* SEO 折叠面板 */}
