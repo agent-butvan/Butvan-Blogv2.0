@@ -53,7 +53,15 @@ export default function Navbar({ profile }: NavbarProps) {
       const infoStr = localStorage.getItem('user_info')
       if (token && infoStr) {
         try {
-          setUser(JSON.parse(infoStr))
+          const parsed = JSON.parse(infoStr)
+          // 若解析成功但缺少有效 nickname，说明是旧版脏数据，主动清理
+          if (!parsed || !parsed.nickname) {
+            localStorage.removeItem('token')
+            localStorage.removeItem('user_info')
+            setUser(null)
+          } else {
+            setUser(parsed)
+          }
         } catch {
           localStorage.removeItem('token')
           localStorage.removeItem('user_info')
@@ -100,8 +108,8 @@ export default function Navbar({ profile }: NavbarProps) {
         if (json.data && json.data.token) {
           localStorage.setItem('token', json.data.token)
           const userInfo = {
-            nickname: json.data.nickname,
-            avatarUrl: json.data.avatarUrl
+            nickname: json.data.user?.nickname || json.data.nickname || '用户',
+            avatarUrl: json.data.user?.avatarUrl || json.data.avatarUrl || null
           }
           localStorage.setItem('user_info', JSON.stringify(userInfo))
           setUser(userInfo)
@@ -204,10 +212,10 @@ export default function Navbar({ profile }: NavbarProps) {
                 />
               ) : (
                 <div className="w-5.5 h-5.5 rounded-full bg-zinc-100 dark:bg-zinc-800 text-[10px] font-bold text-zinc-550 flex items-center justify-center uppercase">
-                  {user.nickname.charAt(0)}
+                  {(user.nickname || '?').charAt(0)}
                 </div>
               )}
-              <span className="text-xs font-bold text-zinc-650 dark:text-zinc-300">{user.nickname}</span>
+              <span className="text-xs font-bold text-zinc-650 dark:text-zinc-300">{user.nickname || '用户'}</span>
             </div>
             <button 
               onClick={handleLogout}
@@ -241,7 +249,7 @@ export default function Navbar({ profile }: NavbarProps) {
             {user.avatarUrl ? (
               <img src={resolveAvatarUrl(user.avatarUrl)} className="w-full h-full object-cover" alt="" />
             ) : (
-              <div className="w-full h-full bg-zinc-100 text-[9px] font-bold text-zinc-500 flex items-center justify-center">{user.nickname.charAt(0)}</div>
+              <div className="w-full h-full bg-zinc-100 text-[9px] font-bold text-zinc-500 flex items-center justify-center">{(user.nickname || '?').charAt(0)}</div>
             )}
           </div>
         )}
@@ -297,7 +305,7 @@ export default function Navbar({ profile }: NavbarProps) {
           <div className="border-t border-zinc-150 dark:border-zinc-900 pt-3.5 flex items-center justify-between">
             {user ? (
               <div className="flex items-center gap-2">
-                <span className="text-xs font-bold text-zinc-700 dark:text-zinc-300">已登录: {user.nickname}</span>
+                <span className="text-xs font-bold text-zinc-700 dark:text-zinc-300">已登录: {user.nickname || '用户'}</span>
                 <button 
                   onClick={() => { handleLogout(); setMobileMenuOpen(false); }}
                   className="text-[10px] text-zinc-400 active:text-rose-500"

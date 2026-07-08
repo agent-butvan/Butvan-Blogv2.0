@@ -139,10 +139,11 @@ export default function LoginModal({ isOpen, onClose }: LoginModalProps) {
       if (json.code === 200 || json.code === 0) {
         if (json.data?.token) {
           localStorage.setItem('token', json.data.token)
-          localStorage.setItem('user_info', JSON.stringify({
-            nickname: json.data.nickname,
-            avatarUrl: json.data.avatarUrl
-          }))
+          const userInfo = {
+            nickname: json.data.user?.nickname || json.data.nickname || '用户',
+            avatarUrl: json.data.user?.avatarUrl || json.data.avatarUrl || null
+          }
+          localStorage.setItem('user_info', JSON.stringify(userInfo))
           window.dispatchEvent(new Event('auth-change'))
           onClose()
         } else {
@@ -233,10 +234,10 @@ export default function LoginModal({ isOpen, onClose }: LoginModalProps) {
               </h2>
               <p className="text-sm text-zinc-500 dark:text-zinc-400">
                 {panel === 'register'
-                  ? '注册您的可梵博客账号，开始创作之旅。'
+                  ? '注册您的可梵博客账号'
                   : panel === 'wechat'
                     ? '扫描下方二维码，已有账号自动登录，新用户自动注册。'
-                    : '登录您的可梵博客账号，将文字、数据与团队汇聚一处。'
+                    : '登录您的可梵博客账号'
                 }
               </p>
             </div>

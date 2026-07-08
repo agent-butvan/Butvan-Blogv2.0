@@ -49,7 +49,15 @@ export default function SidebarWidget() {
       const infoStr = localStorage.getItem('user_info')
       if (token && infoStr) {
         try {
-          setUser(JSON.parse(infoStr))
+          const parsed = JSON.parse(infoStr)
+          // 若解析成功但缺少有效 nickname，说明是旧版脏数据，主动清理
+          if (!parsed || !parsed.nickname) {
+            localStorage.removeItem('token')
+            localStorage.removeItem('user_info')
+            setUser(null)
+          } else {
+            setUser(parsed)
+          }
         } catch {
           localStorage.removeItem('token')
           localStorage.removeItem('user_info')
@@ -155,7 +163,7 @@ export default function SidebarWidget() {
                     {user.avatarUrl ? (
                       <Avatar.Image src={resolveAvatarUrl(user.avatarUrl)} alt="User avatar" />
                     ) : null}
-                    <Avatar.Fallback className="text-[10px]">{user.nickname.charAt(0).toUpperCase()}</Avatar.Fallback>
+                    <Avatar.Fallback className="text-[10px]">{(user.nickname || '?').charAt(0).toUpperCase()}</Avatar.Fallback>
                   </Avatar>
                 </button>
               </Tooltip.Trigger>
@@ -237,7 +245,7 @@ export default function SidebarWidget() {
                   {user.avatarUrl ? (
                     <Avatar.Image src={resolveAvatarUrl(user.avatarUrl)} alt="User avatar" />
                   ) : null}
-                  <Avatar.Fallback className="text-[10px]">{user.nickname.charAt(0).toUpperCase()}</Avatar.Fallback>
+                  <Avatar.Fallback className="text-[10px]">{(user.nickname || '?').charAt(0).toUpperCase()}</Avatar.Fallback>
                 </Avatar>
               </button>
             </Tooltip.Trigger>
