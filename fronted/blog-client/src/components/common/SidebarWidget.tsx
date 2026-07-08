@@ -207,12 +207,12 @@ export default function SidebarWidget() {
         >
           {user ? (
             <Dropdown>
-              <Dropdown.Trigger className="rounded-full cursor-pointer">
+              <Dropdown.Trigger className="rounded-full cursor-pointer flex items-center justify-center">
                 <Avatar size="sm" className="w-6 h-6">
                   {user.avatarUrl ? (
                     <Avatar.Image src={resolveAvatarUrl(user.avatarUrl)} alt="User avatar" />
                   ) : null}
-                  <Avatar.Fallback className="text-[10px] font-bold bg-[#727BBA]/15 text-[#727BBA]">
+                  <Avatar.Fallback className="text-[10px] font-bold bg-[#727BBA]/15 text-[#727BBA] flex items-center justify-center">
                     {(user.nickname || '?').charAt(0).toUpperCase()}
                   </Avatar.Fallback>
                 </Avatar>
@@ -315,12 +315,12 @@ export default function SidebarWidget() {
         {/* 登录图标 / 用户头像 */}
         {user ? (
           <Dropdown>
-            <Dropdown.Trigger className="rounded-full cursor-pointer">
+            <Dropdown.Trigger className="rounded-full cursor-pointer flex items-center justify-center">
               <Avatar size="sm" className="w-6 h-6">
                 {user.avatarUrl ? (
                   <Avatar.Image src={resolveAvatarUrl(user.avatarUrl)} alt="User avatar" />
                 ) : null}
-                <Avatar.Fallback className="text-[10px] font-bold bg-[#727BBA]/15 text-[#727BBA]">
+                <Avatar.Fallback className="text-[10px] font-bold bg-[#727BBA]/15 text-[#727BBA] flex items-center justify-center">
                   {(user.nickname || '?').charAt(0).toUpperCase()}
                 </Avatar.Fallback>
               </Avatar>
