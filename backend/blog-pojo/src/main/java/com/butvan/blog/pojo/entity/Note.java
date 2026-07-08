@@ -5,7 +5,9 @@ import lombok.AllArgsConstructor;
 import lombok.Builder;
 import lombok.Data;
 import lombok.NoArgsConstructor;
+import org.hibernate.annotations.JdbcTypeCode;
 import org.hibernate.annotations.SQLRestriction;
+import org.hibernate.type.SqlTypes;
 import java.time.LocalDateTime;
 
 /**
@@ -44,6 +46,7 @@ public class Note {
     @Column(name = "cover_image_url", length = 500)
     private String coverImageUrl; // 配图 URL 地址（单图兼容，多图时使用逗号分隔）
 
+    @JdbcTypeCode(SqlTypes.JSON)
     @Column(name = "cover_image_urls", columnDefinition = "jsonb")
     private java.util.List<String> coverImageUrls; // 多张配图 URL 数组（JSONB 存储，最多3张）
 
