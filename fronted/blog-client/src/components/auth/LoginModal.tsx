@@ -141,7 +141,8 @@ export default function LoginModal({ isOpen, onClose }: LoginModalProps) {
           localStorage.setItem('token', json.data.token)
           const userInfo = {
             nickname: json.data.user?.nickname || json.data.nickname || '用户',
-            avatarUrl: json.data.user?.avatarUrl || json.data.avatarUrl || null
+            avatarUrl: json.data.user?.avatarUrl || json.data.avatarUrl || null,
+            username: json.data.user?.username || json.data.username || null
           }
           localStorage.setItem('user_info', JSON.stringify(userInfo))
           window.dispatchEvent(new Event('auth-change'))

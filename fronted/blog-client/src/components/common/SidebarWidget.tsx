@@ -2,8 +2,8 @@
 
 import React, { useState, useEffect } from 'react'
 import * as Icons from 'lucide-react'
-import { HelpCircle, User } from 'lucide-react'
-import { Button, Tooltip, Avatar, Separator, toast } from '@heroui/react'
+import { HelpCircle, User, LogOut } from 'lucide-react'
+import { Button, Tooltip, Avatar, Separator, Dropdown, Label, toast } from '@heroui/react'
 import { fetchNavigations } from '@/lib/profile'
 import Link from 'next/link'
 import { usePathname } from 'next/navigation'
@@ -35,7 +35,7 @@ export default function SidebarWidget() {
   const [items, setItems] = useState<NavigationItem[]>([])
   const [loading, setLoading] = useState(true)
   // 登录状态
-  const [user, setUser] = useState<{ nickname: string; avatarUrl?: string | null } | null>(null)
+  const [user, setUser] = useState<{ nickname: string; avatarUrl?: string | null; username?: string | null } | null>(null)
   const [loginModalOpen, setLoginModalOpen] = useState(false)
   // 当前路由路径，用于高亮激活菜单项
   const pathname = usePathname()
@@ -151,26 +151,45 @@ export default function SidebarWidget() {
           aria-label="侧边栏"
         >
           {user ? (
-            <Tooltip>
-              <Tooltip.Trigger>
-                <button
-                  type="button"
-                  aria-label="退出登录"
-                  onClick={handleLogout}
-                  className="w-9 h-9 flex items-center justify-center rounded-full hover:bg-zinc-100 dark:hover:bg-zinc-800 transition-colors cursor-pointer"
-                >
-                  <Avatar size="sm" className="w-6 h-6">
-                    {user.avatarUrl ? (
-                      <Avatar.Image src={resolveAvatarUrl(user.avatarUrl)} alt="User avatar" />
-                    ) : null}
-                    <Avatar.Fallback className="text-[10px]">{(user.nickname || '?').charAt(0).toUpperCase()}</Avatar.Fallback>
-                  </Avatar>
-                </button>
-              </Tooltip.Trigger>
-              <Tooltip.Content showArrow>
-                点击退出登录
-              </Tooltip.Content>
-            </Tooltip>
+            <Dropdown>
+              <Dropdown.Trigger className="rounded-full cursor-pointer">
+                <Avatar size="sm" className="w-6 h-6">
+                  {user.avatarUrl ? (
+                    <Avatar.Image src={resolveAvatarUrl(user.avatarUrl)} alt="User avatar" />
+                  ) : null}
+                  <Avatar.Fallback className="text-[10px] font-bold bg-[#727BBA]/15 text-[#727BBA]">
+                    {(user.nickname || '?').charAt(0).toUpperCase()}
+                  </Avatar.Fallback>
+                </Avatar>
+              </Dropdown.Trigger>
+              <Dropdown.Popover placement="right" className="min-w-[180px]">
+                <div className="px-3 pt-3 pb-2">
+                  <div className="flex items-center gap-2.5">
+                    <Avatar size="sm" className="w-8 h-8">
+                      {user.avatarUrl ? (
+                        <Avatar.Image src={resolveAvatarUrl(user.avatarUrl)} alt="User avatar" />
+                      ) : null}
+                      <Avatar.Fallback className="text-xs font-bold bg-[#727BBA]/15 text-[#727BBA]">
+                        {(user.nickname || '?').charAt(0).toUpperCase()}
+                      </Avatar.Fallback>
+                    </Avatar>
+                    <div className="flex flex-col gap-0">
+                      <p className="text-sm leading-5 font-semibold text-zinc-800 dark:text-zinc-200">{user.nickname || '用户'}</p>
+                      {user.username && (
+                        <p className="text-[11px] leading-none text-zinc-400 dark:text-zinc-500">@{user.username}</p>
+                      )}
+                    </div>
+                  </div>
+                </div>
+                <Separator className="my-1" />
+                <Dropdown.Menu onAction={(key) => { if (key === 'logout') handleLogout() }}>
+                  <Dropdown.Item id="logout" textValue="退出登录" variant="danger">
+                    <LogOut className="size-4 shrink-0 text-danger" />
+                    <Label>退出登录</Label>
+                  </Dropdown.Item>
+                </Dropdown.Menu>
+              </Dropdown.Popover>
+            </Dropdown>
           ) : (
             <Tooltip>
               <Tooltip.Trigger>
@@ -233,26 +252,45 @@ export default function SidebarWidget() {
 
         {/* 登录图标 / 用户头像 */}
         {user ? (
-          <Tooltip>
-            <Tooltip.Trigger>
-              <button
-                type="button"
-                aria-label="退出登录"
-                onClick={handleLogout}
-                className="w-9 h-9 flex items-center justify-center rounded-full text-zinc-600 dark:text-zinc-300 hover:bg-red-50 dark:hover:bg-red-900/20 hover:text-red-600 dark:hover:text-red-400 transition-colors cursor-pointer"
-              >
-                <Avatar size="sm" className="w-6 h-6">
-                  {user.avatarUrl ? (
-                    <Avatar.Image src={resolveAvatarUrl(user.avatarUrl)} alt="User avatar" />
-                  ) : null}
-                  <Avatar.Fallback className="text-[10px]">{(user.nickname || '?').charAt(0).toUpperCase()}</Avatar.Fallback>
-                </Avatar>
-              </button>
-            </Tooltip.Trigger>
-            <Tooltip.Content showArrow>
-              点击退出登录
-            </Tooltip.Content>
-          </Tooltip>
+          <Dropdown>
+            <Dropdown.Trigger className="rounded-full cursor-pointer">
+              <Avatar size="sm" className="w-6 h-6">
+                {user.avatarUrl ? (
+                  <Avatar.Image src={resolveAvatarUrl(user.avatarUrl)} alt="User avatar" />
+                ) : null}
+                <Avatar.Fallback className="text-[10px] font-bold bg-[#727BBA]/15 text-[#727BBA]">
+                  {(user.nickname || '?').charAt(0).toUpperCase()}
+                </Avatar.Fallback>
+              </Avatar>
+            </Dropdown.Trigger>
+            <Dropdown.Popover placement="right" className="min-w-[180px]">
+              <div className="px-3 pt-3 pb-2">
+                <div className="flex items-center gap-2.5">
+                  <Avatar size="sm" className="w-8 h-8">
+                    {user.avatarUrl ? (
+                      <Avatar.Image src={resolveAvatarUrl(user.avatarUrl)} alt="User avatar" />
+                    ) : null}
+                    <Avatar.Fallback className="text-xs font-bold bg-[#727BBA]/15 text-[#727BBA]">
+                      {(user.nickname || '?').charAt(0).toUpperCase()}
+                    </Avatar.Fallback>
+                  </Avatar>
+                  <div className="flex flex-col gap-0">
+                    <p className="text-sm leading-5 font-semibold text-zinc-800 dark:text-zinc-200">{user.nickname || '用户'}</p>
+                    {user.username && (
+                      <p className="text-[11px] leading-none text-zinc-400 dark:text-zinc-500">@{user.username}</p>
+                    )}
+                  </div>
+                </div>
+              </div>
+              <Separator className="my-1" />
+              <Dropdown.Menu onAction={(key) => { if (key === 'logout') handleLogout() }}>
+                <Dropdown.Item id="logout" textValue="退出登录" variant="danger">
+                  <LogOut className="size-4 shrink-0 text-danger" />
+                  <Label>退出登录</Label>
+                </Dropdown.Item>
+              </Dropdown.Menu>
+            </Dropdown.Popover>
+          </Dropdown>
         ) : (
           <Tooltip>
             <Tooltip.Trigger>
