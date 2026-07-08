@@ -398,12 +398,6 @@ export default function SidebarWidget() {
           <Modal.Container size="sm">
             <Modal.Dialog className="sm:max-w-[380px]">
               <Modal.CloseTrigger />
-              <Modal.Header>
-                <Modal.Icon className="bg-[#727BBA]/15 text-[#727BBA]">
-                  <User className="size-5" />
-                </Modal.Icon>
-                <Modal.Heading>个人信息</Modal.Heading>
-              </Modal.Header>
               <Modal.Body>
                 <div className="flex flex-col items-center gap-5">
                   {/* 用户头像（带在线状态指示点） */}
