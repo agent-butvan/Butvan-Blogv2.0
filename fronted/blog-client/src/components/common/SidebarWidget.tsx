@@ -2,8 +2,8 @@
 
 import React, { useState, useEffect } from 'react'
 import * as Icons from 'lucide-react'
-import { HelpCircle, User, LogOut, Upload } from 'lucide-react'
-import { Button, Tooltip, Avatar, Separator, Dropdown, Label, toast, Input, Modal } from '@heroui/react'
+import { HelpCircle, User, LogOut, Upload, Mail, AtSign } from 'lucide-react'
+import { Button, Tooltip, Avatar, Separator, Dropdown, Label, toast, Input, Modal, Badge } from '@heroui/react'
 import { fetchNavigations } from '@/lib/profile'
 import Link from 'next/link'
 import { usePathname } from 'next/navigation'
@@ -396,15 +396,23 @@ export default function SidebarWidget() {
       <Modal>
         <Modal.Backdrop isOpen={userInfoModalOpen} onOpenChange={(open) => !open && setUserInfoModalOpen(false)}>
           <Modal.Container size="sm">
-            <Modal.Dialog className="sm:max-w-[360px]">
+            <Modal.Dialog className="sm:max-w-[400px]">
               <Modal.CloseTrigger />
               <Modal.Header>
+                <Modal.Icon className="bg-[#727BBA]/15 text-[#727BBA]">
+                  <User className="size-5" />
+                </Modal.Icon>
                 <Modal.Heading>个人信息</Modal.Heading>
               </Modal.Header>
               <Modal.Body>
-                <div className="flex flex-col items-center gap-4">
-                  {/* 用户头像 */}
-                  <div className="flex justify-center">
+                <div className="flex flex-col items-center gap-5">
+                  {/* 用户头像（带 Badge 在线状态指示） */}
+                  <Badge
+                    content=""
+                    color="success"
+                    placement="bottom-right"
+                    className="w-3 h-3"
+                  >
                     <Avatar size="lg" className="w-24 h-24">
                       {user?.avatarUrl ? (
                         <Avatar.Image src={resolveAvatarUrl(user.avatarUrl)} alt="User avatar" />
@@ -413,41 +421,43 @@ export default function SidebarWidget() {
                         {(user?.nickname || '?').charAt(0).toUpperCase()}
                       </Avatar.Fallback>
                     </Avatar>
-                  </div>
-                  
-                  {/* 用户昵称 */}
-                  <div className="text-center w-full">
-                    <h3 className="text-xl font-semibold text-zinc-800 dark:text-zinc-200 mb-1">
+                  </Badge>
+
+                  {/* 用户昵称与用户名 */}
+                  <div className="flex flex-col items-center gap-1 w-full">
+                    <Label className="text-lg font-semibold text-zinc-800 dark:text-zinc-200">
                       {user?.nickname || '用户'}
-                    </h3>
+                    </Label>
                     {user?.username && (
-                      <p className="text-sm text-zinc-500 dark:text-zinc-400">@{user.username}</p>
+                      <div className="flex items-center gap-1 text-zinc-500 dark:text-zinc-400">
+                        <AtSign className="size-3" />
+                        <Label className="text-xs font-normal">{user.username}</Label>
+                      </div>
                     )}
                   </div>
 
                   {/* 分隔线 */}
-                  <Separator className="my-2" />
+                  <Separator className="w-full" />
 
-                  {/* 邮箱信息 */}
-                  <div className="w-full space-y-3">
-                    <div className="flex items-start gap-3">
+                  {/* 详细信息列表 */}
+                  <div className="w-full flex flex-col gap-3">
+                    {/* 邮箱信息 */}
+                    <div className="flex items-center gap-3 px-3 py-2.5 rounded-lg bg-zinc-50 dark:bg-zinc-800/50">
                       <div className="shrink-0 w-8 h-8 rounded-lg bg-[#727BBA]/10 flex items-center justify-center">
-                        <svg className="w-4 h-4 text-[#727BBA]" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                          <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M3 8l7.89 5.26a2 2 0 002.22 0L21 8M5 19h14a2 2 0 002-2V7a2 2 0 00-2-2H5a2 2 0 00-2 2v10a2 2 0 002 2z" />
-                        </svg>
+                        <Mail className="size-4 text-[#727BBA]" />
                       </div>
-                      <div className="flex-1 min-w-0">
-                        <p className="text-xs text-zinc-500 dark:text-zinc-400 mb-0.5">邮箱</p>
-                        <p className="text-sm font-medium text-zinc-800 dark:text-zinc-200 truncate">
+                      <div className="flex flex-col flex-1 min-w-0">
+                        <Label className="text-[11px] font-normal text-zinc-500 dark:text-zinc-400">邮箱</Label>
+                        <Label className="text-sm font-medium text-zinc-800 dark:text-zinc-200 truncate">
                           {user?.email || '未设置'}
-                        </p>
+                        </Label>
                       </div>
                     </div>
                   </div>
                 </div>
               </Modal.Body>
               <Modal.Footer className="flex-col gap-2">
-                <Button 
+                <Button
                   className="w-full"
                   variant="secondary"
                   onPress={() => {
@@ -458,7 +468,7 @@ export default function SidebarWidget() {
                   <Upload className="size-4 mr-2" />
                   更换头像
                 </Button>
-                <Button 
+                <Button
                   className="w-full"
                   variant="danger"
                   onPress={() => {
