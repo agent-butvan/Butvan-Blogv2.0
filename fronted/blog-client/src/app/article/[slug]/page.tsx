@@ -1,7 +1,7 @@
 'use client'
 
 import React, { useState, useEffect, useRef } from 'react'
-import { useParams, useRouter } from 'next/navigation'
+import { useParams } from 'next/navigation'
 import Link from 'next/link'
 import { 
   ArrowLeft, 
@@ -14,17 +14,17 @@ import {
   ChevronRight, 
   Clock, 
   FileText,
-  AlertCircle,
-  Copy,
-  Check,
-  X,
-  Lock
 } from 'lucide-react'
-import { Button, Spinner, toast } from '@heroui/react'
+import { toast } from '@heroui/react'
 import Navbar from '@/components/common/Navbar'
 import SidebarWidget from '@/components/common/SidebarWidget'
 import HtmlRenderer from '@/components/common/HtmlRenderer'
 import CommentSection from '@/components/comment/CommentSection'
+import ScrollProgress from '@/components/detail/ScrollProgress'
+import DetailLoadingState from '@/components/detail/DetailLoadingState'
+import DetailErrorState from '@/components/detail/DetailErrorState'
+import Copyright from '@/components/detail/Copyright'
+import RewardModal from '@/components/detail/RewardModal'
 import { MOCK_ARTICLES } from '@/lib/mock-data'
 import { fetchProfile } from '@/lib/profile'
 import type { ProfileVO } from '@/types/profile'
@@ -41,7 +41,6 @@ interface TocItem {
 
 export default function ArticleDetailPage() {
   const params = useParams()
-  const router = useRouter()
   const slug = params?.slug as string
 
   // 状态定义
@@ -57,7 +56,6 @@ export default function ArticleDetailPage() {
   const [liked, setLiked] = useState<boolean>(false)
   const [likeCount, setLikeCount] = useState<number>(0)
   const [rewardOpen, setRewardOpen] = useState<boolean>(false)
-  const [scrollProgress, setScrollProgress] = useState<number>(0)
   const [toc, setToc] = useState<TocItem[]>([])
   const [activeTocId, setActiveTocId] = useState<string>('')
 
@@ -95,20 +93,6 @@ export default function ArticleDetailPage() {
   // Ref 定义
   const articleContentRef = useRef<HTMLDivElement>(null)
   const heartRef = useRef<HTMLButtonElement>(null)
-
-  // 顶部滚动进度条监听
-  useEffect(() => {
-    const handleScroll = () => {
-      const totalHeight = document.documentElement.scrollHeight - window.innerHeight
-      if (totalHeight > 0) {
-        const progress = (window.scrollY / totalHeight) * 100
-        setScrollProgress(progress)
-      }
-    }
-
-    window.addEventListener('scroll', handleScroll, { passive: true })
-    return () => window.removeEventListener('scroll', handleScroll)
-  }, [])
 
   // 获取基本资料与文章详情（双通道降级）
   useEffect(() => {
@@ -415,37 +399,21 @@ export default function ArticleDetailPage() {
       <SidebarWidget />
 
       {/* 沉浸式阅读进度指示条 */}
-      <div 
-        className="fixed top-0 left-0 h-[2.5px] bg-[#727BBA] shadow-[0_0_8px_rgba(114,123,186,0.6)] z-50 transition-all duration-75"
-        style={{ width: `${scrollProgress}%` }}
-      />
+      <ScrollProgress />
 
       {/* 主体布局架构 */}
       <div className="w-full max-w-5xl px-6 py-10 flex flex-col gap-6">
         
 
         {loading ? (
-          /* ================= 加载状态 ================= */
-          <div className="py-36 flex flex-col items-center justify-center gap-4">
-            <Spinner size="lg" color="accent" />
-            <p className="text-xs font-heading text-zinc-400 dark:text-zinc-600 tracking-wider animate-pulse">
-              正在加载文章详情，请稍候...
-            </p>
-          </div>
+          <DetailLoadingState message="正在加载文章详情，请稍候..." />
         ) : error || !article ? (
-          /* ================= 异常状态 ================= */
-          <div className="py-24 flex flex-col items-center justify-center text-center max-w-md mx-auto">
-            <div className="w-12 h-12 rounded-full bg-red-500/10 border border-red-500/20 flex items-center justify-center text-red-400 mb-4">
-              <AlertCircle className="w-6 h-6" />
-            </div>
-            <h3 className="text-base font-bold text-zinc-900 dark:text-white mb-2">无法加载文章</h3>
-            <p className="text-xs text-zinc-500 dark:text-zinc-500 leading-relaxed mb-6">
-              {error || '加载异常，找不到相关文章内容。'}
-            </p>
-            <Button size="sm" onClick={() => router.push('/article')} className="font-heading rounded-xl px-5 bg-[#727BBA] text-white">
-              返回文章列表
-            </Button>
-          </div>
+          <DetailErrorState
+            title="无法加载文章"
+            message={error || '加载异常，找不到相关文章内容。'}
+            backPath="/article"
+            backText="返回文章列表"
+          />
         ) : (
           /* ================= 详情核心渲染 ================= */
           <div className="relative w-full grid grid-cols-1 lg:grid-cols-[auto_1fr_210px] gap-8 items-start justify-center">
@@ -593,15 +561,9 @@ export default function ArticleDetailPage() {
                 </button>
               </div>
 
-              {/* 3. 人文版权协议卡片 */}
-              <div className="animate-detail-item opacity-0 mt-10 p-5 rounded-2xl border border-zinc-200/40 dark:border-zinc-800/40 bg-zinc-150/20 dark:bg-zinc-900/25 flex flex-col gap-2.5 text-xs text-zinc-500 dark:text-zinc-400 font-serif leading-relaxed select-none">
-                <div className="flex items-center gap-2 font-bold text-zinc-700 dark:text-zinc-300">
-                  <span className="w-1.5 h-1.5 rounded-full bg-[#727BBA]"></span>
-                  <span>关于版权</span>
-                </div>
-                <p>作者：<strong>{profile?.nickname || '可梵'}</strong></p>
-                <p>本文链接：<span className="font-mono text-[11px] text-zinc-400 dark:text-zinc-500 underline select-all break-all">{typeof window !== 'undefined' ? window.location.href : ''}</span></p>
-                <p>版权声明：本博客所有文章除特别声明外，均采用 <a href="https://creativecommons.org/licenses/by-nc-sa/4.0/" target="_blank" rel="noopener noreferrer" className="text-[#727BBA] underline font-bold">CC BY-NC-SA 4.0</a> 许可协议。转载请注明来源。</p>
+              {/* 版权声明 */}
+              <div className="animate-detail-item opacity-0">
+                <Copyright authorName={profile?.nickname || '可梵'} />
               </div>
 
               {/* 4. 上一篇/下一篇阅读推荐 */}
@@ -683,35 +645,7 @@ export default function ArticleDetailPage() {
       </div>
 
       {/* 扫码赞赏模态浮层 */}
-      {rewardOpen && (
-        <div className="fixed inset-0 bg-zinc-950/60 backdrop-blur-xs flex items-center justify-center z-50 animate-[fadeIn_0.2s_ease-out]">
-          <div className="bg-white dark:bg-zinc-900 border border-zinc-200/60 dark:border-zinc-800/60 rounded-3xl w-full max-w-sm p-6 relative flex flex-col items-center gap-5 shadow-xl select-none mx-4">
-            <button 
-              onClick={() => setRewardOpen(false)}
-              className="absolute top-4 right-4 p-1.5 rounded-full hover:bg-zinc-100 dark:hover:bg-zinc-800 text-zinc-400 transition-colors cursor-pointer"
-            >
-              <X size={15} />
-            </button>
-            <div className="flex flex-col items-center text-center mt-2">
-              <h3 className="text-base font-serif font-bold text-zinc-900 dark:text-white mb-1">给作者来杯咖啡</h3>
-              <p className="text-xs text-zinc-500 dark:text-zinc-400 font-serif italic">您的鼓励是最好的赞赏</p>
-            </div>
-            
-            {/* 模拟收款码区 */}
-            <div className="relative w-36 h-36 border border-zinc-200/60 dark:border-zinc-800 bg-zinc-50 dark:bg-zinc-950 rounded-2xl flex items-center justify-center overflow-hidden">
-              <div className="absolute inset-0 flex flex-col items-center justify-center gap-1.5 text-zinc-350 dark:text-zinc-650 text-[10px] font-mono p-3 text-center select-none">
-                <Lock size={16} />
-                <span>[ 演示扫码区 ]</span>
-                <span className="scale-75 select-none opacity-80">支持微信/支付宝</span>
-              </div>
-            </div>
-
-            <p className="text-[10px] leading-relaxed text-zinc-400 dark:text-zinc-500 font-serif text-center max-w-[240px]">
-              感谢您的赞同与支持。本博客以知识共享、无广告为初衷，坚持创作高水准内容。
-            </p>
-          </div>
-        </div>
-      )}
+      <RewardModal open={rewardOpen} onClose={() => setRewardOpen(false)} />
     </main>
   )
 }
