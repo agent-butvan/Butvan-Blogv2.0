@@ -44,9 +44,14 @@ Butvan Blog2.0/                                    # 📦 项目根目录
 │       ├── migration-v0.6.sql                     #   数据库迁移脚本 (v0.6 版本，安全插入后台评论管理侧边栏菜单)
 │       ├── migration-v0.7.sql                     #   数据库迁移脚本 (v0.7 版本，安全插入后台“资源管理 -> 媒体内容管理”菜单)
 │       ├── migration-v0.8.sql                     #   数据库迁移脚本 (v0.8 版本，文章点赞记录管理及菜单安全配置)
-│       └── migration-v0.9.sql                     #   数据库迁移脚本 (v0.9 版本，实现 GitHub 和 2FA 安全绑定与双重认证)
-│       └── migration-v1.1-background-image.sql     #   数据库迁移脚本 (v1.1 版本，预置站点全局背景图片配置项)
-│       └── migration-v1.2-album.sql               #   数据库迁移脚本 (v1.2 版本，相册模块建表与菜单注册)
+│       ├── migration-v0.9.sql                     #   数据库迁移脚本 (v0.9 版本，实现 GitHub 和 2FA 安全绑定与双重认证)
+│       ├── migration-v1.0-friend-link.sql          #   数据库迁移脚本 (v1.0 版本，友链表建表)
+│       ├── migration-v1.0-friend-link-menu.sql     #   数据库迁移脚本 (v1.0 版本，友链管理菜单安全配置)
+│       ├── migration-v1.0-friend-link-update.sql   #   数据库迁移脚本 (v1.0 版本，友链表结构更新)
+│       ├── migration-v1.1-background-image.sql     #   数据库迁移脚本 (v1.1 版本，预置站点全局背景图片配置项)
+│       ├── migration-v1.2-album.sql               #   数据库迁移脚本 (v1.2 版本，相册模块建表与菜单注册)
+│       ├── migration-v1.3-note.sql                #   数据库迁移脚本 (v1.3 版本，手记模块建表与初始化数据)
+│       └── migration-v1.4-note-like.sql           #   数据库迁移脚本 (v1.4 版本，手记点赞记录表)
 │
 ├── fronted/                                       # 🖥️【前端】Next.js 16 + TypeScript + HeroUI v3 + Tailwind v4
 │   │
