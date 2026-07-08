@@ -73,134 +73,6 @@ const getCardGridStyle = (index: number) => {
   return GRID_PATTERNS[index % GRID_PATTERNS.length]
 }
 
-// ==================== 测试数据（API 无数据时自动回退） ====================
-
-const MOCK_NOTES: NoteItem[] = [
-  {
-    id: 101, title: '在焦虑与代码中缓慢前行', slug: 'mock-anxiety-code',
-    summary: '继续写代码，继续跑步，继续睡不着的时候翻来覆去。生活不是完美的闭环，而是由无数碎裂的片段拼凑而成的叙事。',
-    coverImageUrls: [
-      'https://images.unsplash.com/photo-1516483638261-f4dbaf036963?auto=format&fit=crop&w=800',
-      'https://images.unsplash.com/photo-1517694712202-14dd9538aa97?auto=format&fit=crop&w=800',
-      'https://images.unsplash.com/photo-1555066931-4365d14bab8c?auto=format&fit=crop&w=800',
-    ],
-    mood: '忙碌', weather: '多云', location: '杭州 · 西溪',
-    authorName: 'Butvan', isPinned: true,
-    viewCount: 342, likeCount: 28, commentCount: 6,
-    publishedAt: '2026-07-03T10:30:00Z', createdAt: '2026-07-03T10:00:00Z',
-  },
-  {
-    id: 102, title: '关于"白"的某种偏执', slug: 'mock-white-obsession',
-    summary: '原研哉对"白"的理解深刻影响了我。在网页设计中，留白不是空间的浪费，而是赋予了存在的物体以重力。极简并非空无一物，而是让每一像素都有其存在的理由。',
-    coverImageUrls: [
-      'https://images.unsplash.com/photo-1494438639946-1ebd1d20bf85?auto=format&fit=crop&w=800',
-      'https://images.unsplash.com/photo-1501785888041-af3ef285b470?auto=format&fit=crop&w=800',
-      'https://images.unsplash.com/photo-1523712999610-f77fbcfc3843?auto=format&fit=crop&w=800',
-    ],
-    mood: '思考中', weather: '晴', location: '上海 · 静安寺',
-    authorName: 'Butvan', isPinned: false,
-    viewCount: 521, likeCount: 43, commentCount: 12,
-    publishedAt: '2026-06-14T15:20:00Z', createdAt: '2026-06-14T15:00:00Z',
-  },
-  {
-    id: 103, title: '凌晨三点的逻辑空洞', slug: 'mock-logic-void',
-    summary: '当所有的变量都已就绪，唯独缺失了那一点点灵感。或许最好的代码不在屏幕里，而在那些发呆的间隙。',
-    coverImageUrls: [
-      'https://images.unsplash.com/photo-1517694712202-14dd9538aa97?auto=format&fit=crop&w=800',
-    ],
-    mood: '平静', weather: '阴', location: '',
-    authorName: 'Butvan', isPinned: false,
-    viewCount: 128, likeCount: 16, commentCount: 3,
-    publishedAt: '2026-05-20T03:15:00Z', createdAt: '2026-05-20T03:00:00Z',
-  },
-  {
-    id: 104, title: '重构与新生的瞬间', slug: 'mock-refactor-rebirth',
-    summary: '删除掉最后一行冗余的代码时，我听到了呼吸的声音。那是一种久违的轻盈，像冬日清晨推开窗的瞬间。',
-    coverImageUrls: [
-      'https://images.unsplash.com/photo-1499750310107-5fef28a66643?auto=format&fit=crop&w=800',
-      'https://images.unsplash.com/photo-1470071459604-3b5ec3a7fe05?auto=format&fit=crop&w=800',
-      'https://images.unsplash.com/photo-1555066931-4365d14bab8c?auto=format&fit=crop&w=800',
-    ],
-    mood: '开心', weather: '风', location: '北京 · 望京',
-    authorName: 'Butvan', isPinned: false,
-    viewCount: 89, likeCount: 22, commentCount: 5,
-    publishedAt: '2026-05-01T08:45:00Z', createdAt: '2026-05-01T08:30:00Z',
-  },
-  {
-    id: 105, title: '雨天的咖啡馆与一段对话', slug: 'mock-rainy-cafe',
-    summary: '窗外的雨不急不缓地下着，对面坐着一位刚认识的设计师朋友。我们聊了很多关于"美"这件事——它不是装饰，而是一种让事物回归本质的力量。',
-    coverImageUrls: [
-      'https://images.unsplash.com/photo-1523712999610-f77fbcfc3843?auto=format&fit=crop&w=800',
-      'https://images.unsplash.com/photo-1494438639946-1ebd1d20bf85?auto=format&fit=crop&w=800',
-      'https://images.unsplash.com/photo-1501785888041-af3ef285b470?auto=format&fit=crop&w=800',
-    ],
-    mood: '放松', weather: '雨', location: '成都 · 太古里',
-    authorName: 'Butvan', isPinned: true,
-    viewCount: 256, likeCount: 37, commentCount: 8,
-    publishedAt: '2026-04-15T14:10:00Z', createdAt: '2026-04-15T14:00:00Z',
-  },
-  {
-    id: 106, title: '写给十年后的自己', slug: 'mock-letter-future',
-    summary: '不知道你还会不会记得今天写下这段话时的心情。但我想告诉你——那些曾经让你焦虑到失眠的 bug，最终都会变成茶余饭后的笑谈。',
-    // 无配图
-    mood: '感动', weather: '雪', location: '',
-    authorName: 'Butvan', isPinned: false,
-    viewCount: 667, likeCount: 58, commentCount: 15,
-    publishedAt: '2026-03-28T22:00:00Z', createdAt: '2026-03-28T21:30:00Z',
-  },
-  {
-    id: 107, title: '一次失败的部署与三杯咖啡', slug: 'mock-deploy-failure',
-    summary: '凌晨两点，生产环境挂了。三杯美式下去，终于在一个被遗忘的配置项里找到了罪魁祸首。运维的艺术，大概就是在混乱中保持冷静。',
-    coverImageUrls: [
-      'https://images.unsplash.com/photo-1499750310107-5fef28a66643?auto=format&fit=crop&w=800',
-      'https://images.unsplash.com/photo-1516483638261-f4dbaf036963?auto=format&fit=crop&w=800',
-      'https://images.unsplash.com/photo-1470071459604-3b5ec3a7fe05?auto=format&fit=crop&w=800',
-    ],
-    mood: '忙碌', weather: '阴', location: '深圳 · 科技园',
-    authorName: 'Butvan', isPinned: false,
-    viewCount: 189, likeCount: 31, commentCount: 9,
-    publishedAt: '2026-03-10T02:30:00Z', createdAt: '2026-03-10T02:00:00Z',
-  },
-  {
-    id: 108, title: '骑行穿越西湖的黄昏', slug: 'mock-westlake-cycling',
-    summary: '沿着杨公堤一路向南，夕阳把湖面染成了琥珀色。耳机里随机到了一首七八年前的老歌，忽然觉得时间好像停在了某个地方。',
-    coverImageUrls: [
-      'https://images.unsplash.com/photo-1470071459604-3b5ec3a7fe05?auto=format&fit=crop&w=800',
-      'https://images.unsplash.com/photo-1523712999610-f77fbcfc3843?auto=format&fit=crop&w=800',
-      'https://images.unsplash.com/photo-1494438639946-1ebd1d20bf85?auto=format&fit=crop&w=800',
-    ],
-    mood: '放松', weather: '晴', location: '杭州 · 西湖',
-    authorName: 'Butvan', isPinned: false,
-    viewCount: 432, likeCount: 49, commentCount: 11,
-    publishedAt: '2026-02-18T18:45:00Z', createdAt: '2026-02-18T18:30:00Z',
-  },
-  {
-    id: 109, title: '读完《雪国》的那个午后', slug: 'mock-snow-country',
-    summary: '川端康成的文字像一层薄雪，轻轻地覆盖在心上。读到结尾时窗外正好飘起了南京今年的第一场雪——这种巧合让我呆坐了很久。',
-    // 无配图
-    mood: '平静', weather: '雪', location: '南京 · 鼓楼',
-    authorName: 'Butvan', isPinned: false,
-    viewCount: 298, likeCount: 41, commentCount: 7,
-    publishedAt: '2026-01-25T16:00:00Z', createdAt: '2026-01-25T15:30:00Z',
-  },
-  {
-    id: 110, title: '开源项目收到第一个 PR', slug: 'mock-first-pr',
-    summary: '来自一位完全陌生的德国开发者。他用不是特别流利的英文在 PR 描述里写了一大段感谢的话。那一刻觉得，所有的熬夜和周末都值了。',
-    coverImageUrls: [
-      'https://images.unsplash.com/photo-1555066931-4365d14bab8c?auto=format&fit=crop&w=800',
-      'https://images.unsplash.com/photo-1517694712202-14dd9538aa97?auto=format&fit=crop&w=800',
-      'https://images.unsplash.com/photo-1501785888041-af3ef285b470?auto=format&fit=crop&w=800',
-    ],
-    mood: '开心', weather: '风', location: '',
-    authorName: 'Butvan', isPinned: false,
-    viewCount: 891, likeCount: 102, commentCount: 24,
-    publishedAt: '2026-01-05T09:20:00Z', createdAt: '2026-01-05T09:00:00Z',
-  },
-]
-
-/** 检查是否为开发/测试模式，API 无数据时回退到 Mock 数据 */
-const IS_DEV = process.env.NODE_ENV === 'development'
-
 // ==================== 页面组件 ====================
 
 /**
@@ -237,38 +109,14 @@ export default function NotesFragmentsPage() {
       const data = await fetchPublicNotes(page, pageSize, moodFilter || undefined)
       const records = data.records || []
 
-      // 开发模式：API 无数据时自动使用 Mock 数据方便测试
-      if (IS_DEV && records.length === 0) {
-        let filtered = MOCK_NOTES
-        if (moodFilter) {
-          filtered = MOCK_NOTES.filter((n) => n.mood === moodFilter)
-        }
-        const start = (page - 1) * pageSize
-        setNotes(filtered.slice(start, start + pageSize))
-        setTotal(filtered.length)
-        setTotalPages(Math.ceil(filtered.length / pageSize))
-      } else {
-        setNotes(records)
-        setTotal(data.total || 0)
-        setTotalPages(Math.ceil((data.total || 0) / pageSize))
-      }
-    } catch (err: any) {
+      setNotes(records)
+      setTotal(data.total || 0)
+      setTotalPages(Math.ceil((data.total || 0) / pageSize))
+    } catch (err) {
       console.warn('加载手记列表失败:', err)
-      // 开发模式：接口不可用时也使用 Mock 数据
-      if (IS_DEV) {
-        let filtered = MOCK_NOTES
-        if (moodFilter) {
-          filtered = MOCK_NOTES.filter((n) => n.mood === moodFilter)
-        }
-        const start = (page - 1) * pageSize
-        setNotes(filtered.slice(start, start + pageSize))
-        setTotal(filtered.length)
-        setTotalPages(Math.ceil(filtered.length / pageSize))
-      } else {
-        setError('暂时无法加载手记，请稍后再试')
-        setNotes([])
-        setTotal(0)
-      }
+      setError('暂时无法加载手记，请稍后再试')
+      setNotes([])
+      setTotal(0)
     } finally {
       setLoading(false)
     }

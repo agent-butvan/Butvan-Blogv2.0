@@ -1,7 +1,7 @@
 'use client'
 
 import React, { useState, useEffect, useRef } from 'react'
-import { Button, Chip, Spinner } from '@heroui/react'
+import { Button, Spinner } from '@heroui/react'
 import { 
   FileText, 
   Calendar, 
@@ -26,8 +26,38 @@ import { fetchProfile } from '@/lib/profile'
 import type { ProfileVO } from '@/types/profile'
 import gsap from 'gsap'
 
-import { MOCK_CATEGORIES, MOCK_TAGS, MOCK_ARTICLES } from '@/lib/mock-data'
-import type { Article, Category, Tag } from '@/lib/mock-data'
+// ==================== 本地类型定义 ====================
+
+interface TagItem {
+  id: number
+  name: string
+  slug: string
+}
+
+interface ArticleItem {
+  id: number
+  title: string
+  slug: string
+  summary: string
+  content: string
+  coverImageUrl: string
+  publishedAt: string
+  viewCount: number
+  isPinned: boolean
+  isFeatured: boolean
+  categoryId: number
+  categoryName: string
+  tags?: TagItem[]
+  wordCount: number
+  readTime: number
+  isAllowComment?: boolean
+}
+
+interface CategoryItem {
+  id: number
+  name: string
+  slug: string
+}
 
 const API_BASE = process.env.NEXT_PUBLIC_API_BASE_URL || 'http://localhost:8080/api'
 
@@ -40,9 +70,9 @@ const API_BASE = process.env.NEXT_PUBLIC_API_BASE_URL || 'http://localhost:8080/
 export default function ArticleListPage() {
   // 状态定义
   const [profile, setProfile] = useState<ProfileVO | null>(null)
-  const [articles, setArticles] = useState<Article[]>([])
-  const [categories, setCategories] = useState<Category[]>([])
-  const [tags, setTags] = useState<Tag[]>([])
+  const [articles, setArticles] = useState<ArticleItem[]>([])
+  const [categories, setCategories] = useState<CategoryItem[]>([])
+  const [tags, setTags] = useState<TagItem[]>([])
   
   // 过滤与分页状态
   const [selectedCategory, setSelectedCategory] = useState<number | null>(null)
@@ -54,7 +84,6 @@ export default function ArticleListPage() {
   // 加载与错误状态
   const [loading, setLoading] = useState<boolean>(true)
   const [error, setError] = useState<string | null>(null)
-  const [isMocked, setIsMocked] = useState<boolean>(false)
 
   const pageSize = 6
 
@@ -78,7 +107,7 @@ export default function ArticleListPage() {
   }
 
   /**
-   * 从后端或降级本地 Mock 获取分类与标签列表
+   * 从后端获取分类与标签列表
    */
   const loadFilterData = async () => {
     try {
@@ -88,11 +117,7 @@ export default function ArticleListPage() {
         const catJson = await catRes.json()
         if (catJson.code === 200 || catJson.code === 0) {
           setCategories(catJson.data || [])
-        } else {
-          setCategories(MOCK_CATEGORIES)
         }
-      } else {
-        setCategories(MOCK_CATEGORIES)
       }
 
       // 2. 获取标签
@@ -101,22 +126,15 @@ export default function ArticleListPage() {
         const tagJson = await tagRes.json()
         if (tagJson.code === 200 || tagJson.code === 0) {
           setTags(tagJson.data || [])
-        } else {
-          setTags(MOCK_TAGS)
         }
-      } else {
-        setTags(MOCK_TAGS)
       }
     } catch (err) {
-      console.warn('获取筛选数据失败，降级为 Mock 数据', err)
-      setCategories(MOCK_CATEGORIES)
-      setTags(MOCK_TAGS)
+      console.warn('获取筛选数据失败', err)
     }
   }
 
   /**
-   * 拉取已发布的文章列表，支持过滤和分页，
-   * 如果后端未开启或接口 404 则平滑降级使用 Mock 数据。
+   * 拉取已发布的文章列表，支持过滤和分页
    */
   const fetchArticlesList = async () => {
     setLoading(true)
@@ -134,23 +152,19 @@ export default function ArticleListPage() {
     }
 
     try {
-      // 尝试调用后端公开 API 接口
       const res = await fetch(`${API_BASE}/articles?${params.toString()}`, { cache: 'no-store' })
       
       if (!res.ok) {
-        // HTTP 错误（例如 404/500）触发降级
         throw new Error(`HTTP_${res.status}`)
       }
       
       const json = await res.json()
       if (json.code === 200 || json.code === 0) {
-        // 请求成功
         const data = json.data
         if (data) {
           setArticles(data.content || [])
           setTotalPages(data.totalPages || 1)
           setTotalCount(data.totalElements || 0)
-          setIsMocked(false)
         } else {
           setArticles([])
           setTotalPages(1)
@@ -159,29 +173,12 @@ export default function ArticleListPage() {
       } else {
         throw new Error(json.msg || '后端返回异常')
       }
-    } catch (err: any) {
-      // 连接失败或接口不存在，进入平滑降级机制
-      console.warn('获取文章 API 接口不可用或报错，平滑降级使用 Mock 本地数据：', err.message)
-      setIsMocked(true)
-      
-      // 本地对 Mock 数据进行简单的过滤与分页计算
-      let filtered = [...MOCK_ARTICLES]
-      if (selectedCategory !== null) {
-        filtered = filtered.filter(a => a.categoryId === selectedCategory)
-      }
-      if (selectedTag !== null) {
-        filtered = filtered.filter(a => a.tags?.some(t => t.id === selectedTag))
-      }
-      
-      // 计算分页
-      const totalElements = filtered.length
-      const calculatedPages = Math.max(1, Math.ceil(totalElements / pageSize))
-      const startIdx = (currentPage - 1) * pageSize
-      const endIdx = startIdx + pageSize
-      
-      setArticles(filtered.slice(startIdx, endIdx))
-      setTotalPages(calculatedPages)
-      setTotalCount(totalElements)
+    } catch (err) {
+      console.warn('获取文章列表失败:', err instanceof Error ? err.message : String(err))
+      setError('获取文章列表失败，请稍后再试')
+      setArticles([])
+      setTotalPages(1)
+      setTotalCount(0)
     } finally {
       setLoading(false)
     }
@@ -274,11 +271,6 @@ export default function ArticleListPage() {
 
           <h1 className="animate-header-item opacity-0 text-2xl md:text-3xl font-serif font-bold text-zinc-900 dark:text-zinc-50 tracking-[0.1em] flex items-center gap-2">
             文章归档
-            {isMocked && (
-              <Chip size="sm" className="bg-amber-100 text-amber-700 dark:bg-amber-950/40 dark:text-amber-400 border border-amber-200/50 dark:border-amber-900/30 text-[9px] scale-90 origin-left font-bold font-heading">
-                演示数据
-              </Chip>
-            )}
           </h1>
 
           {/* 极简点线修饰 */}

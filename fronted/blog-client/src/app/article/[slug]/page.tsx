@@ -25,11 +25,31 @@ import DetailLoadingState from '@/components/detail/DetailLoadingState'
 import DetailErrorState from '@/components/detail/DetailErrorState'
 import Copyright from '@/components/detail/Copyright'
 import RewardModal from '@/components/detail/RewardModal'
-import { MOCK_ARTICLES } from '@/lib/mock-data'
 import { fetchProfile } from '@/lib/profile'
 import type { ProfileVO } from '@/types/profile'
-import type { Article } from '@/lib/mock-data'
 import gsap from 'gsap'
+
+// ==================== 本地类型定义 ====================
+
+interface ArticleDetail {
+  id: number
+  title: string
+  slug: string
+  summary: string
+  content: string
+  coverImageUrl: string
+  publishedAt: string
+  viewCount: number
+  isPinned: boolean
+  isFeatured: boolean
+  categoryId: number
+  categoryName: string
+  tags?: Array<{ id: number; name: string }>
+  wordCount: number
+  readTime: number
+  isAllowComment?: boolean
+  likeCount?: number
+}
 
 const API_BASE = process.env.NEXT_PUBLIC_API_BASE_URL || 'http://localhost:8080/api'
 
@@ -45,12 +65,9 @@ export default function ArticleDetailPage() {
 
   // 状态定义
   const [profile, setProfile] = useState<ProfileVO | null>(null)
-  const [article, setArticle] = useState<Article | null>(null)
-  const [prevArticle, setPrevArticle] = useState<Article | null>(null)
-  const [nextArticle, setNextArticle] = useState<Article | null>(null)
+  const [article, setArticle] = useState<ArticleDetail | null>(null)
   const [loading, setLoading] = useState<boolean>(true)
   const [error, setError] = useState<string | null>(null)
-  const [isMocked, setIsMocked] = useState<boolean>(false)
 
   // 交互状态
   const [liked, setLiked] = useState<boolean>(false)
@@ -105,7 +122,7 @@ export default function ArticleDetailPage() {
         const profileData = await fetchProfile('butvan')
         setProfile(profileData)
 
-        // 2. 尝试向后端拉取真实文章详情
+        // 2. 向后端拉取文章详情
         const res = await fetch(`${API_BASE}/articles/${slug}`, { cache: 'no-store' })
         if (!res.ok) throw new Error(`HTTP_${res.status}`)
 
@@ -115,28 +132,15 @@ export default function ArticleDetailPage() {
           if (fetchedArticle) {
             setArticle(fetchedArticle)
             setLikeCount(fetchedArticle.likeCount || 0)
-            setIsMocked(false)
-            calculatePrevNext(fetchedArticle.id, MOCK_ARTICLES) // 临近文章
           } else {
             throw new Error('未获取到文章内容')
           }
         } else {
           throw new Error(json.msg || '后端加载异常')
         }
-      } catch (err: any) {
-        console.warn('后端文章详情接口不可用，启用平滑降级使用 Mock 本地数据：', err.message)
-        setIsMocked(true)
-
-        // 从全局本地 Mock 中匹配文章
-        const matched = MOCK_ARTICLES.find(a => a.slug === slug)
-        if (matched) {
-          setArticle(matched)
-          // 产生一些逼真的随机阅读点赞数
-          setLikeCount(Math.floor(matched.viewCount * 0.08) + 12)
-          calculatePrevNext(matched.id, MOCK_ARTICLES)
-        } else {
-          setError('文章不存在或已被作者删除')
-        }
+      } catch (err) {
+        console.warn('加载文章详情失败:', err instanceof Error ? err.message : String(err))
+        setError(err instanceof Error ? err.message : '文章不存在或已被作者删除')
       } finally {
         setLoading(false)
       }
@@ -146,16 +150,6 @@ export default function ArticleDetailPage() {
       loadData()
     }
   }, [slug])
-
-  // 计算上一篇/下一篇
-  const calculatePrevNext = (currentId: number, allArticles: Article[]) => {
-    const sorted = [...allArticles].sort((a, b) => new Date(b.publishedAt).getTime() - new Date(a.publishedAt).getTime())
-    const index = sorted.findIndex(a => a.id === currentId)
-    if (index !== -1) {
-      setNextArticle(index > 0 ? sorted[index - 1] : null) // 较新的为下一篇
-      setPrevArticle(index < sorted.length - 1 ? sorted[index + 1] : null) // 较旧的为上一篇
-    }
-  }
 
   // 1. 动态生成目录 TOC 并绑定随屏点亮 Observer
   useEffect(() => {
@@ -259,43 +253,7 @@ export default function ArticleDetailPage() {
   const handleLike = async () => {
     if (!article?.id) return
 
-    // 2. Mock 本地模拟环境下的降级点赞处理
-    if (isMocked) {
-      if (liked) {
-        setLiked(false)
-        setLikeCount(prev => (prev > 0 ? prev - 1 : 0))
-        if (typeof window !== 'undefined') {
-          const likedListStr = localStorage.getItem('liked_articles') || '[]'
-          try {
-            const likedList = JSON.parse(likedListStr)
-            if (Array.isArray(likedList)) {
-              localStorage.setItem('liked_articles', JSON.stringify(likedList.filter(id => id !== article.id)))
-            }
-          } catch (e) {}
-        }
-        toast.success('点赞已取消')
-      } else {
-        setLiked(true)
-        setLikeCount(prev => prev + 1)
-        if (typeof window !== 'undefined') {
-          const likedListStr = localStorage.getItem('liked_articles') || '[]'
-          try {
-            const likedList = JSON.parse(likedListStr)
-            if (Array.isArray(likedList) && !likedList.includes(article.id)) {
-              likedList.push(article.id)
-              localStorage.setItem('liked_articles', JSON.stringify(likedList))
-            }
-          } catch (e) {
-            console.error('更新本地 Mock 点赞列表失败:', e)
-          }
-        }
-        toast.success('点赞成功，感谢您的赞同！')
-        playHeartAnim()
-      }
-      return
-    }
-
-    // 3. 真实后端 API 请求对接
+    // 真实后端 API 请求对接
     try {
       const token = typeof window !== 'undefined' ? localStorage.getItem('token') : null
       const headers: Record<string, string> = {}
@@ -566,43 +524,14 @@ export default function ArticleDetailPage() {
                 <Copyright authorName={profile?.nickname || '可梵'} />
               </div>
 
-              {/* 4. 上一篇/下一篇阅读推荐 */}
+              {/* 4. 上一篇/下一篇（暂不实现，保留布局占位） */}
               <nav className="animate-detail-item opacity-0 grid grid-cols-1 sm:grid-cols-2 gap-4 mt-8 pt-8 border-t border-zinc-200/50 dark:border-zinc-900/60 select-none">
-                {prevArticle ? (
-                  <Link 
-                    href={`/article/${prevArticle.slug}`}
-                    className="group flex flex-col gap-1.5 p-5 rounded-2xl border border-zinc-200/30 dark:border-zinc-800/30 bg-zinc-150/15 dark:bg-zinc-900/15 hover:bg-[#E9EEE8]/30 dark:hover:bg-[#727BBA]/5 hover:border-[#727BBA]/30 dark:hover:border-[#727BBA]/20 transition-all duration-300 text-left cursor-pointer"
-                  >
-                    <span className="text-[10px] font-mono text-zinc-400 dark:text-zinc-500 uppercase tracking-widest">
-                      ← 上一篇
-                    </span>
-                    <span className="font-serif text-sm font-bold text-zinc-850 dark:text-zinc-200 group-hover:text-[#727BBA] line-clamp-1 transition-colors">
-                      {prevArticle.title}
-                    </span>
-                  </Link>
-                ) : (
-                  <div className="p-5 rounded-2xl border border-zinc-200/20 dark:border-zinc-800/20 bg-zinc-150/10 dark:bg-zinc-900/5 flex items-center justify-center text-[10px] text-zinc-450 dark:text-zinc-600 font-serif italic select-none">
-                    无前一篇思考了
-                  </div>
-                )}
-
-                {nextArticle ? (
-                  <Link 
-                    href={`/article/${nextArticle.slug}`}
-                    className="group flex flex-col gap-1.5 p-5 rounded-2xl border border-zinc-200/30 dark:border-zinc-800/30 bg-zinc-150/15 dark:bg-zinc-900/15 hover:bg-[#E9EEE8]/30 dark:hover:bg-[#727BBA]/5 hover:border-[#727BBA]/30 dark:hover:border-[#727BBA]/20 transition-all duration-300 text-right cursor-pointer"
-                  >
-                    <span className="text-[10px] font-mono text-zinc-400 dark:text-zinc-500 uppercase tracking-widest">
-                      下一篇 →
-                    </span>
-                    <span className="font-serif text-sm font-bold text-zinc-850 dark:text-zinc-200 group-hover:text-[#727BBA] line-clamp-1 transition-colors">
-                      {nextArticle.title}
-                    </span>
-                  </Link>
-                ) : (
-                  <div className="p-5 rounded-2xl border border-zinc-200/20 dark:border-zinc-800/20 bg-zinc-150/10 dark:bg-zinc-900/5 flex items-center justify-center text-[10px] text-zinc-450 dark:text-zinc-600 font-serif italic select-none">
-                    文字已至尽头
-                  </div>
-                )}
+                <div className="p-5 rounded-2xl border border-zinc-200/20 dark:border-zinc-800/20 bg-zinc-150/10 dark:bg-zinc-900/5 flex items-center justify-center text-[10px] text-zinc-450 dark:text-zinc-600 font-serif italic select-none">
+                  无前一篇思考了
+                </div>
+                <div className="p-5 rounded-2xl border border-zinc-200/20 dark:border-zinc-800/20 bg-zinc-150/10 dark:bg-zinc-900/5 flex items-center justify-center text-[10px] text-zinc-450 dark:text-zinc-600 font-serif italic select-none">
+                  文字已至尽头
+                </div>
               </nav>
 
               {/* 5. 评论区交流讨论 */}
