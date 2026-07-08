@@ -503,7 +503,7 @@ export default function NotesFragmentsPage() {
             <div
               ref={canvasRef}
               className={`relative grid grid-cols-12 gap-0 transition-opacity duration-300 ${
-                loading ? 'opacity-35 blur-[0.5px] pointer-events-none' : 'opacity-100'
+                loading ? 'opacity-50 blur-[0.5px]' : 'opacity-100'
               }`}
             >
               {/* 中央装饰竖线（虚线节奏） */}
@@ -531,11 +531,7 @@ export default function NotesFragmentsPage() {
                 return (
                   <div
                     key={note.id}
-                    className="fragment-card-wrapper mb-16 md:mb-0"
-                    style={{
-                      // 移动端：全宽显示，统一间距；桌面端：错位栅格（通过 useEffect 动态设置）
-                      willChange: 'transform',
-                    }}
+                    className="fragment-card-wrapper mb-16 md:mb-0 cursor-pointer"
                   >
                     <Link
                       href={`/notes/${note.slug}`}
