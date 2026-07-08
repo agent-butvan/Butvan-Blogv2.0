@@ -120,8 +120,9 @@ public class SecurityConfig {
                     .requestMatchers(HttpMethod.POST, "/api/friends/fetch-meta").permitAll()
                     // 放行前台相册公开接口（GET 查询）
                     .requestMatchers(HttpMethod.GET, "/api/public/albums/**").permitAll()
-                    // 放行前台手记公开接口（GET 查询）
+                    // 放行前台手记公开接口（GET 查询 + POST 点赞）
                     .requestMatchers(HttpMethod.GET, "/api/notes/**").permitAll()
+                    .requestMatchers(HttpMethod.POST, "/api/notes/*/like").permitAll()
                     // 放行前台照片墙公开接口（GET 查询）
                     .requestMatchers(HttpMethod.GET, "/api/public/photos/**").permitAll()
                     // 放行微信登录二维码获取接口（无需登录即可扫码）

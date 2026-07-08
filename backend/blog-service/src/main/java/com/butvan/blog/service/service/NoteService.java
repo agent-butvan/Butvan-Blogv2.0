@@ -50,4 +50,15 @@ public interface NoteService {
      * @param id 待销毁的手记主键
      */
     void deleteNote(Long id);
+
+    /**
+     * 手记点赞/取消点赞（Toggle 机制，支持游客，防刷赞）
+     *
+     * @param id        手记唯一主键 ID
+     * @param ipAddress 访客客户端 IP 地址
+     * @param userAgent 访客浏览器 User-Agent
+     * @param userId    登录用户 ID（游客则为 null）
+     * @return 操作后最新点赞总数
+     */
+    Long likeNote(Long id, String ipAddress, String userAgent, Long userId);
 }

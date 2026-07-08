@@ -2,10 +2,13 @@ package com.butvan.blog.service.controller;
 
 import com.butvan.blog.common.result.PageResult;
 import com.butvan.blog.common.result.Result;
+import com.butvan.blog.common.utils.IpUtils;
 import com.butvan.blog.pojo.dto.note.NoteQueryDTO;
 import com.butvan.blog.pojo.dto.note.NoteSaveDTO;
 import com.butvan.blog.pojo.vo.note.NoteDetailVO;
 import com.butvan.blog.service.service.NoteService;
+import com.butvan.blog.service.repository.UserRepository;
+import jakarta.servlet.http.HttpServletRequest;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
 import org.springframework.web.bind.annotation.*;
@@ -23,6 +26,7 @@ import java.security.Principal;
 public class NoteController {
 
     private final NoteService noteService;
+    private final UserRepository userRepository;
 
     /**
      * 【管理端】分页检索手记列表 (支持 keyword、status、mood 筛选)
@@ -127,5 +131,34 @@ public class NoteController {
         log.info("公开端获取手记详情 API 请求，slug: {}", slug);
         NoteDetailVO detail = noteService.getNoteDetail(slug);
         return Result.success(detail);
+    }
+
+    /**
+     * 【公开端】对手记进行点赞（支持游客，防刷赞，记录登录用户）
+     *
+     * @param id      手记唯一主键 ID
+     * @param request HttpServletRequest 请求实体
+     * @return 统一格式 Result 包装的最新点赞总数
+     */
+    @PostMapping("/notes/{id}/like")
+    public Result<Long> likeNote(@PathVariable Long id, HttpServletRequest request) {
+        String ipAddress = IpUtils.getClientIp(request);
+        String userAgent = request.getHeader("User-Agent");
+
+        // 尝试从 Security 上下文中提取当前登录用户信息
+        Long userId = null;
+        org.springframework.security.core.Authentication auth =
+                org.springframework.security.core.context.SecurityContextHolder.getContext().getAuthentication();
+        if (auth != null && auth.isAuthenticated() && !"anonymousUser".equals(auth.getPrincipal())) {
+            String username = auth.getName();
+            com.butvan.blog.pojo.entity.User user = userRepository.findByUsername(username).orElse(null);
+            if (user != null) {
+                userId = user.getId();
+            }
+        }
+
+        log.info("公开端点赞手记请求，手记ID: {}, 客户端IP: {}, UA: {}, 登录用户ID: {}", id, ipAddress, userAgent, userId);
+        Long newLikeCount = noteService.likeNote(id, ipAddress, userAgent, userId);
+        return Result.success(newLikeCount);
     }
 }

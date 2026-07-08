@@ -6,9 +6,11 @@ import com.butvan.blog.common.utils.SlugUtils;
 import com.butvan.blog.pojo.dto.note.NoteQueryDTO;
 import com.butvan.blog.pojo.dto.note.NoteSaveDTO;
 import com.butvan.blog.pojo.entity.Note;
+import com.butvan.blog.pojo.entity.NoteLike;
 import com.butvan.blog.pojo.entity.User;
 import com.butvan.blog.pojo.vo.note.NoteDetailVO;
 import com.butvan.blog.pojo.vo.note.NoteItemVO;
+import com.butvan.blog.service.repository.NoteLikeRepository;
 import com.butvan.blog.service.repository.NoteRepository;
 import com.butvan.blog.service.repository.UserRepository;
 import com.butvan.blog.service.service.NoteService;
@@ -26,6 +28,7 @@ import org.springframework.util.StringUtils;
 import java.time.LocalDateTime;
 import java.util.ArrayList;
 import java.util.List;
+import java.util.Optional;
 import java.util.stream.Collectors;
 
 /**
@@ -37,6 +40,7 @@ import java.util.stream.Collectors;
 public class NoteServiceImpl implements NoteService {
 
     private final NoteRepository noteRepository;
+    private final NoteLikeRepository noteLikeRepository;
     private final UserRepository userRepository;
 
     @Override
@@ -203,6 +207,65 @@ public class NoteServiceImpl implements NoteService {
         // 设置逻辑删除标记
         note.setDeletedAt(LocalDateTime.now());
         noteRepository.save(note);
+    }
+
+    @Override
+    @Transactional
+    public Long likeNote(Long id, String ipAddress, String userAgent, Long userId) {
+        log.info("点赞切换手记，手记ID: {}, IP: {}, UA: {}, 用户ID: {}", id, ipAddress, userAgent, userId);
+
+        // 1. 查找手记
+        Note note = noteRepository.findById(id)
+                .orElseThrow(() -> new BusinessException("手记不存在或已被删除"));
+
+        if (!"PUBLISHED".equalsIgnoreCase(note.getStatus())) {
+            throw new BusinessException("只能对已发布的手记进行点赞操作");
+        }
+
+        // 2. UA 截断以适配数据库字段长度限制
+        String truncatedUa = userAgent;
+        if (truncatedUa != null && truncatedUa.length() > 500) {
+            truncatedUa = truncatedUa.substring(0, 500);
+        }
+
+        // 3. 校验 24 小时内同一设备/用户账号是否已点赞过
+        LocalDateTime limitTime = LocalDateTime.now().minusHours(24);
+        Optional<NoteLike> existingLike = Optional.empty();
+        if (userId != null) {
+            existingLike = noteLikeRepository.findFirstByNoteIdAndUserIdAndCreatedAtAfter(id, userId, limitTime);
+        } else {
+            existingLike = noteLikeRepository.findFirstByNoteIdAndIpAddressAndUserAgentAndCreatedAtAfter(
+                    id, ipAddress, truncatedUa, limitTime
+            );
+        }
+
+        // 4. Toggle 切换逻辑
+        Long currentLikes = note.getLikeCount();
+        if (currentLikes == null) {
+            currentLikes = 0L;
+        }
+
+        if (existingLike.isPresent()) {
+            // 已点过赞，执行取消
+            noteLikeRepository.delete(existingLike.get());
+            note.setLikeCount(currentLikes > 0 ? currentLikes - 1 : 0L);
+            noteRepository.save(note);
+            log.info("手记点赞取消成功，当前最新点赞数: {}", note.getLikeCount());
+        } else {
+            // 未点过赞，执行点赞
+            NoteLike noteLike = NoteLike.builder()
+                    .noteId(id)
+                    .ipAddress(ipAddress)
+                    .userAgent(truncatedUa)
+                    .userId(userId)
+                    .build();
+            noteLikeRepository.save(noteLike);
+            note.setLikeCount(currentLikes + 1);
+            noteRepository.save(note);
+            log.info("手记点赞成功，当前最新点赞数: {}", note.getLikeCount());
+        }
+
+        return note.getLikeCount();
     }
 
     /**

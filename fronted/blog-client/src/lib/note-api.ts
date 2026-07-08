@@ -1,5 +1,5 @@
 import type { NoteItem, NoteDetail, NotePage } from '@/types/note'
-import { get } from './http-client'
+import { get, post } from './http-client'
 
 /**
  * 获取已发布的手记分页列表（前台公开接口）
@@ -31,4 +31,14 @@ export async function fetchPublicNotes(
  */
 export async function fetchNoteBySlug(slug: string): Promise<NoteDetail> {
   return await get<NoteDetail>(`/notes/${slug}`)
+}
+
+/**
+ * 对手记进行点赞/取消点赞（Toggle 机制）
+ *
+ * @param noteId 手记唯一 ID
+ * @returns 后端返回的最新点赞总数
+ */
+export async function likeNote(noteId: number): Promise<number> {
+  return await post<number>(`/notes/${noteId}/like`)
 }

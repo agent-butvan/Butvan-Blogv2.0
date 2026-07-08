@@ -37,7 +37,7 @@ import DetailLoadingState from '@/components/detail/DetailLoadingState'
 import DetailErrorState from '@/components/detail/DetailErrorState'
 import Copyright from '@/components/detail/Copyright'
 import RewardModal from '@/components/detail/RewardModal'
-import { fetchNoteBySlug } from '@/lib/note-api'
+import { fetchNoteBySlug, likeNote } from '@/lib/note-api'
 import { fetchProfile } from '@/lib/profile'
 import { resolveImageUrl } from '@/lib/image-url'
 import type { ProfileVO } from '@/types/profile'
@@ -230,33 +230,42 @@ export default function NoteDetailPage() {
     }
   }
 
-  /** 点赞切换 */
-  const handleLike = () => {
+  /** 点赞切换（调用后端 API，Toggle 机制） */
+  const handleLike = async () => {
     if (!note?.id) return
-    if (liked) {
-      setLiked(false)
-      setLikeCount(prev => Math.max(0, prev - 1))
-      if (typeof window !== 'undefined') {
-        try {
-          const list = JSON.parse(localStorage.getItem('liked_notes') || '[]')
-          localStorage.setItem('liked_notes', JSON.stringify(list.filter((id: number) => id !== note.id)))
-        } catch { /* ignore */ }
+
+    try {
+      const newCount = await likeNote(note.id)
+
+      // 后端返回最新点赞数，同步更新本地状态
+      if (typeof newCount === 'number') {
+        setLikeCount(newCount)
+        // 根据新数值判断当前是点赞还是取消状态
+        const isNowLiked = liked ? false : true
+        setLiked(isNowLiked)
+
+        // 同步 localStorage 缓存
+        if (typeof window !== 'undefined') {
+          try {
+            const list = JSON.parse(localStorage.getItem('liked_notes') || '[]')
+            localStorage.setItem('liked_notes', JSON.stringify(
+              isNowLiked
+                ? (list.includes(note.id) ? list : [...list, note.id])
+                : list.filter((id: number) => id !== note.id)
+            ))
+          } catch { /* ignore */ }
+        }
+
+        if (isNowLiked) {
+          toast.success('点赞成功！')
+          playHeartAnim()
+        } else {
+          toast.success('点赞已取消')
+        }
       }
-      toast.success('点赞已取消')
-    } else {
-      setLiked(true)
-      setLikeCount(prev => prev + 1)
-      if (typeof window !== 'undefined') {
-        try {
-          const list = JSON.parse(localStorage.getItem('liked_notes') || '[]')
-          if (!list.includes(note.id)) {
-            list.push(note.id)
-            localStorage.setItem('liked_notes', JSON.stringify(list))
-          }
-        } catch { /* ignore */ }
-      }
-      toast.success('点赞成功！')
-      playHeartAnim()
+    } catch (err) {
+      console.error('点赞接口请求失败:', err)
+      toast.danger('网络繁忙，点赞暂时失败，请稍后重试')
     }
   }
 
