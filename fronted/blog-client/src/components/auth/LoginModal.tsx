@@ -1,7 +1,7 @@
 'use client'
 
 import React, { useState, useEffect } from 'react'
-import { RefreshCw, Lock, User, Eye, EyeOff, MessageCircle, Sparkles } from 'lucide-react'
+import { RefreshCw, Lock, User, Eye, EyeOff, MessageCircle, Mail, AtSign } from 'lucide-react'
 import { Modal, Spinner } from '@heroui/react'
 
 interface LoginModalProps {
@@ -9,56 +9,77 @@ interface LoginModalProps {
   onClose: () => void
 }
 
-type LoginMode = 'email' | 'wechat'
+/** 面板模式：邮箱登录 / 微信登录 / 注册 */
+type PanelMode = 'email' | 'wechat' | 'register'
 
 /**
- * 登录弹窗组件
- * - 使用 HeroUI Modal / Spinner 组件，其余为原生 HTML 元素
- * - 支持邮箱登录和微信扫码登录两种模式
- * - 采用 Shadcn 风格卡片布局：清晰标签、图标输入框、密码可见切换
- * - 主色 #727BBA，紧凑排版
+ * 登录/注册弹窗组件
+ * - 使用 HeroUI Modal / Spinner，其余为原生 HTML 元素
+ * - 支持邮箱登录、微信扫码登录、账号注册三种模式
+ * - 顶部 Tab 切换邮箱/微信，底部链接切换到注册
+ * - 采用 Shadcn 风格卡片布局，紧凑排版
  */
 export default function LoginModal({ isOpen, onClose }: LoginModalProps) {
-  const [mode, setMode] = useState<LoginMode>('email')
+  const [panel, setPanel] = useState<PanelMode>('email')
 
-  // 邮箱登录状态
+  // ---- 邮箱登录状态 ----
   const [usernameInput, setUsernameInput] = useState('')
   const [passwordInput, setPasswordInput] = useState('')
   const [showPassword, setShowPassword] = useState(false)
-  const [submitting, setSubmitting] = useState(false)
+  const [loginSubmitting, setLoginSubmitting] = useState(false)
   const [loginError, setLoginError] = useState('')
 
-  // 微信二维码状态
+  // ---- 注册状态 ----
+  const [regUsername, setRegUsername] = useState('')
+  const [regPassword, setRegPassword] = useState('')
+  const [regNickname, setRegNickname] = useState('')
+  const [regEmail, setRegEmail] = useState('')
+  const [regShowPwd, setRegShowPwd] = useState(false)
+  const [regSubmitting, setRegSubmitting] = useState(false)
+  const [regError, setRegError] = useState('')
+  const [regSuccess, setRegSuccess] = useState(false)
+
+  // ---- 微信二维码状态 ----
   const [qrCodeUrl, setQrCodeUrl] = useState<string>('')
   const [qrLoading, setQrLoading] = useState(false)
   const [qrError, setQrError] = useState('')
 
-  // 打开弹窗时重置状态
+  /** 打开弹窗时重置状态 */
   useEffect(() => {
     if (isOpen) {
       setLoginError('')
       setQrError('')
       setShowPassword(false)
-      if (mode === 'wechat') {
-        fetchWechatQRCode()
-      }
+      setRegError('')
+      setRegSuccess(false)
+      if (panel === 'wechat') fetchWechatQRCode()
     } else {
       setUsernameInput('')
       setPasswordInput('')
       setQrCodeUrl('')
+      setRegUsername('')
+      setRegPassword('')
+      setRegNickname('')
+      setRegEmail('')
     }
   }, [isOpen])
 
-  // 切换模式时重新获取二维码
+  /** 切换到微信模式时自动获取二维码 */
   useEffect(() => {
-    if (mode === 'wechat' && isOpen) {
-      fetchWechatQRCode()
-    }
-  }, [mode])
+    if (panel === 'wechat' && isOpen) fetchWechatQRCode()
+  }, [panel])
 
-  /**
-   * 获取微信二维码
-   */
+  /** 切换面板并重置错误 */
+  const switchPanel = (target: PanelMode) => {
+    setLoginError('')
+    setRegError('')
+    setRegSuccess(false)
+    setPanel(target)
+  }
+
+  // ===================== API 调用 =====================
+
+  /** 获取微信二维码 */
   const fetchWechatQRCode = async () => {
     setQrLoading(true)
     setQrError('')
@@ -70,55 +91,42 @@ export default function LoginModal({ isOpen, onClose }: LoginModalProps) {
       })
       const json = await res.json()
       if (json.code === 200 || json.code === 0) {
-        if (json.data) {
-          setQrCodeUrl(json.data)
-        } else {
-          setQrError('获取二维码失败')
-        }
+        setQrCodeUrl(json.data || '')
+        if (!json.data) setQrError('获取二维码失败')
       } else {
         setQrError(json.msg || '获取二维码失败')
       }
-    } catch (err) {
-      console.error(err)
+    } catch {
       setQrError('网络连接失败，请稍后重试')
     } finally {
       setQrLoading(false)
     }
   }
 
-  /** 刷新微信二维码 */
-  const refreshQRCode = () => fetchWechatQRCode()
-
-  /**
-   * 邮箱登录处理
-   */
+  /** 邮箱登录 */
   const handleEmailLogin = async (e: React.FormEvent) => {
     e.preventDefault()
     if (!usernameInput.trim() || !passwordInput) {
       setLoginError('请输入用户名和密码')
       return
     }
-    setSubmitting(true)
+    setLoginSubmitting(true)
     setLoginError('')
     try {
       const apiBase = process.env.NEXT_PUBLIC_API_BASE_URL || 'http://localhost:8080/api'
       const res = await fetch(`${apiBase}/auth/login`, {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({
-          username: usernameInput.trim(),
-          password: passwordInput
-        })
+        body: JSON.stringify({ username: usernameInput.trim(), password: passwordInput })
       })
       const json = await res.json()
       if (json.code === 200 || json.code === 0) {
-        if (json.data && json.data.token) {
+        if (json.data?.token) {
           localStorage.setItem('token', json.data.token)
-          const userInfo = {
+          localStorage.setItem('user_info', JSON.stringify({
             nickname: json.data.nickname,
             avatarUrl: json.data.avatarUrl
-          }
-          localStorage.setItem('user_info', JSON.stringify(userInfo))
+          }))
           window.dispatchEvent(new Event('auth-change'))
           onClose()
         } else {
@@ -127,19 +135,70 @@ export default function LoginModal({ isOpen, onClose }: LoginModalProps) {
       } else {
         setLoginError(json.msg || '用户名或密码错误')
       }
-    } catch (err) {
-      console.error(err)
+    } catch {
       setLoginError('网络连接失败，请稍后重试')
     } finally {
-      setSubmitting(false)
+      setLoginSubmitting(false)
     }
   }
 
-  /** 切换登录模式 */
-  const switchMode = (target: LoginMode) => {
-    if (mode === target) return
-    setMode(target)
+  /** 注册账号 */
+  const handleRegister = async (e: React.FormEvent) => {
+    e.preventDefault()
+    // 前端基础校验
+    if (!regUsername.trim() || !regPassword || !regNickname.trim()) {
+      setRegError('请填写所有必填项')
+      return
+    }
+    if (regUsername.trim().length < 3 || regUsername.trim().length > 30) {
+      setRegError('用户名长度需在 3-30 个字符之间')
+      return
+    }
+    if (!/^[a-zA-Z0-9_]+$/.test(regUsername.trim())) {
+      setRegError('用户名只能包含字母、数字和下划线')
+      return
+    }
+    if (regPassword.length < 6) {
+      setRegError('密码长度不能少于 6 位')
+      return
+    }
+    setRegSubmitting(true)
+    setRegError('')
+    try {
+      const apiBase = process.env.NEXT_PUBLIC_API_BASE_URL || 'http://localhost:8080/api'
+      const res = await fetch(`${apiBase}/auth/register`, {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({
+          username: regUsername.trim(),
+          password: regPassword,
+          nickname: regNickname.trim(),
+          email: regEmail.trim() || undefined
+        })
+      })
+      const json = await res.json()
+      if (json.code === 200 || json.code === 0) {
+        setRegSuccess(true)
+      } else {
+        setRegError(json.msg || '注册失败，请稍后再试')
+      }
+    } catch {
+      setRegError('网络连接失败，请稍后重试')
+    } finally {
+      setRegSubmitting(false)
+    }
   }
+
+  // ===================== 样式常量 =====================
+
+  /** 输入框统一样式 */
+  const inputCls = 'flex h-9 w-full text-sm rounded-lg border border-zinc-200 dark:border-zinc-700 bg-transparent text-zinc-900 dark:text-zinc-100 placeholder:text-zinc-400 shadow-sm transition-colors focus:outline-none focus:ring-1 focus:ring-zinc-950 dark:focus:ring-zinc-300'
+  /** 主按钮样式 */
+  const primaryBtnCls = 'inline-flex items-center justify-center w-full h-9 rounded-lg text-sm font-medium bg-zinc-900 text-zinc-50 shadow hover:bg-zinc-900/90 dark:bg-zinc-50 dark:text-zinc-900 dark:hover:bg-zinc-50/90 transition-colors disabled:opacity-50 disabled:pointer-events-none'
+  /** label 样式 */
+  const labelCls = 'text-sm font-medium text-zinc-900 dark:text-zinc-100 leading-none'
+
+  // ===================== 渲染 =====================
 
   return (
     <Modal>
@@ -151,213 +210,309 @@ export default function LoginModal({ isOpen, onClose }: LoginModalProps) {
           <Modal.Dialog className="sm:max-w-[420px] bg-white dark:bg-zinc-950 shadow-2xl rounded-xl p-0 overflow-hidden">
             <Modal.CloseTrigger />
 
-            {/* 标题区域 —— CardHeader */}
+            {/* ===== 标题区域 ===== */}
             <div className="flex flex-col space-y-1.5 p-6 pb-4">
               <h2 className="text-2xl font-semibold text-zinc-900 dark:text-zinc-100 tracking-tight leading-none">
-                {mode === 'wechat' ? '微信扫码登录' : '使用邮箱登录'}
+                {panel === 'register' ? '创建账号' : panel === 'wechat' ? '微信扫码登录' : '使用邮箱登录'}
               </h2>
               <p className="text-sm text-zinc-500 dark:text-zinc-400">
-                {mode === 'wechat'
-                  ? '使用微信扫描下方二维码完成登录。'
-                  : '登录您的可梵博客账号，将您的文字、数据与团队汇聚一处。完全免费。'
+                {panel === 'register'
+                  ? '注册您的可梵博客账号，开始创作之旅。'
+                  : panel === 'wechat'
+                    ? '使用微信扫描下方二维码完成登录。'
+                    : '登录您的可梵博客账号，将文字、数据与团队汇聚一处。'
                 }
               </p>
             </div>
 
-            {/* 内容区域 —— CardContent */}
+            {/* ===== 内容区域 ===== */}
             <div className="px-6 space-y-4">
-              {/* 社交快捷登录 —— grid 按钮组 */}
-              <div className="space-y-2">
-                <label className="text-xs text-zinc-500 dark:text-zinc-400">
-                  登录方式
-                </label>
-                <div className="grid grid-cols-4 gap-2">
-                  {/* 微信 */}
-                  <button
-                    type="button"
-                    onClick={() => switchMode('wechat')}
-                    className={`inline-flex items-center justify-center h-9 rounded-lg border shadow-sm transition-colors ${
-                      mode === 'wechat'
-                        ? 'border-green-500 bg-green-50 dark:bg-green-950/20 ring-1 ring-green-500/30'
-                        : 'border-zinc-200 dark:border-zinc-700 bg-white dark:bg-zinc-950 hover:bg-zinc-50 dark:hover:bg-zinc-900'
-                    }`}
-                  >
-                    <MessageCircle size={16} className="text-green-500" />
-                  </button>
-                  {/* QQ（预留） */}
-                  <button
-                    type="button"
-                    disabled
-                    className="inline-flex items-center justify-center h-9 rounded-lg border border-zinc-200 dark:border-zinc-700 bg-white dark:bg-zinc-950 shadow-sm opacity-40 cursor-not-allowed"
-                  >
-                    <svg viewBox="0 0 24 24" className="w-4 h-4 fill-zinc-400" aria-hidden="true">
-                      <path d="M21.395 15.035a39.548 39.548 0 0 0-1.258-2.7c.212-.859.332-1.79.332-2.775C20.47 4.984 16.585 1 12 1 7.415 1 3.53 4.984 3.53 9.56c0 .985.12 1.916.332 2.775a39.548 39.548 0 0 0-1.258 2.7c-.57 1.476-.877 2.91-.877 3.715 0 .627.17.837.434.837.545 0 1.67-1.555 2.366-3.057.39.685.852 1.308 1.382 1.862-.762.29-1.563.703-2.073 1.267-.635.7-.63 1.393-.108 1.854.523.46 1.59.598 2.86.285a9.537 9.537 0 0 0 1.603-.548c.56.277 1.158.496 1.782.645.89.212 1.83.327 2.797.327s1.907-.115 2.797-.327a8.86 8.86 0 0 0 1.782-.645c.517.236 1.065.42 1.603.548 1.27.313 2.337.175 2.86-.285.522-.46.527-1.154-.108-1.854-.51-.564-1.311-.977-2.073-1.267.53-.554.992-1.177 1.382-1.862.696 1.502 1.821 3.057 2.366 3.057.264 0 .434-.21.434-.837 0-.805-.307-2.239-.877-3.715z" />
-                    </svg>
-                  </button>
-                  {/* GitHub（预留） */}
-                  <button
-                    type="button"
-                    disabled
-                    className="inline-flex items-center justify-center h-9 rounded-lg border border-zinc-200 dark:border-zinc-700 bg-white dark:bg-zinc-950 shadow-sm opacity-40 cursor-not-allowed"
-                  >
-                    <svg viewBox="0 0 24 24" className="w-4 h-4 fill-zinc-400" aria-hidden="true">
-                      <path d="M12 .297c-6.63 0-12 5.373-12 12 0 5.303 3.438 9.8 8.205 11.385.6.113.82-.258.82-.577 0-.285-.01-1.04-.015-2.04-3.338.724-4.042-1.61-4.042-1.61C4.422 18.07 3.633 17.7 3.633 17.7c-1.087-.744.084-.729.084-.729 1.205.084 1.838 1.236 1.838 1.236 1.07 1.835 2.809 1.305 3.495.998.108-.776.417-1.305.76-1.605-2.665-.3-5.466-1.332-5.466-5.93 0-1.31.465-2.38 1.235-3.22-.135-.303-.54-1.523.105-3.176 0 0 1.005-.322 3.3 1.23.96-.267 1.98-.399 3-.405 1.02.006 2.04.138 3 .405 2.28-1.552 3.285-1.23 3.285-1.23.645 1.653.24 2.873.12 3.176.765.84 1.23 1.91 1.23 3.22 0 4.61-2.805 5.625-5.475 5.92.42.36.81 1.096.81 2.22 0 1.606-.015 2.896-.015 3.286 0 .315.21.69.825.57C20.565 22.092 24 17.592 24 12.297c0-6.627-5.373-12-12-12" />
-                    </svg>
-                  </button>
-                  {/* SSO / 密钥（预留） */}
-                  <button
-                    type="button"
-                    disabled
-                    className="inline-flex items-center justify-center h-9 rounded-lg border border-zinc-200 dark:border-zinc-700 bg-white dark:bg-zinc-950 shadow-sm opacity-40 cursor-not-allowed gap-1"
-                  >
-                    <Lock size={14} className="text-zinc-400" />
-                    <span className="text-[10px] text-zinc-400 font-medium">SSO</span>
-                  </button>
-                </div>
-              </div>
 
-              {/* 分隔线 */}
-              <div className="relative">
-                <div className="absolute inset-0 flex items-center">
-                  <span className="w-full border-t border-zinc-200 dark:border-zinc-800" />
-                </div>
-                <div className="relative flex justify-center text-xs uppercase">
-                  <span className="bg-white dark:bg-zinc-950 px-2 text-zinc-500 dark:text-zinc-400">
-                    或
-                  </span>
-                </div>
-              </div>
-
-              {/* ---- 邮箱登录模式：表单 ---- */}
-              {mode === 'email' && (
-                <form onSubmit={handleEmailLogin} className="space-y-4">
-                  {/* 用户名 */}
-                  <div className="space-y-2">
-                    <label htmlFor="login-username" className="text-sm font-medium text-zinc-900 dark:text-zinc-100 leading-none">
-                      用户名
-                    </label>
-                    <div className="relative">
-                      <User size={16} className="absolute left-3 top-1/2 -translate-y-1/2 text-zinc-400 pointer-events-none" />
-                      <input
-                        id="login-username"
-                        type="text"
-                        placeholder="请输入登录用户名"
-                        value={usernameInput}
-                        onChange={(e) => setUsernameInput(e.target.value)}
-                        className="flex h-9 w-full pl-9 pr-3 text-sm rounded-lg border border-zinc-200 dark:border-zinc-700 bg-transparent text-zinc-900 dark:text-zinc-100 placeholder:text-zinc-400 shadow-sm transition-colors focus:outline-none focus:ring-1 focus:ring-zinc-950 dark:focus:ring-zinc-300"
-                      />
-                    </div>
+              {/* ---- 登录模式：显示邮箱/微信 Tab ---- */}
+              {panel !== 'register' && (
+                <>
+                  {/* Tab 切换 */}
+                  <div className="flex gap-1 p-1 bg-zinc-100 dark:bg-zinc-900 rounded-lg">
+                    <button
+                      type="button"
+                      onClick={() => switchPanel('email')}
+                      className={`flex-1 flex items-center justify-center gap-1.5 py-2 text-sm font-medium rounded-md transition-all ${
+                        panel === 'email'
+                          ? 'bg-white dark:bg-zinc-800 text-zinc-900 dark:text-zinc-100 shadow-sm'
+                          : 'text-zinc-500 dark:text-zinc-400 hover:text-zinc-700 dark:hover:text-zinc-200'
+                      }`}
+                    >
+                      <Mail size={14} />
+                      邮箱登录
+                    </button>
+                    <button
+                      type="button"
+                      onClick={() => switchPanel('wechat')}
+                      className={`flex-1 flex items-center justify-center gap-1.5 py-2 text-sm font-medium rounded-md transition-all ${
+                        panel === 'wechat'
+                          ? 'bg-white dark:bg-zinc-800 text-zinc-900 dark:text-zinc-100 shadow-sm'
+                          : 'text-zinc-500 dark:text-zinc-400 hover:text-zinc-700 dark:hover:text-zinc-200'
+                      }`}
+                    >
+                      <MessageCircle size={14} />
+                      微信登录
+                    </button>
                   </div>
 
-                  {/* 密码 */}
-                  <div className="space-y-2">
-                    <div className="flex items-center justify-between">
-                      <label htmlFor="login-password" className="text-sm font-medium text-zinc-900 dark:text-zinc-100 leading-none">
-                        密码
-                      </label>
-                      <a href="#" className="text-sm font-medium text-zinc-900 dark:text-zinc-100 hover:underline">
-                        忘记密码？
-                      </a>
-                    </div>
-                    <div className="relative">
-                      <Lock size={16} className="absolute left-3 top-1/2 -translate-y-1/2 text-zinc-400 pointer-events-none" />
-                      <input
-                        id="login-password"
-                        type={showPassword ? 'text' : 'password'}
-                        placeholder="请输入登录密码"
-                        value={passwordInput}
-                        onChange={(e) => setPasswordInput(e.target.value)}
-                        className="flex h-9 w-full pl-9 pr-10 text-sm rounded-lg border border-zinc-200 dark:border-zinc-700 bg-transparent text-zinc-900 dark:text-zinc-100 placeholder:text-zinc-400 shadow-sm transition-colors focus:outline-none focus:ring-1 focus:ring-zinc-950 dark:focus:ring-zinc-300"
-                      />
-                      <button
-                        type="button"
-                        onClick={() => setShowPassword(!showPassword)}
-                        className="absolute right-3 top-1/2 -translate-y-1/2 text-zinc-400 hover:text-zinc-600 dark:hover:text-zinc-300 transition-colors"
-                      >
-                        {showPassword ? <EyeOff size={16} /> : <Eye size={16} />}
+                  {/* ---- 邮箱登录表单 ---- */}
+                  {panel === 'email' && (
+                    <form onSubmit={handleEmailLogin} className="space-y-4">
+                      <div className="space-y-2">
+                        <label htmlFor="login-username" className={labelCls}>用户名</label>
+                        <div className="relative">
+                          <User size={16} className="absolute left-3 top-1/2 -translate-y-1/2 text-zinc-400 pointer-events-none" />
+                          <input
+                            id="login-username"
+                            type="text"
+                            placeholder="请输入登录用户名"
+                            value={usernameInput}
+                            onChange={(e) => setUsernameInput(e.target.value)}
+                            className={`${inputCls} pl-9 pr-3`}
+                          />
+                        </div>
+                      </div>
+
+                      <div className="space-y-2">
+                        <div className="flex items-center justify-between">
+                          <label htmlFor="login-password" className={labelCls}>密码</label>
+                          <a href="#" className="text-sm font-medium text-zinc-900 dark:text-zinc-100 hover:underline">忘记密码？</a>
+                        </div>
+                        <div className="relative">
+                          <Lock size={16} className="absolute left-3 top-1/2 -translate-y-1/2 text-zinc-400 pointer-events-none" />
+                          <input
+                            id="login-password"
+                            type={showPassword ? 'text' : 'password'}
+                            placeholder="请输入登录密码"
+                            value={passwordInput}
+                            onChange={(e) => setPasswordInput(e.target.value)}
+                            className={`${inputCls} pl-9 pr-10`}
+                          />
+                          <button
+                            type="button"
+                            onClick={() => setShowPassword(!showPassword)}
+                            className="absolute right-3 top-1/2 -translate-y-1/2 text-zinc-400 hover:text-zinc-600 dark:hover:text-zinc-300 transition-colors"
+                          >
+                            {showPassword ? <EyeOff size={16} /> : <Eye size={16} />}
+                          </button>
+                        </div>
+                      </div>
+
+                      {loginError && (
+                        <div className="px-3 py-2 bg-red-50 dark:bg-red-950/30 border border-red-200 dark:border-red-900/50 rounded-lg">
+                          <p className="text-xs text-red-600 dark:text-red-400 text-center">{loginError}</p>
+                        </div>
+                      )}
+
+                      <button type="submit" disabled={loginSubmitting} className={primaryBtnCls}>
+                        {loginSubmitting ? (
+                          <><Spinner size="sm" className="text-zinc-50 dark:text-zinc-900" /><span className="ml-2">登录中...</span></>
+                        ) : '登录'}
                       </button>
-                    </div>
-                  </div>
-
-                  {/* 错误提示 */}
-                  {loginError && (
-                    <div className="px-3 py-2 bg-red-50 dark:bg-red-950/30 border border-red-200 dark:border-red-900/50 rounded-lg">
-                      <p className="text-xs text-red-600 dark:text-red-400 text-center">{loginError}</p>
-                    </div>
+                    </form>
                   )}
 
-                  {/* 登录按钮 */}
-                  <button
-                    type="submit"
-                    disabled={submitting}
-                    className="inline-flex items-center justify-center w-full h-9 rounded-lg text-sm font-medium bg-zinc-900 text-zinc-50 shadow hover:bg-zinc-900/90 dark:bg-zinc-50 dark:text-zinc-900 dark:hover:bg-zinc-50/90 transition-colors disabled:opacity-50 disabled:pointer-events-none"
-                  >
-                    {submitting ? (
-                      <>
-                        <Spinner size="sm" className="text-zinc-50 dark:text-zinc-900" />
-                        <span className="ml-2">登录中...</span>
-                      </>
-                    ) : (
-                      '登录'
-                    )}
-                  </button>
-                </form>
+                  {/* ---- 微信扫码模式 ---- */}
+                  {panel === 'wechat' && (
+                    <div className="flex flex-col items-center py-2">
+                      {qrLoading ? (
+                        <div className="w-[200px] h-[200px] bg-zinc-50 dark:bg-zinc-900 rounded-lg flex items-center justify-center border border-zinc-200 dark:border-zinc-700">
+                          <Spinner size="lg" />
+                        </div>
+                      ) : qrError ? (
+                        <div className="w-[200px] h-[200px] bg-zinc-50 dark:bg-zinc-900 rounded-lg flex flex-col items-center justify-center gap-3 border border-zinc-200 dark:border-zinc-700">
+                          <p className="text-xs text-red-500 text-center px-4">{qrError}</p>
+                          <button
+                            type="button"
+                            onClick={() => fetchWechatQRCode()}
+                            className="inline-flex items-center gap-1.5 text-xs font-medium text-zinc-700 dark:text-zinc-300 hover:underline"
+                          >
+                            <RefreshCw size={12} />
+                            重新加载
+                          </button>
+                        </div>
+                      ) : qrCodeUrl ? (
+                        <div className="relative group">
+                          <img
+                            src={qrCodeUrl}
+                            alt="微信登录二维码"
+                            className="w-[200px] h-[200px] rounded-lg object-contain border border-zinc-200 dark:border-zinc-700"
+                          />
+                          <button
+                            type="button"
+                            onClick={() => fetchWechatQRCode()}
+                            className="absolute -top-2 -right-2 w-7 h-7 rounded-full bg-white dark:bg-zinc-800 border border-zinc-200 dark:border-zinc-700 shadow-sm flex items-center justify-center opacity-0 group-hover:opacity-100 transition-opacity hover:bg-zinc-50 dark:hover:bg-zinc-700"
+                          >
+                            <RefreshCw size={12} className="text-zinc-500" />
+                          </button>
+                        </div>
+                      ) : null}
+                      <p className="text-xs text-zinc-500 dark:text-zinc-400 mt-3">
+                        打开微信 → 扫一扫 → 扫描上方二维码登录
+                      </p>
+                    </div>
+                  )}
+                </>
               )}
 
-              {/* ---- 微信扫码模式：二维码 ---- */}
-              {mode === 'wechat' && (
-                <div className="flex flex-col items-center py-2">
-                  {qrLoading ? (
-                    <div className="w-[200px] h-[200px] bg-zinc-50 dark:bg-zinc-900 rounded-lg flex items-center justify-center border border-zinc-200 dark:border-zinc-700">
-                      <Spinner size="lg" />
-                    </div>
-                  ) : qrError ? (
-                    <div className="w-[200px] h-[200px] bg-zinc-50 dark:bg-zinc-900 rounded-lg flex flex-col items-center justify-center gap-3 border border-zinc-200 dark:border-zinc-700">
-                      <p className="text-xs text-red-500 text-center px-4">{qrError}</p>
+              {/* ---- 注册模式：注册表单 ---- */}
+              {panel === 'register' && (
+                <>
+                  {regSuccess ? (
+                    /* 注册成功 */
+                    <div className="flex flex-col items-center gap-4 py-4">
+                      <div className="w-12 h-12 rounded-full bg-green-100 dark:bg-green-900/30 flex items-center justify-center">
+                        <svg className="w-6 h-6 text-green-600 dark:text-green-400" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={2}>
+                          <path strokeLinecap="round" strokeLinejoin="round" d="M5 13l4 4L19 7" />
+                        </svg>
+                      </div>
+                      <div className="text-center">
+                        <p className="text-sm font-medium text-zinc-900 dark:text-zinc-100">注册成功！</p>
+                        <p className="text-xs text-zinc-500 dark:text-zinc-400 mt-1">请使用您的账号密码登录。</p>
+                      </div>
                       <button
                         type="button"
-                        onClick={refreshQRCode}
-                        className="inline-flex items-center gap-1.5 text-xs font-medium text-zinc-700 dark:text-zinc-300 hover:underline"
+                        onClick={() => switchPanel('email')}
+                        className={primaryBtnCls}
                       >
-                        <RefreshCw size={12} />
-                        重新加载
+                        前往登录
                       </button>
                     </div>
-                  ) : qrCodeUrl ? (
-                    <div className="relative group">
-                      <img
-                        src={qrCodeUrl}
-                        alt="微信登录二维码"
-                        className="w-[200px] h-[200px] rounded-lg object-contain border border-zinc-200 dark:border-zinc-700"
-                      />
-                      <button
-                        type="button"
-                        onClick={refreshQRCode}
-                        className="absolute -top-2 -right-2 w-7 h-7 rounded-full bg-white dark:bg-zinc-800 border border-zinc-200 dark:border-zinc-700 shadow-sm flex items-center justify-center opacity-0 group-hover:opacity-100 transition-opacity hover:bg-zinc-50 dark:hover:bg-zinc-700"
-                      >
-                        <RefreshCw size={12} className="text-zinc-500" />
+                  ) : (
+                    /* 注册表单 */
+                    <form onSubmit={handleRegister} className="space-y-4">
+                      {/* 用户名 */}
+                      <div className="space-y-2">
+                        <label htmlFor="reg-username" className={labelCls}>
+                          用户名 <span className="text-red-500">*</span>
+                        </label>
+                        <div className="relative">
+                          <User size={16} className="absolute left-3 top-1/2 -translate-y-1/2 text-zinc-400 pointer-events-none" />
+                          <input
+                            id="reg-username"
+                            type="text"
+                            placeholder="3-30位字母、数字或下划线"
+                            value={regUsername}
+                            onChange={(e) => setRegUsername(e.target.value)}
+                            className={`${inputCls} pl-9 pr-3`}
+                          />
+                        </div>
+                      </div>
+
+                      {/* 昵称 */}
+                      <div className="space-y-2">
+                        <label htmlFor="reg-nickname" className={labelCls}>
+                          昵称 <span className="text-red-500">*</span>
+                        </label>
+                        <div className="relative">
+                          <AtSign size={16} className="absolute left-3 top-1/2 -translate-y-1/2 text-zinc-400 pointer-events-none" />
+                          <input
+                            id="reg-nickname"
+                            type="text"
+                            placeholder="展示给其他用户的昵称"
+                            value={regNickname}
+                            onChange={(e) => setRegNickname(e.target.value)}
+                            className={`${inputCls} pl-9 pr-3`}
+                          />
+                        </div>
+                      </div>
+
+                      {/* 邮箱（可选） */}
+                      <div className="space-y-2">
+                        <label htmlFor="reg-email" className={labelCls}>
+                          邮箱 <span className="text-xs text-zinc-400 font-normal">（选填）</span>
+                        </label>
+                        <div className="relative">
+                          <Mail size={16} className="absolute left-3 top-1/2 -translate-y-1/2 text-zinc-400 pointer-events-none" />
+                          <input
+                            id="reg-email"
+                            type="email"
+                            placeholder="example@email.com"
+                            value={regEmail}
+                            onChange={(e) => setRegEmail(e.target.value)}
+                            className={`${inputCls} pl-9 pr-3`}
+                          />
+                        </div>
+                      </div>
+
+                      {/* 密码 */}
+                      <div className="space-y-2">
+                        <label htmlFor="reg-password" className={labelCls}>
+                          密码 <span className="text-red-500">*</span>
+                        </label>
+                        <div className="relative">
+                          <Lock size={16} className="absolute left-3 top-1/2 -translate-y-1/2 text-zinc-400 pointer-events-none" />
+                          <input
+                            id="reg-password"
+                            type={regShowPwd ? 'text' : 'password'}
+                            placeholder="至少 6 位密码"
+                            value={regPassword}
+                            onChange={(e) => setRegPassword(e.target.value)}
+                            className={`${inputCls} pl-9 pr-10`}
+                          />
+                          <button
+                            type="button"
+                            onClick={() => setRegShowPwd(!regShowPwd)}
+                            className="absolute right-3 top-1/2 -translate-y-1/2 text-zinc-400 hover:text-zinc-600 dark:hover:text-zinc-300 transition-colors"
+                          >
+                            {regShowPwd ? <EyeOff size={16} /> : <Eye size={16} />}
+                          </button>
+                        </div>
+                      </div>
+
+                      {/* 错误提示 */}
+                      {regError && (
+                        <div className="px-3 py-2 bg-red-50 dark:bg-red-950/30 border border-red-200 dark:border-red-900/50 rounded-lg">
+                          <p className="text-xs text-red-600 dark:text-red-400 text-center">{regError}</p>
+                        </div>
+                      )}
+
+                      {/* 注册按钮 */}
+                      <button type="submit" disabled={regSubmitting} className={primaryBtnCls}>
+                        {regSubmitting ? (
+                          <><Spinner size="sm" className="text-zinc-50 dark:text-zinc-900" /><span className="ml-2">注册中...</span></>
+                        ) : '注册'}
                       </button>
-                    </div>
-                  ) : null}
-                  <p className="text-xs text-zinc-500 dark:text-zinc-400 mt-3">
-                    打开微信 → 扫一扫 → 扫描上方二维码登录
-                  </p>
-                </div>
+                    </form>
+                  )}
+                </>
               )}
             </div>
 
-            {/* 底部 —— CardFooter */}
-            <div className="flex flex-col items-start space-y-4 p-6 pt-4">
-              <button
-                type="button"
-                onClick={mode === 'wechat' ? () => switchMode('email') : onClose}
-                className="inline-flex items-center justify-center w-full h-9 rounded-lg text-xs font-medium text-zinc-500 dark:text-zinc-400 hover:bg-zinc-100 dark:hover:bg-zinc-900 transition-colors"
-              >
-                <Sparkles size={14} className="mr-2 text-orange-400" />
-                {mode === 'wechat' ? '返回邮箱登录' : '或发送登录链接到我的邮箱'}
-              </button>
-              <p className="text-[10px] text-zinc-400 dark:text-zinc-500 text-center w-full leading-relaxed">
-                登录即表示您同意我们的{' '}
+            {/* ===== 底部 CardFooter ===== */}
+            <div className="flex flex-col items-center space-y-3 p-6 pt-4">
+              {/* 登录 / 注册 切换链接 */}
+              {panel !== 'register' ? (
+                <p className="text-sm text-zinc-500 dark:text-zinc-400">
+                  还没有账号？{' '}
+                  <button
+                    type="button"
+                    onClick={() => switchPanel('register')}
+                    className="font-medium text-zinc-900 dark:text-zinc-100 hover:underline"
+                  >
+                    立即注册
+                  </button>
+                </p>
+              ) : !regSuccess ? (
+                <p className="text-sm text-zinc-500 dark:text-zinc-400">
+                  已有账号？{' '}
+                  <button
+                    type="button"
+                    onClick={() => switchPanel('email')}
+                    className="font-medium text-zinc-900 dark:text-zinc-100 hover:underline"
+                  >
+                    返回登录
+                  </button>
+                </p>
+              ) : null}
+
+              {/* 协议 */}
+              <p className="text-[10px] text-zinc-400 dark:text-zinc-500 text-center leading-relaxed">
+                登录或注册即表示您同意我们的{' '}
                 <a href="#" className="underline">服务条款</a>
                 {' '}&{' '}
                 <a href="#" className="underline">隐私政策</a>
