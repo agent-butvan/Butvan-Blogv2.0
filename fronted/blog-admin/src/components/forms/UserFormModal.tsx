@@ -224,8 +224,8 @@ export default function UserFormModal({
                 onChange={(e) => setRole(e.target.value as "ADMIN" | "USER")}
                 className={inputCls}
               >
-                <option value="USER">普通用户 (USER)</option>
-                <option value="ADMIN">管理员 (ADMIN)</option>
+                <option value="USER">普通用户</option>
+                <option value="ADMIN">站长</option>
               </select>
             </div>
 

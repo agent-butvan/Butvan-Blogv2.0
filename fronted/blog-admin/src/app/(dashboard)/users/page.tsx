@@ -64,7 +64,7 @@ const STATUS_TABS = [
 /** 角色筛选选项 */
 const ROLE_OPTIONS = [
   { label: "全部角色", value: "all" },
-  { label: "管理员", value: "ADMIN" },
+  { label: "站长", value: "ADMIN" },
   { label: "普通用户", value: "USER" },
 ];
 
@@ -324,11 +324,11 @@ export default function UsersPage() {
         </span>
         <span className="flex items-center gap-1.5 text-violet-600/80 dark:text-violet-400/80">
           <span className="w-1.5 h-1.5 rounded-full bg-violet-400" />
-          ADMIN <span className="font-bold">{stats.admin}</span>
+          站长 <span className="font-bold">{stats.admin}</span>
         </span>
         <span className="flex items-center gap-1.5 text-blue-600/80 dark:text-blue-400/80">
           <span className="w-1.5 h-1.5 rounded-full bg-blue-400" />
-          USER <span className="font-bold">{stats.user}</span>
+          普通用户 <span className="font-bold">{stats.user}</span>
         </span>
       </div>
 
@@ -494,7 +494,7 @@ export default function UsersPage() {
                         </span>
                         <span className="text-[11px] font-mono text-zinc-400 dark:text-zinc-500">@{user.username}</span>
                         <Chip size="sm" color={isAdmin ? "warning" : "default"} variant="soft">
-                          {isAdmin ? "ADMIN" : "USER"}
+                          {isAdmin ? "站长" : "普通用户"}
                         </Chip>
                         <Chip
                           size="sm"
