@@ -51,7 +51,8 @@ Butvan Blog2.0/                                    # 📦 项目根目录
 │       ├── migration-v1.1-background-image.sql     #   数据库迁移脚本 (v1.1 版本，预置站点全局背景图片配置项)
 │       ├── migration-v1.2-album.sql               #   数据库迁移脚本 (v1.2 版本，相册模块建表与菜单注册)
 │       ├── migration-v1.3-note.sql                #   数据库迁移脚本 (v1.3 版本，手记模块建表与初始化数据)
-│       └── migration-v1.4-note-like.sql           #   数据库迁移脚本 (v1.4 版本，手记点赞记录表)
+│       ├── migration-v1.4-note-like.sql           #   数据库迁移脚本 (v1.4 版本，手记点赞记录表)
+│       └── migration-v1.5-user-management.sql     #   数据库迁移脚本 (v1.5 版本，后台侧边栏用户管理菜单)
 │
 ├── fronted/                                       # 🖥️【前端】Next.js 16 + TypeScript + HeroUI v3 + Tailwind v4
 │   │
@@ -188,6 +189,8 @@ Butvan Blog2.0/                                    # 📦 项目根目录
 │       │   │   │   │   └── page.tsx               #           系列CRUD + 文章拖入排序
 │       │   │   │   ├── subscribers/               #         订阅者管理
 │       │   │   │   │   └── page.tsx               #           订阅列表、邮件群发入口
+│       │   │   │   ├── users/                     #         用户管理
+│       │   │   │   │   └── page.tsx               #           用户列表（筛选、搜索、批量启禁用、重置密码、CRUD）
 │       │   │   │   ├── profile/                   #         个人中心
 │       │   │   │   │   └── page.tsx               #           当前账号资料、安全改密、邮箱与第三方绑定状态
 │       │   │   │   └── settings/                  #         系统设置
@@ -212,6 +215,7 @@ Butvan Blog2.0/                                    # 📦 项目根目录
 │       │   │   │   ├── SceneCanvas.tsx            #         场景编辑器可视化画布
 │       │   │   │   └── HotspotPropertiesPanel.tsx #         场景热区物品属性编辑面板
 │       │   │   └── forms/                         #       表单组件（文章表单、场景表单等复合表单）
+│       │   │       └── UserFormModal.tsx           #         用户创建/编辑表单弹窗组件
 │       │   ├── hooks/                             #     🪝 自定义 Hooks
 │       │   │   ├── useAuth.ts                     #       认证状态管理
 │       │   │   └── useUpload.ts                   #       文件上传 Hook
@@ -221,7 +225,8 @@ Butvan Blog2.0/                                    # 📦 项目根目录
 │       │   │   ├── account-api.ts                 #       当前登录账号资料、改密、个人中心相关 API 封装
 │       │   │   ├── article-api.ts                 #       文章、分类、标签相关的 API 请求统一封装
 │       │   │   ├── comments-api.ts                #       评论、审核、快捷回复相关的 API 请求统一封装
-│       │   │   └── album-api.ts                   #       相册管理 API（CRUD、照片添加/移除/排序）
+│       │   │   ├── album-api.ts                   #       相册管理 API（CRUD、照片添加/移除/排序）
+│       │   │   └── user-api.ts                    #       用户管理 API（CRUD、启禁用、重置密码、批量操作）
 │       │   └── types/                             #     📐 TypeScript 类型定义（与 blog-client 共享结构）
 │       ├── next.config.ts
 │       ├── postcss.config.mjs
@@ -291,6 +296,7 @@ Butvan Blog2.0/                                    # 📦 项目根目录
     │       │   ├── OperationLog.java               #         blog_operation_log — 操作日志
     │       │   └── VisitLog.java                   #         blog_visit_log — 访问日志
     │       ├── dto/                                #       数据传输对象（接收前端请求体）
+    │       │   ├── admin/                          #         后台管理相关：AdminCreateUserDTO, AdminUpdateUserDTO, AdminResetPasswordDTO
     │       │   ├── article/                        #         文章相关：ArticleCreateDTO, ArticleUpdateDTO, ArticleQueryDTO
     │       │   ├── comment/                        #         评论相关：CommentCreateDTO, CommentAuditDTO
     │       │   ├── auth/                           #         认证相关：LoginDTO, RegisterDTO, CurrentUserUpdateDTO, PasswordChangeDTO
@@ -301,6 +307,7 @@ Butvan Blog2.0/                                    # 📦 项目根目录
 │       │   ├── album/                          #         相册相关：AlbumSaveDTO, AlbumQueryDTO, AlbumPhotoSaveDTO, AlbumPhotoSortDTO
     │       │   └── common/                         #         通用：PageQueryDTO, BatchDeleteDTO
     │       └── vo/                                 #       视图对象（返回前端展示）
+    │           ├── admin/                          #         后台管理相关：AdminUserVO
     │           ├── article/                        #         文章相关：ArticleDetailVO, ArticleListVO
     │           ├── home/                           #         首页相关：HomeSceneVO, HotspotVO
     │           ├── comment/                        #         评论相关：CommentVO
@@ -335,6 +342,7 @@ Butvan Blog2.0/                                    # 📦 项目根目录
             │   │   │   ├── AuthController.java      #         登录注册、当前账号资料、个人中心资料保存与密码修改接口
             │   │   │   ├── SiteConfigController.java #       站点配置管理接口
             │   │   │   ├── FriendLinkController.java #       友链管理接口
+│   │   │   ├── AdminUserController.java #     后台用户管理接口（CRUD + 启禁用 + 重置密码 + 批量操作）
 │   │   │   ├── AlbumController.java       #       相册管理接口（管理端+公开端）
             │   │   │   └── SubscriberController.java #      订阅管理接口
             │   │   ├── repository/                 #       🗄️ 数据访问层（JPA Repository 接口）
@@ -371,6 +379,7 @@ Butvan Blog2.0/                                    # 📦 项目根目录
             │   │   │   ├── TokenService.java       #         Token 生命周期管理（双 Token 签发/刷新/吊销）
             │   │   │   ├── SiteConfigService.java  #         配置业务接口
             │   │   │   ├── FriendLinkService.java  #         友链业务接口
+│   │   │   ├── AdminUserService.java #         后台用户管理业务接口
 │   │   │   ├── AlbumService.java       #         相册业务接口
             │   │   │   ├── SubscriberService.java  #         订阅业务接口
             │   │   │   └── impl/                   #         业务逻辑实现层（@Service + @Transactional）
@@ -386,6 +395,7 @@ Butvan Blog2.0/                                    # 📦 项目根目录
             │   │   │       ├── AuthServiceImpl.java
             │   │   │       ├── SiteConfigServiceImpl.java
             │   │   │       ├── FriendLinkServiceImpl.java
+│   │   │       ├── AdminUserServiceImpl.java #   后台用户管理业务实现（含安全约束）
 │   │   │       ├── AlbumServiceImpl.java
             │   │   │       └── SubscriberServiceImpl.java
             │   │   ├── weixin/                     #       📱 微信模块
@@ -490,4 +500,4 @@ Butvan Blog2.0/                                    # 📦 项目根目录
 
 ---
 
-*最后更新：2026-07-05*
+*最后更新：2025-07-14*

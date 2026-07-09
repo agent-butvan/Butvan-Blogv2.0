@@ -2,6 +2,7 @@ package com.butvan.blog.service.repository;
 
 import com.butvan.blog.pojo.entity.User;
 import org.springframework.data.jpa.repository.JpaRepository;
+import org.springframework.data.jpa.repository.JpaSpecificationExecutor;
 import org.springframework.stereotype.Repository;
 import java.util.Optional;
 
@@ -9,7 +10,7 @@ import java.util.Optional;
  * 用户表 JPA 持久化仓储数据层接口
  */
 @Repository
-public interface UserRepository extends JpaRepository<User, Long> {
+public interface UserRepository extends JpaRepository<User, Long>, JpaSpecificationExecutor<User> {
 
     /**
      * 根据用户名查询用户实体记录
@@ -42,4 +43,20 @@ public interface UserRepository extends JpaRepository<User, Long> {
      * @return 存在返回 true，否则 false
      */
     boolean existsByEmail(String email);
+
+    /**
+     * 统计指定角色的用户总数
+     *
+     * @param role 角色枚举字符串（ADMIN / AUTHOR）
+     * @return 用户数量
+     */
+    long countByRole(String role);
+
+    /**
+     * 统计指定状态的用户总数
+     *
+     * @param status 状态枚举字符串（ACTIVE / DISABLED）
+     * @return 用户数量
+     */
+    long countByStatus(String status);
 }

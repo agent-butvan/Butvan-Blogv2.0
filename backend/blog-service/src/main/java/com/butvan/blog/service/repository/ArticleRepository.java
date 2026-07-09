@@ -57,4 +57,12 @@ public interface ArticleRepository extends JpaRepository<Article, Long>, JpaSpec
      * @return 文章列表
      */
     List<Article> findByStatusOrderByPublishedAtDesc(String status, Pageable pageable);
+
+    /**
+     * 统计指定作者的文章总数（不含已删除）
+     *
+     * @param authorId 作者用户 ID
+     * @return 文章数量
+     */
+    long countByAuthorIdAndDeletedAtIsNull(Long authorId);
 }

@@ -133,6 +133,8 @@ public class SecurityConfig {
                     .requestMatchers(HttpMethod.POST, "/api/public/upload/image").permitAll()
                     // 放行本地静态图片映射路径
                     .requestMatchers("/uploads/**").permitAll()
+                    // 后台用户管理接口仅限 ADMIN 角色访问
+                    .requestMatchers("/api/admin/users/**").hasRole("ADMIN")
                     // 其它任何后台 API 均需校验 Bearer Token 权限身份
                     .anyRequest().authenticated()
             )

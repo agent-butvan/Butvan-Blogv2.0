@@ -29,4 +29,12 @@ public interface CommentRepository extends JpaRepository<Comment, Long>, JpaSpec
      * @return 审核通过评论的总数记录
      */
     long countByArticleIdAndStatus(Long articleId, String status);
+
+    /**
+     * 统计指定用户发表的评论总数（不含已删除）
+     *
+     * @param userId 用户 ID
+     * @return 评论数量
+     */
+    long countByUserIdAndDeletedAtIsNull(Long userId);
 }
