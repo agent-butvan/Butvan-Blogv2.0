@@ -134,22 +134,23 @@ export default function LoginModal({ isOpen, onClose }: LoginModalProps) {
       const res = await fetch(`${API_BASE}/auth/login`, {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
+        credentials: 'include',
         body: JSON.stringify({ username: usernameInput.trim(), password: passwordInput })
       })
       const json = await res.json()
       if (json.code === 200 || json.code === 0) {
-        if (json.data?.token) {
+        if (json.data?.user || json.data?.nickname) {
           const userInfo = {
             nickname: json.data.user?.nickname || json.data.nickname || '用户',
             avatarUrl: json.data.user?.avatarUrl || json.data.avatarUrl || null,
             username: json.data.user?.username || json.data.username || null,
             email: json.data.user?.email || json.data.email || null
           }
-          // 通过全局认证状态管理登录
-          authLogin(json.data.token, userInfo)
+          // 通过全局认证状态管理登录（Token 已通过 httpOnly Cookie 自动设置）
+          authLogin(userInfo)
           onClose()
         } else {
-          setLoginError('登录异常，未获得访问令牌')
+          setLoginError('登录异常，请重试')
         }
       } else {
         setLoginError(json.msg || '用户名或密码错误')

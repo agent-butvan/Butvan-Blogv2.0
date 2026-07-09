@@ -96,8 +96,9 @@ public class SecurityConfig {
             .sessionManagement(session -> session.sessionCreationPolicy(SessionCreationPolicy.STATELESS))
             // 设定安全请求过滤匹配规则
             .authorizeHttpRequests(auth -> auth
-                    // 放行认证模块接口
-                    .requestMatchers("/api/auth/register", "/api/auth/login").permitAll()
+                    // 放行认证模块接口（含 Token 刷新与登出）
+                    .requestMatchers("/api/auth/register", "/api/auth/login",
+                            "/api/auth/refresh", "/api/auth/logout").permitAll()
                     // 前台获取导航菜单完全公开（仅限 GET 读取）
                     .requestMatchers(HttpMethod.GET, "/api/navigations/**").permitAll()
                     // 放行前台获取首页活跃房间场景 API

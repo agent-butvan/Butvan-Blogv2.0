@@ -2,6 +2,7 @@ package com.butvan.blog.service.security;
 
 import jakarta.servlet.FilterChain;
 import jakarta.servlet.ServletException;
+import jakarta.servlet.http.Cookie;
 import jakarta.servlet.http.HttpServletRequest;
 import jakarta.servlet.http.HttpServletResponse;
 import lombok.RequiredArgsConstructor;
@@ -38,18 +39,17 @@ public class JwtAuthFilter extends OncePerRequestFilter {
     @Override
     protected void doFilterInternal(HttpServletRequest request, HttpServletResponse response, FilterChain filterChain)
             throws ServletException, IOException {
-        
-        final String authHeader = request.getHeader("Authorization");
-        final String jwt;
+
+        // Token 提取优先级：Cookie > Authorization Header（兼容前台 Cookie + 后台 Authorization）
+        final String jwt = extractToken(request);
         final String username;
 
-        // 如果请求头没有 Bearer Token，直接放行（由后面的 Security 安全屏障鉴权）
-        if (authHeader == null || !authHeader.startsWith("Bearer ")) {
+        // 如果没有提取到 Token，直接放行（由后面的 Security 安全屏障鉴权）
+        if (jwt == null || jwt.isEmpty()) {
             filterChain.doFilter(request, response);
             return;
         }
 
-        jwt = authHeader.substring(7);
         try {
             username = jwtUtil.getUsernameFromToken(jwt);
             
@@ -83,5 +83,40 @@ public class JwtAuthFilter extends OncePerRequestFilter {
         }
 
         filterChain.doFilter(request, response);
+    }
+
+    /**
+     * 从请求中提取 JWT Token
+     * <p>提取优先级：Cookie(access_token) > Authorization Header(Bearer)
+     * 前台用户端使用 httpOnly Cookie，后台管理端使用 Authorization 头</p>
+     *
+     * @param request HTTP 请求
+     * @return JWT Token 字符串，未找到返回 null
+     */
+    private String extractToken(HttpServletRequest request) {
+        // 1. 优先从 Cookie 读取 access_token（前台用户端）
+        String cookieToken = getCookieValue(request, "access_token");
+        if (cookieToken != null && !cookieToken.isEmpty()) {
+            return cookieToken;
+        }
+        // 2. 回退到 Authorization 头（后台管理端兼容）
+        String authHeader = request.getHeader("Authorization");
+        if (authHeader != null && authHeader.startsWith("Bearer ")) {
+            return authHeader.substring(7);
+        }
+        return null;
+    }
+
+    /**
+     * 从请求中提取指定名称的 Cookie 值
+     */
+    private String getCookieValue(HttpServletRequest request, String name) {
+        if (request.getCookies() == null) return null;
+        for (Cookie cookie : request.getCookies()) {
+            if (name.equals(cookie.getName())) {
+                return cookie.getValue();
+            }
+        }
+        return null;
     }
 }

@@ -13,9 +13,14 @@ import com.butvan.blog.pojo.vo.auth.CurrentUserVO;
 import com.butvan.blog.pojo.vo.auth.LoginVO;
 import com.butvan.blog.service.security.LoginRateLimiter;
 import com.butvan.blog.service.service.AuthService;
+import com.butvan.blog.service.service.TokenService;
+import com.butvan.blog.service.service.TokenService.TokenPair;
+import jakarta.servlet.http.Cookie;
 import jakarta.servlet.http.HttpServletRequest;
+import jakarta.servlet.http.HttpServletResponse;
 import lombok.RequiredArgsConstructor;
-import lombok.extern.slf4j.Slf4j;   
+import lombok.extern.slf4j.Slf4j;
+import org.springframework.http.ResponseCookie;
 import org.springframework.validation.annotation.Validated;
 import org.springframework.web.bind.annotation.*;
 import org.springframework.web.multipart.MultipartFile;
@@ -33,6 +38,7 @@ public class AuthController {
 
     private final AuthService authService;
     private final LoginRateLimiter loginRateLimiter;
+    private final TokenService tokenService;
 
     /**
      * 管理后台账号注册接口
@@ -56,7 +62,9 @@ public class AuthController {
      * @return 统一格式响应体 Result，携带 LoginVO 载荷
      */
     @PostMapping("/login")
-    public Result<LoginVO> login(@Validated @RequestBody LoginDTO loginDTO, HttpServletRequest request) {
+    public Result<LoginVO> login(@Validated @RequestBody LoginDTO loginDTO,
+                                  HttpServletRequest request,
+                                  HttpServletResponse response) {
         log.info("接收到用户登录 API 请求，用户名: {}", loginDTO.getUsername());
 
         String clientIp = extractClientIp(request);
@@ -65,11 +73,21 @@ public class AuthController {
         loginRateLimiter.checkRateLimit(loginDTO.getUsername(), clientIp);
 
         try {
-            // 2. 执行登录业务逻辑
+            // 2. 执行登录业务逻辑（含密码/2FA校验，admin端仍从此处获取token）
             LoginVO loginVO = authService.login(loginDTO);
 
             // 3. 登录成功，清除失败计数
             loginRateLimiter.clearFailCount(loginDTO.getUsername(), clientIp);
+
+            // 4. 签发双 Token 并通过 httpOnly Cookie 下发（前台用户端使用）
+            if (loginVO.getUser() != null) {
+                TokenPair tokens = tokenService.issueTokens(
+                        loginVO.getUser().getId(),
+                        loginVO.getUser().getUsername(),
+                        loginVO.getUser().getRole());
+                addCookie(response, "access_token", tokens.accessToken(), 900, "/api");
+                addCookie(response, "refresh_token", tokens.refreshToken(), 604800, "/api/auth/refresh");
+            }
 
             return Result.success(loginVO);
         } catch (BusinessException e) {
@@ -79,6 +97,44 @@ public class AuthController {
             }
             throw e;
         }
+    }
+
+    /**
+     * 刷新 Access Token（静默续期）
+     * <p>前端 http-client 在收到 401 时自动调用此接口，用 refresh_token Cookie 换取新 access_token Cookie</p>
+     *
+     * @param request  HTTP 请求（读取 refresh_token Cookie）
+     * @param response HTTP 响应（写入新 access_token Cookie）
+     * @return 统一成功响应
+     */
+    @PostMapping("/refresh")
+    public Result<Void> refresh(HttpServletRequest request, HttpServletResponse response) {
+        String refreshToken = getCookieValue(request, "refresh_token");
+        if (refreshToken == null || refreshToken.isEmpty()) {
+            throw new BusinessException(401, "未登录或登录已过期");
+        }
+        String newAccessToken = tokenService.refreshAccessToken(refreshToken);
+        addCookie(response, "access_token", newAccessToken, 900, "/api");
+        return Result.success();
+    }
+
+    /**
+     * 退出登录
+     * <p>吊销 Refresh Token（写入 Redis 黑名单）并清除所有 Cookie</p>
+     *
+     * @param request  HTTP 请求（读取 refresh_token Cookie）
+     * @param response HTTP 响应（清除 Cookie）
+     * @return 统一成功响应
+     */
+    @PostMapping("/logout")
+    public Result<Void> logout(HttpServletRequest request, HttpServletResponse response) {
+        String refreshToken = getCookieValue(request, "refresh_token");
+        if (refreshToken != null && !refreshToken.isEmpty()) {
+            tokenService.revokeRefreshToken(refreshToken);
+        }
+        clearCookie(response, "access_token", "/api");
+        clearCookie(response, "refresh_token", "/api/auth/refresh");
+        return Result.success();
     }
 
     /**
@@ -216,5 +272,62 @@ public class AuthController {
             return ip.trim();
         }
         return request.getRemoteAddr();
+    }
+
+    // ---- Cookie 工具方法 --------------------------------------------------
+
+    /**
+     * 设置 httpOnly Cookie（安全属性：Secure + SameSite=Lax）
+     *
+     * @param response HTTP 响应
+     * @param name     Cookie 名称
+     * @param value    Cookie 值
+     * @param maxAge   有效期（秒）
+     * @param path     Cookie 路径
+     */
+    private void addCookie(HttpServletResponse response, String name, String value, int maxAge, String path) {
+        ResponseCookie cookie = ResponseCookie.from(name, value)
+                .httpOnly(true)
+                .secure(true)
+                .sameSite("Lax")
+                .path(path)
+                .maxAge(maxAge)
+                .build();
+        response.addHeader("Set-Cookie", cookie.toString());
+    }
+
+    /**
+     * 清除指定 Cookie（设置 maxAge=0 让浏览器立即删除）
+     *
+     * @param response HTTP 响应
+     * @param name     Cookie 名称
+     * @param path     Cookie 路径
+     */
+    private void clearCookie(HttpServletResponse response, String name, String path) {
+        ResponseCookie cookie = ResponseCookie.from(name, "")
+                .httpOnly(true)
+                .secure(true)
+                .sameSite("Lax")
+                .path(path)
+                .maxAge(0)
+                .build();
+        response.addHeader("Set-Cookie", cookie.toString());
+    }
+
+    /**
+     * 从请求中提取指定名称的 Cookie 值
+     *
+     * @param request HTTP 请求
+     * @param name    Cookie 名称
+     * @return Cookie 值，不存在返回 null
+     */
+    private String getCookieValue(HttpServletRequest request, String name) {
+        if (request.getCookies() == null) return null;
+        for (Cookie cookie : request.getCookies()) {
+            if (name.equals(cookie.getName())) {
+                return cookie.getValue();
+            }
+        }
+        return null;
     }
 }

@@ -5,7 +5,8 @@ import * as Icons from 'lucide-react'
 import { HelpCircle, User, LogOut, Upload, Mail, AtSign } from 'lucide-react'
 import { Button, Tooltip, Avatar, Separator, toast, Input, Modal, Badge } from '@heroui/react'
 import { fetchNavigations } from '@/lib/profile'
-import { API_BASE, getBackendHost } from '@/lib/image-url'
+import { getBackendHost } from '@/lib/image-url'
+import { upload } from '@/lib/http-client'
 import { useAuth } from '@/contexts/AuthContext'
 import Link from 'next/link'
 import { usePathname } from 'next/navigation'
@@ -48,13 +49,13 @@ export default function SidebarWidget() {
   /**
    * 处理登出
    */
-  const handleLogout = () => {
-    logout()
+  const handleLogout = async () => {
+    await logout()
     toast.success('已退出登录')
   }
 
   /**
-   * 处理头像上传
+   * 处理头像上传（使用 http-client 统一封装，自动携带 Cookie）
    */
   const handleAvatarUpload = async () => {
     if (!selectedFile) {
@@ -63,37 +64,16 @@ export default function SidebarWidget() {
     }
 
     try {
-      const token = localStorage.getItem('token')
-      if (!token) {
-        toast.danger('请先登录')
-        return
-      }
-
       const formData = new FormData()
       formData.append('avatar', selectedFile)
 
-      const response = await fetch(`${API_BASE}/auth/me/avatar`, {
-        method: 'POST',
-        headers: {
-          Authorization: `Bearer ${token}`
-        },
-        body: formData
-      })
+      const data = await upload<{ avatarUrl: string }>('/auth/me/avatar', formData)
 
-      if (!response.ok) {
-        throw new Error('上传失败')
-      }
-
-      const json = await response.json()
-      if (json.code === 200 && json.data) {
-        // 通过全局认证状态更新头像
-        refreshUser({ avatarUrl: json.data.avatarUrl })
-        toast.success('头像上传成功')
-        setUploadAvatarModalOpen(false)
-        setSelectedFile(null)
-      } else {
-        throw new Error(json.msg || '上传失败')
-      }
+      // 通过全局认证状态更新头像
+      refreshUser({ avatarUrl: data?.avatarUrl || '' })
+      toast.success('头像上传成功')
+      setUploadAvatarModalOpen(false)
+      setSelectedFile(null)
     } catch (error) {
       console.error('上传头像失败:', error)
       toast.danger(error instanceof Error ? error.message : '上传失败')

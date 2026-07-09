@@ -7,8 +7,8 @@
  * - 统一错误：所有错误（HTTP / 业务码 / 网络）统一转为 AppError，便于上层集中处理
  * - 超时控制：内置 AbortController 超时机制，默认 15 秒
  * - SSR 兼容：函数本身纯逻辑，不依赖浏览器 API
- * - Token 自动注入：自动从 localStorage 读取 Token 并携带 Authorization 请求头
- * - 401 自动拦截：Token 过期时自动清除登录态并提示用户
+ * - Cookie 自动携带：所有请求自动添加 credentials: 'include'，支持 httpOnly Cookie 鉴权
+ * - 401 自动续期：Access Token 过期时自动调用 /auth/refresh 换取新 Token 并重试原始请求
  *
  * 使用方式：
  * ```ts
@@ -37,23 +37,72 @@ const DEFAULT_TIMEOUT = 15000
 /** 上传请求超时（毫秒，允许更长的上传时间） */
 const UPLOAD_TIMEOUT = 60000
 
-// ---- Token 自动注入与 401 拦截 -----------------------------------------------
+// ---- Cookie 模式下的 401 自动续期机制 ------------------------------------
+
+/** 是否正在刷新 Token */
+let isRefreshing = false
+/** 等待刷新完成的请求队列 */
+let refreshSubscribers: Array<(success: boolean) => void> = []
 
 /**
- * 从 localStorage 安全读取 Token（SSR 安全）
+ * 通知所有等待刷新完成的请求
  */
-function getToken(): string | null {
-  if (typeof window === 'undefined') return null
-  return localStorage.getItem('token')
+function notifySubscribers(success: boolean) {
+  refreshSubscribers.forEach(cb => cb(success))
+  refreshSubscribers = []
 }
 
 /**
- * 处理 401 未授权响应：清除本地登录态并广播事件
+ * 处理 401 未授权：尝试静默刷新 Access Token，成功后重试原始请求
+ * <p>多个并发请求同时收到 401 时，只有第一个触发 refresh，其余排队等待</p>
+ *
+ * @param retryFn 重试原始请求的函数
+ * @returns 重试后的响应，或刷新失败时的 401 响应
+ */
+async function handle401WithRefresh(retryFn: () => Promise<Response>): Promise<Response> {
+  if (isRefreshing) {
+    // 已有 refresh 在进行中，排队等待
+    return new Promise<Response>((resolve) => {
+      refreshSubscribers.push((success) => {
+        if (success) resolve(retryFn())
+        else resolve(new Response(JSON.stringify({ code: 401, msg: '登录已过期' }), { status: 401 }))
+      })
+    })
+  }
+
+  isRefreshing = true
+  try {
+    const refreshRes = await fetch(`${API_BASE}/auth/refresh`, {
+      method: 'POST',
+      credentials: 'include',
+    })
+
+    const success = refreshRes.ok && (refreshRes.status === 200 || refreshRes.status === 204)
+    notifySubscribers(success)
+
+    if (success) {
+      // refresh 成功，重试原始请求
+      return retryFn()
+    }
+
+    // refresh 也失败 → 清除登录态
+    clearAuthState()
+    return refreshRes
+  } catch {
+    notifySubscribers(false)
+    clearAuthState()
+    return new Response(JSON.stringify({ code: 401, msg: '登录已过期' }), { status: 401 })
+  } finally {
+    isRefreshing = false
+  }
+}
+
+/**
+ * 清除本地登录态（localStorage + 广播事件）
  * AuthProvider 会监听 auth-change 事件自动更新全局状态
  */
-function handle401() {
+function clearAuthState() {
   if (typeof window === 'undefined') return
-  localStorage.removeItem('token')
   localStorage.removeItem('user_info')
   window.dispatchEvent(new Event('auth-change'))
 }
@@ -122,13 +171,7 @@ export async function request<T = unknown>(
   // 构建请求头
   const headers: Record<string, string> = { ...(customHeaders as Record<string, string>) }
 
-  // 自动注入 Authorization Token（仅当调用方未手动指定时）
-  if (!headers['Authorization'] && !headers['authorization']) {
-    const token = getToken()
-    if (token) {
-      headers['Authorization'] = `Bearer ${token}`
-    }
-  }
+  // Cookie 模式下无需手动注入 Authorization，浏览器自动携带 httpOnly Cookie
 
   // 处理请求体
   let requestBody: BodyInit | undefined
@@ -152,13 +195,17 @@ export async function request<T = unknown>(
   const controller = new AbortController()
   const timeoutId = setTimeout(() => controller.abort(), timeout)
 
+  // 构建 fetch 参数（所有请求自动携带 credentials，让浏览器携带 httpOnly Cookie）
+  const fetchInit: RequestInit = {
+    ...restOptions,
+    headers,
+    body: requestBody,
+    signal: controller.signal,
+    credentials: 'include',
+  }
+
   try {
-    const response = await fetch(url, {
-      ...restOptions,
-      headers,
-      body: requestBody,
-      signal: controller.signal,
-    })
+    const response = await fetch(url, fetchInit)
 
     // 尝试解析 JSON 响应体
     let bodyData: ApiResponse<T> | null = null
@@ -173,9 +220,42 @@ export async function request<T = unknown>(
 
     // 校验 HTTP 状态码
     if (!response.ok) {
-      // 401 未授权：自动清除登录态
+      // 401 未授权：尝试静默刷新 Token 后重试
       if (response.status === 401) {
-        handle401()
+        clearTimeout(timeoutId)
+        const retryResponse = await handle401WithRefresh(() => {
+          // 重建 AbortController 用于重试
+          const retryController = new AbortController()
+          setTimeout(() => retryController.abort(), timeout)
+          return fetch(url, { ...fetchInit, signal: retryController.signal })
+        })
+
+        // 重试成功，解析并返回响应
+        if (retryResponse.ok) {
+          let retryBodyData: ApiResponse<T> | null = null
+          const retryContentType = retryResponse.headers.get('content-type') || ''
+          if (retryContentType.includes('application/json')) {
+            try { retryBodyData = await retryResponse.json() } catch { /* 非 JSON */ }
+          }
+          if (skipBusinessCheck) {
+            return (retryBodyData?.data ?? retryBodyData ?? null) as unknown as T
+          }
+          if (retryBodyData && typeof retryBodyData.code === 'number') {
+            if (retryBodyData.code !== 200 && retryBodyData.code !== 0) {
+              throw classifyError(retryResponse, retryBodyData)
+            }
+            return retryBodyData.data as T
+          }
+          return retryBodyData as unknown as T
+        }
+
+        // 重试也失败（refresh 已清除登录态）
+        let retryErrorBody: ApiResponse<T> | null = null
+        const retryErrContentType = retryResponse.headers.get('content-type') || ''
+        if (retryErrContentType.includes('application/json')) {
+          try { retryErrorBody = await retryResponse.json() } catch { /* 非 JSON */ }
+        }
+        throw classifyError(retryResponse, retryErrorBody)
       }
       throw classifyError(response, bodyData)
     }

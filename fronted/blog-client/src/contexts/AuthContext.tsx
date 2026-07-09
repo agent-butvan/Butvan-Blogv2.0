@@ -24,10 +24,10 @@ interface AuthContextType {
   isLoggedIn: boolean
   /** 初始化是否加载中 */
   isLoading: boolean
-  /** 登录成功后写入 Token 和用户信息 */
-  login: (token: string, userInfo: UserInfo) => void
-  /** 退出登录，清除本地凭证与状态 */
-  logout: () => void
+  /** 登录成功后写入用户信息（Token 通过 httpOnly Cookie 自动管理） */
+  login: (userInfo: UserInfo) => void
+  /** 退出登录，调用后端清除 Cookie 并清除本地状态 */
+  logout: () => Promise<void>
   /** 局部更新用户信息（如头像更新后刷新展示） */
   refreshUser: (info: Partial<UserInfo>) => void
 }
@@ -38,20 +38,17 @@ const AuthContext = createContext<AuthContextType | undefined>(undefined)
 
 // ==================== localStorage 工具函数 ====================
 
-const TOKEN_KEY = 'token'
 const USER_INFO_KEY = 'user_info'
 
 /** 从 localStorage 安全读取并解析用户信息 */
 function readUserFromStorage(): UserInfo | null {
   if (typeof window === 'undefined') return null
   try {
-    const token = localStorage.getItem(TOKEN_KEY)
     const infoStr = localStorage.getItem(USER_INFO_KEY)
-    if (!token || !infoStr) return null
+    if (!infoStr) return null
     const parsed = JSON.parse(infoStr)
     // 脏数据保护：缺少有效 nickname 视为无效
     if (!parsed || !parsed.nickname) {
-      localStorage.removeItem(TOKEN_KEY)
       localStorage.removeItem(USER_INFO_KEY)
       return null
     }
@@ -61,7 +58,6 @@ function readUserFromStorage(): UserInfo | null {
     }
     return parsed as UserInfo
   } catch {
-    localStorage.removeItem(TOKEN_KEY)
     localStorage.removeItem(USER_INFO_KEY)
     return null
   }
@@ -94,18 +90,25 @@ export function AuthProvider({ children }: { children: ReactNode }) {
     return () => window.removeEventListener('auth-change', handler)
   }, [syncFromStorage])
 
-  /** 登录 — 写入 localStorage 并更新状态 */
-  const login = useCallback((token: string, userInfo: UserInfo) => {
-    localStorage.setItem(TOKEN_KEY, token)
+  /** 登录 — 写入 localStorage 并更新状态（Token 通过 httpOnly Cookie 自动管理） */
+  const login = useCallback((userInfo: UserInfo) => {
     localStorage.setItem(USER_INFO_KEY, JSON.stringify(userInfo))
     setUser(userInfo)
     // 广播通知其他组件
     window.dispatchEvent(new Event('auth-change'))
   }, [])
 
-  /** 退出登录 — 清除凭证并重置状态 */
-  const logout = useCallback(() => {
-    localStorage.removeItem(TOKEN_KEY)
+  /** 退出登录 — 调用后端清除 Cookie + 清除本地状态 */
+  const logout = useCallback(async () => {
+    try {
+      // 调用后端 logout 接口，清除 httpOnly Cookie + Redis 黑名单
+      await fetch('/api/auth/logout', {
+        method: 'POST',
+        credentials: 'include',
+      })
+    } catch {
+      // 网络失败时忽略，仍然清除本地状态
+    }
     localStorage.removeItem(USER_INFO_KEY)
     setUser(null)
     window.dispatchEvent(new Event('auth-change'))

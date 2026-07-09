@@ -13,6 +13,7 @@ import java.security.Key;
 import java.util.Date;
 import java.util.HashMap;
 import java.util.Map;
+import java.util.UUID;
 import java.util.function.Function;
 
 /**
@@ -32,7 +33,13 @@ public class JwtUtil {
     private String secret; // 签名密钥（应在配置文件或环境变量中设定，最小32字节）
 
     @Value("${jwt.expiration:604800}")
-    private Long expiration; // Token 生存期，默认 7 天（单位：秒）
+    private Long expiration; // Token 生存期，默认 7 天（单位：秒），兼容旧版单 Token 模式
+
+    @Value("${jwt.access-expiration:900}")
+    private Long accessExpiration; // Access Token 有效期，默认 15 分钟（单位：秒）
+
+    @Value("${jwt.refresh-expiration:604800}")
+    private Long refreshExpiration; // Refresh Token 有效期，默认 7 天（单位：秒）
 
     /**
      * 启动时校验 JWT 密钥安全性
@@ -66,7 +73,7 @@ public class JwtUtil {
     }
 
     /**
-     * 生成 JWT Token（仅含用户名，向后兼容）
+     * 生成 JWT Token（仅含用户名，向后兼容，admin 端使用）
      *
      * @param username 登录用户名
      * @return 签发的加密 Token 串
@@ -77,8 +84,7 @@ public class JwtUtil {
     }
 
     /**
-     * 携带 userId 和 role 生成增强 JWT Token
-     * <p>Token 载荷中包含用户 ID、用户名和角色，减少后续请求的不必要 DB 查询</p>
+     * 携带 userId 和 role 生成增强 JWT Token（向后兼容）
      *
      * @param userId   用户唯一 ID
      * @param username 登录用户名
@@ -103,16 +109,83 @@ public class JwtUtil {
         return createToken(claims, username);
     }
 
+    // ---- 双 Token 模式（httpOnly Cookie 方案）----------------------------
+
     /**
-     * 核心 Token 构建方法
+     * 生成 Access Token（短期，15 分钟）
+     * <p>载荷含 userId、username、role，用于每次 API 请求鉴权</p>
+     *
+     * @param userId   用户唯一 ID
+     * @param username 登录用户名
+     * @param role     用户角色
+     * @return Access Token 字符串
+     */
+    public String generateAccessToken(Long userId, String username, String role) {
+        Map<String, Object> claims = new HashMap<>();
+        claims.put("userId", userId);
+        claims.put("role", role);
+        claims.put("type", "access");
+        return createToken(claims, username, accessExpiration);
+    }
+
+    /**
+     * 生成 Refresh Token（长期，7 天）
+     * <p>载荷仅含 userId 和 username + jti（唯一标识），用于换取新 Access Token。
+     * 不含 role，确保最小化信息暴露。</p>
+     *
+     * @param userId   用户唯一 ID
+     * @param username 登录用户名
+     * @return Refresh Token 字符串
+     */
+    public String generateRefreshToken(Long userId, String username) {
+        Map<String, Object> claims = new HashMap<>();
+        claims.put("userId", userId);
+        claims.put("type", "refresh");
+        claims.put("jti", UUID.randomUUID().toString());
+        return createToken(claims, username, refreshExpiration);
+    }
+
+    /**
+     * 从 Token 中提取唯一标识 jti（用于黑名单吊销）
+     *
+     * @param token JWT Token
+     * @return jti 字符串，不存在时返回 null
+     */
+    public String getJtiFromToken(String token) {
+        return getClaimFromToken(token, claims -> claims.get("jti", String.class));
+    }
+
+    /**
+     * 获取 Refresh Token 有效期（秒），用于 Redis 黑名单 TTL 设置
+     *
+     * @return refresh token 有效期（秒）
+     */
+    public Long getRefreshExpiration() {
+        return refreshExpiration;
+    }
+
+    /**
+     * 核心 Token 构建方法（使用全局 expiration 配置）
      *
      * @param claims 载荷数据
      * @param subject 主题（用户名）
      * @return Token 串
      */
     private String createToken(Map<String, Object> claims, String subject) {
+        return createToken(claims, subject, this.expiration);
+    }
+
+    /**
+     * 核心 Token 构建方法（自定义有效期）
+     *
+     * @param claims           载荷数据
+     * @param subject          主题（用户名）
+     * @param expirationSeconds 有效期（秒）
+     * @return Token 串
+     */
+    private String createToken(Map<String, Object> claims, String subject, long expirationSeconds) {
         Date now = new Date();
-        Date expirationDate = new Date(now.getTime() + this.expiration * 1000);
+        Date expirationDate = new Date(now.getTime() + expirationSeconds * 1000);
         return Jwts.builder()
                 .setClaims(claims)
                 .setSubject(subject)
@@ -207,7 +280,7 @@ public class JwtUtil {
     }
 
     /**
-     * 验证 Token 是否合法有效
+     * 验证 Token 是否合法有效（比对用户名）
      *
      * @param token 加密 Token
      * @param username 期望的用户名
@@ -217,6 +290,22 @@ public class JwtUtil {
         try {
             final String extractedUsername = getUsernameFromToken(token);
             return (extractedUsername.equals(username) && !isTokenExpired(token));
+        } catch (Exception e) {
+            return false;
+        }
+    }
+
+    /**
+     * 验证 Token 签名和有效期（不比对待定用户名）
+     * <p>用于 Refresh Token 校验场景，仅需确认 Token 未被篡改且未过期</p>
+     *
+     * @param token 加密 Token
+     * @return 签名合法且未过期返回 true
+     */
+    public Boolean validateToken(String token) {
+        try {
+            getAllClaimsFromToken(token); // 签名无效会抛异常
+            return !isTokenExpired(token);
         } catch (Exception e) {
             return false;
         }

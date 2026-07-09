@@ -368,6 +368,7 @@ Butvan Blog2.0/                                    # 📦 项目根目录
             │   │   │   ├── NavigationService.java  #         导航业务接口
             │   │   │   ├── SeriesService.java      #         系列业务接口
             │   │   │   ├── AuthService.java         #         认证与当前账号个人中心业务接口
+            │   │   │   ├── TokenService.java       #         Token 生命周期管理（双 Token 签发/刷新/吊销）
             │   │   │   ├── SiteConfigService.java  #         配置业务接口
             │   │   │   ├── FriendLinkService.java  #         友链业务接口
 │   │   │   ├── AlbumService.java       #         相册业务接口
