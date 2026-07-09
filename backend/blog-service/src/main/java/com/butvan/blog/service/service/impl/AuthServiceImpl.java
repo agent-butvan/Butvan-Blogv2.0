@@ -148,8 +148,8 @@ public class AuthServiceImpl implements AuthService {
             }
         }
 
-        // 4. 签发 JWT
-        String token = jwtUtil.generateToken(user.getUsername());
+        // 4. 签发 JWT（携带 userId 和 role 增强载荷）
+        String token = jwtUtil.generateToken(user.getId(), user.getUsername(), user.getRole());
         user.setLastLoginAt(LocalDateTime.now());
         userRepository.save(user);
         log.info("用户 [{}] 登录成功，JWT 签发完毕", user.getUsername());

@@ -66,13 +66,29 @@ public class JwtUtil {
     }
 
     /**
-     * 生成 JWT Token
+     * 生成 JWT Token（仅含用户名，向后兼容）
      *
      * @param username 登录用户名
      * @return 签发的加密 Token 串
      */
     public String generateToken(String username) {
         Map<String, Object> claims = new HashMap<>();
+        return createToken(claims, username);
+    }
+
+    /**
+     * 携带 userId 和 role 生成增强 JWT Token
+     * <p>Token 载荷中包含用户 ID、用户名和角色，减少后续请求的不必要 DB 查询</p>
+     *
+     * @param userId   用户唯一 ID
+     * @param username 登录用户名
+     * @param role     用户角色（ADMIN / AUTHOR）
+     * @return 签发的加密 Token 串
+     */
+    public String generateToken(Long userId, String username, String role) {
+        Map<String, Object> claims = new HashMap<>();
+        claims.put("userId", userId);
+        claims.put("role", role);
         return createToken(claims, username);
     }
 
@@ -114,6 +130,32 @@ public class JwtUtil {
      */
     public String getUsernameFromToken(String token) {
         return getClaimFromToken(token, Claims::getSubject);
+    }
+
+    /**
+     * 从 Token 中提取用户 ID
+     *
+     * @param token 加密 Token
+     * @return 用户 ID，未携带时返回 null
+     */
+    public Long getUserIdFromToken(String token) {
+        return getClaimFromToken(token, claims -> {
+            Object userId = claims.get("userId");
+            if (userId instanceof Number) {
+                return ((Number) userId).longValue();
+            }
+            return null;
+        });
+    }
+
+    /**
+     * 从 Token 中提取用户角色
+     *
+     * @param token 加密 Token
+     * @return 用户角色字符串，未携带时返回 null
+     */
+    public String getRoleFromToken(String token) {
+        return getClaimFromToken(token, claims -> claims.get("role", String.class));
     }
 
     /**

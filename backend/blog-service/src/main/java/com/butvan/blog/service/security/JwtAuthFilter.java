@@ -14,6 +14,8 @@ import org.springframework.security.web.authentication.WebAuthenticationDetailsS
 import org.springframework.stereotype.Component;
 import org.springframework.web.filter.OncePerRequestFilter;
 import java.io.IOException;
+import java.util.HashMap;
+import java.util.Map;
 
 /**
  * JWT 请求令牌解析与认证上下文填充过滤器
@@ -62,7 +64,15 @@ public class JwtAuthFilter extends OncePerRequestFilter {
                             null,
                             userDetails.getAuthorities()
                     );
-                    authToken.setDetails(new WebAuthenticationDetailsSource().buildDetails(request));
+
+                    // 从 Token 中提取 userId 和 role，存入 details 供 Controller 层直接使用
+                    Map<String, Object> tokenDetails = new HashMap<>();
+                    Long userId = jwtUtil.getUserIdFromToken(jwt);
+                    String role = jwtUtil.getRoleFromToken(jwt);
+                    if (userId != null) tokenDetails.put("userId", userId);
+                    if (role != null) tokenDetails.put("role", role);
+                    tokenDetails.put("remoteAddress", new WebAuthenticationDetailsSource().buildDetails(request));
+                    authToken.setDetails(tokenDetails);
                     
                     // 将认证信息放入 SecurityContextHolder 安全上下文
                     SecurityContextHolder.getContext().setAuthentication(authToken);
