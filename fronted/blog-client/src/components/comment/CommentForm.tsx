@@ -5,6 +5,7 @@ import { Button, Tooltip, cn } from '@heroui/react'
 import { Smile, Send, X, Globe, Mail, User, Eye, Edit2 } from 'lucide-react'
 import { marked } from 'marked'
 import HtmlRenderer from '@/components/common/HtmlRenderer'
+import { API_BASE } from '@/lib/image-url'
 
 // 支持点击快捷输入的 Emoji 列表
 const EMOJIS = ['😄', '🎉', '❤️', '👍', '🚀', '💻', '🤔', '👀', '🔥', '👏']
@@ -99,7 +100,6 @@ export default function CommentForm({
     setSubmitting(true)
 
     try {
-      const API_BASE = process.env.NEXT_PUBLIC_API_BASE_URL || 'http://localhost:8080/api'
       const res = await fetch(`${API_BASE}/articles/${articleId}/comments`, {
         method: 'POST',
         headers: {

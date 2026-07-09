@@ -3,6 +3,7 @@
 import React, { useState, useEffect } from 'react'
 import { RefreshCw, Lock, User, Eye, EyeOff, Mail, AtSign } from 'lucide-react'
 import { Modal, Spinner } from '@heroui/react'
+import { API_BASE } from '@/lib/image-url'
 
 /** 邮箱彩色 SVG 图标 */
 const EmailIcon = ({ size = 20 }: { size?: number }) => (
@@ -100,8 +101,7 @@ export default function LoginModal({ isOpen, onClose }: LoginModalProps) {
     setQrLoading(true)
     setQrError('')
     try {
-      const apiBase = process.env.NEXT_PUBLIC_API_BASE_URL || 'http://localhost:8080/api'
-      const res = await fetch(`${apiBase}/weixin/login`, {
+      const res = await fetch(`${API_BASE}/weixin/login`, {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' }
       })
@@ -129,8 +129,7 @@ export default function LoginModal({ isOpen, onClose }: LoginModalProps) {
     setLoginSubmitting(true)
     setLoginError('')
     try {
-      const apiBase = process.env.NEXT_PUBLIC_API_BASE_URL || 'http://localhost:8080/api'
-      const res = await fetch(`${apiBase}/auth/login`, {
+      const res = await fetch(`${API_BASE}/auth/login`, {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify({ username: usernameInput.trim(), password: passwordInput })
@@ -184,8 +183,7 @@ export default function LoginModal({ isOpen, onClose }: LoginModalProps) {
     setRegSubmitting(true)
     setRegError('')
     try {
-      const apiBase = process.env.NEXT_PUBLIC_API_BASE_URL || 'http://localhost:8080/api'
-      const res = await fetch(`${apiBase}/auth/register`, {
+      const res = await fetch(`${API_BASE}/auth/register`, {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify({
@@ -310,10 +308,7 @@ export default function LoginModal({ isOpen, onClose }: LoginModalProps) {
                       </div>
 
                       <div className="space-y-2">
-                        <div className="flex items-center justify-between">
-                          <label htmlFor="login-password" className={labelCls}>密码</label>
-                          <a href="#" className="text-sm font-medium text-[#727BBA] hover:text-[#5f68a3] hover:underline transition-colors">忘记密码？</a>
-                        </div>
+                        <label htmlFor="login-password" className={labelCls}>密码</label>
                         <div className="relative">
                           <Lock size={16} className="absolute left-3 top-1/2 -translate-y-1/2 text-[#727BBA]/50 pointer-events-none" />
                           <input

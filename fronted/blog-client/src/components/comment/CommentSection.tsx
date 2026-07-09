@@ -6,7 +6,7 @@ import { Spinner } from '@heroui/react'
 import { marked } from 'marked'
 import CommentForm from './CommentForm'
 import HtmlRenderer from '@/components/common/HtmlRenderer'
-import { resolveImageUrl } from '@/lib/image-url'
+import { resolveImageUrl, API_BASE } from '@/lib/image-url'
 
 interface CommentVO {
   id: number
@@ -94,9 +94,6 @@ export default function CommentSection({
   // 局部交互状态
   const [activeReplyId, setActiveReplyId] = useState<number | null>(null)
   const [likedIds, setLikedIds] = useState<Set<number>>(new Set())
-
-  // API 根路径
-  const API_BASE = process.env.NEXT_PUBLIC_API_BASE_URL || 'http://localhost:8080/api'
 
   // 1. 获取评论列表并递归计算总数
   const fetchComments = async () => {

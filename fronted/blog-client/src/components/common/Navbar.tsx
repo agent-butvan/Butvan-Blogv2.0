@@ -2,8 +2,10 @@
 
 import React, { useState, useEffect } from 'react'
 import Link from 'next/link'
-import { Menu, X, ChevronDown, ArrowUpRight, Loader2 } from 'lucide-react'
+import { Menu, X, ChevronDown, ArrowUpRight } from 'lucide-react'
 import { fetchNavigations } from '@/lib/profile'
+import { getBackendHost } from '@/lib/image-url'
+import LoginModal from '@/components/auth/LoginModal'
 import type { ProfileVO } from '@/types/profile'
 
 interface NavigationItem {
@@ -22,8 +24,7 @@ const resolveAvatarUrl = (avatarUrl?: string | null): string => {
   if (avatarUrl.startsWith("http://") || avatarUrl.startsWith("https://")) {
     return avatarUrl;
   }
-  const apiBase = process.env.NEXT_PUBLIC_API_BASE_URL || "http://localhost:8080/api";
-  const host = apiBase.replace(/\/api$/, "");
+  const host = getBackendHost();
   return avatarUrl.startsWith("/") ? `${host}${avatarUrl}` : avatarUrl;
 };
 
@@ -41,10 +42,6 @@ export default function Navbar({ profile }: NavbarProps) {
   // 读者登录状态
   const [user, setUser] = useState<{ nickname: string; avatarUrl?: string | null } | null>(null)
   const [loginModalOpen, setLoginModalOpen] = useState(false)
-  const [usernameInput, setUsernameInput] = useState('')
-  const [passwordInput, setPasswordInput] = useState('')
-  const [submitting, setSubmitting] = useState(false)
-  const [loginError, setLoginError] = useState('')
 
   // 获取登录状态
   const initAuth = () => {
@@ -83,56 +80,6 @@ export default function Navbar({ profile }: NavbarProps) {
     }
   }, [])
 
-  const handleLogin = async (e: React.FormEvent) => {
-    e.preventDefault()
-    if (!usernameInput.trim() || !passwordInput) {
-      setLoginError('请输入用户名和密码')
-      return
-    }
-    setSubmitting(true)
-    setLoginError('')
-    try {
-      const apiBase = process.env.NEXT_PUBLIC_API_BASE_URL || 'http://localhost:8080/api'
-      const res = await fetch(`${apiBase}/auth/login`, {
-        method: 'POST',
-        headers: {
-          'Content-Type': 'application/json'
-        },
-        body: JSON.stringify({
-          username: usernameInput.trim(),
-          password: passwordInput
-        })
-      })
-      const json = await res.json()
-      if (json.code === 200 || json.code === 0) {
-        if (json.data && json.data.token) {
-          localStorage.setItem('token', json.data.token)
-          const userInfo = {
-            nickname: json.data.user?.nickname || json.data.nickname || '用户',
-            avatarUrl: json.data.user?.avatarUrl || json.data.avatarUrl || null,
-            username: json.data.user?.username || json.data.username || null
-          }
-          localStorage.setItem('user_info', JSON.stringify(userInfo))
-          setUser(userInfo)
-          setLoginModalOpen(false)
-          setUsernameInput('')
-          setPasswordInput('')
-          
-          // 广播通知
-          window.dispatchEvent(new Event('auth-change'))
-        } else {
-          setLoginError('登录异常，未获得访问令牌')
-        }
-      } else {
-        setLoginError(json.msg || '用户名或密码错误')
-      }
-    } catch (err) {
-      console.error(err)
-      setLoginError('网络连接失败，请稍后重试')
-    } finally {
-      setSubmitting(false)
-    }
-  }
 
   const handleLogout = () => {
     localStorage.removeItem('token')
@@ -227,7 +174,7 @@ export default function Navbar({ profile }: NavbarProps) {
           </div>
         ) : (
           <button 
-            onClick={() => { setLoginError(''); setLoginModalOpen(true); }}
+            onClick={() => setLoginModalOpen(true)}
             className="text-xs font-semibold text-[#727BBA] hover:text-[#5f68a3] cursor-pointer transition-colors"
           >
             登录
@@ -316,7 +263,7 @@ export default function Navbar({ profile }: NavbarProps) {
               </div>
             ) : (
               <button 
-                onClick={() => { setLoginError(''); setMobileMenuOpen(false); setLoginModalOpen(true); }}
+                onClick={() => { setMobileMenuOpen(false); setLoginModalOpen(true); }}
                 className="text-xs font-bold text-[#727BBA] cursor-pointer"
               >
                 点此登录账户
@@ -336,65 +283,8 @@ export default function Navbar({ profile }: NavbarProps) {
         </div>
       )}
 
-      {/* 无刷新毛玻璃极简登录窗 */}
-      {loginModalOpen && (
-        <div className="fixed inset-0 bg-zinc-950/60 backdrop-blur-xs flex items-center justify-center z-50 animate-[fadeIn_0.15s_ease-out]">
-          <form 
-            onSubmit={handleLogin}
-            className="bg-white dark:bg-zinc-900 border border-zinc-200/60 dark:border-zinc-800/60 rounded-3xl w-full max-w-xs p-6 relative flex flex-col gap-4.5 shadow-xl select-none mx-4"
-          >
-            <button 
-              type="button"
-              onClick={() => setLoginModalOpen(false)}
-              className="absolute top-4.5 right-4.5 p-1 rounded-full hover:bg-zinc-100 dark:hover:bg-zinc-800 text-zinc-400 transition-colors cursor-pointer"
-            >
-              <X size={14} />
-            </button>
-            
-            <div className="flex flex-col items-center text-center mt-2.5">
-              <h3 className="text-sm font-serif font-bold text-zinc-900 dark:text-white mb-1">欢迎回来</h3>
-              <p className="text-[10px] text-zinc-400 dark:text-zinc-500 font-serif italic">登录您的可梵博客账号</p>
-            </div>
-            
-            <div className="flex flex-col gap-3.5">
-              <div className="flex flex-col gap-1">
-                <label className="text-[9px] font-bold text-zinc-400 dark:text-zinc-500 uppercase tracking-widest pl-1">用户名</label>
-                <input
-                  type="text"
-                  placeholder="请输入登录用户名"
-                  value={usernameInput}
-                  onChange={(e) => setUsernameInput(e.target.value)}
-                  className="w-full text-xs px-3.5 py-2.25 rounded-xl border border-zinc-200/80 dark:border-zinc-800 bg-zinc-50 dark:bg-zinc-950 text-zinc-900 dark:text-zinc-100 placeholder:text-zinc-400 dark:placeholder:text-zinc-650 focus:outline-none focus:border-[#727BBA] transition-colors"
-                />
-              </div>
-
-              <div className="flex flex-col gap-1">
-                <label className="text-[9px] font-bold text-zinc-400 dark:text-zinc-500 uppercase tracking-widest pl-1">密码</label>
-                <input
-                  type="password"
-                  placeholder="请输入登录密码"
-                  value={passwordInput}
-                  onChange={(e) => setPasswordInput(e.target.value)}
-                  className="w-full text-xs px-3.5 py-2.25 rounded-xl border border-zinc-200/80 dark:border-zinc-800 bg-zinc-50 dark:bg-zinc-950 text-zinc-900 dark:text-zinc-100 placeholder:text-zinc-400 dark:placeholder:text-zinc-650 focus:outline-none focus:border-[#727BBA] transition-colors"
-                />
-              </div>
-            </div>
-
-            {loginError && (
-              <p className="text-[10px] text-rose-500 text-center font-semibold animate-pulse">{loginError}</p>
-            )}
-
-            <button
-              type="submit"
-              disabled={submitting}
-              className="w-full py-2.25 bg-[#727BBA] hover:bg-[#5f68a3] text-white rounded-xl text-xs font-bold transition-colors cursor-pointer select-none mt-1 flex items-center justify-center gap-1.5 disabled:opacity-50"
-            >
-              {submitting && <Loader2 className="w-3.5 h-3.5 animate-spin" />}
-              <span>{submitting ? '安全登录中...' : '提交登录'}</span>
-            </button>
-          </form>
-        </div>
-      )}
+      {/* 登录弹窗（统一使用 LoginModal 组件） */}
+      <LoginModal isOpen={loginModalOpen} onClose={() => setLoginModalOpen(false)} />
     </header>
   )
 }

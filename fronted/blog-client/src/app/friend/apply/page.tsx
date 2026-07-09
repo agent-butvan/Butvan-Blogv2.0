@@ -22,7 +22,7 @@ import SidebarWidget from '@/components/common/SidebarWidget'
 import { toast, Avatar, Button, Spinner, Tooltip, cn } from '@heroui/react'
 import { fetchProfile } from '@/lib/profile'
 import { applyFriendLink, uploadPublicImage, fetchWebMeta } from '@/lib/friend-api'
-import { resolveImageUrl } from '@/lib/image-url'
+import { resolveImageUrl, getBackendHost } from '@/lib/image-url'
 import { handleError, AppError } from '@/lib/error-handler'
 import type { ProfileVO } from '@/types/profile'
 import { FRIEND_CATEGORIES } from '@/types/friend'
@@ -179,9 +179,7 @@ export default function FriendApplyPage() {
       const relativePath = await uploadPublicImage(file)
       
       // 更新表单数据（拼接完整 URL，uploads 静态资源不在 /api 路径下）
-      const baseUrl = process.env.NEXT_PUBLIC_API_BASE_URL || 'http://localhost:8080'
-      // 去掉 /api 后缀（如果有），以获取纯 base URL 用于静态资源
-      const staticBase = baseUrl.replace(/\/api$/, '')
+      const staticBase = getBackendHost()
       const fullUrl = `${staticBase}${relativePath}`
       setFormData({ ...formData, avatarUrl: fullUrl })
       

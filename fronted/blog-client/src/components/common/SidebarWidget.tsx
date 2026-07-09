@@ -5,6 +5,7 @@ import * as Icons from 'lucide-react'
 import { HelpCircle, User, LogOut, Upload, Mail, AtSign } from 'lucide-react'
 import { Button, Tooltip, Avatar, Separator, toast, Input, Modal, Badge } from '@heroui/react'
 import { fetchNavigations } from '@/lib/profile'
+import { API_BASE, getBackendHost } from '@/lib/image-url'
 import Link from 'next/link'
 import { usePathname } from 'next/navigation'
 import LoginModal from '@/components/auth/LoginModal'
@@ -117,7 +118,7 @@ export default function SidebarWidget() {
       const formData = new FormData()
       formData.append('avatar', selectedFile)
 
-      const response = await fetch(`${process.env.NEXT_PUBLIC_API_BASE_URL || 'http://localhost:8080/api'}/auth/me/avatar`, {
+      const response = await fetch(`${API_BASE}/auth/me/avatar`, {
         method: 'POST',
         headers: {
           Authorization: `Bearer ${token}`
@@ -155,8 +156,7 @@ export default function SidebarWidget() {
     if (avatarUrl.startsWith("http://") || avatarUrl.startsWith("https://")) {
       return avatarUrl;
     }
-    const apiBase = process.env.NEXT_PUBLIC_API_BASE_URL || "http://localhost:8080/api";
-    const host = apiBase.replace(/\/api$/, "");
+    const host = getBackendHost();
     return avatarUrl.startsWith("/") ? `${host}${avatarUrl}` : avatarUrl;
   };
 

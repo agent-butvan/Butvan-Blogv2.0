@@ -26,6 +26,7 @@ import DetailErrorState from '@/components/detail/DetailErrorState'
 import Copyright from '@/components/detail/Copyright'
 import RewardModal from '@/components/detail/RewardModal'
 import { fetchProfile } from '@/lib/profile'
+import { API_BASE } from '@/lib/image-url'
 import type { ProfileVO } from '@/types/profile'
 import gsap from 'gsap'
 
@@ -50,8 +51,6 @@ interface ArticleDetail {
   isAllowComment?: boolean
   likeCount?: number
 }
-
-const API_BASE = process.env.NEXT_PUBLIC_API_BASE_URL || 'http://localhost:8080/api'
 
 interface TocItem {
   id: string

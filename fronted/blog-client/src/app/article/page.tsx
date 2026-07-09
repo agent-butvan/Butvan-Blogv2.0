@@ -19,7 +19,7 @@ import {
 } from 'lucide-react'
 import Link from 'next/link'
 import Image from 'next/image'
-import { resolveImageUrl } from '@/lib/image-url'
+import { resolveImageUrl, API_BASE } from '@/lib/image-url'
 import Navbar from '@/components/common/Navbar'
 import SidebarWidget from '@/components/common/SidebarWidget'
 import { fetchProfile } from '@/lib/profile'
@@ -58,8 +58,6 @@ interface CategoryItem {
   name: string
   slug: string
 }
-
-const API_BASE = process.env.NEXT_PUBLIC_API_BASE_URL || 'http://localhost:8080/api'
 
 /**
  * 前台文章列表页组件
