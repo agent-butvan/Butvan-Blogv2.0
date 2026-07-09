@@ -62,4 +62,12 @@ public interface ArticleLikeRepository extends JpaRepository<ArticleLike, Long>,
     Optional<ArticleLike> findFirstByArticleIdAndUserIdAndCreatedAtAfter(
             Long articleId, Long userId, LocalDateTime time
     );
+
+    /**
+     * 统计某个用户的点赞总数（包括文章点赞）
+     *
+     * @param userId 用户 ID
+     * @return 该用户的点赞总数
+     */
+    long countByUserId(Long userId);
 }

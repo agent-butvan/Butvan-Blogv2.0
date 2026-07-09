@@ -7,8 +7,10 @@ import com.butvan.blog.pojo.dto.admin.AdminResetPasswordDTO;
 import com.butvan.blog.pojo.dto.admin.AdminUpdateUserDTO;
 import com.butvan.blog.pojo.entity.User;
 import com.butvan.blog.pojo.vo.admin.AdminUserVO;
+import com.butvan.blog.service.repository.ArticleLikeRepository;
 import com.butvan.blog.service.repository.ArticleRepository;
 import com.butvan.blog.service.repository.CommentRepository;
+import com.butvan.blog.service.repository.NoteLikeRepository;
 import com.butvan.blog.service.repository.UserRepository;
 import com.butvan.blog.service.service.AdminUserService;
 import jakarta.persistence.criteria.Predicate;
@@ -40,6 +42,8 @@ public class AdminUserServiceImpl implements AdminUserService {
     private final UserRepository userRepository;
     private final ArticleRepository articleRepository;
     private final CommentRepository commentRepository;
+    private final ArticleLikeRepository articleLikeRepository;
+    private final NoteLikeRepository noteLikeRepository;
     private final PasswordEncoder passwordEncoder;
 
     @Override
@@ -257,16 +261,21 @@ public class AdminUserServiceImpl implements AdminUserService {
      * 校验角色值合法性
      */
     private void validateRole(String role) {
-        if (!"ADMIN".equals(role) && !"AUTHOR".equals(role)) {
-            throw new BusinessException("无效的角色值，仅支持 ADMIN 或 AUTHOR");
+        if (!"ADMIN".equals(role) && !"USER".equals(role)) {
+            throw new BusinessException("无效的角色值，仅支持 ADMIN 或 USER");
         }
     }
 
     /**
-     * 将 User 实体转换为 AdminUserVO（含文章数/评论数统计）
+     * 将 User 实体转换为 AdminUserVO（含点赞数/评论数统计）
      */
     private AdminUserVO toAdminUserVO(User user) {
-        long articleCount = articleRepository.countByAuthorIdAndDeletedAtIsNull(user.getId());
+        // 统计该用户的总点赞数（文章点赞 + 手记点赞）
+        long articleLikeCount = articleLikeRepository.countByUserId(user.getId());
+        long noteLikeCount = noteLikeRepository.countByUserId(user.getId());
+        long likeCount = articleLikeCount + noteLikeCount;
+
+        // 统计该用户的评论总数
         long commentCount = commentRepository.countByUserIdAndDeletedAtIsNull(user.getId());
 
         return AdminUserVO.builder()
@@ -283,7 +292,7 @@ public class AdminUserServiceImpl implements AdminUserService {
                 .lastLoginAt(user.getLastLoginAt())
                 .createdAt(user.getCreatedAt())
                 .updatedAt(user.getUpdatedAt())
-                .articleCount(articleCount)
+                .likeCount(likeCount)
                 .commentCount(commentCount)
                 .build();
     }

@@ -33,4 +33,12 @@ public interface NoteLikeRepository extends JpaRepository<NoteLike, Long>, JpaSp
      */
     Optional<NoteLike> findFirstByNoteIdAndIpAddressAndUserAgentAndCreatedAtAfter(
             Long noteId, String ipAddress, String userAgent, LocalDateTime since);
+
+    /**
+     * 统计某个用户的点赞总数（包括手记点赞）
+     *
+     * @param userId 用户 ID
+     * @return 该用户的点赞总数
+     */
+    long countByUserId(Long userId);
 }

@@ -62,7 +62,7 @@ public class User {
     private Boolean twoFactorEnabled = false; // 是否启用双重验证
 
     @Column(name = "role", nullable = false, length = 20)
-    private String role; // 用户的安全角色身份枚举：ADMIN（管理员）| AUTHOR（作者）
+    private String role; // 用户的安全角色身份枚举：ADMIN（管理员）| USER（普通用户）
 
     @Column(name = "status", nullable = false, length = 20)
     private String status; // 用户账号的安全启用状态：ACTIVE（正常）| DISABLED（禁用）
@@ -84,7 +84,7 @@ public class User {
         this.createdAt = LocalDateTime.now();
         this.updatedAt = LocalDateTime.now();
         if (this.role == null) {
-            this.role = "AUTHOR";
+            this.role = "USER";
         }
         if (this.status == null) {
             this.status = "ACTIVE";

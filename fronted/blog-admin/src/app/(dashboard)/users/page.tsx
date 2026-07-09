@@ -13,12 +13,12 @@ import {
   Mail,
   Calendar,
   Clock,
-  FileText,
   MessageSquare,
   Shield,
   Loader2,
   CheckSquare,
   Square,
+  Heart,
 } from "lucide-react";
 import {
   Avatar,
@@ -65,7 +65,7 @@ const STATUS_TABS = [
 const ROLE_OPTIONS = [
   { label: "全部角色", value: "all" },
   { label: "管理员", value: "ADMIN" },
-  { label: "作者", value: "AUTHOR" },
+  { label: "普通用户", value: "USER" },
 ];
 
 /**
@@ -135,7 +135,7 @@ export default function UsersPage() {
     active: users.filter((u) => u.status === "ACTIVE").length,
     disabled: users.filter((u) => u.status === "DISABLED").length,
     admin: users.filter((u) => u.role === "ADMIN").length,
-    author: users.filter((u) => u.role === "AUTHOR").length,
+    user: users.filter((u) => u.role === "USER").length,
   }), [users]);
 
   /** 搜索 */
@@ -328,7 +328,7 @@ export default function UsersPage() {
         </span>
         <span className="flex items-center gap-1.5 text-blue-600/80 dark:text-blue-400/80">
           <span className="w-1.5 h-1.5 rounded-full bg-blue-400" />
-          AUTHOR <span className="font-bold">{stats.author}</span>
+          USER <span className="font-bold">{stats.user}</span>
         </span>
       </div>
 
@@ -494,7 +494,7 @@ export default function UsersPage() {
                         </span>
                         <span className="text-[11px] font-mono text-zinc-400 dark:text-zinc-500">@{user.username}</span>
                         <Chip size="sm" color={isAdmin ? "warning" : "default"} variant="soft">
-                          {isAdmin ? "ADMIN" : "AUTHOR"}
+                          {isAdmin ? "ADMIN" : "USER"}
                         </Chip>
                         <Chip
                           size="sm"
@@ -529,13 +529,13 @@ export default function UsersPage() {
                             {new Date(user.lastLoginAt).toLocaleDateString("zh-CN", { month: "2-digit", day: "2-digit" })}
                           </span>
                         )}
-                        <span className="flex items-center gap-1" title="文章数">
-                          <FileText size={11} className="shrink-0" />
-                          {user.articleCount}
+                        <span className="flex items-center gap-1" title="点赞数">
+                          <Heart size={11} className="shrink-0" />
+                          {user.likeCount || 0}
                         </span>
                         <span className="flex items-center gap-1" title="评论数">
                           <MessageSquare size={11} className="shrink-0" />
-                          {user.commentCount}
+                          {user.commentCount || 0}
                         </span>
                       </div>
                     </div>

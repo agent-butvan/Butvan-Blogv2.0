@@ -33,7 +33,7 @@ export default function UserFormModal({
   const [email, setEmail] = useState("");
   const [avatarUrl, setAvatarUrl] = useState("");
   const [bio, setBio] = useState("");
-  const [role, setRole] = useState<"ADMIN" | "AUTHOR">("AUTHOR");
+  const [role, setRole] = useState<"ADMIN" | "USER">("USER");
 
   // 校验错误
   const [errors, setErrors] = useState<Record<string, string>>({});
@@ -54,7 +54,7 @@ export default function UserFormModal({
       setEmail("");
       setAvatarUrl("");
       setBio("");
-      setRole("AUTHOR");
+      setRole("USER");
     }
     setErrors({});
   }, [editUser, open]);
@@ -221,10 +221,10 @@ export default function UserFormModal({
               <label className={labelCls}>角色 *</label>
               <select
                 value={role}
-                onChange={(e) => setRole(e.target.value as "ADMIN" | "AUTHOR")}
+                onChange={(e) => setRole(e.target.value as "ADMIN" | "USER")}
                 className={inputCls}
               >
-                <option value="AUTHOR">作者 (AUTHOR)</option>
+                <option value="USER">普通用户 (USER)</option>
                 <option value="ADMIN">管理员 (ADMIN)</option>
               </select>
             </div>

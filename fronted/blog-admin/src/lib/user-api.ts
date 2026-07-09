@@ -9,14 +9,14 @@ export interface AdminUser {
   email?: string;
   avatarUrl?: string;
   bio?: string;
-  role: "ADMIN" | "AUTHOR";
+  role: "ADMIN" | "USER";
   status: "ACTIVE" | "DISABLED";
   twoFactorEnabled: boolean;
   githubUsername?: string;
   lastLoginAt?: string;
   createdAt: string;
   updatedAt: string;
-  articleCount: number;
+  likeCount: number;
   commentCount: number;
 }
 
@@ -35,7 +35,7 @@ export interface CreateUserPayload {
   password: string;
   nickname: string;
   email?: string;
-  role: "ADMIN" | "AUTHOR";
+  role: "ADMIN" | "USER";
 }
 
 /** 编辑用户表单 */
@@ -44,7 +44,7 @@ export interface UpdateUserPayload {
   email?: string;
   avatarUrl?: string;
   bio?: string;
-  role: "ADMIN" | "AUTHOR";
+  role: "ADMIN" | "USER";
 }
 
 /** 重置密码表单 */
