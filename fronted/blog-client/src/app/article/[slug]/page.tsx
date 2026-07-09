@@ -26,7 +26,7 @@ import DetailErrorState from '@/components/detail/DetailErrorState'
 import Copyright from '@/components/detail/Copyright'
 import RewardModal from '@/components/detail/RewardModal'
 import { fetchProfile } from '@/lib/profile'
-import { API_BASE } from '@/lib/image-url'
+import { post, get } from '@/lib/http-client'
 import type { ProfileVO } from '@/types/profile'
 import gsap from 'gsap'
 
@@ -122,20 +122,12 @@ export default function ArticleDetailPage() {
         setProfile(profileData)
 
         // 2. 向后端拉取文章详情
-        const res = await fetch(`${API_BASE}/articles/${slug}`, { cache: 'no-store' })
-        if (!res.ok) throw new Error(`HTTP_${res.status}`)
-
-        const json = await res.json()
-        if (json.code === 200 || json.code === 0) {
-          const fetchedArticle = json.data
-          if (fetchedArticle) {
-            setArticle(fetchedArticle)
-            setLikeCount(fetchedArticle.likeCount || 0)
-          } else {
-            throw new Error('未获取到文章内容')
-          }
+        const fetchedArticle = await get<Record<string, unknown>>(`/articles/${slug}`, { cache: 'no-store' })
+        if (fetchedArticle) {
+          setArticle(fetchedArticle as unknown as ArticleDetail)
+          setLikeCount((fetchedArticle.likeCount as number) || 0)
         } else {
-          throw new Error(json.msg || '后端加载异常')
+          throw new Error('未获取到文章内容')
         }
       } catch (err) {
         console.warn('加载文章详情失败:', err instanceof Error ? err.message : String(err))
@@ -252,57 +244,42 @@ export default function ArticleDetailPage() {
   const handleLike = async () => {
     if (!article?.id) return
 
-    // 真实后端 API 请求对接
+    // http-client 自动注入 Token，无需手动处理
     try {
-      const token = typeof window !== 'undefined' ? localStorage.getItem('token') : null
-      const headers: Record<string, string> = {}
-      if (token) {
-        headers['Authorization'] = `Bearer ${token}`
-      }
+      const data = await post<number>(`/articles/${article.id}/like`)
+      const newCount = typeof data === 'number' ? data : (liked ? likeCount - 1 : likeCount + 1)
+      setLikeCount(newCount)
 
-      const res = await fetch(`${API_BASE}/articles/${article.id}/like`, {
-        method: 'POST',
-        headers
-      })
-      const json = await res.json()
-      
-      if (json.code === 200 || json.code === 0) {
-        const newCount = typeof json.data === 'number' ? json.data : (liked ? likeCount - 1 : likeCount + 1)
-        setLikeCount(newCount)
-
-        if (liked) {
-          // 取消点赞成功
-          setLiked(false)
-          if (typeof window !== 'undefined') {
-            const likedListStr = localStorage.getItem('liked_articles') || '[]'
-            try {
-              const likedList = JSON.parse(likedListStr)
-              if (Array.isArray(likedList)) {
-                localStorage.setItem('liked_articles', JSON.stringify(likedList.filter(id => id !== article.id)))
-              }
-            } catch (e) {}
-          }
-          toast.success('点赞已取消')
-        } else {
-          // 点赞成功
-          setLiked(true)
-          if (typeof window !== 'undefined') {
-            const likedListStr = localStorage.getItem('liked_articles') || '[]'
-            try {
-              const likedList = JSON.parse(likedListStr)
-              if (Array.isArray(likedList) && !likedList.includes(article.id)) {
-                likedList.push(article.id)
-                localStorage.setItem('liked_articles', JSON.stringify(likedList))
-              }
-            } catch (e) {
-              console.error('缓存本地点赞状态失败:', e)
+      if (liked) {
+        // 取消点赞成功
+        setLiked(false)
+        if (typeof window !== 'undefined') {
+          const likedListStr = localStorage.getItem('liked_articles') || '[]'
+          try {
+            const likedList = JSON.parse(likedListStr)
+            if (Array.isArray(likedList)) {
+              localStorage.setItem('liked_articles', JSON.stringify(likedList.filter(id => id !== article.id)))
             }
-          }
-          toast.success('点赞成功，感谢您的赞同！')
-          playHeartAnim()
+          } catch (e) {}
         }
+        toast.success('点赞已取消')
       } else {
-        toast.danger(json.msg || '操作失败')
+        // 点赞成功
+        setLiked(true)
+        if (typeof window !== 'undefined') {
+          const likedListStr = localStorage.getItem('liked_articles') || '[]'
+          try {
+            const likedList = JSON.parse(likedListStr)
+            if (Array.isArray(likedList) && !likedList.includes(article.id)) {
+              likedList.push(article.id)
+              localStorage.setItem('liked_articles', JSON.stringify(likedList))
+            }
+          } catch (e) {
+            console.error('缓存本地点赞状态失败:', e)
+          }
+        }
+        toast.success('点赞成功，感谢您的赞同！')
+        playHeartAnim()
       }
     } catch (err) {
       console.error('点赞接口网络请求失败:', err)

@@ -6,7 +6,8 @@ import { Spinner } from '@heroui/react'
 import { marked } from 'marked'
 import CommentForm from './CommentForm'
 import HtmlRenderer from '@/components/common/HtmlRenderer'
-import { resolveImageUrl, API_BASE } from '@/lib/image-url'
+import { resolveImageUrl } from '@/lib/image-url'
+import { get, post } from '@/lib/http-client'
 
 interface CommentVO {
   id: number
@@ -112,20 +113,15 @@ export default function CommentSection({
       if (email) params.append('viewerEmail', email)
       const queryString = params.toString() ? `?${params.toString()}` : ''
 
-      const res = await fetch(`${API_BASE}/articles/${articleId}/comments${queryString}`, { cache: 'no-store' })
-      if (!res.ok) throw new Error(`HTTP_${res.status}`)
+      const data = await get<CommentVO[]>(`/articles/${articleId}/comments${queryString}`, { cache: 'no-store' })
+      const fetched = data || []
+      setComments(fetched)
       
-      const json = await res.json()
-      if (json.code === 200 || json.code === 0) {
-        const fetched = json.data || []
-        setComments(fetched)
-        
-        let count = fetched.length
-        fetched.forEach((c: CommentVO) => {
-          count += (c.replies || []).length
-        })
-        setTotalCount(count)
-      }
+      let count = fetched.length
+      fetched.forEach((c: CommentVO) => {
+        count += (c.replies || []).length
+      })
+      setTotalCount(count)
     } catch (err) {
       console.warn('拉取评论数据列表失败，启用优雅兜底降级为空列表显示：', err)
       setComments([])
@@ -164,9 +160,7 @@ export default function CommentSection({
     setComments(prev => updateLikesInTree(prev))
 
     try {
-      await fetch(`${API_BASE}/comments/${commentId}/like`, {
-        method: 'POST'
-      })
+      await post<void>(`/comments/${commentId}/like`)
     } catch (err) {
       console.error('评论点赞 API 请求异常', err)
     }

@@ -5,7 +5,7 @@ import { Button, Tooltip, cn } from '@heroui/react'
 import { Smile, Send, X, Globe, Mail, User, Eye, Edit2 } from 'lucide-react'
 import { marked } from 'marked'
 import HtmlRenderer from '@/components/common/HtmlRenderer'
-import { API_BASE } from '@/lib/image-url'
+import { post } from '@/lib/http-client'
 
 // 支持点击快捷输入的 Emoji 列表
 const EMOJIS = ['😄', '🎉', '❤️', '👍', '🚀', '💻', '🤔', '👀', '🔥', '👏']
@@ -100,45 +100,30 @@ export default function CommentForm({
     setSubmitting(true)
 
     try {
-      const res = await fetch(`${API_BASE}/articles/${articleId}/comments`, {
-        method: 'POST',
-        headers: {
-          'Content-Type': 'application/json'
-        },
-        body: JSON.stringify({
-          parentId,
-          visitorName: visitorName.trim(),
-          visitorEmail: visitorEmail.trim(),
-          visitorWebsite: visitorWebsite.trim() || null,
-          content: content.trim()
-        })
+      const data = await post<any>(`/articles/${articleId}/comments`, {
+        parentId,
+        visitorName: visitorName.trim(),
+        visitorEmail: visitorEmail.trim(),
+        visitorWebsite: visitorWebsite.trim() || null,
+        content: content.trim()
       })
 
-      const json = await res.json()
-      if (!res.ok) {
-        throw new Error(json.msg || `网络错误 (${res.status})`)
+      // 保存游客资料到本地 localStorage 供下一次自动回显
+      try {
+        localStorage.setItem('comment_visitor_name', visitorName.trim())
+        localStorage.setItem('comment_visitor_email', visitorEmail.trim())
+        localStorage.setItem('comment_visitor_website', visitorWebsite.trim())
+      } catch (e) {
+        console.warn('缓存游客资料到 localStorage 失败', e)
       }
 
-      if (json.code === 200 || json.code === 0) {
-        // 保存游客资料到本地 localStorage 供下一次自动回显
-        try {
-          localStorage.setItem('comment_visitor_name', visitorName.trim())
-          localStorage.setItem('comment_visitor_email', visitorEmail.trim())
-          localStorage.setItem('comment_visitor_website', visitorWebsite.trim())
-        } catch (e) {
-          console.warn('缓存游客资料到 localStorage 失败', e)
-        }
-
-        // 清空输入框内容与预览模式
-        setContent('')
-        setPreviewMode(false)
-        setErrorMsg(null)
-        
-        // 成功回调
-        onSuccess(json.data)
-      } else {
-        throw new Error(json.msg || '提交发表评论异常')
-      }
+      // 清空输入框内容与预览模式
+      setContent('')
+      setPreviewMode(false)
+      setErrorMsg(null)
+      
+      // 成功回调
+      onSuccess(data)
     } catch (err: any) {
       console.error(err)
       setErrorMsg(err.message || '系统繁忙，请稍后再试')

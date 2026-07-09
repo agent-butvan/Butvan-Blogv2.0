@@ -7,6 +7,8 @@
  * - 统一错误：所有错误（HTTP / 业务码 / 网络）统一转为 AppError，便于上层集中处理
  * - 超时控制：内置 AbortController 超时机制，默认 15 秒
  * - SSR 兼容：函数本身纯逻辑，不依赖浏览器 API
+ * - Token 自动注入：自动从 localStorage 读取 Token 并携带 Authorization 请求头
+ * - 401 自动拦截：Token 过期时自动清除登录态并提示用户
  *
  * 使用方式：
  * ```ts
@@ -34,6 +36,27 @@ const DEFAULT_TIMEOUT = 15000
 
 /** 上传请求超时（毫秒，允许更长的上传时间） */
 const UPLOAD_TIMEOUT = 60000
+
+// ---- Token 自动注入与 401 拦截 -----------------------------------------------
+
+/**
+ * 从 localStorage 安全读取 Token（SSR 安全）
+ */
+function getToken(): string | null {
+  if (typeof window === 'undefined') return null
+  return localStorage.getItem('token')
+}
+
+/**
+ * 处理 401 未授权响应：清除本地登录态并广播事件
+ * AuthProvider 会监听 auth-change 事件自动更新全局状态
+ */
+function handle401() {
+  if (typeof window === 'undefined') return
+  localStorage.removeItem('token')
+  localStorage.removeItem('user_info')
+  window.dispatchEvent(new Event('auth-change'))
+}
 
 // ---- 请求选项类型 --------------------------------------------------------
 
@@ -99,6 +122,14 @@ export async function request<T = unknown>(
   // 构建请求头
   const headers: Record<string, string> = { ...(customHeaders as Record<string, string>) }
 
+  // 自动注入 Authorization Token（仅当调用方未手动指定时）
+  if (!headers['Authorization'] && !headers['authorization']) {
+    const token = getToken()
+    if (token) {
+      headers['Authorization'] = `Bearer ${token}`
+    }
+  }
+
   // 处理请求体
   let requestBody: BodyInit | undefined
   if (body !== undefined && body !== null) {
@@ -142,6 +173,10 @@ export async function request<T = unknown>(
 
     // 校验 HTTP 状态码
     if (!response.ok) {
+      // 401 未授权：自动清除登录态
+      if (response.status === 401) {
+        handle401()
+      }
       throw classifyError(response, bodyData)
     }
 
