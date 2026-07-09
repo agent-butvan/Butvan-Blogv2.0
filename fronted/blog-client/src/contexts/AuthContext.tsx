@@ -38,6 +38,7 @@ const AuthContext = createContext<AuthContextType | undefined>(undefined)
 
 // ==================== localStorage 工具函数 ====================
 
+const API_BASE = process.env.NEXT_PUBLIC_API_BASE_URL || '/api'
 const USER_INFO_KEY = 'user_info'
 
 /** 从 localStorage 安全读取并解析用户信息 */
@@ -63,6 +64,30 @@ function readUserFromStorage(): UserInfo | null {
   }
 }
 
+/** 通过 /auth/check 接口尝试恢复会话（Cookie 有效但 localStorage 无数据时） */
+async function restoreSessionFromServer(): Promise<UserInfo | null> {
+  try {
+    const res = await fetch(`${API_BASE}/auth/check`, {
+      method: 'GET',
+      credentials: 'include',
+    })
+    if (!res.ok) return null
+    const json = await res.json()
+    if (json?.code !== 200 || !json.data) return null
+    const d = json.data
+    // 将 CurrentUserVO 映射为 UserInfo
+    if (!d.nickname) return null
+    return {
+      nickname: d.nickname,
+      avatarUrl: d.avatarUrl || null,
+      username: d.username || null,
+      email: d.email || null,
+    } as UserInfo
+  } catch {
+    return null
+  }
+}
+
 // ==================== Provider 组件 ====================
 
 /**
@@ -75,10 +100,21 @@ export function AuthProvider({ children }: { children: ReactNode }) {
   const [user, setUser] = useState<UserInfo | null>(null)
   const [isLoading, setIsLoading] = useState(true)
 
-  /** 从 localStorage 恢复登录态 */
-  const syncFromStorage = useCallback(() => {
+  /** 从 localStorage 恢复登录态，若无数据则尝试通过 Cookie 从服务端恢复 */
+  const syncFromStorage = useCallback(async () => {
     const restored = readUserFromStorage()
-    setUser(restored)
+    if (restored) {
+      setUser(restored)
+      setIsLoading(false)
+      return
+    }
+    // localStorage 无用户信息，尝试通过 refresh_token Cookie 恢复会话
+    const serverUser = await restoreSessionFromServer()
+    if (serverUser) {
+      // 恢复成功，写回 localStorage 并更新状态
+      localStorage.setItem(USER_INFO_KEY, JSON.stringify(serverUser))
+      setUser(serverUser)
+    }
     setIsLoading(false)
   }, [])
 

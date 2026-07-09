@@ -120,7 +120,7 @@ public class AuthController {
 
     /**
      * 退出登录
-     * <p>吊销 Refresh Token（写入 Redis 黑名单）并清除所有 Cookie</p>
+     * <p>吊销 Refresh Token（从 Redis 白名单移除）并清除所有 Cookie</p>
      *
      * @param request  HTTP 请求（读取 refresh_token Cookie）
      * @param response HTTP 响应（清除 Cookie）
@@ -135,6 +135,31 @@ public class AuthController {
         clearCookie(response, "access_token", "/api");
         clearCookie(response, "refresh_token", "/api/auth/refresh");
         return Result.success();
+    }
+
+    /**
+     * 会话有效性检查
+     * <p>前端页面加载时，若 localStorage 中无用户信息但 refresh_token Cookie 仍存在，
+     * 可调用此接口验证会话有效性并恢复用户信息，避免因清除 localStorage 导致登录态丢失</p>
+     *
+     * @param request HTTP 请求（读取 refresh_token Cookie）
+     * @return 当前登录用户资料，会话无效时返回 401
+     */
+    @GetMapping("/check")
+    public Result<CurrentUserVO> checkSession(HttpServletRequest request) {
+        String refreshToken = getCookieValue(request, "refresh_token");
+        if (refreshToken == null || refreshToken.isEmpty()) {
+            throw new BusinessException(401, "未登录");
+        }
+        if (!tokenService.isRefreshTokenActive(refreshToken)) {
+            throw new BusinessException(401, "登录已过期");
+        }
+        String username = tokenService.getUsernameFromRefreshToken(refreshToken);
+        if (username == null) {
+            throw new BusinessException(401, "无效的会话");
+        }
+        CurrentUserVO currentUser = authService.getCurrentUser(username);
+        return Result.success(currentUser);
     }
 
     /**

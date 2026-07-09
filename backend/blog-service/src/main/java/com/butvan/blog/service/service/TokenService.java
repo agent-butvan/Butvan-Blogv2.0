@@ -16,8 +16,9 @@ import java.util.concurrent.TimeUnit;
  * <p>
  * 核心职责：
  * - 签发 Access + Refresh 双 Token
- * - 校验 Refresh Token 并换取新 Access Token（含 Redis 黑名单校验）
- * - 吊销 Refresh Token（登出时写入 Redis 黑名单）
+ * - Redis 白名单追踪活跃会话（登录写入 / 刷新校验 / 登出删除）
+ * - 校验 Refresh Token 并换取新 Access Token
+ * - 吊销 Refresh Token（登出时从白名单移除）
  * </p>
  */
 @Service
@@ -29,8 +30,8 @@ public class TokenService {
     private final RedisUtils redisUtils;
     private final UserRepository userRepository;
 
-    /** Redis 黑名单 Key 前缀 */
-    private static final String BLACKLIST_PREFIX = "token:blacklist:";
+    /** Redis 活跃会话白名单 Key 前缀（Value 存储 userId） */
+    private static final String WHITELIST_PREFIX = "token:active:";
 
     /**
      * Access + Refresh 双 Token 对
@@ -51,8 +52,17 @@ public class TokenService {
     public TokenPair issueTokens(Long userId, String username, String role) {
         String accessToken = jwtUtil.generateAccessToken(userId, username, role);
         String refreshToken = jwtUtil.generateRefreshToken(userId, username);
-        log.info("签发双 Token 完成，用户: {}, Access Token 有效期: {}s, Refresh Token 有效期: {}s",
-                username, jwtUtil.getRefreshExpiration() / 48, jwtUtil.getRefreshExpiration());
+
+        // 将 Refresh Token 的 jti 写入 Redis 白名单（TTL = Token 有效期）
+        String jti = jwtUtil.getJtiFromToken(refreshToken);
+        if (jti != null) {
+            long ttlSeconds = calculateRemainingTtl(refreshToken);
+            if (ttlSeconds > 0) {
+                redisUtils.set(WHITELIST_PREFIX + jti, String.valueOf(userId), ttlSeconds, TimeUnit.SECONDS);
+            }
+        }
+
+        log.info("签发双 Token 完成，用户: {}, jti: {}", username, jti);
         return new TokenPair(accessToken, refreshToken);
     }
 
@@ -61,8 +71,8 @@ public class TokenService {
      * <p>
      * 校验流程：
      * 1. 签名合法性与过期校验
-     * 2. Redis 黑名单校验（是否已被吊销）
-     * 3. Token 类型校验（必须是 refresh 类型）
+     * 2. Token 类型校验（必须是 refresh 类型）
+     * 3. Redis 白名单校验（jti 必须在活跃会话列表中）
      * 4. 查询数据库获取用户最新角色（角色可能在刷新期间变更）
      * </p>
      *
@@ -76,17 +86,17 @@ public class TokenService {
             throw new BusinessException(401, "登录已过期，请重新登录");
         }
 
-        // 2. Redis 黑名单校验（jti 唯一标识）
-        String jti = jwtUtil.getJtiFromToken(refreshToken);
-        if (jti != null && redisUtils.hasKey(BLACKLIST_PREFIX + jti)) {
-            log.warn("Refresh Token 已被吊销, jti: {}", jti);
-            throw new BusinessException(401, "登录已失效，请重新登录");
-        }
-
-        // 3. Token 类型校验（确保不是 Access Token 被当作 Refresh Token 使用）
+        // 2. Token 类型校验（确保不是 Access Token 被当作 Refresh Token 使用）
         String type = jwtUtil.getClaimFromToken(refreshToken, claims -> claims.get("type", String.class));
         if (!"refresh".equals(type)) {
             throw new BusinessException(401, "无效的刷新令牌");
+        }
+
+        // 3. Redis 白名单校验（jti 必须存在于活跃会话中）
+        String jti = jwtUtil.getJtiFromToken(refreshToken);
+        if (jti == null || !redisUtils.hasKey(WHITELIST_PREFIX + jti)) {
+            log.warn("Refresh Token 不在白名单中（已登出或已过期）, jti: {}", jti);
+            throw new BusinessException(401, "登录已失效，请重新登录");
         }
 
         // 4. 提取用户信息，查询数据库获取最新角色
@@ -106,25 +116,51 @@ public class TokenService {
     }
 
     /**
-     * 吊销 Refresh Token（将 jti 写入 Redis 黑名单）
-     * <p>黑名单条目 TTL 等于 Refresh Token 的剩余有效期，过期后 Redis 自动清除</p>
+     * 校验 Refresh Token 是否在 Redis 白名单中（用于会话有效性检查）
+     *
+     * @param refreshToken Refresh Token 字符串
+     * @return 白名单中存在返回 true
+     */
+    public boolean isRefreshTokenActive(String refreshToken) {
+        try {
+            if (!Boolean.TRUE.equals(jwtUtil.validateToken(refreshToken))) {
+                return false;
+            }
+            String jti = jwtUtil.getJtiFromToken(refreshToken);
+            return jti != null && redisUtils.hasKey(WHITELIST_PREFIX + jti);
+        } catch (Exception e) {
+            return false;
+        }
+    }
+
+    /**
+     * 吊销 Refresh Token（从 Redis 白名单移除）
      *
      * @param refreshToken 待吊销的 Refresh Token
      */
     public void revokeRefreshToken(String refreshToken) {
         try {
             String jti = jwtUtil.getJtiFromToken(refreshToken);
-            if (jti == null) {
-                return;
-            }
-            // 计算 Token 剩余有效期作为黑名单 TTL
-            long ttlSeconds = calculateRemainingTtl(refreshToken);
-            if (ttlSeconds > 0) {
-                redisUtils.set(BLACKLIST_PREFIX + jti, "1", ttlSeconds, TimeUnit.SECONDS);
-                log.info("Refresh Token 已吊销, jti: {}, 剩余 TTL: {}s", jti, ttlSeconds);
+            if (jti != null) {
+                redisUtils.delete(WHITELIST_PREFIX + jti);
+                log.info("Refresh Token 已从白名单移除, jti: {}", jti);
             }
         } catch (Exception e) {
             log.warn("吊销 Refresh Token 失败: {}", e.getMessage());
+        }
+    }
+
+    /**
+     * 从 Refresh Token 中提取用户名
+     *
+     * @param refreshToken Refresh Token 字符串
+     * @return 用户名，解析失败返回 null
+     */
+    public String getUsernameFromRefreshToken(String refreshToken) {
+        try {
+            return jwtUtil.getUsernameFromToken(refreshToken);
+        } catch (Exception e) {
+            return null;
         }
     }
 

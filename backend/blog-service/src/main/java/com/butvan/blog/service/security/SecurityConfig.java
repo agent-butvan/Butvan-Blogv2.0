@@ -98,7 +98,8 @@ public class SecurityConfig {
             .authorizeHttpRequests(auth -> auth
                     // 放行认证模块接口（含 Token 刷新与登出）
                     .requestMatchers("/api/auth/register", "/api/auth/login",
-                            "/api/auth/refresh", "/api/auth/logout").permitAll()
+                            "/api/auth/refresh", "/api/auth/logout",
+                            "/api/auth/check").permitAll()
                     // 前台获取导航菜单完全公开（仅限 GET 读取）
                     .requestMatchers(HttpMethod.GET, "/api/navigations/**").permitAll()
                     // 放行前台获取首页活跃房间场景 API
