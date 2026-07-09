@@ -52,7 +52,8 @@ Butvan Blog2.0/                                    # 📦 项目根目录
 │       ├── migration-v1.2-album.sql               #   数据库迁移脚本 (v1.2 版本，相册模块建表与菜单注册)
 │       ├── migration-v1.3-note.sql                #   数据库迁移脚本 (v1.3 版本，手记模块建表与初始化数据)
 │       ├── migration-v1.4-note-like.sql           #   数据库迁移脚本 (v1.4 版本，手记点赞记录表)
-│       └── migration-v1.5-user-management.sql     #   数据库迁移脚本 (v1.5 版本，后台侧边栏用户管理菜单)
+│       ├── migration-v1.5-user-management.sql     #   数据库迁移脚本 (v1.5 版本，后台侧边栏用户管理菜单)
+│       └── migration-v1.6-role-author-to-user.sql #   数据库迁移脚本 (v1.6 版本，角色 AUTHOR→USER 统一迁移)
 │
 ├── fronted/                                       # 🖥️【前端】Next.js 16 + TypeScript + HeroUI v3 + Tailwind v4
 │   │
