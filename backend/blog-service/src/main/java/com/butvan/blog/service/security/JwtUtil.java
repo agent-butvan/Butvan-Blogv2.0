@@ -4,6 +4,8 @@ import io.jsonwebtoken.Claims;
 import io.jsonwebtoken.Jwts;
 import io.jsonwebtoken.SignatureAlgorithm;
 import io.jsonwebtoken.security.Keys;
+import jakarta.annotation.PostConstruct;
+import lombok.extern.slf4j.Slf4j;
 import org.springframework.beans.factory.annotation.Value;
 import org.springframework.stereotype.Component;
 import java.nio.charset.StandardCharsets;
@@ -17,13 +19,41 @@ import java.util.function.Function;
  * JWT 签名生成与校验解析工具类
  */
 @Component
+@Slf4j
 public class JwtUtil {
+
+    /** 默认弱密钥标识，生产环境禁止使用 */
+    private static final String DEFAULT_SECRET = "butvan_blog_secret_key_minimum_256_bit_standard_key_value";
+
+    /** 密钥最小安全长度（字节），HS256 要求至少 256 bit = 32 字节 */
+    private static final int MIN_SECRET_LENGTH = 32;
 
     @Value("${jwt.secret:butvan_blog_secret_key_minimum_256_bit_standard_key_value}")
     private String secret; // 签名密钥（应在配置文件或环境变量中设定，最小32字节）
 
     @Value("${jwt.expiration:604800}")
     private Long expiration; // Token 生存期，默认 7 天（单位：秒）
+
+    /**
+     * 启动时校验 JWT 密钥安全性
+     * - 检测是否仍在使用默认弱密钥
+     * - 检测密钥长度是否满足 HS256 最低要求（256 bit / 32 字节）
+     *
+     * @throws IllegalStateException 密钥长度不足时阻止应用启动
+     */
+    @PostConstruct
+    public void validateSecret() {
+        if (DEFAULT_SECRET.equals(secret)) {
+            log.warn("【安全警告】JWT 签名密钥仍在使用默认值，请尽快在配置文件中设置 jwt.secret 为高强度自定义密钥！");
+        }
+        int secretLength = secret.getBytes(StandardCharsets.UTF_8).length;
+        if (secretLength < MIN_SECRET_LENGTH) {
+            throw new IllegalStateException(
+                    String.format("JWT 签名密钥长度不足：当前 %d 字节，最低要求 %d 字节（256 bit）。请在配置文件中设置足够长的 jwt.secret",
+                            secretLength, MIN_SECRET_LENGTH));
+        }
+        log.info("JWT 密钥安全校验通过（长度: {} 字节，有效期: {} 秒）", secretLength, expiration);
+    }
 
     /**
      * 根据签名密钥文本，获取加密算法对应的 Key 密钥对象
