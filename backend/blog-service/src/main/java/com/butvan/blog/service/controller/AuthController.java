@@ -1,5 +1,6 @@
 package com.butvan.blog.service.controller;
 
+import com.butvan.blog.common.exception.BusinessException;
 import com.butvan.blog.common.result.Result;
 import com.butvan.blog.pojo.dto.auth.CurrentUserUpdateDTO;
 import com.butvan.blog.pojo.dto.auth.LoginDTO;
@@ -10,7 +11,9 @@ import com.butvan.blog.pojo.dto.auth.TwoFactorDisableDTO;
 import com.butvan.blog.pojo.dto.auth.GithubBindDTO;
 import com.butvan.blog.pojo.vo.auth.CurrentUserVO;
 import com.butvan.blog.pojo.vo.auth.LoginVO;
+import com.butvan.blog.service.security.LoginRateLimiter;
 import com.butvan.blog.service.service.AuthService;
+import jakarta.servlet.http.HttpServletRequest;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;   
 import org.springframework.validation.annotation.Validated;
@@ -29,6 +32,7 @@ import java.util.Map;
 public class AuthController {
 
     private final AuthService authService;
+    private final LoginRateLimiter loginRateLimiter;
 
     /**
      * 管理后台账号注册接口
@@ -45,15 +49,36 @@ public class AuthController {
 
     /**
      * 管理后台账号登录接口
+     * <p>内置 Redis 频率限制：同一用户名/IP 5分钟内最多 5 次失败尝试</p>
      *
      * @param loginDTO 登录数据表单，入参接受 JSR303 格式验证
+     * @param request  HTTP 请求对象（用于提取客户端 IP）
      * @return 统一格式响应体 Result，携带 LoginVO 载荷
      */
     @PostMapping("/login")
-    public Result<LoginVO> login(@Validated @RequestBody LoginDTO loginDTO) {
+    public Result<LoginVO> login(@Validated @RequestBody LoginDTO loginDTO, HttpServletRequest request) {
         log.info("接收到用户登录 API 请求，用户名: {}", loginDTO.getUsername());
-        LoginVO loginVO = authService.login(loginDTO);
-        return Result.success(loginVO);
+
+        String clientIp = extractClientIp(request);
+
+        // 1. 频率限制前置校验
+        loginRateLimiter.checkRateLimit(loginDTO.getUsername(), clientIp);
+
+        try {
+            // 2. 执行登录业务逻辑
+            LoginVO loginVO = authService.login(loginDTO);
+
+            // 3. 登录成功，清除失败计数
+            loginRateLimiter.clearFailCount(loginDTO.getUsername(), clientIp);
+
+            return Result.success(loginVO);
+        } catch (BusinessException e) {
+            // 登录失败，记录失败次数（429 限流异常不记录）
+            if (e.getCode() != 429) {
+                loginRateLimiter.recordFailure(loginDTO.getUsername(), clientIp);
+            }
+            throw e;
+        }
     }
 
     /**
@@ -174,5 +199,22 @@ public class AuthController {
         log.info("用户 [{}] 请求上传头像", principal.getName());
         CurrentUserVO updatedUser = authService.uploadAvatar(principal.getName(), file);
         return Result.success(updatedUser);
+    }
+
+    /**
+     * 提取客户端真实 IP（兼容 Nginx 反向代理 X-Forwarded-For）
+     */
+    private String extractClientIp(HttpServletRequest request) {
+        String ip = request.getHeader("X-Forwarded-For");
+        if (ip != null && !ip.isEmpty() && !"unknown".equalsIgnoreCase(ip)) {
+            // 多级代理时取第一个
+            int commaIdx = ip.indexOf(',');
+            return commaIdx > 0 ? ip.substring(0, commaIdx).trim() : ip.trim();
+        }
+        ip = request.getHeader("X-Real-IP");
+        if (ip != null && !ip.isEmpty() && !"unknown".equalsIgnoreCase(ip)) {
+            return ip.trim();
+        }
+        return request.getRemoteAddr();
     }
 }
