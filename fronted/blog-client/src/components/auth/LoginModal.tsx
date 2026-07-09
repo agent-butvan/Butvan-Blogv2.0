@@ -4,6 +4,7 @@ import React, { useState, useEffect } from 'react'
 import { RefreshCw, Lock, User, Eye, EyeOff, Mail, AtSign } from 'lucide-react'
 import { Modal, Spinner } from '@heroui/react'
 import { API_BASE } from '@/lib/image-url'
+import { useAuth } from '@/contexts/AuthContext'
 
 /** 邮箱彩色 SVG 图标 */
 const EmailIcon = ({ size = 20 }: { size?: number }) => (
@@ -38,6 +39,7 @@ type PanelMode = 'email' | 'wechat' | 'register'
  */
 export default function LoginModal({ isOpen, onClose }: LoginModalProps) {
   const [panel, setPanel] = useState<PanelMode>('email')
+  const { login: authLogin } = useAuth()
 
   // ---- 邮箱登录状态 ----
   const [usernameInput, setUsernameInput] = useState('')
@@ -137,15 +139,14 @@ export default function LoginModal({ isOpen, onClose }: LoginModalProps) {
       const json = await res.json()
       if (json.code === 200 || json.code === 0) {
         if (json.data?.token) {
-          localStorage.setItem('token', json.data.token)
           const userInfo = {
             nickname: json.data.user?.nickname || json.data.nickname || '用户',
             avatarUrl: json.data.user?.avatarUrl || json.data.avatarUrl || null,
             username: json.data.user?.username || json.data.username || null,
             email: json.data.user?.email || json.data.email || null
           }
-          localStorage.setItem('user_info', JSON.stringify(userInfo))
-          window.dispatchEvent(new Event('auth-change'))
+          // 通过全局认证状态管理登录
+          authLogin(json.data.token, userInfo)
           onClose()
         } else {
           setLoginError('登录异常，未获得访问令牌')

@@ -6,6 +6,7 @@ import { HelpCircle, User, LogOut, Upload, Mail, AtSign } from 'lucide-react'
 import { Button, Tooltip, Avatar, Separator, toast, Input, Modal, Badge } from '@heroui/react'
 import { fetchNavigations } from '@/lib/profile'
 import { API_BASE, getBackendHost } from '@/lib/image-url'
+import { useAuth } from '@/contexts/AuthContext'
 import Link from 'next/link'
 import { usePathname } from 'next/navigation'
 import LoginModal from '@/components/auth/LoginModal'
@@ -35,8 +36,8 @@ const getIconComponent = (iconName?: string): Icons.LucideIcon => {
 export default function SidebarWidget() { 
   const [items, setItems] = useState<NavigationItem[]>([])
   const [loading, setLoading] = useState(true)
-  // 登录状态
-  const [user, setUser] = useState<{ nickname: string; avatarUrl?: string | null; username?: string | null; email?: string | null } | null>(null)
+  // 全局认证状态
+  const { user, isLoggedIn, logout, refreshUser } = useAuth()
   const [loginModalOpen, setLoginModalOpen] = useState(false)
   const [uploadAvatarModalOpen, setUploadAvatarModalOpen] = useState(false)
   const [selectedFile, setSelectedFile] = useState<File | null>(null)
@@ -45,57 +46,10 @@ export default function SidebarWidget() {
   const pathname = usePathname()
 
   /**
-   * 获取登录状态
-   */
-  const initAuth = () => {
-    if (typeof window !== 'undefined') {
-      const token = localStorage.getItem('token')
-      const infoStr = localStorage.getItem('user_info')
-      if (token && infoStr) {
-        try {
-          const parsed = JSON.parse(infoStr)
-          // 若解析成功但缺少有效 nickname，说明是旧版脏数据，主动清理
-          if (!parsed || !parsed.nickname) {
-            localStorage.removeItem('token')
-            localStorage.removeItem('user_info')
-            setUser(null)
-          } else {
-            // 兼容旧数据：若缺少 email 字段，尝试从其他位置获取
-            if (!parsed.email && parsed.username?.includes('@')) {
-              parsed.email = parsed.username
-            }
-            setUser(parsed)
-          }
-        } catch {
-          localStorage.removeItem('token')
-          localStorage.removeItem('user_info')
-          setUser(null)
-        }
-      } else {
-        setUser(null)
-      }
-    }
-  }
-
-  // 初始化登录状态
-  useEffect(() => {
-    initAuth()
-    
-    // 监听全局授权变更事件
-    window.addEventListener('auth-change', initAuth)
-    return () => {
-      window.removeEventListener('auth-change', initAuth)
-    }
-  }, [])
-
-  /**
-   * 处理登出 — 清除本地状态并广播 auth-change 事件
+   * 处理登出
    */
   const handleLogout = () => {
-    localStorage.removeItem('token')
-    localStorage.removeItem('user_info')
-    setUser(null)
-    window.dispatchEvent(new Event('auth-change'))
+    logout()
     toast.success('已退出登录')
   }
 
@@ -132,10 +86,8 @@ export default function SidebarWidget() {
 
       const json = await response.json()
       if (json.code === 200 && json.data) {
-        // 更新本地用户信息
-        const updatedUser = { ...user!, avatarUrl: json.data.avatarUrl }
-        setUser(updatedUser)
-        localStorage.setItem('user_info', JSON.stringify(updatedUser))
+        // 通过全局认证状态更新头像
+        refreshUser({ avatarUrl: json.data.avatarUrl })
         toast.success('头像上传成功')
         setUploadAvatarModalOpen(false)
         setSelectedFile(null)

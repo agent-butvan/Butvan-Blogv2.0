@@ -5,6 +5,7 @@ import Link from 'next/link'
 import { Menu, X, ChevronDown, ArrowUpRight } from 'lucide-react'
 import { fetchNavigations } from '@/lib/profile'
 import { getBackendHost } from '@/lib/image-url'
+import { useAuth } from '@/contexts/AuthContext'
 import LoginModal from '@/components/auth/LoginModal'
 import type { ProfileVO } from '@/types/profile'
 
@@ -38,55 +39,10 @@ const resolveAvatarUrl = (avatarUrl?: string | null): string => {
 export default function Navbar({ profile }: NavbarProps) {
   const [navItems, setNavItems] = useState<NavigationItem[] | null>(null)
   const [mobileMenuOpen, setMobileMenuOpen] = useState(false)
-
-  // 读者登录状态
-  const [user, setUser] = useState<{ nickname: string; avatarUrl?: string | null } | null>(null)
   const [loginModalOpen, setLoginModalOpen] = useState(false)
 
-  // 获取登录状态
-  const initAuth = () => {
-    if (typeof window !== 'undefined') {
-      const token = localStorage.getItem('token')
-      const infoStr = localStorage.getItem('user_info')
-      if (token && infoStr) {
-        try {
-          const parsed = JSON.parse(infoStr)
-          // 若解析成功但缺少有效 nickname，说明是旧版脏数据，主动清理
-          if (!parsed || !parsed.nickname) {
-            localStorage.removeItem('token')
-            localStorage.removeItem('user_info')
-            setUser(null)
-          } else {
-            setUser(parsed)
-          }
-        } catch {
-          localStorage.removeItem('token')
-          localStorage.removeItem('user_info')
-          setUser(null)
-        }
-      } else {
-        setUser(null)
-      }
-    }
-  }
-
-  useEffect(() => {
-    initAuth()
-    
-    // 监听全局授权变更事件
-    window.addEventListener('auth-change', initAuth)
-    return () => {
-      window.removeEventListener('auth-change', initAuth)
-    }
-  }, [])
-
-
-  const handleLogout = () => {
-    localStorage.removeItem('token')
-    localStorage.removeItem('user_info')
-    setUser(null)
-    window.dispatchEvent(new Event('auth-change'))
-  }
+  // 全局认证状态
+  const { user, logout } = useAuth()
 
   // 拉取顶部导航菜单
   useEffect(() => {
@@ -166,7 +122,7 @@ export default function Navbar({ profile }: NavbarProps) {
               <span className="text-xs font-bold text-zinc-650 dark:text-zinc-300">{user.nickname || '用户'}</span>
             </div>
             <button 
-              onClick={handleLogout}
+              onClick={logout}
               className="text-[10px] px-2.5 py-1.25 rounded-lg border border-zinc-200 dark:border-zinc-800 hover:bg-zinc-100 dark:hover:bg-zinc-900 text-zinc-500 font-semibold cursor-pointer transition-colors"
             >
               注销
@@ -255,7 +211,7 @@ export default function Navbar({ profile }: NavbarProps) {
               <div className="flex items-center gap-2">
                 <span className="text-xs font-bold text-zinc-700 dark:text-zinc-300">已登录: {user.nickname || '用户'}</span>
                 <button 
-                  onClick={() => { handleLogout(); setMobileMenuOpen(false); }}
+                  onClick={() => { logout(); setMobileMenuOpen(false); }}
                   className="text-[10px] text-zinc-400 active:text-rose-500"
                 >
                   注销
