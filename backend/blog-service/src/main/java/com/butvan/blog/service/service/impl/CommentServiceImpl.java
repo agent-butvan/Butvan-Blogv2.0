@@ -187,6 +187,11 @@ public class CommentServiceImpl implements CommentService {
             matchedUser = userRepository.findByEmail(dto.getVisitorEmail().trim()).orElse(null);
         }
 
+        // 校验匹配到的注册用户账号是否被禁用
+        if (matchedUser != null && "DISABLED".equalsIgnoreCase(matchedUser.getStatus())) {
+            throw new BusinessException("您的账号已被禁用，无法发表评论");
+        }
+
         // 4. 构建实体类并持久化保存
         Comment comment = Comment.builder()
                 .article(article)

@@ -16,7 +16,7 @@ export interface AuthUser {
   bio?: string;
   githubUsername?: string;
   twoFactorEnabled?: boolean;
-  role: "ADMIN" | "AUTHOR";
+  role: "ADMIN" | "USER";
   status?: "ACTIVE" | "DISABLED";
   lastLoginAt?: string;
   createdAt?: string;

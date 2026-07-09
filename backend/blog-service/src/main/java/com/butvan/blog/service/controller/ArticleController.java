@@ -1,5 +1,6 @@
 package com.butvan.blog.service.controller;
 
+import com.butvan.blog.common.exception.BusinessException;
 import com.butvan.blog.common.result.PageResult;
 import com.butvan.blog.common.result.Result;
 import com.butvan.blog.pojo.dto.article.ArticleQueryDTO;
@@ -128,6 +129,10 @@ public class ArticleController {
             String username = auth.getName();
             com.butvan.blog.pojo.entity.User user = userRepository.findByUsername(username).orElse(null);
             if (user != null) {
+                // 校验登录用户账号是否被禁用
+                if ("DISABLED".equalsIgnoreCase(user.getStatus())) {
+                    throw new BusinessException("您的账号已被禁用，无法进行点赞操作");
+                }
                 userId = user.getId();
             }
         }

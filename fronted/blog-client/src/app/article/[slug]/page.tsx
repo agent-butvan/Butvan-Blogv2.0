@@ -283,7 +283,8 @@ export default function ArticleDetailPage() {
       }
     } catch (err) {
       console.error('点赞接口网络请求失败:', err)
-      toast.danger('网络繁忙，点赞暂时失败，请稍后重试。')
+      const msg = err instanceof Error ? err.message : '网络繁忙，点赞暂时失败，请稍后重试。'
+      toast.danger(msg)
     }
   }
 
