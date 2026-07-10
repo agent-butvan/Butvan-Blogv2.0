@@ -1,0 +1,61 @@
+# =============================================================================
+# Spring Security 公开接口放行配置
+#
+# 格式说明：
+#   - "METHOD /path"  → 仅放行指定 HTTP 方法的请求
+#   - "/path"         → 放行所有 HTTP 方法的请求
+#
+# 新增放行接口只需在此文件中添加一行，无需修改 Java 代码。
+# =============================================================================
+
+security:
+  permit-all-paths:
+    # ---- 认证模块（Token 刷新、登出等） ----
+    - "POST /api/auth/register"
+    - "POST /api/auth/login"
+    - "POST /api/auth/refresh"
+    - "POST /api/auth/logout"
+    - "POST /api/auth/check"
+
+    # ---- 前台公开 GET 接口 ----
+    - "GET /api/navigations/**"
+    - "GET /api/scenes/active"
+    - "GET /api/profile/public/**"
+    - "GET /api/site-config/public/**"
+    - "GET /api/articles/**"
+    - "GET /api/categories/**"
+    - "GET /api/tags/**"
+
+    # ---- 前台公开 POST 接口（评论、点赞） ----
+    - "POST /api/articles/*/comments"
+    - "POST /api/comments/*/like"
+    - "POST /api/articles/*/like"
+
+    # ---- 友链模块 ----
+    - "GET /api/friends/**"
+    - "POST /api/friends/apply"
+    - "POST /api/friends/fetch-meta"
+
+    # ---- 相册模块 ----
+    - "GET /api/public/albums/**"
+
+    # ---- 手记模块 ----
+    - "GET /api/notes/**"
+    - "POST /api/notes/*/like"
+
+    # ---- 照片墙模块 ----
+    - "GET /api/public/photos/**"
+
+    # ---- 微信扫码登录 ----
+    - "POST /api/weixin/login"
+    - "GET /api/weixin/event/**"
+    - "POST /api/weixin/event/**"
+
+    # ---- 公开图片上传 ----
+    - "POST /api/public/upload/image"
+
+    # ---- 静态资源 ----
+    - "/uploads/**"
+
+    # ---- WebSocket 端点（JSR-356 ServerEndpoint 握手需要） ----
+    - "/ws/**"

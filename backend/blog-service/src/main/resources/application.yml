@@ -12,3 +12,4 @@ spring:
       - classpath:application-redis.yml
       - classpath:application-weixin.yml
       - classpath:application-storage.yml
+      - classpath:application-security.yml

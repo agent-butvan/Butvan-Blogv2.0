@@ -1,7 +1,9 @@
 package com.butvan.blog.service.security;
 
 import com.butvan.blog.service.repository.UserRepository;
+import com.butvan.blog.common.properties.SecurityProperties;
 import lombok.RequiredArgsConstructor;
+import lombok.extern.slf4j.Slf4j;
 import org.springframework.context.annotation.Bean;
 import org.springframework.context.annotation.Configuration;
 import org.springframework.http.HttpMethod;
@@ -10,12 +12,13 @@ import org.springframework.security.config.Customizer;
 import org.springframework.security.config.annotation.authentication.configuration.AuthenticationConfiguration;
 import org.springframework.security.config.annotation.web.builders.HttpSecurity;
 import org.springframework.security.config.annotation.web.configuration.EnableWebSecurity;
-import org.springframework.security.config.annotation.web.configurers.AbstractHttpConfigurer;
+import org.springframework.security.config.annotation.web.configurers.AuthorizeHttpRequestsConfigurer;
 import org.springframework.security.config.http.SessionCreationPolicy;
 import org.springframework.security.core.userdetails.UserDetailsService;
 import org.springframework.security.core.userdetails.UsernameNotFoundException;
 import org.springframework.security.crypto.bcrypt.BCryptPasswordEncoder;
 import org.springframework.security.crypto.password.PasswordEncoder;
+import org.springframework.security.config.annotation.web.configurers.AbstractHttpConfigurer;
 import org.springframework.security.web.SecurityFilterChain;
 import org.springframework.security.web.authentication.UsernamePasswordAuthenticationFilter;
 import org.springframework.web.cors.CorsConfiguration;
@@ -29,6 +32,7 @@ import java.util.List;
 /**
  * Spring Security 核心体系安全拦截与机制配置类
  */
+@Slf4j
 @Configuration
 @EnableWebSecurity
 @RequiredArgsConstructor
@@ -36,6 +40,7 @@ public class SecurityConfig {
 
     private final UserRepository userRepository;
     private final ObjectMapper objectMapper;
+    private final SecurityProperties securityProperties;
 
     /**
      * 配置 UserDetailsService，对接 JPA 的 UserRepository 查询逻辑
@@ -79,6 +84,8 @@ public class SecurityConfig {
 
     /**
      * 配置过滤规则与安全屏障链
+     * <p>公开接口放行路径从 application-security.yml 中读取，
+     * 格式为 "METHOD /path" 或 "/path"（不带方法则匹配所有方法）</p>
      *
      * @param http HttpSecurity 配置对象
      * @param jwtAuthFilter 自定义 JWT 过滤器
@@ -95,48 +102,15 @@ public class SecurityConfig {
             // 禁用 Session，启用 Stateless 无状态模式
             .sessionManagement(session -> session.sessionCreationPolicy(SessionCreationPolicy.STATELESS))
             // 设定安全请求过滤匹配规则
-            .authorizeHttpRequests(auth -> auth
-                    // 放行认证模块接口（含 Token 刷新与登出）
-                    .requestMatchers("/api/auth/register", "/api/auth/login",
-                            "/api/auth/refresh", "/api/auth/logout",
-                            "/api/auth/check").permitAll()
-                    // 前台获取导航菜单完全公开（仅限 GET 读取）
-                    .requestMatchers(HttpMethod.GET, "/api/navigations/**").permitAll()
-                    // 放行前台获取首页活跃房间场景 API
-                    .requestMatchers(HttpMethod.GET, "/api/scenes/active").permitAll()
-                    // 放行前台获取公开用户资料 API
-                    .requestMatchers(HttpMethod.GET, "/api/profile/public/**").permitAll()
-                    // 放行前台公开站点配置查询 API（如背景图片URL等）
-                    .requestMatchers(HttpMethod.GET, "/api/site-config/public/**").permitAll()
-                    // 放行前台文章、分类、标签的 GET 查询请求
-                    .requestMatchers(HttpMethod.GET, "/api/articles/**").permitAll()
-                    .requestMatchers(HttpMethod.GET, "/api/categories/**").permitAll()
-                    .requestMatchers(HttpMethod.GET, "/api/tags/**").permitAll()
-                    // 放行前台评论相关的提交和点赞接口
-                    .requestMatchers(HttpMethod.POST, "/api/articles/*/comments").permitAll()
-                    .requestMatchers(HttpMethod.POST, "/api/comments/*/like").permitAll()
-                    .requestMatchers(HttpMethod.POST, "/api/articles/*/like").permitAll()
-                    // 放行前台友链接口（GET 查询 + POST 申请）
-                    .requestMatchers(HttpMethod.GET, "/api/friends/**").permitAll()
-                    .requestMatchers(HttpMethod.POST, "/api/friends/apply").permitAll()
-                    .requestMatchers(HttpMethod.POST, "/api/friends/fetch-meta").permitAll()
-                    // 放行前台相册公开接口（GET 查询）
-                    .requestMatchers(HttpMethod.GET, "/api/public/albums/**").permitAll()
-                    // 放行前台手记公开接口（GET 查询 + POST 点赞）
-                    .requestMatchers(HttpMethod.GET, "/api/notes/**").permitAll()
-                    .requestMatchers(HttpMethod.POST, "/api/notes/*/like").permitAll()
-                    // 放行前台照片墙公开接口（GET 查询）
-                    .requestMatchers(HttpMethod.GET, "/api/public/photos/**").permitAll()
-                    // 放行微信登录二维码获取接口（无需登录即可扫码）
-                    .requestMatchers(HttpMethod.POST, "/api/weixin/login").permitAll()
-                    // 放行公开图片上传接口（友链头像等无需登录的场景）
-                    .requestMatchers(HttpMethod.POST, "/api/public/upload/image").permitAll()
-                    // 放行本地静态图片映射路径
-                    .requestMatchers("/uploads/**").permitAll()
-                    // 后台用户管理接口仅限 ADMIN 角色访问
-                    .requestMatchers("/api/admin/users/**").hasRole("ADMIN")
-                    // 其它任何后台 API 均需校验 Bearer Token 权限身份
-                    .anyRequest().authenticated()
+            .authorizeHttpRequests(auth -> {
+                    // 从 YAML 配置中加载公开放行路径
+                    applyPermitAllPaths(auth);
+                    auth
+                        // 后台用户管理接口仅限 ADMIN 角色访问
+                        .requestMatchers("/api/admin/users/**").hasRole("ADMIN")
+                        // 其它任何后台 API 均需校验 Bearer Token 权限身份
+                        .anyRequest().authenticated();
+                }
             )
             // 配置未认证和未授权时的统一 JSON 响应体
             .exceptionHandling(exceptions -> exceptions
@@ -177,5 +151,45 @@ public class SecurityConfig {
         UrlBasedCorsConfigurationSource source = new UrlBasedCorsConfigurationSource();
         source.registerCorsConfiguration("/**", configuration);
         return source;
+    }
+
+    /**
+     * 从 SecurityProperties 配置中解析并应用公开放行路径
+     * <p>支持两种格式：
+     * <ul>
+     *   <li>"METHOD /path" — 仅放行指定 HTTP 方法</li>
+     *   <li>"/path" — 放行所有 HTTP 方法</li>
+     * </ul>
+     * </p>
+     *
+     * @param auth 授权请求配置构建器
+     */
+    private void applyPermitAllPaths(
+            AuthorizeHttpRequestsConfigurer<HttpSecurity>.AuthorizationManagerRequestMatcherRegistry auth) {
+        List<String> paths = securityProperties.getPermitAllPaths();
+        if (paths == null || paths.isEmpty()) {
+            log.warn("[SecurityConfig] 未配置任何公开放行路径");
+            return;
+        }
+        for (String entry : paths) {
+            String trimmed = entry.trim();
+            if (trimmed.isEmpty()) continue;
+
+            // 按首个空格拆分："METHOD /path" → ["METHOD", "/path"]
+            int spaceIdx = trimmed.indexOf(' ');
+            if (spaceIdx > 0) {
+                // 带 HTTP 方法的规则
+                String method = trimmed.substring(0, spaceIdx).toUpperCase();
+                String path = trimmed.substring(spaceIdx + 1).trim();
+                HttpMethod httpMethod = HttpMethod.valueOf(method);
+                auth.requestMatchers(httpMethod, path).permitAll();
+                log.debug("[SecurityConfig] 放行 {} {}", method, path);
+            } else {
+                // 不带方法的规则，匹配所有 HTTP 方法
+                auth.requestMatchers(trimmed).permitAll();
+                log.debug("[SecurityConfig] 放行 ALL {}", trimmed);
+            }
+        }
+        log.info("[SecurityConfig] 已加载 {} 条公开放行路径规则", paths.size());
     }
 }
