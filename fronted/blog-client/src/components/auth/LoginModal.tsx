@@ -1,10 +1,12 @@
 'use client'
 
-import React, { useState, useEffect } from 'react'
-import { RefreshCw, Lock, User, Eye, EyeOff, Mail, AtSign } from 'lucide-react'
+import React, { useState, useEffect, useRef, useCallback } from 'react'
+import { RefreshCw, Lock, User, Eye, EyeOff, Mail, AtSign, CheckCircle } from 'lucide-react'
 import { Modal, Spinner } from '@heroui/react'
-import { API_BASE } from '@/lib/image-url'
 import { useAuth } from '@/contexts/AuthContext'
+import { useWebSocket } from '@/hooks/useWebSocket'
+import { getWechatQRCode, loginByEmail, registerUser } from '@/lib/auth-api'
+import { AppError } from '@/lib/error-handler'
 
 /** 邮箱彩色 SVG 图标 */
 const EmailIcon = ({ size = 20 }: { size?: number }) => (
@@ -62,6 +64,15 @@ export default function LoginModal({ isOpen, onClose }: LoginModalProps) {
   const [qrCodeUrl, setQrCodeUrl] = useState<string>('')
   const [qrLoading, setQrLoading] = useState(false)
   const [qrError, setQrError] = useState('')
+  /** 二维码当前状态：waiting=等待扫码 | scanned=已扫码 | expired=已过期 */
+  const [qrStatus, setQrStatus] = useState<'waiting' | 'scanned' | 'expired'>('waiting')
+  /** 二维码过期倒计时（秒） */
+  const [expiryCount, setExpiryCount] = useState(0)
+
+  /** WebSocket 连接管理 */
+  const { lastMessage, connect: wsConnect, disconnect: wsDisconnect } = useWebSocket()
+  /** 过期定时器 ref */
+  const expiryTimerRef = useRef<ReturnType<typeof setInterval> | null>(null)
 
   /** 打开弹窗时重置状态 */
   useEffect(() => {
@@ -71,11 +82,18 @@ export default function LoginModal({ isOpen, onClose }: LoginModalProps) {
       setShowPassword(false)
       setRegError('')
       setRegSuccess(false)
-      if (panel === 'wechat') fetchWechatQRCode()
+      if (panel === 'wechat') fetchWechatQR()
     } else {
       setUsernameInput('')
       setPasswordInput('')
       setQrCodeUrl('')
+      setQrStatus('waiting')
+      setExpiryCount(0)
+      if (expiryTimerRef.current) {
+        clearInterval(expiryTimerRef.current)
+        expiryTimerRef.current = null
+      }
+      wsDisconnect()
       setRegUsername('')
       setRegPassword('')
       setRegNickname('')
@@ -85,7 +103,7 @@ export default function LoginModal({ isOpen, onClose }: LoginModalProps) {
 
   /** 切换到微信模式时自动获取二维码 */
   useEffect(() => {
-    if (panel === 'wechat' && isOpen) fetchWechatQRCode()
+    if (panel === 'wechat' && isOpen) fetchWechatQR()
   }, [panel])
 
   /** 切换面板并重置错误 */
@@ -98,28 +116,70 @@ export default function LoginModal({ isOpen, onClose }: LoginModalProps) {
 
   // ===================== API 调用 =====================
 
-  /** 获取微信二维码 */
-  const fetchWechatQRCode = async () => {
+  /** 获取微信二维码并建立 WebSocket 连接 */
+  const fetchWechatQR = useCallback(async () => {
     setQrLoading(true)
     setQrError('')
+    setQrStatus('waiting')
+    setExpiryCount(0)
+    // 断开旧的 WS 连接并清除过期定时器
+    wsDisconnect()
+    if (expiryTimerRef.current) {
+      clearInterval(expiryTimerRef.current)
+      expiryTimerRef.current = null
+    }
     try {
-      const res = await fetch(`${API_BASE}/weixin/login`, {
-        method: 'POST',
-        headers: { 'Content-Type': 'application/json' }
-      })
-      const json = await res.json()
-      if (json.code === 200 || json.code === 0) {
-        setQrCodeUrl(json.data || '')
-        if (!json.data) setQrError('获取二维码失败')
-      } else {
-        setQrError(json.msg || '获取二维码失败')
-      }
-    } catch {
-      setQrError('网络连接失败，请稍后重试')
+      const { qrUrl, wsId } = await getWechatQRCode()
+      setQrCodeUrl(qrUrl)
+      // 建立 WebSocket 连接，监听扫码事件
+      wsConnect(wsId)
+      // 启动过期倒计时（110s，比 Redis 的 120s 提前 10s 过期）
+      setExpiryCount(110)
+      expiryTimerRef.current = setInterval(() => {
+        setExpiryCount((prev) => {
+          if (prev <= 1) {
+            if (expiryTimerRef.current) clearInterval(expiryTimerRef.current)
+            expiryTimerRef.current = null
+            setQrStatus('expired')
+            wsDisconnect()
+            return 0
+          }
+          return prev - 1
+        })
+      }, 1000)
+    } catch (err) {
+      setQrError(err instanceof AppError ? err.message : '获取二维码失败')
     } finally {
       setQrLoading(false)
     }
-  }
+  }, [wsConnect, wsDisconnect])
+
+  /** 监听 WebSocket 推送消息（扫码、关注等事件） */
+  useEffect(() => {
+    if (!lastMessage) return
+    if (lastMessage.event === 'weixin' && lastMessage.code === 200) {
+      // 用户已扫描二维码
+      setQrStatus('scanned')
+      // 清除过期倒计时（扫码后不再需要过期）
+      if (expiryTimerRef.current) {
+        clearInterval(expiryTimerRef.current)
+        expiryTimerRef.current = null
+      }
+    }
+  }, [lastMessage])
+
+  /** 面板切换或弹窗关闭时清理 WS 连接和定时器 */
+  useEffect(() => {
+    if (panel !== 'wechat' || !isOpen) {
+      setQrStatus('waiting')
+      setExpiryCount(0)
+      if (expiryTimerRef.current) {
+        clearInterval(expiryTimerRef.current)
+        expiryTimerRef.current = null
+      }
+      wsDisconnect()
+    }
+  }, [panel, isOpen, wsDisconnect])
 
   /** 邮箱登录 */
   const handleEmailLogin = async (e: React.FormEvent) => {
@@ -131,32 +191,17 @@ export default function LoginModal({ isOpen, onClose }: LoginModalProps) {
     setLoginSubmitting(true)
     setLoginError('')
     try {
-      const res = await fetch(`${API_BASE}/auth/login`, {
-        method: 'POST',
-        headers: { 'Content-Type': 'application/json' },
-        credentials: 'include',
-        body: JSON.stringify({ username: usernameInput.trim(), password: passwordInput })
+      const { user } = await loginByEmail(usernameInput.trim(), passwordInput)
+      // 通过全局认证状态管理登录（Token 已通过 httpOnly Cookie 自动设置）
+      authLogin({
+        nickname: user.nickname || '用户',
+        avatarUrl: user.avatarUrl || null,
+        username: user.username || null,
+        email: user.email || null,
       })
-      const json = await res.json()
-      if (json.code === 200 || json.code === 0) {
-        if (json.data?.user || json.data?.nickname) {
-          const userInfo = {
-            nickname: json.data.user?.nickname || json.data.nickname || '用户',
-            avatarUrl: json.data.user?.avatarUrl || json.data.avatarUrl || null,
-            username: json.data.user?.username || json.data.username || null,
-            email: json.data.user?.email || json.data.email || null
-          }
-          // 通过全局认证状态管理登录（Token 已通过 httpOnly Cookie 自动设置）
-          authLogin(userInfo)
-          onClose()
-        } else {
-          setLoginError('登录异常，请重试')
-        }
-      } else {
-        setLoginError(json.msg || '用户名或密码错误')
-      }
-    } catch {
-      setLoginError('网络连接失败，请稍后重试')
+      onClose()
+    } catch (err) {
+      setLoginError(err instanceof AppError ? err.message : '网络连接失败，请稍后重试')
     } finally {
       setLoginSubmitting(false)
     }
@@ -185,24 +230,15 @@ export default function LoginModal({ isOpen, onClose }: LoginModalProps) {
     setRegSubmitting(true)
     setRegError('')
     try {
-      const res = await fetch(`${API_BASE}/auth/register`, {
-        method: 'POST',
-        headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({
-          username: regUsername.trim(),
-          password: regPassword,
-          nickname: regNickname.trim(),
-          email: regEmail.trim() || undefined
-        })
+      await registerUser({
+        username: regUsername.trim(),
+        password: regPassword,
+        nickname: regNickname.trim(),
+        email: regEmail.trim() || undefined,
       })
-      const json = await res.json()
-      if (json.code === 200 || json.code === 0) {
-        setRegSuccess(true)
-      } else {
-        setRegError(json.msg || '注册失败，请稍后再试')
-      }
-    } catch {
-      setRegError('网络连接失败，请稍后重试')
+      setRegSuccess(true)
+    } catch (err) {
+      setRegError(err instanceof AppError ? err.message : '网络连接失败，请稍后重试')
     } finally {
       setRegSubmitting(false)
     }
@@ -349,15 +385,17 @@ export default function LoginModal({ isOpen, onClose }: LoginModalProps) {
                   {panel === 'wechat' && (
                     <div className="flex flex-col items-center py-2">
                       {qrLoading ? (
+                        /* 加载态 */
                         <div className="w-[200px] h-[200px] bg-[#F5F6FB] dark:bg-[#1E2035] rounded-xl flex items-center justify-center border border-[#C4C8E6]/40 dark:border-[#727BBA]/20">
                           <Spinner size="lg" />
                         </div>
                       ) : qrError ? (
+                        /* 错误态 */
                         <div className="w-[200px] h-[200px] bg-[#F5F6FB] dark:bg-[#1E2035] rounded-xl flex flex-col items-center justify-center gap-3 border border-[#C4C8E6]/40 dark:border-[#727BBA]/20">
                           <p className="text-xs text-red-500 text-center px-4">{qrError}</p>
                           <button
                             type="button"
-                            onClick={() => fetchWechatQRCode()}
+                            onClick={fetchWechatQR}
                             className="inline-flex items-center gap-1.5 text-xs font-medium text-[#727BBA] hover:text-[#5f68a3] hover:underline cursor-pointer transition-colors"
                           >
                             <RefreshCw size={12} />
@@ -365,24 +403,72 @@ export default function LoginModal({ isOpen, onClose }: LoginModalProps) {
                           </button>
                         </div>
                       ) : qrCodeUrl ? (
+                        /* 二维码展示（含扫码/过期覆盖层） */
                         <div className="relative group">
                           <img
                             src={qrCodeUrl}
                             alt="微信登录二维码"
-                            className="w-[200px] h-[200px] rounded-xl object-contain border border-[#C4C8E6]/40 dark:border-[#727BBA]/20 shadow-md shadow-[#727BBA]/5"
+                            className={`w-[200px] h-[200px] rounded-xl object-contain border shadow-md transition-all duration-300 ${
+                              qrStatus === 'expired'
+                                ? 'blur-sm opacity-40 border-zinc-300 dark:border-zinc-700 shadow-none'
+                                : qrStatus === 'scanned'
+                                  ? 'border-[#07C160]/40 dark:border-[#07C160]/30 shadow-[#07C160]/10'
+                                  : 'border-[#C4C8E6]/40 dark:border-[#727BBA]/20 shadow-[#727BBA]/5'
+                            }`}
                           />
-                          <button
-                            type="button"
-                            onClick={() => fetchWechatQRCode()}
-                            className="absolute -top-2 -right-2 w-7 h-7 rounded-full bg-white dark:bg-[#1E2035] border border-[#C4C8E6]/40 dark:border-[#727BBA]/20 shadow-sm flex items-center justify-center opacity-0 group-hover:opacity-100 transition-opacity hover:bg-[#F5F6FB] dark:hover:bg-[#252840] cursor-pointer"
-                          >
-                            <RefreshCw size={12} className="text-[#727BBA]/60" />
-                          </button>
+
+                          {/* 已扫码覆盖层 */}
+                          {qrStatus === 'scanned' && (
+                            <div className="absolute inset-0 flex flex-col items-center justify-center gap-2 bg-white/70 dark:bg-[#181B2E]/70 backdrop-blur-sm rounded-xl">
+                              <CheckCircle size={32} className="text-[#07C160]" />
+                              <p className="text-xs font-medium text-[#07C160]">已扫码</p>
+                              <p className="text-[10px] text-zinc-400">请在手机上确认登录</p>
+                            </div>
+                          )}
+
+                          {/* 过期覆盖层 */}
+                          {qrStatus === 'expired' && (
+                            <div className="absolute inset-0 flex flex-col items-center justify-center gap-2.5 bg-white/80 dark:bg-[#181B2E]/80 backdrop-blur-sm rounded-xl">
+                              <RefreshCw size={24} className="text-[#727BBA]/60" />
+                              <p className="text-xs font-medium text-zinc-500 dark:text-zinc-400">二维码已过期</p>
+                              <button
+                                type="button"
+                                onClick={fetchWechatQR}
+                                className="text-[11px] text-[#727BBA] hover:text-[#5f68a3] hover:underline font-medium cursor-pointer transition-colors"
+                              >
+                                点击刷新
+                              </button>
+                            </div>
+                          )}
+
+                          {/* 刷新按钮（仅 waiting 态 hover 可见） */}
+                          {qrStatus === 'waiting' && (
+                            <button
+                              type="button"
+                              onClick={fetchWechatQR}
+                              className="absolute -top-2 -right-2 w-7 h-7 rounded-full bg-white dark:bg-[#1E2035] border border-[#C4C8E6]/40 dark:border-[#727BBA]/20 shadow-sm flex items-center justify-center opacity-0 group-hover:opacity-100 transition-opacity hover:bg-[#F5F6FB] dark:hover:bg-[#252840] cursor-pointer"
+                            >
+                              <RefreshCw size={12} className="text-[#727BBA]/60" />
+                            </button>
+                          )}
                         </div>
                       ) : null}
-                      <p className="text-xs text-[#727BBA]/60 dark:text-[#9BADCF]/50 mt-3">
-                        打开微信 → 扫一扫 → 扫码登录或注册
-                      </p>
+
+                      {/* 底部状态提示 */}
+                      {qrStatus === 'waiting' && qrCodeUrl && expiryCount > 0 && (
+                        <p className="text-xs text-[#727BBA]/60 dark:text-[#9BADCF]/50 mt-3 text-center">
+                          打开微信 → 扫一扫 → 扫码登录
+                          <span className="block mt-1 text-[10px] font-mono text-zinc-400 dark:text-zinc-500">
+                            {Math.floor(expiryCount / 60)}:{String(expiryCount % 60).padStart(2, '0')} 后过期
+                          </span>
+                        </p>
+                      )}
+                      {qrStatus === 'scanned' && (
+                        <p className="text-xs text-[#07C160] mt-3 font-medium">扫码成功，等待确认...</p>
+                      )}
+                      {qrStatus === 'expired' && !qrCodeUrl && (
+                        <p className="text-xs text-zinc-400 mt-3">请刷新获取新的二维码</p>
+                      )}
                     </div>
                   )}
 
