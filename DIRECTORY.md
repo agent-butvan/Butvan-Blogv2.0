@@ -253,7 +253,8 @@ Butvan Blog2.0/                                    # 📦 项目根目录
     │       │   └── Constants.java                  #         全局常量（日期格式、默认分页大小等）
     │       ├── properties/                         #       配置属性映射（@ConfigurationProperties）
     │       │   ├── WeiXinProperties.java           #         微信配置映射（appid / appsecret）
-    │       │   └── StorageProperties.java          #         文件存储配置映射（local / minio 切换）
+    │       │   ├── StorageProperties.java          #         文件存储配置映射（local / minio 切换）
+    │       │   └── SecurityProperties.java         #         Security 放行路径配置（从 YAML 读取 permitAll 规则）
     │       ├── storage/                            #       文件存储抽象层（策略模式）
     │       │   └── FileStorageService.java         #         文件存储服务接口（upload / delete / getAccessUrl）
     │       ├── exception/                          #       异常定义
@@ -413,14 +414,15 @@ Butvan Blog2.0/                                    # 📦 项目根目录
             │   │   └── security/                   #       🔒 安全模块
             │   │       ├── JwtAuthFilter.java      #         JWT 认证过滤器（每次请求校验 Token）
             │   │       ├── JwtUtil.java            #         JWT 工具类（签发、解析、校验 Token）
-            │   │       └── SecurityConfig.java     #         Spring Security 配置（放行白名单、权限规则）
+            │   │       └── SecurityConfig.java     #         Spring Security 配置（放行路径从 YAML 动态加载）
             │   └── resources/
             │       ├── application.yml             #         主配置文件（导入全部子配置文件）
             │       ├── application-database.yml    #         数据库、JPA及JWT安全证书配置文件
             │       ├── application-routes.yml      #         前台页面客户端路由映射配置文件
             │       ├── application-redis.yml       #         Redis 连接配置（Lettuce 连接池）
             │       ├── application-weixin.yml      #         微信配置（appid / appsecret）
-            │       └── application-storage.yml     #         文件存储配置（local / minio 切换）
+            │       ├── application-storage.yml     #         文件存储配置（local / minio 切换）
+            │       └── application-security.yml    #         Security 放行路径配置（新增接口只需改此文件）
             └── test/
                 └── java/com/butvan/blog/service/   #       🧪 单元测试与集成测试
 ```
@@ -489,7 +491,9 @@ Butvan Blog2.0/                                    # 📦 项目根目录
 | `backend/blog-common/.../Result.java` | 后端-通用 | 统一 JSON 响应体 `{code, msg, data}` |
 | `backend/blog-pojo/.../entity/` | 后端-模型 | 21 个 JPA 实体类，与数据库表一一对应 |
 | `backend/blog-service/.../security/JwtAuthFilter.java` | 后端-安全 | JWT 认证过滤器，每次请求校验 Token |
-| `backend/blog-service/.../security/SecurityConfig.java` | 后端-安全 | Spring Security 配置，白名单与权限规则 |
+| `backend/blog-service/.../security/SecurityConfig.java` | 后端-安全 | Spring Security 配置，放行路径从 YAML 动态加载 |
+| `backend/blog-common/.../properties/SecurityProperties.java` | 后端-通用 | Security 放行路径配置属性类，支持 `METHOD /path` 格式 |
+| `backend/blog-service/.../application-security.yml` | 后端-配置 | Security 公开接口放行路径集中配置，新增接口只改此文件 |
 | `.graphifyignore` | 根目录 | Graphify 排除非代码静态资源的规则配置文件（避免免 Key 模式下提取报错） |
 | `.agents/rules/graphify.md` | 智能体-规则 | 指引 Antigravity IDE 助手优先通过 Graphify 知识图谱进行 codebase 分析的规则 |
 | `.agents/workflows/graphify.md` | 智能体-工作流 | Graphify 知识图谱自动化检测与增量重构工作流配置 |
