@@ -2,6 +2,7 @@ package com.butvan.blog.service.weixin.service.impl;
 
 import cn.hutool.json.JSONUtil;
 import com.butvan.blog.common.exception.BusinessException;
+import com.butvan.blog.common.utils.EmailUtils;
 import com.butvan.blog.common.utils.FieldPrinterUtil;
 import com.butvan.blog.common.utils.RedisUtils;
 import com.butvan.blog.pojo.dto.common.WebSocketMessageBase;
@@ -83,7 +84,86 @@ public class WeiXinEventServiceImpl implements WeiXinEventService {
             // -> 1. 若不存在：通知前端展示：发送邮箱信息给该公众号 && 微信发送模版消息通知该用户，重新发送邮箱信息
             // -> 2. 若存在：登录成功
             userLogin(eventXmlData);
+        } else if (eventXmlData.getMsgType().equals("text")) {
+            /**
+             * 文本消息事件
+             * 用户发送邮箱信息
+             */
+            userText(eventXmlData);
         }
+    }
+
+    /**
+     * 用户发送文本消息
+     * <p>从文本中提取邮箱地址，完成用户创建/绑定流程：</p>
+     * <ol>
+     *   <li>正则提取邮箱并校验</li>
+     *   <li>查找或创建 WechatUser 记录</li>
+     *   <li>查找或创建 User 记录（仅用 email）</li>
+     *   <li>关联 WechatUser.userId → User.id</li>
+     * </ol>
+     *
+     * @param eventXmlData 微信消息事件数据
+     */
+    private void userText(EventXmlData eventXmlData) {
+        // 获取用户发送的文本信息内容
+        String content = eventXmlData.getContent();
+        String openId = eventXmlData.getFromUserName();
+        log.info("用户文本消息, openId={}, content={}", openId, content);
+
+        // 1. 从文本中提取邮箱并校验格式
+        String email = EmailUtils.extractEmail(content);
+        if (email == null || !EmailUtils.isValidEmail(email)) {
+            log.info("用户 [{}] 发送的文本未包含有效邮箱: {}", openId, content);
+            // TODO: 回复用户提示重新发送正确格式的邮箱
+            return;
+        }
+        log.info("提取到有效邮箱: {}, openId={}", email, openId);
+
+        // 2. 查找或创建 WechatUser 记录
+        WechatUser wechatUser = wechatUserRepository.findByOpenId(openId).orElse(null);
+        if (wechatUser == null) {
+            wechatUser = WechatUser.builder()
+                    .openId(openId)
+                    .build();
+            wechatUser = wechatUserRepository.save(wechatUser);
+            log.info("创建 WechatUser 记录, openId={}, id={}", openId, wechatUser.getId());
+        }
+
+        // 3. 若 WechatUser 已关联 User，直接返回（已绑定）
+        if (wechatUser.getUserId() != null) {
+            User existingUser = userRepository.findById(wechatUser.getUserId()).orElse(null);
+            if (existingUser != null && email.equals(existingUser.getEmail())) {
+                log.info("用户已绑定, openId={}, userId={}, email={}", openId, existingUser.getId(), email);
+                // TODO: 回复用户告知已绑定
+                return;
+            }
+        }
+
+        // 4. 查找或创建 User 记录
+        User user = userRepository.findByEmail(email).orElse(null);
+        if (user == null) {
+            user = User.builder()
+                    .email(email)
+                    .role("USER")
+                    .status("ACTIVE")
+                    .lastLoginAt(LocalDateTime.now())
+                    .build();
+            user = userRepository.save(user);
+            log.info("创建 User 记录, userId={}, email={}", user.getId(), email);
+        } else {
+            // 更新最后登录时间
+            user.setLastLoginAt(LocalDateTime.now());
+            user = userRepository.save(user);
+            log.info("更新 User 登录时间, userId={}, email={}", user.getId(), email);
+        }
+
+        // 5. 关联 WechatUser → User
+        wechatUser.setUserId(user.getId());
+        wechatUserRepository.save(wechatUser);
+        log.info("绑定完成, openId={}, userId={}, email={}", openId, user.getId(), email);
+
+        // TODO: 回复用户告知绑定成功
     }
 
     /**
@@ -107,6 +187,7 @@ public class WeiXinEventServiceImpl implements WeiXinEventService {
             }
         }
 
+        // 2. 发送模版消息
         String open_id = eventXmlData.getFromUserName();
         if (open_id != null) {
             String msg = weiXinSendTemplateMessageService.sendEmailNoticeMessage(open_id);

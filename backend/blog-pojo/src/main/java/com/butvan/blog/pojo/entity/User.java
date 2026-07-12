@@ -26,14 +26,14 @@ public class User {
     @Column(name = "id")
     private Long id; // 用户唯一主键
 
-    @Column(name = "username", nullable = false, unique = true, length = 50)
-    private String username; // 登录用户名（唯一，支持字母数字下划线）
+    @Column(name = "username", unique = true, length = 50)
+    private String username; // 登录用户名（唯一，管理员必填，普通用户可为空）
 
-    @Column(name = "password_hash", nullable = false, length = 255)
-    private String passwordHash; // BCrypt 加密存储的密码哈希值
+    @Column(name = "password_hash", length = 255)
+    private String passwordHash; // BCrypt 加密存储的密码哈希值（普通用户可为空，仅邮箱登录或微信扫码登录）
 
-    @Column(name = "nickname", nullable = false, length = 50)
-    private String nickname; // 前端界面展示的昵称（支持中文）
+    @Column(name = "nickname", length = 50)
+    private String nickname; // 前端界面展示的昵称（普通用户可为空，使用邮箱展示）
 
     @Column(name = "email", unique = true, length = 100)
     private String email; // 用户绑定的唯一邮箱地址（用于找回密码或回复通知）
