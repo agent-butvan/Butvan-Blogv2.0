@@ -13,6 +13,8 @@ import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
 import org.springframework.stereotype.Service;
 
+import java.time.LocalDateTime;
+import java.time.format.DateTimeFormatter;
 import java.util.HashMap;
 import java.util.Map;
 
@@ -33,6 +35,9 @@ public class WeiXinSendTemplateMessageServiceImpl implements WeiXinSendTemplateM
     /** 登录成功通知模板 ID（待配置） */
     private static final String LOGIN_SUCCESS_TEMPLATE_ID = "jMK2y2x5gm_PSA-BuVBbSsWXJQRBjjRC48AIrwEt7gw";
 
+    /** 首次注册成功通知模版 ID（待配置） */
+    private static final String FIRST_REGISTER_TEMPLATE_ID = "";
+
     /**
      * 用户扫码登录成功后，发送模板消息通知
      *
@@ -42,6 +47,28 @@ public class WeiXinSendTemplateMessageServiceImpl implements WeiXinSendTemplateM
     @Override
     public String sendLoginSuccessMessage(String openId) {
         return "";
+    }
+
+    /**
+     * 用户首次注册成功后，发送模板消息通知
+     * <p>模板变量：first(问候语)、email(注册邮箱)、time(注册时间)、method(注册方式)、remark(尾部提示)</p>
+     *
+     * @param openId 用户 openId
+     * @param email  注册邮箱
+     * @return 发送结果
+     */
+    @Override
+    public String sendRegisterSuccessMessage(String openId, String email) {
+        Map<String, TemplateData> data = new HashMap<>();
+        data.put("first", TemplateData.of("恭喜你，账号注册成功！", "#173177"));
+        data.put("email", TemplateData.of(email, "#FA8B16"));
+        data.put("time", TemplateData.of(
+                LocalDateTime.now().format(DateTimeFormatter.ofPattern("yyyy年M月d日 HH:mm")),
+                "#173177"
+        ));
+        data.put("method", TemplateData.of("微信扫码", "#173177"));
+        data.put("remark", TemplateData.of("欢迎使用可梵博客，开始你的创作之旅吧！"));
+        return sendTemplateMessage(openId, "", FIRST_REGISTER_TEMPLATE_ID, data);
     }
 
     /**

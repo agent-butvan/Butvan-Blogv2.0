@@ -13,6 +13,15 @@ public interface WeiXinSendTemplateMessageService {
     String sendLoginSuccessMessage(String openId);
 
     /**
+     * 用户首次注册成功，发送模版消息
+     *
+     * @param openId 用户 openId
+     * @param email  注册邮箱
+     * @return 发送结果
+     */
+    String sendRegisterSuccessMessage(String openId, String email);
+
+    /**
      * 提醒用户发送邮箱文本信息
      * @param openId
      * @return
