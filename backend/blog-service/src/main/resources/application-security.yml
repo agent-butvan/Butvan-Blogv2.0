@@ -50,6 +50,7 @@ security:
     - "POST /api/weixin/login"
     - "GET /api/weixin/event/**"
     - "POST /api/weixin/event/**"
+    - "POST /api/auth/wechat/exchange"
 
     # ---- 公开图片上传 ----
     - "POST /api/public/upload/image"

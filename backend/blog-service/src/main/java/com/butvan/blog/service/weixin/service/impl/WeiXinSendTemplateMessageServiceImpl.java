@@ -14,7 +14,7 @@ import lombok.extern.slf4j.Slf4j;
 import org.springframework.stereotype.Service;
 
 import java.time.LocalDateTime;
-import java.time.format.DateTimeFormatter;
+import java.time.LocalTime;
 import java.util.HashMap;
 import java.util.Map;
 
@@ -32,11 +32,11 @@ public class WeiXinSendTemplateMessageServiceImpl implements WeiXinSendTemplateM
     /** 邮箱绑定提醒模板 ID */
     private static final String EMAIL_NOTICE_TEMPLATE_ID = "Lootde8JTbXjQQx2QC1Q88OqaKMgN7kwzIxMoTBkL0E";
 
-    /** 登录成功通知模板 ID（待配置） */
-    private static final String LOGIN_SUCCESS_TEMPLATE_ID = "jMK2y2x5gm_PSA-BuVBbSsWXJQRBjjRC48AIrwEt7gw";
+    /** 登录成功通知模板 ID */
+    private static final String LOGIN_SUCCESS_TEMPLATE_ID = "dNa5fJyhq6G2XrsfDckv0tpjhBiK51cFagX8x2OyRgU";
 
-    /** 首次注册成功通知模版 ID（待配置） */
-    private static final String FIRST_REGISTER_TEMPLATE_ID = "";
+    /** 首次注册成功通知模版 ID */
+    private static final String FIRST_REGISTER_TEMPLATE_ID = "2NEDWumdv03gRN48SRMnsvD-uWxS8iAthpH_Cg9j-fI";
 
     /**
      * 用户扫码登录成功后，发送模板消息通知
@@ -46,29 +46,17 @@ public class WeiXinSendTemplateMessageServiceImpl implements WeiXinSendTemplateM
      */
     @Override
     public String sendLoginSuccessMessage(String openId) {
-        return "";
+        HashMap<String, TemplateData> data = new HashMap<>();
+        data.put("time", TemplateData.of(LocalTime.now().toString(), "#000000"));
+        return sendTemplateMessage(openId, "", LOGIN_SUCCESS_TEMPLATE_ID, data);
     }
 
-    /**
-     * 用户首次注册成功后，发送模板消息通知
-     * <p>模板变量：first(问候语)、email(注册邮箱)、time(注册时间)、method(注册方式)、remark(尾部提示)</p>
-     *
-     * @param openId 用户 openId
-     * @param email  注册邮箱
-     * @return 发送结果
-     */
     @Override
     public String sendRegisterSuccessMessage(String openId, String email) {
-        Map<String, TemplateData> data = new HashMap<>();
-        data.put("first", TemplateData.of("恭喜你，账号注册成功！", "#173177"));
-        data.put("email", TemplateData.of(email, "#FA8B16"));
-        data.put("time", TemplateData.of(
-                LocalDateTime.now().format(DateTimeFormatter.ofPattern("yyyy年M月d日 HH:mm")),
-                "#173177"
-        ));
-        data.put("method", TemplateData.of("微信扫码", "#173177"));
-        data.put("remark", TemplateData.of("欢迎使用可梵博客，开始你的创作之旅吧！"));
-        return sendTemplateMessage(openId, "", FIRST_REGISTER_TEMPLATE_ID, data);
+        HashMap<String, TemplateData> data = new HashMap<>();
+        data.put("account", TemplateData.of(email, "#000000"));
+        data.put("time", TemplateData.of(LocalDateTime.now().toString(), "#000000"));
+        return sendTemplateMessage(openId,"",FIRST_REGISTER_TEMPLATE_ID,data);
     }
 
     /**

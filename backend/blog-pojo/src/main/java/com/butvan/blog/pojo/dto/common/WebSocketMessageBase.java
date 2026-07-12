@@ -5,6 +5,8 @@ import lombok.Builder;
 import lombok.Data;
 import lombok.NoArgsConstructor;
 
+import java.util.Map;
+
 /**
  * websocket 消息推送的基类
  */
@@ -15,7 +17,7 @@ import lombok.NoArgsConstructor;
 public class WebSocketMessageBase {
 
     /**
-     * 状态吗
+     * 状态码
      */
     private int code;
 
@@ -30,4 +32,10 @@ public class WebSocketMessageBase {
      * 客户端展示信息
      */
     private String message;
+
+    /**
+     * 扩展数据（可选）
+     * <p>用于下发业务附加数据，如 exchangeCode、用户信息等</p>
+     */
+    private Map<String, Object> data;
 }

@@ -107,6 +107,7 @@ public class TokenService {
         }
 
         User user = userRepository.findByUsername(username)
+                .or(() -> userRepository.findByEmail(username))
                 .orElseThrow(() -> new BusinessException(401, "用户不存在"));
 
         // 5. 签发新 Access Token（携带最新角色）

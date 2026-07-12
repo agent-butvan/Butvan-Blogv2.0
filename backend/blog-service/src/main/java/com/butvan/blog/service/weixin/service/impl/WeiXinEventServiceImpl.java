@@ -20,6 +20,10 @@ import lombok.extern.slf4j.Slf4j;
 import org.springframework.stereotype.Service;
 
 import java.time.LocalDateTime;
+import java.util.HashMap;
+import java.util.Map;
+import java.util.UUID;
+import java.util.concurrent.TimeUnit;
 
 @Slf4j
 @Service
@@ -163,7 +167,17 @@ public class WeiXinEventServiceImpl implements WeiXinEventService {
         wechatUserRepository.save(wechatUser);
         log.info("绑定完成, openId={}, userId={}, email={}", openId, user.getId(), email);
 
-        // TODO: 回复用户告知绑定成功
+        // 注册成功，发送模版消息通知用户
+        weiXinSendTemplateMessageService.sendRegisterSuccessMessage(openId, email);
+        // 获取 ws_id
+        String redis_key = WeiXinRedisKeyPrefix.REDIS_FIRST_REGISTER_OPEN_ID_BING_TICKET + openId;
+        String ticket = redisUtils.get(redis_key);
+        String redis_key2 = WeiXinRedisKeyPrefix.REDIS_QRCODE_TICKET_WS_ID_KEY + ticket;
+        String ws_id = redisUtils.get(redis_key2);
+        if (ws_id != null) {
+            String exchangeCode = generateExchangeCode(user.getId());
+            userFirstRegisterSuccess(ws_id, exchangeCode);
+        }
     }
 
     /**
@@ -178,17 +192,22 @@ public class WeiXinEventServiceImpl implements WeiXinEventService {
          * 不存在，则不是，也不需要进行任何通知的操作
          */
         String ticket = eventXmlData.getTicket();
-        if (ticket != null) {
+        String open_id = eventXmlData.getFromUserName();
+        if (ticket != null && open_id != null) {
             // 1. 通知客户端，用户扫码成功
             String redis_key = WeiXinRedisKeyPrefix.REDIS_QRCODE_TICKET_WS_ID_KEY + ticket;
             String ws_id = redisUtils.get(redis_key);
             if (ws_id != null) {
                 scanQrCode(ws_id);
             }
+
+            // 使用用户的 open_id 和二维码 ticket 做绑定
+            String redis_key2 = WeiXinRedisKeyPrefix.REDIS_FIRST_REGISTER_OPEN_ID_BING_TICKET + open_id;
+            // 过期时间和 ticket 保持一致
+            redisUtils.set(redis_key2, ticket, 120, TimeUnit.SECONDS);
         }
 
         // 2. 发送模版消息
-        String open_id = eventXmlData.getFromUserName();
         if (open_id != null) {
             String msg = weiXinSendTemplateMessageService.sendEmailNoticeMessage(open_id);
         }
@@ -228,25 +247,53 @@ public class WeiXinEventServiceImpl implements WeiXinEventService {
             blog_user_info.setLastLoginAt(LocalDateTime.now());
             userRepository.save(blog_user_info);
 
-            // 4. 通知前端登录成功
-            userLoginSuccess(ws_id);
+            // 4. 生成交换码并通知前端登录成功
+            String exchangeCode = generateExchangeCode(blog_user_info.getId());
+            userLoginSuccess(ws_id, exchangeCode);
+
+            // 5. 发送模版消息通知前端用户
+            weiXinSendTemplateMessageService.sendLoginSuccessMessage(open_id);
         }
     }
 
     /**
-     * 用户登录成功
-     * @param wsId
+     * 用户首次注册账号成功，通知客户端
+     *
+     * @param wsId         WebSocket 连接 ID
+     * @param exchangeCode Token 交换码
      */
-    private void userLoginSuccess(String wsId) {
+    private void userFirstRegisterSuccess(String wsId, String exchangeCode) {
+        Map<String, Object> data = new HashMap<>();
+        data.put("exchangeCode", exchangeCode);
+
         WebSocketMessageBase webSocketMessageBase = WebSocketMessageBase.builder()
                 .code(200)
-                .event("weixin")
-                .message("登录成功！")
+                .event("login")
+                .message("注册成功! 欢迎加入可梵博客!")
+                .data(data)
                 .build();
 
-        String jsonStr = JSONUtil.toJsonStr(webSocketMessageBase);
+        webSocketServer.sendMessage(wsId, JSONUtil.toJsonStr(webSocketMessageBase));
+    }
 
-        webSocketServer.sendMessage(wsId,jsonStr);
+    /**
+     * 用户登录成功，通知客户端
+     *
+     * @param wsId         WebSocket 连接 ID
+     * @param exchangeCode Token 交换码
+     */
+    private void userLoginSuccess(String wsId, String exchangeCode) {
+        Map<String, Object> data = new HashMap<>();
+        data.put("exchangeCode", exchangeCode);
+
+        WebSocketMessageBase webSocketMessageBase = WebSocketMessageBase.builder()
+                .code(200)
+                .event("login")
+                .message("登录成功！")
+                .data(data)
+                .build();
+
+        webSocketServer.sendMessage(wsId, JSONUtil.toJsonStr(webSocketMessageBase));
     }
 
     /**
@@ -267,7 +314,8 @@ public class WeiXinEventServiceImpl implements WeiXinEventService {
 
     /**
      * 向客户端发送二维码已经被扫描的通知
-     * @param wsId
+     *
+     * @param wsId WebSocket 连接 ID
      */
     private void scanQrCode(String wsId) {
         WebSocketMessageBase webSocketMessageBase = WebSocketMessageBase.builder()
@@ -276,8 +324,21 @@ public class WeiXinEventServiceImpl implements WeiXinEventService {
                 .message("二维码被扫描")
                 .build();
 
-        String jsonStr = JSONUtil.toJsonStr(webSocketMessageBase);
+        webSocketServer.sendMessage(wsId, JSONUtil.toJsonStr(webSocketMessageBase));
+    }
 
-        webSocketServer.sendMessage(wsId,jsonStr);
+    /**
+     * 生成微信登录交换码并存入 Redis
+     * <p>前端通过 WS 收到此码后，调用 HTTP 接口换取 httpOnly Cookie</p>
+     *
+     * @param userId 用户 ID
+     * @return 一次性交换码（UUID，60 秒过期）
+     */
+    private String generateExchangeCode(Long userId) {
+        String code = UUID.randomUUID().toString().replace("-", "");
+        String key = WeiXinRedisKeyPrefix.REDIS_WECHAT_EXCHANGE_CODE + code;
+        redisUtils.set(key, String.valueOf(userId), 60, TimeUnit.SECONDS);
+        log.info("生成微信登录交换码, userId={}, code={}", userId, code);
+        return code;
     }
 }
