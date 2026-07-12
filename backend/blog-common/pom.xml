@@ -41,6 +41,13 @@
             <groupId>cn.hutool</groupId>
         </dependency>
 
+        <!-- Hibernate Core（雪花 ID 生成器需要 IdentifierGenerator 接口） -->
+        <dependency>
+            <groupId>org.hibernate.orm</groupId>
+            <artifactId>hibernate-core</artifactId>
+            <scope>provided</scope>
+        </dependency>
+
         <dependency>
             <artifactId>spring-boot-starter-data-redis</artifactId>
             <groupId>org.springframework.boot</groupId>

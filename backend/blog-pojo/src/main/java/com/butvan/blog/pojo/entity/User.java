@@ -1,10 +1,12 @@
 package com.butvan.blog.pojo.entity;
 
+import com.butvan.blog.common.id.SnowflakeIdGenerator;
 import jakarta.persistence.*;
 import lombok.AllArgsConstructor;
 import lombok.Builder;
 import lombok.Data;
 import lombok.NoArgsConstructor;
+import org.hibernate.annotations.GenericGenerator;
 import org.hibernate.annotations.JdbcTypeCode;
 import org.hibernate.type.SqlTypes;
 import java.time.LocalDateTime;
@@ -22,9 +24,10 @@ import java.util.Map;
 public class User {
 
     @Id
-    @GeneratedValue(strategy = GenerationType.IDENTITY)
+    @GeneratedValue(generator = "snowflake")
+    @GenericGenerator(name = "snowflake", type = SnowflakeIdGenerator.class)
     @Column(name = "id")
-    private Long id; // 用户唯一主键
+    private Long id; // 用户唯一主键（雪花算法生成）
 
     @Column(name = "username", unique = true, length = 50)
     private String username; // 登录用户名（唯一，管理员必填，普通用户可为空）
