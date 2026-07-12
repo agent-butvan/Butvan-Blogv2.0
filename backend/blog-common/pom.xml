@@ -46,6 +46,11 @@
             <groupId>org.springframework.boot</groupId>
         </dependency>
 
+        <dependency>
+            <artifactId>spring-boot-starter-websocket</artifactId>
+            <groupId>org.springframework.boot</groupId>
+        </dependency>
+
         <!-- MinIO 对象存储 SDK -->
         <dependency>
             <groupId>io.minio</groupId>

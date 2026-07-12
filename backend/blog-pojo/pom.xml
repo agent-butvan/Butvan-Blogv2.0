@@ -16,6 +16,12 @@
     <description>Data models (Entities, DTOs, VOs) for Butvan Blog 2.0</description>
 
     <dependencies>
+        <!-- Common submodule（引入公共注解如 @FieldLabel） -->
+        <dependency>
+            <groupId>com.butvan</groupId>
+            <artifactId>blog-common</artifactId>
+        </dependency>
+
         <!-- Lombok -->
         <dependency>
             <groupId>org.projectlombok</groupId>

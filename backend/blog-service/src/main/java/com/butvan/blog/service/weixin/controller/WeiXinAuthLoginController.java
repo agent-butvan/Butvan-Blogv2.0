@@ -1,6 +1,7 @@
 package com.butvan.blog.service.weixin.controller;
 
 import com.butvan.blog.common.result.Result;
+import com.butvan.blog.pojo.weixin.AuthLoginDto;
 import com.butvan.blog.service.weixin.service.WeiXinAuthLoginService;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
@@ -18,9 +19,9 @@ public class WeiXinAuthLoginController {
 
 
     @PostMapping("/login")
-    public Result<String> weiXinLogin() {
-        String qrcode_url = weiXinAuthLoginService.qrcodeLogin();
+    public Result<AuthLoginDto> weiXinLogin() {
+        AuthLoginDto res = weiXinAuthLoginService.qrcodeLogin();
 
-        return Result.success(qrcode_url);
+        return Result.success(res);
     }
 }
