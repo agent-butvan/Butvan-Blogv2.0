@@ -101,3 +101,16 @@ export async function loginByEmail(username: string, password: string): Promise<
 export async function registerUser(params: RegisterParams): Promise<void> {
   await post<void>('/auth/register', params as unknown as Record<string, unknown>)
 }
+
+/**
+ * 微信扫码登录 Token 交换
+ *
+ * 微信扫码登录成功后，后端通过 WebSocket 下发 exchangeCode，
+ * 前端调用此接口换取 httpOnly Cookie（Access Token + Refresh Token）和用户信息。
+ *
+ * @param code 后端下发的交换码（一次性，60s 过期）
+ * @returns 登录用户信息
+ */
+export async function wechatExchange(code: string): Promise<LoginData> {
+  return post<LoginData>('/auth/wechat/exchange', { code })
+}

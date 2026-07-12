@@ -7,12 +7,14 @@ export type WsStatus = 'disconnected' | 'connecting' | 'connected' | 'closed'
 
 /** 后端推送的 WebSocket 消息结构（对应 WebSocketMessageBase） */
 export interface WsMessage {
-  /** 状态码：200=成功 */
+  /** 状态码：200=成功，500=异常 */
   code: number
-  /** 事件标识，如 "weixin" */
+  /** 事件标识，如 "weixin"、"login" */
   event: string
   /** 消息描述 */
   message: string
+  /** 扩展数据（如 token exchange code 等，后端可选下发） */
+  data?: Record<string, unknown>
 }
 
 /** useWebSocket 返回值 */
