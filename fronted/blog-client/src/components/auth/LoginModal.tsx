@@ -87,7 +87,7 @@ export default function LoginModal({ isOpen, onClose }: LoginModalProps) {
   const [expiryCount, setExpiryCount] = useState(0)
 
   /** WebSocket 连接管理 */
-  const { lastMessage, connect: wsConnect, disconnect: wsDisconnect } = useWebSocket()
+  const { lastMessage, connect: wsConnect, disconnect: wsDisconnect, send: wsSend } = useWebSocket()
   /** 过期定时器 ref */
   const expiryTimerRef = useRef<ReturnType<typeof setInterval> | null>(null)
 
@@ -253,7 +253,9 @@ export default function LoginModal({ isOpen, onClose }: LoginModalProps) {
           }
         }
       }
-      wsDisconnect()
+      // 通知服务端主动关闭 WebSocket 会话，延迟确保指令发送完毕后再断开本地连接
+      wsSend('close')
+      setTimeout(() => wsDisconnect(), 300)
       // 延迟关闭弹窗，等待 auth-change 事件传播完成后再卸载，避免 Transition Abort
       setTimeout(() => onClose(), 150)
     } catch (err) {

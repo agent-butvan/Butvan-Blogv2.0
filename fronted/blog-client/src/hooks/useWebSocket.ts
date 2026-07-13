@@ -27,6 +27,8 @@ interface UseWebSocketReturn {
   connect: (wsId: string) => void
   /** 主动断开连接 */
   disconnect: () => void
+  /** 向服务端发送文本消息（如发送 "close" 指令请求关闭会话） */
+  send: (message: string) => void
 }
 
 /**
@@ -102,6 +104,15 @@ export function useWebSocket(): UseWebSocketReturn {
     }
   }, [])
 
+  /** 向服务端发送文本消息 */
+  const send = useCallback((message: string) => {
+    if (wsRef.current && wsRef.current.readyState === WebSocket.OPEN) {
+      wsRef.current.send(message)
+    } else {
+      console.warn('[WS] 连接未就绪，无法发送消息:', message)
+    }
+  }, [])
+
   /** 建立 WebSocket 连接 */
   const connect = useCallback((wsId: string) => {
     // 先断开已有连接
@@ -144,5 +155,5 @@ export function useWebSocket(): UseWebSocketReturn {
     }
   }, [disconnect])
 
-  return { status, lastMessage, connect, disconnect }
+  return { status, lastMessage, connect, disconnect, send }
 }

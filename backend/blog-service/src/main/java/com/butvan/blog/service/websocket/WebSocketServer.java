@@ -38,13 +38,21 @@ public class WebSocketServer {
 
     /**
      * 收到客户端消息
-     * @param message
-     * @param id
+     * <p>支持指令：</p>
+     * <ul>
+     *   <li>"close" — 客户端主动请求关闭会话（如登录完成后）</li>
+     * </ul>
+     * @param message 客户端发送的消息文本
+     * @param id      客户端连接标识
      */
     @OnMessage
     public void onMessage(String message, @PathParam("id") String id) {
-        log.info("收到来自客户端: [{}]的消息: [{}]",id,message);
-        // TODO
+        log.info("收到来自客户端: [{}]的消息: [{}]", id, message);
+
+        if ("close".equalsIgnoreCase(message)) {
+            log.info("客户端: [{}] 请求关闭会话，原因: 登录流程完成", id);
+            closeSession(id, "登录流程完成，客户端主动关闭");
+        }
     }
 
     @OnClose
@@ -79,9 +87,10 @@ public class WebSocketServer {
      */
     public void closeSession(String id, String reason) {
         Session session = sessionMap.get(id);
-        if (session == null || session.isOpen()) {
+        if (session != null && session.isOpen()) {
             try {
                 session.close(new CloseReason(CloseReason.CloseCodes.NORMAL_CLOSURE, reason));
+                log.info("当前客户端连接数:[ {} ]", sessionMap.size());
             } catch (IOException e) {
                 log.error("客户端: [{}] ws 连接关闭失败，报错信息: [{}]", id, e.getMessage());
                 throw new RuntimeException(e);
