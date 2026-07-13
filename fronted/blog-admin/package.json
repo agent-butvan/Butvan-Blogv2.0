@@ -3,7 +3,8 @@
   "version": "0.1.0",
   "private": true,
   "scripts": {
-    "dev": "next dev",
+    "dev": "node switch-env.js dev && next dev",
+    "dev:sealos": "node switch-env.js sealos && next dev",
     "build": "next build",
     "start": "next start",
     "lint": "eslint"
