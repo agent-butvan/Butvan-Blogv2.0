@@ -4,7 +4,7 @@ import React, { useState, useEffect } from 'react'
 import Link from 'next/link'
 import { Menu, X, ChevronDown, ArrowUpRight } from 'lucide-react'
 import { fetchNavigations } from '@/lib/profile'
-import { getBackendHost } from '@/lib/image-url'
+import { resolveImageUrl } from '@/lib/image-url'
 import { useAuth } from '@/contexts/AuthContext'
 import LoginModal from '@/components/auth/LoginModal'
 import type { ProfileVO } from '@/types/profile'
@@ -21,12 +21,7 @@ interface NavbarProps {
 }
 
 const resolveAvatarUrl = (avatarUrl?: string | null): string => {
-  if (!avatarUrl) return ""
-  if (avatarUrl.startsWith("http://") || avatarUrl.startsWith("https://")) {
-    return avatarUrl;
-  }
-  const host = getBackendHost();
-  return avatarUrl.startsWith("/") ? `${host}${avatarUrl}` : avatarUrl;
+  return resolveImageUrl(avatarUrl || "");
 };
 
 /**

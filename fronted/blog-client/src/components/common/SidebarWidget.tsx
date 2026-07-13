@@ -5,7 +5,7 @@ import * as Icons from 'lucide-react'
 import { HelpCircle, User, LogOut, Upload, Mail, AtSign } from 'lucide-react'
 import { Button, Tooltip, Avatar, Separator, toast, Input, Modal, Badge } from '@heroui/react'
 import { fetchNavigations } from '@/lib/profile'
-import { getBackendHost } from '@/lib/image-url'
+import { resolveImageUrl } from '@/lib/image-url'
 import { upload } from '@/lib/http-client'
 import { useAuth } from '@/contexts/AuthContext'
 import Link from 'next/link'
@@ -84,12 +84,7 @@ export default function SidebarWidget() {
    * 解析头像 URL
    */
   const resolveAvatarUrl = (avatarUrl?: string | null): string => {
-    if (!avatarUrl) return ""
-    if (avatarUrl.startsWith("http://") || avatarUrl.startsWith("https://")) {
-      return avatarUrl;
-    }
-    const host = getBackendHost();
-    return avatarUrl.startsWith("/") ? `${host}${avatarUrl}` : avatarUrl;
+    return resolveImageUrl(avatarUrl || "");
   };
 
   // 拉取侧边栏动态菜单

@@ -23,6 +23,16 @@ export function getBackendHost(): string {
  */
 export function resolveImageUrl(url?: string): string {
   if (!url) return "";
+
+  // 1. 如果当前是在 HTTPS 环境下加载不安全的 HTTP 外部图片，则通过本地 API 路由进行代理中转，以防 Mixed Content 拦截
+  if (
+    typeof window !== "undefined" &&
+    window.location.protocol === "https:" &&
+    url.startsWith("http://")
+  ) {
+    return `/api/proxy-image?url=${encodeURIComponent(url)}`;
+  }
+
   if (url.startsWith("http://") || url.startsWith("https://") || url.startsWith("/images/")) {
     return url;
   }
