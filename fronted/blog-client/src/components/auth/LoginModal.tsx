@@ -1,7 +1,7 @@
 'use client'
 
 import React, { useState, useEffect, useRef, useCallback } from 'react'
-import { flushSync } from 'react-dom'
+
 import { RefreshCw, Lock, User, Eye, EyeOff, Mail, AtSign, CheckCircle } from 'lucide-react'
 import { Modal, Spinner, toast } from '@heroui/react'
 import { useAuth } from '@/contexts/AuthContext'
@@ -217,12 +217,12 @@ export default function LoginModal({ isOpen, onClose }: LoginModalProps) {
       if (exchangeCode) {
         // 后端已实现 Token Exchange 接口
         const { user } = await wechatExchange(exchangeCode)
-        flushSync(() => authLogin({
+        authLogin({
           nickname: user.nickname || user.email || '用户',
           avatarUrl: user.avatarUrl || null,
           username: user.username || null,
           email: user.email || null,
-        }))
+        })
       } else {
         // 后端暂未实现 exchange 接口，尝试通过 /auth/check 恢复会话
         const res = await fetch(`${API_BASE}/auth/check`, {
@@ -233,12 +233,12 @@ export default function LoginModal({ isOpen, onClose }: LoginModalProps) {
           const json = await res.json()
           if (json?.code === 200 && json.data) {
             const d = json.data
-            flushSync(() => authLogin({
+            authLogin({
               nickname: d.nickname || d.email || '用户',
               avatarUrl: d.avatarUrl || null,
               username: d.username || null,
               email: d.email || null,
-            }))
+            })
           }
         }
       }
@@ -277,12 +277,12 @@ export default function LoginModal({ isOpen, onClose }: LoginModalProps) {
     try {
       const { user } = await loginByEmail(usernameInput.trim(), passwordInput)
       // 通过全局认证状态管理登录（Token 已通过 httpOnly Cookie 自动设置）
-      flushSync(() => authLogin({
+      authLogin({
         nickname: user.nickname || '用户',
         avatarUrl: user.avatarUrl || null,
         username: user.username || null,
         email: user.email || null,
-      }))
+      })
       // 延迟关闭弹窗，等待 auth-change 事件传播完成后再卸载，避免 Transition Abort
       setTimeout(() => onClose(), 150)
     } catch (err) {
