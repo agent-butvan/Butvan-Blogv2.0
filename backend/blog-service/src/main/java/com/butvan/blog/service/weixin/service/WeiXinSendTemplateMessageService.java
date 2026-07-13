@@ -22,6 +22,14 @@ public interface WeiXinSendTemplateMessageService {
     String sendRegisterSuccessMessage(String openId, String email);
 
     /**
+     * 当用户的账号和微信绑定后，发送模版消息
+     * @param openId
+     * @param email
+     * @return
+     */
+    String sendWechatBindNotification(String openId, String email);
+
+    /**
      * 提醒用户发送邮箱文本信息
      * @param openId
      * @return

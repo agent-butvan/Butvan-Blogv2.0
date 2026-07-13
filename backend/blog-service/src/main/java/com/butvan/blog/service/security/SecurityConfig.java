@@ -44,15 +44,17 @@ public class SecurityConfig {
 
     /**
      * 配置 UserDetailsService，对接 JPA 的 UserRepository 查询逻辑
+     * <p>支持通过 username 或 email 查找用户（微信用户无 username，JWT subject 为 email）</p>
      *
      * @return UserDetailsService bean
      */
     @Bean
     public UserDetailsService userDetailsService() {
         return username -> userRepository.findByUsername(username)
+                .or(() -> userRepository.findByEmail(username))
                 .map(user -> org.springframework.security.core.userdetails.User.builder()
-                        .username(user.getUsername())
-                        .password(user.getPasswordHash())
+                        .username(user.getUsername() != null ? user.getUsername() : user.getEmail())
+                        .password(user.getPasswordHash() != null ? user.getPasswordHash() : "")
                         .roles(user.getRole())
                         .disabled(!"ACTIVE".equalsIgnoreCase(user.getStatus()))
                         .build()

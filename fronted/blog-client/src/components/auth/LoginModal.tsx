@@ -1,8 +1,9 @@
 'use client'
 
 import React, { useState, useEffect, useRef, useCallback } from 'react'
+import { flushSync } from 'react-dom'
 import { RefreshCw, Lock, User, Eye, EyeOff, Mail, AtSign, CheckCircle } from 'lucide-react'
-import { Modal, Spinner } from '@heroui/react'
+import { Modal, Spinner, toast } from '@heroui/react'
 import { useAuth } from '@/contexts/AuthContext'
 import { useWebSocket } from '@/hooks/useWebSocket'
 import { getWechatQRCode, loginByEmail, registerUser, wechatExchange } from '@/lib/auth-api'
@@ -169,12 +170,16 @@ export default function LoginModal({ isOpen, onClose }: LoginModalProps) {
     if (lastMessage.code === 500) {
       setQrStatus('error')
       setWechatMsg(lastMessage.message || '登录异常，请重试')
+      // Toast 全局通知（持久显示，需手动关闭）
+      toast.danger(lastMessage.message || '登录异常，请重试', { timeout: 0 })
       return
     }
 
     // 扫码事件：用户已扫描二维码
     if (lastMessage.event === 'weixin' && lastMessage.code === 200 && lastMessage.message.includes('扫描')) {
       setQrStatus('scanned')
+      // Toast 全局通知
+      toast.info(lastMessage.message, { timeout: 3000 })
       // 清除过期倒计时（扫码后不再需要）
       if (expiryTimerRef.current) {
         clearInterval(expiryTimerRef.current)
@@ -185,12 +190,16 @@ export default function LoginModal({ isOpen, onClose }: LoginModalProps) {
 
     // 登录成功事件（已有用户扫码登录）
     if (lastMessage.event === 'weixin' && lastMessage.code === 200 && lastMessage.message.includes('登录成功')) {
+      // Toast 全局通知（持久显示，需手动关闭）
+      toast.success(lastMessage.message, { timeout: 0 })
       handleWechatLoginSuccess(lastMessage.data)
       return
     }
 
     // 注册成功事件（新用户首次注册）
     if (lastMessage.event === 'login' && lastMessage.code === 200) {
+      // Toast 全局通知（持久显示，需手动关闭）
+      toast.success(lastMessage.message, { timeout: 0 })
       handleWechatLoginSuccess(lastMessage.data)
       return
     }
@@ -208,12 +217,12 @@ export default function LoginModal({ isOpen, onClose }: LoginModalProps) {
       if (exchangeCode) {
         // 后端已实现 Token Exchange 接口
         const { user } = await wechatExchange(exchangeCode)
-        authLogin({
+        flushSync(() => authLogin({
           nickname: user.nickname || user.email || '用户',
           avatarUrl: user.avatarUrl || null,
           username: user.username || null,
           email: user.email || null,
-        })
+        }))
       } else {
         // 后端暂未实现 exchange 接口，尝试通过 /auth/check 恢复会话
         const res = await fetch(`${API_BASE}/auth/check`, {
@@ -224,17 +233,18 @@ export default function LoginModal({ isOpen, onClose }: LoginModalProps) {
           const json = await res.json()
           if (json?.code === 200 && json.data) {
             const d = json.data
-            authLogin({
+            flushSync(() => authLogin({
               nickname: d.nickname || d.email || '用户',
               avatarUrl: d.avatarUrl || null,
               username: d.username || null,
               email: d.email || null,
-            })
+            }))
           }
         }
       }
       wsDisconnect()
-      onClose()
+      // 延迟关闭弹窗，等待 auth-change 事件传播完成后再卸载，避免 Transition Abort
+      setTimeout(() => onClose(), 150)
     } catch (err) {
       console.error('[微信登录] Token 交换失败:', err)
       setQrStatus('error')
@@ -267,13 +277,14 @@ export default function LoginModal({ isOpen, onClose }: LoginModalProps) {
     try {
       const { user } = await loginByEmail(usernameInput.trim(), passwordInput)
       // 通过全局认证状态管理登录（Token 已通过 httpOnly Cookie 自动设置）
-      authLogin({
+      flushSync(() => authLogin({
         nickname: user.nickname || '用户',
         avatarUrl: user.avatarUrl || null,
         username: user.username || null,
         email: user.email || null,
-      })
-      onClose()
+      }))
+      // 延迟关闭弹窗，等待 auth-change 事件传播完成后再卸载，避免 Transition Abort
+      setTimeout(() => onClose(), 150)
     } catch (err) {
       setLoginError(err instanceof AppError ? err.message : '网络连接失败，请稍后重试')
     } finally {

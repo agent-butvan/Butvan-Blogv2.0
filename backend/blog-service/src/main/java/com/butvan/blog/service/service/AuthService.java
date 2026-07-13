@@ -104,4 +104,13 @@ public interface AuthService {
      * @return 更新后的当前账号资料视图对象
      */
     CurrentUserVO uploadAvatar(String username, MultipartFile file);
+
+    /**
+     * 微信扫码登录 Token 交换
+     * <p>校验 exchangeCode 有效性，查询对应用户并构建登录视图</p>
+     *
+     * @param exchangeCode 一次性交换码（WS 下发，60s 过期）
+     * @return 登录结果视图对象
+     */
+    LoginVO wechatExchange(String exchangeCode);
 }

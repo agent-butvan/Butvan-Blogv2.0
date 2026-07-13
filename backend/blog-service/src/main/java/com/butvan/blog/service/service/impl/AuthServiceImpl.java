@@ -2,6 +2,7 @@ package com.butvan.blog.service.service.impl;
 
 import com.butvan.blog.common.exception.BusinessException;
 import com.butvan.blog.common.storage.FileStorageService;
+import com.butvan.blog.common.utils.RedisUtils;
 import com.butvan.blog.pojo.dto.auth.CurrentUserUpdateDTO;
 import com.butvan.blog.pojo.dto.auth.LoginDTO;
 import com.butvan.blog.pojo.dto.auth.PasswordChangeDTO;
@@ -16,6 +17,7 @@ import com.butvan.blog.service.repository.UserRepository;
 import com.butvan.blog.service.security.JwtUtil;
 import com.butvan.blog.service.security.TotpUtil;
 import com.butvan.blog.service.service.AuthService;
+import com.butvan.blog.service.weixin.common.constant.WeiXinRedisKeyPrefix;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
 import org.springframework.security.crypto.password.PasswordEncoder;
@@ -39,6 +41,7 @@ public class AuthServiceImpl implements AuthService {
     private final PasswordEncoder passwordEncoder;
     private final JwtUtil jwtUtil;
     private final FileStorageService fileStorageService;
+    private final RedisUtils redisUtils;
 
     /**
      * 管理后台账号注册核心业务实现
@@ -243,6 +246,7 @@ public class AuthServiceImpl implements AuthService {
      */
     private User findActiveUser(String username) {
         User user = userRepository.findByUsername(username)
+                .or(() -> userRepository.findByEmail(username))
                 .orElseThrow(() -> new BusinessException(404, "当前登录账号不存在"));
         if (!"ACTIVE".equalsIgnoreCase(user.getStatus())) {
             throw new BusinessException(403, "该账号已被停用，请联系管理员");
@@ -430,5 +434,56 @@ public class AuthServiceImpl implements AuthService {
         }
         // 如果是相对路径，直接返回（去掉开头的 /）
         return url.startsWith("/") ? url.substring(1) : url;
+    }
+
+    /**
+     * 微信扫码登录 Token 交换
+     * <p>校验 exchangeCode 有效性，查询对应用户并构建登录视图</p>
+     *
+     * @param exchangeCode 一次性交换码（WS 下发，60s 过期）
+     * @return 登录结果视图对象
+     */
+    @Override
+    public LoginVO wechatExchange(String exchangeCode) {
+        if (exchangeCode == null || exchangeCode.isBlank()) {
+            throw new BusinessException(400, "交换码不能为空");
+        }
+
+        // 1. 从 Redis 校验并获取 userId（一次性使用）
+        String key = WeiXinRedisKeyPrefix.REDIS_WECHAT_EXCHANGE_CODE + exchangeCode;
+        String userIdStr = redisUtils.get(key);
+        if (userIdStr == null) {
+            throw new BusinessException(400, "交换码无效或已过期");
+        }
+        redisUtils.delete(key);
+
+        // 2. 查询用户
+        Long userId = Long.parseLong(userIdStr);
+        User user = userRepository.findById(userId)
+                .orElseThrow(() -> new BusinessException(404, "用户不存在"));
+
+        log.info("微信登录 Token 交换成功, userId={}", userId);
+        return toLoginVO(user);
+    }
+
+    /**
+     * 将 User 实体转换为 LoginVO 视图对象
+     *
+     * @param user 用户实体
+     * @return 登录视图对象
+     */
+    private LoginVO toLoginVO(User user) {
+        return LoginVO.builder()
+                .user(LoginVO.UserInfo.builder()
+                        .id(user.getId())
+                        .username(user.getUsername())
+                        .nickname(user.getNickname())
+                        .email(user.getEmail())
+                        .avatarUrl(user.getAvatarUrl())
+                        .githubUsername(user.getGithubUsername())
+                        .twoFactorEnabled(user.getTwoFactorEnabled())
+                        .role(user.getRole())
+                        .build())
+                .build();
     }
 }

@@ -94,6 +94,23 @@ public class WeiXinEventServiceImpl implements WeiXinEventService {
              * 用户发送邮箱信息
              */
             userText(eventXmlData);
+        } else if (eventXmlData.getMsgType().equals("event") && eventXmlData.getEvent().equals("unsubscribe")) {
+            // 用户取消关注
+            userUnSubscribe(eventXmlData);
+        }
+    }
+
+    /**
+     * 用户取消关注
+     * @param eventXmlData
+     */
+    private void userUnSubscribe(EventXmlData eventXmlData) {
+        String open_id = eventXmlData.getFromUserName();
+        // 将 微信用户表中的状态字段设置为 0 即可
+        WechatUser wechatUser = wechatUserRepository.findByOpenId(open_id).orElse(null);
+        if (wechatUser != null && wechatUser.getStatus() == 1) {
+            wechatUser.setStatus(0);
+            wechatUserRepository.save(wechatUser);
         }
     }
 
@@ -127,56 +144,82 @@ public class WeiXinEventServiceImpl implements WeiXinEventService {
         // 2. 查找或创建 WechatUser 记录
         WechatUser wechatUser = wechatUserRepository.findByOpenId(openId).orElse(null);
         if (wechatUser == null) {
+            // 只有不存在的时候，才创建新用户
             wechatUser = WechatUser.builder()
                     .openId(openId)
                     .build();
             wechatUser = wechatUserRepository.save(wechatUser);
             log.info("创建 WechatUser 记录, openId={}, id={}", openId, wechatUser.getId());
-        }
 
-        // 3. 若 WechatUser 已关联 User，直接返回（已绑定）
-        if (wechatUser.getUserId() != null) {
-            User existingUser = userRepository.findById(wechatUser.getUserId()).orElse(null);
-            if (existingUser != null && email.equals(existingUser.getEmail())) {
-                log.info("用户已绑定, openId={}, userId={}, email={}", openId, existingUser.getId(), email);
-                // TODO: 回复用户告知已绑定
-                return;
+
+            String redis_key = WeiXinRedisKeyPrefix.REDIS_FIRST_REGISTER_OPEN_ID_BING_TICKET + openId;
+            String ticket = redisUtils.get(redis_key);
+            String redis_key2 = WeiXinRedisKeyPrefix.REDIS_QRCODE_TICKET_WS_ID_KEY + ticket;
+            String ws_id = redisUtils.get(redis_key2);
+
+            // 3. 查找或创建 User 记录
+            User user = userRepository.findByEmail(email).orElse(null);
+            if (user == null) {
+                // 说明 user 表中也没有改用户信息
+                user = User.builder()
+                        .email(email)
+                        .role("USER")
+                        .status("ACTIVE")
+                        .lastLoginAt(LocalDateTime.now())
+                        .build();
+                // 首次创建
+                user = userRepository.save(user);
+                log.info("创建 User 记录, userId={}, email={}", user.getId(), email);
+
+                // 4. 关联 WechatUser → User
+                wechatUser.setUserId(user.getId());
+                wechatUserRepository.save(wechatUser);
+                log.info("绑定完成, openId={}, userId={}, email={}", openId, user.getId(), email);
+
+                // 注册成功，发送模版消息通知用户
+                weiXinSendTemplateMessageService.sendRegisterSuccessMessage(openId, email);
+                // 获取 ws_id
+                if (ws_id != null) {
+                    String exchangeCode = generateExchangeCode(user.getId());
+                    userFirstRegisterSuccess(ws_id, exchangeCode);
+                }
+            } else if (wechatUser.getUserId() == null) {
+                /**
+                 * 当用户表中存在数据，但是微信用户表没有数据
+                 * 说明该用户可能是先使用邮箱注册的，之后又使用微信绑定
+                 * 需要发送模版消息提示该用户绑定成功
+                 */
+                User user_info = userRepository.findByEmail(email).orElse(null);
+                if (user_info != null) {
+                    wechatUser.setUserId(user_info.getId());
+                    wechatUserRepository.save(wechatUser);
+                    weiXinSendTemplateMessageService.sendWechatBindNotification(openId, email);
+
+                    if (ticket != null) {
+                        // 只有是 二维码扫描的情况下才向客户端发送登录成功
+                        // 生成交换码，通知客户端登录成功
+                        String exchangeCode = generateExchangeCode(user_info.getId());
+                        userLoginSuccess(ws_id, exchangeCode);
+                    }
+                }
+            } else {
+                // 更新最后登录时间
+                user.setLastLoginAt(LocalDateTime.now());
+                user = userRepository.save(user);
+                log.info("更新 User 登录时间, userId={}, email={}", user.getId(), email);
             }
-        }
-
-        // 4. 查找或创建 User 记录
-        User user = userRepository.findByEmail(email).orElse(null);
-        if (user == null) {
-            user = User.builder()
-                    .email(email)
-                    .role("USER")
-                    .status("ACTIVE")
-                    .lastLoginAt(LocalDateTime.now())
-                    .build();
-            user = userRepository.save(user);
-            log.info("创建 User 记录, userId={}, email={}", user.getId(), email);
         } else {
-            // 更新最后登录时间
-            user.setLastLoginAt(LocalDateTime.now());
-            user = userRepository.save(user);
-            log.info("更新 User 登录时间, userId={}, email={}", user.getId(), email);
-        }
+            // 如果存在，则说明不是首次注册
+            // 3. 若 WechatUser 已关联 User，直接返回（已绑定）
+            if (wechatUser.getUserId() != null) {
+                User existingUser = userRepository.findById(wechatUser.getUserId()).orElse(null);
+                if (existingUser != null && email.equals(existingUser.getEmail())) {
+                    log.info("用户账号已绑定，不得重复绑定, openId={}, userId={}, email={}", openId, existingUser.getId(), email);
+                    // TODO: 回复用户告知已绑定
+                    return;
+                }
+            }
 
-        // 5. 关联 WechatUser → User
-        wechatUser.setUserId(user.getId());
-        wechatUserRepository.save(wechatUser);
-        log.info("绑定完成, openId={}, userId={}, email={}", openId, user.getId(), email);
-
-        // 注册成功，发送模版消息通知用户
-        weiXinSendTemplateMessageService.sendRegisterSuccessMessage(openId, email);
-        // 获取 ws_id
-        String redis_key = WeiXinRedisKeyPrefix.REDIS_FIRST_REGISTER_OPEN_ID_BING_TICKET + openId;
-        String ticket = redisUtils.get(redis_key);
-        String redis_key2 = WeiXinRedisKeyPrefix.REDIS_QRCODE_TICKET_WS_ID_KEY + ticket;
-        String ws_id = redisUtils.get(redis_key2);
-        if (ws_id != null) {
-            String exchangeCode = generateExchangeCode(user.getId());
-            userFirstRegisterSuccess(ws_id, exchangeCode);
         }
     }
 
@@ -193,10 +236,10 @@ public class WeiXinEventServiceImpl implements WeiXinEventService {
          */
         String ticket = eventXmlData.getTicket();
         String open_id = eventXmlData.getFromUserName();
+        String redis_key = WeiXinRedisKeyPrefix.REDIS_QRCODE_TICKET_WS_ID_KEY + ticket;
+        String ws_id = redisUtils.get(redis_key);
         if (ticket != null && open_id != null) {
             // 1. 通知客户端，用户扫码成功
-            String redis_key = WeiXinRedisKeyPrefix.REDIS_QRCODE_TICKET_WS_ID_KEY + ticket;
-            String ws_id = redisUtils.get(redis_key);
             if (ws_id != null) {
                 scanQrCode(ws_id);
             }
@@ -205,6 +248,22 @@ public class WeiXinEventServiceImpl implements WeiXinEventService {
             String redis_key2 = WeiXinRedisKeyPrefix.REDIS_FIRST_REGISTER_OPEN_ID_BING_TICKET + open_id;
             // 过期时间和 ticket 保持一致
             redisUtils.set(redis_key2, ticket, 120, TimeUnit.SECONDS);
+        }
+
+        // 查询 微信用户表是否存在记录，也就是判断用户是否是二次关注
+        WechatUser wechatUser = wechatUserRepository.findByOpenId(open_id).orElse(null);
+        if (wechatUser != null && wechatUser.getStatus() == 0 && wechatUser.getUserId() != null) {
+            // 说明是二次关注
+            // 直接更新 状态字段即可
+            wechatUser.setStatus(1);
+            wechatUserRepository.save(wechatUser);
+
+            weiXinSendTemplateMessageService.sendLoginSuccessMessage(open_id);
+
+            // 生成交换码，通知客户端登录成功
+            String exchangeCode = generateExchangeCode(wechatUser.getUserId());
+            userLoginSuccess(ws_id, exchangeCode);
+            return;
         }
 
         // 2. 发送模版消息

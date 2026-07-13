@@ -15,6 +15,7 @@ import org.springframework.stereotype.Service;
 
 import java.time.LocalDateTime;
 import java.time.LocalTime;
+import java.time.format.DateTimeFormatter;
 import java.util.HashMap;
 import java.util.Map;
 
@@ -38,6 +39,9 @@ public class WeiXinSendTemplateMessageServiceImpl implements WeiXinSendTemplateM
     /** 首次注册成功通知模版 ID */
     private static final String FIRST_REGISTER_TEMPLATE_ID = "2NEDWumdv03gRN48SRMnsvD-uWxS8iAthpH_Cg9j-fI";
 
+    /** 用户账号绑定成功通知 */
+    private static final String WECHAT_BING_NOTIFICATION_ID = "Tj_0UtaH5PF1oAv1o3Q4KFxn7OFcAiJa87A7HUnTH_Q";
+
     /**
      * 用户扫码登录成功后，发送模板消息通知
      *
@@ -47,7 +51,7 @@ public class WeiXinSendTemplateMessageServiceImpl implements WeiXinSendTemplateM
     @Override
     public String sendLoginSuccessMessage(String openId) {
         HashMap<String, TemplateData> data = new HashMap<>();
-        data.put("time", TemplateData.of(LocalTime.now().toString(), "#000000"));
+        data.put("time", TemplateData.of(LocalDateTime.now().format(DateTimeFormatter.ofPattern("yyyy-MM-dd HH:mm:ss")), "#000000"));
         return sendTemplateMessage(openId, "", LOGIN_SUCCESS_TEMPLATE_ID, data);
     }
 
@@ -57,6 +61,14 @@ public class WeiXinSendTemplateMessageServiceImpl implements WeiXinSendTemplateM
         data.put("account", TemplateData.of(email, "#000000"));
         data.put("time", TemplateData.of(LocalDateTime.now().toString(), "#000000"));
         return sendTemplateMessage(openId,"",FIRST_REGISTER_TEMPLATE_ID,data);
+    }
+
+    @Override
+    public String sendWechatBindNotification(String openId, String email) {
+        HashMap<String, TemplateData> data = new HashMap<>();
+        data.put("account",TemplateData.of(email, "#000000"));
+        data.put("time",TemplateData.of(LocalDateTime.now().format(DateTimeFormatter.ofPattern("yyyy-MM-dd HH:mm:ss"))));
+        return sendTemplateMessage(openId, "", WECHAT_BING_NOTIFICATION_ID, data);
     }
 
     /**

@@ -9,11 +9,8 @@ import com.butvan.blog.pojo.dto.auth.RegisterDTO;
 import com.butvan.blog.pojo.dto.auth.TwoFactorEnableDTO;
 import com.butvan.blog.pojo.dto.auth.TwoFactorDisableDTO;
 import com.butvan.blog.pojo.dto.auth.GithubBindDTO;
-import com.butvan.blog.common.utils.RedisUtils;
-import com.butvan.blog.pojo.entity.User;
 import com.butvan.blog.pojo.vo.auth.CurrentUserVO;
 import com.butvan.blog.pojo.vo.auth.LoginVO;
-import com.butvan.blog.service.repository.UserRepository;
 import com.butvan.blog.service.security.LoginRateLimiter;
 import com.butvan.blog.service.service.AuthService;
 import com.butvan.blog.service.service.TokenService;
@@ -42,8 +39,6 @@ public class AuthController {
     private final AuthService authService;
     private final LoginRateLimiter loginRateLimiter;
     private final TokenService tokenService;
-    private final RedisUtils redisUtils;
-    private final UserRepository userRepository;
 
     /**
      * 管理后台账号注册接口
@@ -317,44 +312,18 @@ public class AuthController {
     public Result<LoginVO> wechatExchange(@RequestBody Map<String, String> body,
                                           HttpServletResponse response) {
         String code = body.get("code");
-        if (code == null || code.isBlank()) {
-            throw new BusinessException(400, "交换码不能为空");
-        }
+        // 1. 业务层校验交换码并返回登录视图
+        LoginVO loginVO = authService.wechatExchange(code);
 
-        // 1. 从 Redis 校验并获取 userId（一次性使用）
-        String key = "wechat:exchange:" + code;
-        String userIdStr = redisUtils.get(key);
-        if (userIdStr == null) {
-            throw new BusinessException(400, "交换码无效或已过期");
-        }
-        redisUtils.delete(key);
-
-        // 2. 查询用户
-        Long userId = Long.parseLong(userIdStr);
-        User user = userRepository.findById(userId)
-                .orElseThrow(() -> new BusinessException(404, "用户不存在"));
-
-        // 3. 签发双 Token 并通过 httpOnly Cookie 下发
-        String subject = user.getUsername() != null ? user.getUsername() : user.getEmail();
-        TokenPair tokens = tokenService.issueTokens(userId, subject, user.getRole());
+        // 2. 签发双 Token 并通过 httpOnly Cookie 下发
+        String subject = loginVO.getUser().getUsername() != null
+                ? loginVO.getUser().getUsername()
+                : loginVO.getUser().getEmail();
+        TokenPair tokens = tokenService.issueTokens(
+                loginVO.getUser().getId(), subject, loginVO.getUser().getRole());
         addCookie(response, "access_token", tokens.accessToken(), 900, "/api");
         addCookie(response, "refresh_token", tokens.refreshToken(), 604800, "/api/auth/refresh");
 
-        // 4. 构建 LoginVO 返回用户信息
-        LoginVO loginVO = LoginVO.builder()
-                .user(LoginVO.UserInfo.builder()
-                        .id(user.getId())
-                        .username(user.getUsername())
-                        .nickname(user.getNickname())
-                        .email(user.getEmail())
-                        .avatarUrl(user.getAvatarUrl())
-                        .githubUsername(user.getGithubUsername())
-                        .twoFactorEnabled(user.getTwoFactorEnabled())
-                        .role(user.getRole())
-                        .build())
-                .build();
-
-        log.info("微信登录 Token 交换成功, userId={}", userId);
         return Result.success(loginVO);
     }
 
