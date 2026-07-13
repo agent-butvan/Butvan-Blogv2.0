@@ -34,8 +34,7 @@ const WechatIcon = ({ size = 20 }: { size?: number }) => (
 const getSafeImageUrl = (url: string) => {
   if (!url) return ''
   if (typeof window !== 'undefined' && window.location.protocol === 'https:' && url.startsWith('http://')) {
-    const base64 = btoa(encodeURIComponent(url));
-    return `/api/proxy-image/${base64}`
+    return `/image-proxy?url=${encodeURIComponent(url)}`
   }
   return url
 }

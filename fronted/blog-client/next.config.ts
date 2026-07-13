@@ -29,6 +29,11 @@ const nextConfig: NextConfig = {
     ];
   },
   images: {
+    localPatterns: [
+      {
+        pathname: "/image-proxy",
+      },
+    ],
     remotePatterns: [
       {
         protocol: backendProtocol as "http" | "https",
