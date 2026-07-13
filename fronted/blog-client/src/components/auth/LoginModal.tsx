@@ -28,6 +28,17 @@ const WechatIcon = ({ size = 20 }: { size?: number }) => (
   </svg>
 )
 
+/**
+ * 将可能引发 Mixed Content 报错的 HTTP 图片请求转换为本地 HTTPS 代理转发
+ */
+const getSafeImageUrl = (url: string) => {
+  if (!url) return ''
+  if (typeof window !== 'undefined' && window.location.protocol === 'https:' && url.startsWith('http://')) {
+    return `/api/proxy-image?url=${encodeURIComponent(url)}`
+  }
+  return url
+}
+
 interface LoginModalProps {
   isOpen: boolean
   onClose: () => void
@@ -491,7 +502,7 @@ export default function LoginModal({ isOpen, onClose }: LoginModalProps) {
                         /* 二维码展示（含扫码/过期覆盖层） */
                         <div className="relative group">
                           <img
-                            src={qrCodeUrl}
+                            src={getSafeImageUrl(qrCodeUrl)}
                             alt="微信登录二维码"
                             className={`w-[200px] h-[200px] rounded-xl object-contain border shadow-md transition-all duration-300 ${
                               qrStatus === 'expired'
