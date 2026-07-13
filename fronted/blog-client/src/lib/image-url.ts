@@ -30,7 +30,8 @@ export function resolveImageUrl(url?: string): string {
     window.location.protocol === "https:" &&
     url.startsWith("http://")
   ) {
-    return `/api/proxy-image?url=${encodeURIComponent(url)}`;
+    const base64 = btoa(encodeURIComponent(url));
+    return `/api/proxy-image/${base64}`;
   }
 
   if (url.startsWith("http://") || url.startsWith("https://") || url.startsWith("/images/")) {

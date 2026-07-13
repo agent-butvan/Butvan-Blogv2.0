@@ -29,11 +29,6 @@ const nextConfig: NextConfig = {
     ];
   },
   images: {
-    localPatterns: [
-      {
-        pathname: "/api/proxy-image",
-      },
-    ],
     remotePatterns: [
       {
         protocol: backendProtocol as "http" | "https",
