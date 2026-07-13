@@ -36,6 +36,13 @@ interface UseWebSocketReturn {
  * 生产环境同源（由 Nginx 等反向代理统一转发）。
  */
 function buildWsUrl(wsId: string): string {
+  // 1. 优先使用显式配置的 WebSocket 基地址 (如 ws://localhost:8080/ws 或 wss://domain.com/ws)
+  const wsBase = process.env.NEXT_PUBLIC_WS_BASE_URL
+  if (wsBase) {
+    const formattedBase = wsBase.endsWith('/') ? wsBase : `${wsBase}/`
+    return `${formattedBase}${wsId}`
+  }
+
   // 开发环境：直连后端 Spring Boot
   const backendUrl = process.env.NEXT_PUBLIC_BACKEND_URL || 'http://localhost:8080'
   const protocol = backendUrl.startsWith('https') ? 'wss' : 'ws'
