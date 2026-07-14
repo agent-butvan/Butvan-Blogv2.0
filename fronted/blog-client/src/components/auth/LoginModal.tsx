@@ -38,6 +38,14 @@ const getSafeImageUrl = (url: string) => {
   return url
 }
 
+interface CachedWechatQR {
+  qrUrl: string
+  wsId: string
+  expiryTimestamp: number
+}
+
+let wechatQRCache: CachedWechatQR | null = null
+
 interface LoginModalProps {
   isOpen: boolean
   onClose: () => void
@@ -92,7 +100,7 @@ export default function LoginModal({ isOpen, onClose }: LoginModalProps) {
       setLoginError('')
       setQrError('')
       setWechatMsg('')
-      if (panel === 'wechat') fetchWechatQR()
+      if (panel === 'wechat') fetchWechatQR(false)
     } else {
       setEmailInput('')
       setCodeInput('')
@@ -122,7 +130,7 @@ export default function LoginModal({ isOpen, onClose }: LoginModalProps) {
 
   /** 切换到微信模式时自动获取二维码 */
   useEffect(() => {
-    if (panel === 'wechat' && isOpen) fetchWechatQR()
+    if (panel === 'wechat' && isOpen) fetchWechatQR(false)
   }, [panel])
 
   /** 切换面板并重置错误 */
@@ -134,7 +142,7 @@ export default function LoginModal({ isOpen, onClose }: LoginModalProps) {
   // ===================== API 调用 =====================
 
   /** 获取微信二维码并建立 WebSocket 连接 */
-  const fetchWechatQR = useCallback(async () => {
+  const fetchWechatQR = useCallback(async (forceRefresh = false) => {
     setQrLoading(true)
     setQrError('')
     setQrStatus('waiting')
@@ -146,12 +154,34 @@ export default function LoginModal({ isOpen, onClose }: LoginModalProps) {
       expiryTimerRef.current = null
     }
     try {
-      const { qrUrl, wsId } = await getWechatQRCode()
+      let qrUrl = ''
+      let wsId = ''
+      let remainingSeconds = 110
+
+      const now = Date.now()
+      if (!forceRefresh && wechatQRCache && wechatQRCache.expiryTimestamp > now + 5000) {
+        // 复用未过期的缓存（保留至少5秒余量）
+        qrUrl = wechatQRCache.qrUrl
+        wsId = wechatQRCache.wsId
+        remainingSeconds = Math.floor((wechatQRCache.expiryTimestamp - now) / 1000)
+      } else {
+        // 请求新二维码
+        const data = await getWechatQRCode()
+        qrUrl = data.qrUrl
+        wsId = data.wsId
+        remainingSeconds = 110
+        wechatQRCache = {
+          qrUrl,
+          wsId,
+          expiryTimestamp: now + 110 * 1000
+        }
+      }
+
       setQrCodeUrl(qrUrl)
       // 建立 WebSocket 连接，监听扫码事件
       wsConnect(wsId)
-      // 启动过期倒计时（110s，比 Redis 的 120s 提前 10s 过期）
-      setExpiryCount(110)
+      
+      setExpiryCount(remainingSeconds)
       expiryTimerRef.current = setInterval(() => {
         setExpiryCount((prev) => {
           if (prev <= 1) {
@@ -159,6 +189,7 @@ export default function LoginModal({ isOpen, onClose }: LoginModalProps) {
             expiryTimerRef.current = null
             setQrStatus('expired')
             wsDisconnect()
+            wechatQRCache = null // 过期时清除缓存
             return 0
           }
           return prev - 1
@@ -192,12 +223,14 @@ export default function LoginModal({ isOpen, onClose }: LoginModalProps) {
         clearInterval(expiryTimerRef.current)
         expiryTimerRef.current = null
       }
+      wechatQRCache = null // 扫码成功，清除缓存避免重复利用
       return
     }
 
     // 登录成功事件（已有用户扫码登录）
     if (lastMessage.event === 'weixin' && lastMessage.code === 200 && lastMessage.message.includes('登录成功')) {
       toast.success(lastMessage.message, { timeout: 0 })
+      wechatQRCache = null // 登录成功，清除缓存
       handleWechatLoginSuccess(lastMessage.data)
       return
     }
@@ -205,6 +238,7 @@ export default function LoginModal({ isOpen, onClose }: LoginModalProps) {
     // 注册成功事件（新用户首次注册）
     if (lastMessage.event === 'login' && lastMessage.code === 200) {
       toast.success(lastMessage.message, { timeout: 0 })
+      wechatQRCache = null // 注册成功，清除缓存
       handleWechatLoginSuccess(lastMessage.data)
       return
     }
@@ -525,7 +559,7 @@ export default function LoginModal({ isOpen, onClose }: LoginModalProps) {
                       <p className="text-xs text-red-500 text-center px-4">{qrError}</p>
                       <button
                         type="button"
-                        onClick={fetchWechatQR}
+                        onClick={() => fetchWechatQR(true)}
                         className="inline-flex items-center gap-1.5 text-xs font-medium text-[#727BBA] hover:text-[#5f68a3] hover:underline cursor-pointer transition-colors"
                       >
                         <RefreshCw size={12} />
@@ -574,7 +608,7 @@ export default function LoginModal({ isOpen, onClose }: LoginModalProps) {
                           <p className="text-xs font-medium text-red-500 text-center px-2">{wechatMsg || '登录异常'}</p>
                           <button
                             type="button"
-                            onClick={fetchWechatQR}
+                            onClick={() => fetchWechatQR(true)}
                             className="text-[11px] text-[#727BBA] hover:text-[#5f68a3] hover:underline font-medium cursor-pointer transition-colors"
                           >
                             重新获取二维码
@@ -589,7 +623,7 @@ export default function LoginModal({ isOpen, onClose }: LoginModalProps) {
                           <p className="text-xs font-medium text-zinc-500 dark:text-zinc-400">二维码已过期</p>
                           <button
                             type="button"
-                            onClick={fetchWechatQR}
+                            onClick={() => fetchWechatQR(true)}
                             className="text-[11px] text-[#727BBA] hover:text-[#5f68a3] hover:underline font-medium cursor-pointer transition-colors"
                           >
                             点击刷新
@@ -601,7 +635,7 @@ export default function LoginModal({ isOpen, onClose }: LoginModalProps) {
                       {qrStatus === 'waiting' && (
                         <button
                           type="button"
-                          onClick={fetchWechatQR}
+                          onClick={() => fetchWechatQR(true)}
                           className="absolute -top-2 -right-2 w-7 h-7 rounded-full bg-white dark:bg-[#1E2035] border border-[#C4C8E6]/40 dark:border-[#727BBA]/20 shadow-sm flex items-center justify-center opacity-0 group-hover:opacity-100 transition-opacity hover:bg-[#F5F6FB] dark:hover:bg-[#252840] cursor-pointer"
                         >
                           <RefreshCw size={12} className="text-[#727BBA]/60" />
