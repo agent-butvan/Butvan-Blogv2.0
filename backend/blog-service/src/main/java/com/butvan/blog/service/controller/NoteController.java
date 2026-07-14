@@ -152,7 +152,9 @@ public class NoteController {
                 org.springframework.security.core.context.SecurityContextHolder.getContext().getAuthentication();
         if (auth != null && auth.isAuthenticated() && !"anonymousUser".equals(auth.getPrincipal())) {
             String username = auth.getName();
-            com.butvan.blog.pojo.entity.User user = userRepository.findByUsername(username).orElse(null);
+            com.butvan.blog.pojo.entity.User user = userRepository.findByUsername(username)
+                    .or(() -> userRepository.findByEmail(username))
+                    .orElse(null);
             if (user != null) {
                 // 校验登录用户账号是否被禁用
                 if ("DISABLED".equalsIgnoreCase(user.getStatus())) {
