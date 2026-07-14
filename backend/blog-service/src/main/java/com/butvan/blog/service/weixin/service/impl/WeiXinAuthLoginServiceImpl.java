@@ -2,7 +2,9 @@ package com.butvan.blog.service.weixin.service.impl;
 
 import com.butvan.blog.common.exception.BusinessException;
 import com.butvan.blog.common.utils.RedisUtils;
+import com.butvan.blog.pojo.entity.WechatUser;
 import com.butvan.blog.pojo.weixin.AuthLoginDto;
+import com.butvan.blog.service.repository.WechatUserRepository;
 import com.butvan.blog.service.weixin.common.constant.WeiXinRedisKeyPrefix;
 import com.butvan.blog.service.weixin.common.util.WeiXinBaseService;
 import com.butvan.blog.service.weixin.service.WeiXinAuthLoginService;
@@ -24,12 +26,20 @@ import java.util.concurrent.TimeUnit;
 public class WeiXinAuthLoginServiceImpl implements WeiXinAuthLoginService {
 
     private final WeiXinBaseService weiXinBaseService;
+    private final WechatUserRepository wechatUserRepository;
+
     private final WeiXinProperties weiXinProperties;
     private final FileStorageService fileStorageService;
     private final RedisUtils redisUtils;
 
     @Override
     public AuthLoginDto qrcodeLogin() {
+
+        // 前置条件：微信登录限定名额：20名
+        long activeCount = wechatUserRepository.countByStatus(WechatUser.STATUS_FOLLOWED);
+        if (activeCount >= 20) {
+            throw new BusinessException("微信用户关注名额已满（上限 20 人）");
+        }
 
         // 1. 前置条件获取 access token
         String accessToken = weiXinBaseService.getAccessToken(weiXinProperties.getAppid(), weiXinProperties.getAppsecret());

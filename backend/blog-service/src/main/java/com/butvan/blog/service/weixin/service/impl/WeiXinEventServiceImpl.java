@@ -239,14 +239,6 @@ public class WeiXinEventServiceImpl implements WeiXinEventService {
         String open_id = eventXmlData.getFromUserName();
 
         // 微信用户限定名额：20名
-        // 1. 如果当前用户已经是已关注状态，直接返回不重复处理
-        Optional<WechatUser> activeUserOpt = wechatUserRepository.findByOpenIdAndStatus(open_id, WechatUser.STATUS_FOLLOWED);
-        if (activeUserOpt.isPresent()) {
-            log.info("用户已经是已关注状态，无需重复处理, openId={}", open_id);
-            return;
-        }
-
-        // 2. 统计当前系统已关注的微信用户总数
         long activeCount = wechatUserRepository.countByStatus(WechatUser.STATUS_FOLLOWED);
         if (activeCount >= 20) {
             log.warn("微信用户关注名额已满（上限 20 人），当前已关注人数：{}，拒绝 openId={} 的关注注册", activeCount, open_id);
