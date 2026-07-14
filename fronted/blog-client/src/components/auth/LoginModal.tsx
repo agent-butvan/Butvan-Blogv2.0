@@ -66,6 +66,9 @@ export default function LoginModal({ isOpen, onClose }: LoginModalProps) {
   const [codeCountdown, setCodeCountdown] = useState(0)
   const [codeSending, setCodeSending] = useState(false)
   const countdownTimerRef = useRef<ReturnType<typeof setInterval> | null>(null)
+  // ---- 验证码有效期倒计时状态（5分钟 = 300秒） ----
+  const [codeExpiryCountdown, setCodeExpiryCountdown] = useState(0)
+  const codeExpiryTimerRef = useRef<ReturnType<typeof setInterval> | null>(null)
 
   // ---- 微信二维码状态 ----
   const [qrCodeUrl, setQrCodeUrl] = useState<string>('')
@@ -101,13 +104,19 @@ export default function LoginModal({ isOpen, onClose }: LoginModalProps) {
         expiryTimerRef.current = null
       }
       wsDisconnect()
-      // 清理验证码倒计时
+      // 清理验证码发送倒计时
       if (countdownTimerRef.current) {
         clearInterval(countdownTimerRef.current)
         countdownTimerRef.current = null
       }
       setCodeCountdown(0)
       setCodeSending(false)
+      // 清理验证码有效期倒计时
+      if (codeExpiryTimerRef.current) {
+        clearInterval(codeExpiryTimerRef.current)
+        codeExpiryTimerRef.current = null
+      }
+      setCodeExpiryCountdown(0)
     }
   }, [isOpen])
 
@@ -237,7 +246,10 @@ export default function LoginModal({ isOpen, onClose }: LoginModalProps) {
       }
       wsSend('close')
       setTimeout(() => wsDisconnect(), 300)
-      setTimeout(() => onClose(), 150)
+      // 使用 requestAnimationFrame 延迟关闭，避免 Modal transition abort
+      requestAnimationFrame(() => {
+        setTimeout(() => onClose(), 50)
+      })
     } catch (err) {
       console.error('[微信登录] Token 交换失败:', err)
       setQrStatus('error')
@@ -274,7 +286,7 @@ export default function LoginModal({ isOpen, onClose }: LoginModalProps) {
     try {
       await sendEmailCode(emailInput.trim())
       toast.success('验证码已发送至您的邮箱，请查收', { timeout: 3000 })
-      // 开启 60 秒倒计时
+      // 开启 60 秒重发倒计时
       setCodeCountdown(60)
       if (countdownTimerRef.current) clearInterval(countdownTimerRef.current)
       countdownTimerRef.current = setInterval(() => {
@@ -282,6 +294,19 @@ export default function LoginModal({ isOpen, onClose }: LoginModalProps) {
           if (prev <= 1) {
             if (countdownTimerRef.current) clearInterval(countdownTimerRef.current)
             countdownTimerRef.current = null
+            return 0
+          }
+          return prev - 1
+        })
+      }, 1000)
+      // 开启 300 秒（5分钟）验证码有效期倒计时
+      setCodeExpiryCountdown(300)
+      if (codeExpiryTimerRef.current) clearInterval(codeExpiryTimerRef.current)
+      codeExpiryTimerRef.current = setInterval(() => {
+        setCodeExpiryCountdown((prev) => {
+          if (prev <= 1) {
+            if (codeExpiryTimerRef.current) clearInterval(codeExpiryTimerRef.current)
+            codeExpiryTimerRef.current = null
             return 0
           }
           return prev - 1
@@ -315,7 +340,14 @@ export default function LoginModal({ isOpen, onClose }: LoginModalProps) {
         clearInterval(countdownTimerRef.current)
         countdownTimerRef.current = null
       }
-      setTimeout(() => onClose(), 150)
+      if (codeExpiryTimerRef.current) {
+        clearInterval(codeExpiryTimerRef.current)
+        codeExpiryTimerRef.current = null
+      }
+      // 使用 requestAnimationFrame 延迟关闭，避免 Modal transition abort
+      requestAnimationFrame(() => {
+        setTimeout(() => onClose(), 50)
+      })
     } catch (err) {
       setLoginError(err instanceof AppError ? err.message : '网络连接失败，请稍后重试')
     } finally {
@@ -449,6 +481,22 @@ export default function LoginModal({ isOpen, onClose }: LoginModalProps) {
                             : '获取验证码'}
                       </button>
                     </div>
+                    {/* 验证码有效期倒计时提示 */}
+                    {codeExpiryCountdown > 0 && (
+                      <p className="text-[11px] text-[#727BBA]/70 dark:text-[#9BADCF]/60 mt-1 flex items-center gap-1">
+                        <svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
+                          <circle cx="12" cy="12" r="10" />
+                          <polyline points="12 6 12 12 16 14" />
+                        </svg>
+                        验证码有效期剩余
+                        <span className="font-mono font-medium text-[#727BBA] dark:text-[#9BADCF]">
+                          {Math.floor(codeExpiryCountdown / 60)}:{String(codeExpiryCountdown % 60).padStart(2, '0')}
+                        </span>
+                      </p>
+                    )}
+                    {codeExpiryCountdown === 0 && codeCountdown === 0 && codeInput === '' && (
+                      <p className="text-[11px] text-zinc-400/70 dark:text-zinc-500/60 mt-1">验证码发送后 5 分钟内有效</p>
+                    )}
                   </div>
 
                   {loginError && (
