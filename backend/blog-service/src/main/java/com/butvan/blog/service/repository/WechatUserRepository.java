@@ -44,4 +44,13 @@ public interface WechatUserRepository extends JpaRepository<WechatUser, Long> {
      * @return 微信用户关联实体
      */
     Optional<WechatUser> findByOpenIdAndStatus(String openId, Integer status);
+
+    /**
+     * 统计指定关注状态的用户总数
+     *
+     * @param status 关注状态
+     * @return 符合状态的用户总数
+     */
+    long countByStatus(Integer status);
 }
+
