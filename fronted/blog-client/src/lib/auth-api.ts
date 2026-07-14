@@ -114,3 +114,23 @@ export async function registerUser(params: RegisterParams): Promise<void> {
 export async function wechatExchange(code: string): Promise<LoginData> {
   return post<LoginData>('/auth/wechat/exchange', { code })
 }
+
+/**
+ * 发送邮箱登录/注册验证码
+ *
+ * @param email 邮箱地址
+ */
+export async function sendEmailCode(email: string): Promise<void> {
+  await post<void>('/auth/email/code', { email })
+}
+
+/**
+ * 邮箱验证码免密登录/注册
+ *
+ * @param email 邮箱地址
+ * @param code  验证码
+ * @returns 登录数据
+ */
+export async function loginByEmailCode(email: string, code: string): Promise<LoginData> {
+  return post<LoginData>('/auth/email/login', { email, code })
+}
