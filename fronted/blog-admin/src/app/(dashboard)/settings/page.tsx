@@ -55,6 +55,12 @@ export default function SettingsPage() {
   const [bgImageSaving, setBgImageSaving] = useState(false);
   const [bgImageUploading, setBgImageUploading] = useState(false);
   const bgFileInputRef = useRef<HTMLInputElement>(null);
+  
+  // --- 邮箱验证码配置状态 ---
+  const [emailSubject, setEmailSubject] = useState("");
+  const [emailTemplate, setEmailTemplate] = useState("");
+  const [emailInitialSubject, setEmailInitialSubject] = useState("");
+  const [emailInitialTemplate, setEmailInitialTemplate] = useState("");
 
   // --- 解析后端图片相对 URL 路径 ---
   const resolveUrl = (url: string) => {
@@ -126,6 +132,29 @@ export default function SettingsPage() {
       }
     };
     fetchBgImage();
+  }, []);
+
+  // --- 获取当前站点邮箱发送验证码配置 ---
+  useEffect(() => {
+    const fetchEmailConfigs = async () => {
+      try {
+        const resSubject = await apiClient.get("/admin/site-config/email_verify_subject");
+        if (resSubject.data.code === 200 || resSubject.data.code === 0) {
+          const val = resSubject.data.data?.configValue || "";
+          setEmailSubject(val);
+          setEmailInitialSubject(val);
+        }
+        const resTemplate = await apiClient.get("/admin/site-config/email_verify_template");
+        if (resTemplate.data.code === 200 || resTemplate.data.code === 0) {
+          const val = resTemplate.data.data?.configValue || "";
+          setEmailTemplate(val);
+          setEmailInitialTemplate(val);
+        }
+      } catch (err) {
+        console.error("获取邮件模板配置失败", err);
+      }
+    };
+    fetchEmailConfigs();
   }, []);
 
   // --- 头像上传 ---
@@ -285,7 +314,21 @@ export default function SettingsPage() {
 
       const res = await apiClient.put("/admin/profile", payload);
       if (res.data.code === 200 || res.data.code === 0) {
-        toast.success("个人公开资料已全部保存成功");
+        // 保存邮件验证配置
+        if (emailSubject !== emailInitialSubject) {
+          await apiClient.put("/admin/site-config/email_verify_subject", {
+            configValue: emailSubject,
+          });
+          setEmailInitialSubject(emailSubject);
+        }
+        if (emailTemplate !== emailInitialTemplate) {
+          await apiClient.put("/admin/site-config/email_verify_template", {
+            configValue: emailTemplate,
+          });
+          setEmailInitialTemplate(emailTemplate);
+        }
+
+        toast.success("个人公开资料与邮箱配置已保存成功");
         
         // 校准已同步数据缓存
         setInitialData({
@@ -330,7 +373,9 @@ export default function SettingsPage() {
     footerTitle !== (initialData?.footerTitle ?? "") ||
     footerSubtitle !== (initialData?.footerSubtitle ?? "") ||
     footerIcp !== (initialData?.footerIcp ?? "") ||
-    footerStartDate !== (initialData?.footerStartDate ?? "");
+    footerStartDate !== (initialData?.footerStartDate ?? "") ||
+    emailSubject !== emailInitialSubject ||
+    emailTemplate !== emailInitialTemplate;
 
   return (
     <div className="max-w-[1200px] mx-auto p-2 md:p-4 flex flex-col gap-5 text-left font-body text-zinc-800 dark:text-zinc-200">
@@ -666,6 +711,54 @@ export default function SettingsPage() {
                 accept="image/*"
                 className="hidden"
               />
+            </div>
+
+            {/* 分割线 */}
+            <div className="border-t border-zinc-100 dark:border-zinc-900 pt-4" />
+
+            {/* 分区 6：邮件登录验证码配置 */}
+            <div className="flex flex-col gap-3">
+              <div className="flex flex-col gap-0.5">
+                <h3 className="text-xs font-semibold text-zinc-900 dark:text-zinc-50">
+                  6. 邮箱登录验证码配置
+                </h3>
+                <p className="text-xs text-zinc-550 dark:text-zinc-400">
+                  配置前台免密登录及注册时发送的验证码邮件主题与模板内容。
+                </p>
+              </div>
+              <div className="flex flex-col gap-3.5 pt-1">
+                {/* 邮件主题 */}
+                <div className="flex flex-col gap-1.5">
+                  <span className="text-xs font-semibold text-zinc-650 dark:text-zinc-400 uppercase tracking-wider">
+                    邮件主题 / 标题
+                  </span>
+                  <input
+                    value={emailSubject}
+                    onChange={(e) => setEmailSubject(e.target.value)}
+                    placeholder="例如：【可梵的个人博客】登录验证码"
+                    className="w-full bg-zinc-50/50 hover:bg-zinc-50/80 focus:bg-white dark:bg-zinc-900/25 dark:hover:bg-zinc-900/40 dark:focus:bg-zinc-950 border border-zinc-200 dark:border-zinc-800 rounded-lg px-3 h-8.5 text-xs text-zinc-900 dark:text-zinc-100 placeholder-zinc-500 dark:placeholder-zinc-400 focus:outline-none focus:ring-1.5 focus:ring-primary/20 focus:border-primary transition-all duration-200"
+                  />
+                </div>
+
+                {/* 邮件模版 */}
+                <div className="flex flex-col gap-1.5">
+                  <div className="flex justify-between items-center">
+                    <span className="text-xs font-semibold text-zinc-650 dark:text-zinc-400 uppercase tracking-wider">
+                      邮件内容模版
+                    </span>
+                    <span className="text-[10px] text-zinc-400 dark:text-zinc-500 font-mono">
+                      提示：请使用 ${"{"}code{"}"} 代替 6 位验证码
+                    </span>
+                  </div>
+                  <textarea
+                    value={emailTemplate}
+                    onChange={(e) => setEmailTemplate(e.target.value)}
+                    placeholder="例如：您的验证码为：${code}，5分钟内有效。若非本人操作，请忽略此邮件。"
+                    rows={3}
+                    className="w-full bg-zinc-50/50 hover:bg-zinc-50/80 focus:bg-white dark:bg-zinc-900/25 dark:hover:bg-zinc-900/40 dark:focus:bg-zinc-950 border border-zinc-200 dark:border-zinc-800 rounded-lg p-2.5 text-xs text-zinc-900 dark:text-zinc-100 placeholder-zinc-500 dark:placeholder-zinc-400 focus:outline-none focus:ring-1.5 focus:ring-primary/20 focus:border-primary transition-all duration-200 resize-none leading-relaxed"
+                  />
+                </div>
+              </div>
             </div>
 
           </div>
