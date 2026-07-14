@@ -13,3 +13,4 @@ spring:
       - classpath:application-weixin.yml
       - classpath:application-storage.yml
       - classpath:application-security.yml
+      - classpath:application-mail.yml
