@@ -2,11 +2,14 @@
 
 我们已经为您生成了标准且专业的微信登录与绑定系统架构流程图。该图完全基于后端代码逻辑设计，清晰地展现了客户端、微信服务器、后端服务、Redis 以及 PostgreSQL 之间的完整交互链路和状态分流。
 
+### 🖼️ 系统架构流程图预览
+![微信扫码登录系统架构图](file:///Users/butvan/Butvan_Projets/my_code/Butvan%20Blog2.0/docx/wechat_login_flowchart.png)
+
 ### 🎨 架构图文件下载与导入
-请点击下方链接下载 Excalidraw 图表文件。下载后，只需将其**直接拖拽**到 [Excalidraw 官方画板 (excalidraw.com)](https://excalidraw.com/) 中，即可立即查看、编辑和导出：
+请点击下方链接查看或下载 Excalidraw 手绘流程图文件。下载后，只需将其**直接拖拽**到 [Excalidraw 官方画板 (excalidraw.com)](https://excalidraw.com/) 中，即可立即查看、编辑和导出：
 
 > [!TIP]
-> [📥 点击下载：微信登录系统架构 Excalidraw 图 (wechat_login_architecture.excalidraw)](file:///Users/butvan/.gemini/antigravity-ide/brain/77d16c40-431f-4b34-b512-c9097326ea95/wechat_login_architecture.excalidraw)
+> [📥 微信登录系统架构 Excalidraw 图 (wechat_login_architecture.excalidraw)](file:///Users/butvan/Butvan_Projets/my_code/Butvan%20Blog2.0/wechat_login_architecture.excalidraw)
 
 ---
 
