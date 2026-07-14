@@ -327,6 +327,47 @@ public class AuthController {
         return Result.success(loginVO);
     }
 
+    /**
+     * 发送邮箱登录/注册验证码
+     *
+     * @param body 请求体，包含 email
+     * @return 统一响应
+     */
+    @PostMapping("/email/code")
+    public Result<Void> sendEmailCode(@RequestBody Map<String, String> body) {
+        String email = body.get("email");
+        authService.sendEmailCode(email);
+        return Result.success();
+    }
+
+    /**
+     * 邮箱验证码登录/注册并下发 Token Cookie
+     *
+     * @param body 请求体，包含 email 与 code
+     * @param response HTTP 响应（写入 Cookie）
+     * @return 登录用户信息
+     */
+    @PostMapping("/email/login")
+    public Result<LoginVO> emailLogin(@RequestBody Map<String, String> body,
+                                       HttpServletResponse response) {
+        String email = body.get("email");
+        String code = body.get("code");
+
+        // 1. 调用业务层验证并处理登录/注册
+        LoginVO loginVO = authService.emailLogin(email, code);
+
+        // 2. 签发双 Token 并通过 httpOnly Cookie 下发
+        String subject = loginVO.getUser().getUsername() != null
+                ? loginVO.getUser().getUsername()
+                : loginVO.getUser().getEmail();
+        TokenPair tokens = tokenService.issueTokens(
+                loginVO.getUser().getId(), subject, loginVO.getUser().getRole());
+        addCookie(response, "access_token", tokens.accessToken(), 900, "/api");
+        addCookie(response, "refresh_token", tokens.refreshToken(), 604800, "/api/auth/refresh");
+
+        return Result.success(loginVO);
+    }
+
     // ---- Cookie 工具方法 --------------------------------------------------
 
     /**

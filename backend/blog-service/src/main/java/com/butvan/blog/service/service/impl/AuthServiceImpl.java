@@ -29,6 +29,16 @@ import java.util.Map;
 import java.util.HashMap;
 import java.util.UUID;
 
+import com.butvan.blog.common.utils.EmailUtils;
+import com.butvan.blog.service.service.SiteConfigService;
+import com.butvan.blog.pojo.vo.site.SiteConfigVO;
+import org.springframework.mail.javamail.JavaMailSender;
+import org.springframework.mail.javamail.MimeMessageHelper;
+import jakarta.mail.internet.MimeMessage;
+import cn.hutool.core.util.RandomUtil;
+import org.springframework.beans.factory.annotation.Value;
+import java.util.concurrent.TimeUnit;
+
 /**
  * 账号认证与权限业务逻辑层实现类
  */
@@ -42,6 +52,11 @@ public class AuthServiceImpl implements AuthService {
     private final JwtUtil jwtUtil;
     private final FileStorageService fileStorageService;
     private final RedisUtils redisUtils;
+    private final JavaMailSender mailSender;
+    private final SiteConfigService siteConfigService;
+
+    @Value("${spring.mail.username:}")
+    private String mailFrom;
 
     /**
      * 管理后台账号注册核心业务实现
@@ -485,5 +500,111 @@ public class AuthServiceImpl implements AuthService {
                         .role(user.getRole())
                         .build())
                 .build();
+    }
+
+    @Override
+    public void sendEmailCode(String email) {
+        if (email == null || email.isBlank()) {
+            throw new BusinessException(400, "邮箱地址不能为空");
+        }
+        if (!EmailUtils.isValidEmail(email)) {
+            throw new BusinessException(400, "邮箱格式不正确");
+        }
+
+        // 1. 发送频率限制：60秒一次
+        String limitKey = "email_code_limit:" + email;
+        if (redisUtils.hasKey(limitKey)) {
+            throw new BusinessException(429, "验证码发送频繁，请60秒后再试");
+        }
+
+        // 2. 生成 6 位随机验证码
+        String code = RandomUtil.randomNumbers(6);
+        log.info("向邮箱 {} 生成验证码 {}", email, code);
+
+        // 3. 存储验证码到 Redis，5 分钟有效
+        String codeKey = "email_code:" + email;
+        redisUtils.set(codeKey, code, 5, TimeUnit.MINUTES);
+        // 存储频率限制 key，60秒过期
+        redisUtils.set(limitKey, "1", 60, TimeUnit.SECONDS);
+
+        // 4. 获取后台配置模版并发送邮件
+        SiteConfigVO subjectConfig = siteConfigService.getConfig("email_verify_subject");
+        SiteConfigVO templateConfig = siteConfigService.getConfig("email_verify_template");
+
+        String subject = (subjectConfig != null && subjectConfig.getConfigValue() != null && !subjectConfig.getConfigValue().isBlank())
+                ? subjectConfig.getConfigValue()
+                : "【可梵的个人博客】登录验证码";
+        
+        String template = (templateConfig != null && templateConfig.getConfigValue() != null && !templateConfig.getConfigValue().isBlank())
+                ? templateConfig.getConfigValue()
+                : "您的验证码是：${code}，该验证码 5 分钟内有效。如非本人操作，请忽略此邮件。";
+
+        String content = template.replace("${code}", code);
+
+        try {
+            MimeMessage mimeMessage = mailSender.createMimeMessage();
+            MimeMessageHelper helper = new MimeMessageHelper(mimeMessage, true, "UTF-8");
+            helper.setFrom(mailFrom);
+            helper.setTo(email);
+            helper.setSubject(subject);
+            helper.setText(content, true); // true 支持 html 格式发送
+            mailSender.send(mimeMessage);
+            log.info("向邮箱 {} 发送邮件验证码成功", email);
+        } catch (Exception e) {
+            log.error("发送邮件验证码失败, email={}", email, e);
+            throw new BusinessException(500, "邮件验证码发送失败，请检查邮箱配置或稍后再试");
+        }
+    }
+
+    @Override
+    @Transactional
+    public LoginVO emailLogin(String email, String code) {
+        if (email == null || email.isBlank() || code == null || code.isBlank()) {
+            throw new BusinessException(400, "邮箱和验证码不能为空");
+        }
+
+        // 1. 校验验证码
+        String codeKey = "email_code:" + email;
+        String cachedCode = redisUtils.get(codeKey);
+        if (cachedCode == null) {
+            throw new BusinessException(400, "验证码已失效，请重新获取");
+        }
+        if (!cachedCode.equals(code.trim())) {
+            throw new BusinessException(400, "验证码错误");
+        }
+
+        // 2. 验证成功，删除验证码
+        redisUtils.delete(codeKey);
+
+        // 3. 查找或创建用户
+        User user = userRepository.findByEmail(email.trim()).orElse(null);
+        if (user == null) {
+            // 新增用户自动注册
+            user = User.builder()
+                    .email(email.trim())
+                    .role("USER")
+                    .status("ACTIVE")
+                    .lastLoginAt(LocalDateTime.now())
+                    .build();
+            user = userRepository.save(user);
+            log.info("普通邮箱用户自动注册成功, userId={}, email={}", user.getId(), email);
+        } else {
+            // 用户已存在，校验状态
+            if (!"ACTIVE".equalsIgnoreCase(user.getStatus())) {
+                log.warn("用户登录失败，账号被停用: {}", email);
+                throw new BusinessException(400, "该账号已被停用，请联系管理员");
+            }
+            user.setLastLoginAt(LocalDateTime.now());
+            user = userRepository.save(user);
+            log.info("普通邮箱用户登录成功, userId={}, email={}", user.getId(), email);
+        }
+
+        // 4. 签发 JWT
+        String subject = user.getUsername() != null ? user.getUsername() : user.getEmail();
+        String token = jwtUtil.generateToken(user.getId(), subject, user.getRole());
+
+        LoginVO loginVO = toLoginVO(user);
+        loginVO.setToken(token); // 设置 Token 属性
+        return loginVO;
     }
 }

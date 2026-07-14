@@ -113,4 +113,20 @@ public interface AuthService {
      * @return 登录结果视图对象
      */
     LoginVO wechatExchange(String exchangeCode);
+
+    /**
+     * 发送邮箱登录/注册验证码
+     *
+     * @param email 目标邮箱地址
+     */
+    void sendEmailCode(String email);
+
+    /**
+     * 邮箱验证码登录/注册核心业务
+     *
+     * @param email 邮箱地址
+     * @param code  验证码
+     * @return 登录结果视图对象
+     */
+    LoginVO emailLogin(String email, String code);
 }

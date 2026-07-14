@@ -16,6 +16,8 @@ security:
     - "POST /api/auth/refresh"
     - "POST /api/auth/logout"
     - "/api/auth/check"
+    - "POST /api/auth/email/code"
+    - "POST /api/auth/email/login"
 
     # ---- 前台公开 GET 接口 ----
     - "GET /api/navigations/**"
