@@ -44,14 +44,23 @@ target/
 dependency-reduced-pom.xml
 
 # AI Agent & Skills
+.agent/
 .agents/
 .claude/
 .trae/
 .qoder/
 skills-lock.json
+.impeccable/
 
 # Local Uploads
 backend/uploads/
 
 # Graphify Outputs
 graphify-out/
+
+# Hyperframes Vedios
+videos/
+
+# docx
+docx/
+design-system/
