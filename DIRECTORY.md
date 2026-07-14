@@ -422,7 +422,8 @@ Butvan Blog2.0/                                    # 📦 项目根目录
             │       ├── application-redis.yml       #         Redis 连接配置（Lettuce 连接池）
             │       ├── application-weixin.yml      #         微信配置（appid / appsecret）
             │       ├── application-storage.yml     #         文件存储配置（local / minio 切换）
-            │       └── application-security.yml    #         Security 放行路径配置（新增接口只需改此文件）
+            │       ├── application-security.yml    #         Security 放行路径配置（新增接口只需改此文件）
+            │       └── application-mail.yml        #         Mail 邮件发送 SMTP 服务器配置文件（发信账号及密钥）
             └── test/
                 └── java/com/butvan/blog/service/   #       🧪 单元测试与集成测试
 ```
