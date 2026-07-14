@@ -86,7 +86,7 @@ public class AuthController {
                         loginVO.getUser().getUsername(),
                         loginVO.getUser().getRole());
                 addCookie(response, "access_token", tokens.accessToken(), 900, "/api");
-                addCookie(response, "refresh_token", tokens.refreshToken(), 604800, "/api/auth/refresh");
+                addCookie(response, "refresh_token", tokens.refreshToken(), 604800, "/api/auth");
             }
 
             return Result.success(loginVO);
@@ -133,7 +133,7 @@ public class AuthController {
             tokenService.revokeRefreshToken(refreshToken);
         }
         clearCookie(response, "access_token", "/api");
-        clearCookie(response, "refresh_token", "/api/auth/refresh");
+        clearCookie(response, "refresh_token", "/api/auth");
         return Result.success();
     }
 
@@ -322,7 +322,7 @@ public class AuthController {
         TokenPair tokens = tokenService.issueTokens(
                 loginVO.getUser().getId(), subject, loginVO.getUser().getRole());
         addCookie(response, "access_token", tokens.accessToken(), 900, "/api");
-        addCookie(response, "refresh_token", tokens.refreshToken(), 604800, "/api/auth/refresh");
+        addCookie(response, "refresh_token", tokens.refreshToken(), 604800, "/api/auth");
 
         return Result.success(loginVO);
     }
@@ -363,7 +363,7 @@ public class AuthController {
         TokenPair tokens = tokenService.issueTokens(
                 loginVO.getUser().getId(), subject, loginVO.getUser().getRole());
         addCookie(response, "access_token", tokens.accessToken(), 900, "/api");
-        addCookie(response, "refresh_token", tokens.refreshToken(), 604800, "/api/auth/refresh");
+        addCookie(response, "refresh_token", tokens.refreshToken(), 604800, "/api/auth");
 
         return Result.success(loginVO);
     }
