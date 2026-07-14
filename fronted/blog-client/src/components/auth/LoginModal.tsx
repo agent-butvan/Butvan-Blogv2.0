@@ -84,6 +84,9 @@ export default function LoginModal({ isOpen, onClose }: LoginModalProps) {
   const [qrError, setQrError] = useState('')
   /** 二维码当前状态：waiting=等待扫码 | scanned=已扫码 | logging=登录中 | expired=已过期 | error=异常 */
   const [qrStatus, setQrStatus] = useState<'waiting' | 'scanned' | 'logging' | 'expired' | 'error'>('waiting')
+  // ---- 微信协议同意与政策展示状态 ----
+  const [wechatAgreed, setWechatAgreed] = useState(false)
+  const [showWechatPolicy, setShowWechatPolicy] = useState(false)
   /** 微信登录异常提示信息 */
   const [wechatMsg, setWechatMsg] = useState('')
   /** 二维码过期倒计时（秒） */
@@ -407,8 +410,95 @@ export default function LoginModal({ isOpen, onClose }: LoginModalProps) {
         onOpenChange={(open) => { if (!open) onClose() }}
       >
         <Modal.Container className="items-center">
-          <Modal.Dialog className="sm:max-w-[420px] bg-gradient-to-b from-[#FAFBFF] to-[#F2F3FA] dark:from-[#181B2E] dark:to-[#141625] shadow-2xl shadow-[#727BBA]/10 dark:shadow-black/30 rounded-xl p-0 overflow-hidden border border-[#C4C8E6]/30 dark:border-[#727BBA]/15">
+          <Modal.Dialog className="relative sm:max-w-[420px] bg-gradient-to-b from-[#FAFBFF] to-[#F2F3FA] dark:from-[#181B2E] dark:to-[#141625] shadow-2xl shadow-[#727BBA]/10 dark:shadow-black/30 rounded-xl p-0 overflow-hidden border border-[#C4C8E6]/30 dark:border-[#727BBA]/15">
             <Modal.CloseTrigger />
+
+            {/* ===== 微信登录服务与隐私协议详情遮罩卡片 ===== */}
+            {showWechatPolicy && (
+              <div className="absolute inset-0 z-50 bg-white/95 dark:bg-[#141625]/95 backdrop-blur-sm p-6 flex flex-col justify-between transition-all duration-300">
+                <div className="flex-1 overflow-y-auto pr-1">
+                  <div className="flex items-center justify-between pb-3 border-b border-[#C4C8E6]/30 dark:border-[#727BBA]/15">
+                    <h3 className="text-sm font-semibold text-zinc-800 dark:text-zinc-100 flex items-center gap-1.5">
+                      <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.5" className="text-[#07C160]">
+                        <path d="M12 22s8-4 8-10V5l-8-3-8 3v7c0 6 8 10 8 10z"/>
+                      </svg>
+                      微信登录服务与隐私协议
+                    </h3>
+                    <button
+                      type="button"
+                      onClick={() => setShowWechatPolicy(false)}
+                      className="text-zinc-400 hover:text-zinc-600 dark:hover:text-zinc-200 cursor-pointer"
+                    >
+                      <svg className="h-5 w-5" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                        <path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2" d="M6 18L18 6M6 6l12 12" />
+                      </svg>
+                    </button>
+                  </div>
+                  <div className="text-xs text-zinc-600 dark:text-zinc-300 mt-4 space-y-3.5 leading-relaxed">
+                    <p className="font-semibold text-zinc-800 dark:text-zinc-200">欢迎使用微信扫码登录服务。在您扫码绑定前，请仔细阅读以下须知：</p>
+                    
+                    <div>
+                      <h4 className="font-semibold text-zinc-800 dark:text-zinc-200 mb-1 flex items-center gap-1">
+                        <span className="w-1.5 h-1.5 rounded-full bg-[#07C160]" />
+                        1. 微信测试公众号说明
+                      </h4>
+                      <p className="pl-2.5">
+                        本站目前使用微信提供的<strong>“接口测试帐号”</strong>提供扫码服务，以进行登录与注册的对接。
+                      </p>
+                    </div>
+
+                    <div>
+                      <h4 className="font-semibold text-zinc-800 dark:text-zinc-200 mb-1 flex items-center gap-1">
+                        <span className="w-1.5 h-1.5 rounded-full bg-[#07C160]" />
+                        2. 关注用户配额上限（名额20人）
+                      </h4>
+                      <p className="pl-2.5">
+                        由于微信官方对测试公众号的配额限制，该测试号的<strong>关注用户配额上限仅为 20 个</strong>。本登录注册渠道名额有限，采取<strong>先到先得</strong>原则。名额配满后微信官方将拒绝新用户关注与登录。
+                      </p>
+                    </div>
+
+                    <div>
+                      <h4 className="font-semibold text-zinc-800 dark:text-zinc-200 mb-1 flex items-center gap-1">
+                        <span className="w-1.5 h-1.5 rounded-full bg-[#07C160]" />
+                        3. 服务通知与文章提醒推送
+                      </h4>
+                      <p className="pl-2.5">
+                        您扫码并关注此测试公众号，即表示同意与授权：<strong>后期本博客平台发布新文章、精选内容或系统重大调整时，系统将通过该微信测试公众号自动向您推送服务消息提醒与通知。</strong>
+                      </p>
+                    </div>
+
+                    <div>
+                      <h4 className="font-semibold text-zinc-800 dark:text-zinc-200 mb-1 flex items-center gap-1">
+                        <span className="w-1.5 h-1.5 rounded-full bg-[#07C160]" />
+                        4. 隐私安全保障
+                      </h4>
+                      <p className="pl-2.5">
+                        我们仅读取微信派发的安全标识映射码（OpenID/UnionID）用于博客账号匹配，绝不会向外界透露您的微信账户信息或将名额移作它用。
+                      </p>
+                    </div>
+                  </div>
+                </div>
+                <div className="pt-4 border-t border-[#C4C8E6]/30 dark:border-[#727BBA]/15 flex items-center justify-end gap-2.5">
+                  <button
+                    type="button"
+                    onClick={() => setShowWechatPolicy(false)}
+                    className="px-3.5 py-1.5 rounded-lg text-xs font-medium text-zinc-500 bg-[#F5F6FB] dark:bg-[#1E2035] hover:bg-[#EAEBF4] dark:hover:bg-[#252840] transition-colors cursor-pointer"
+                  >
+                    取消
+                  </button>
+                  <button
+                    type="button"
+                    onClick={() => {
+                      setWechatAgreed(true)
+                      setShowWechatPolicy(false)
+                    }}
+                    className="px-3.5 py-1.5 rounded-lg text-xs font-medium bg-[#07C160] hover:bg-[#06ad56] text-white transition-colors cursor-pointer shadow-sm"
+                  >
+                    同意并勾选
+                  </button>
+                </div>
+              </div>
+            )}
 
             {/* ===== 标题区域 ===== */}
             <div className="flex flex-col space-y-1.5 p-6 pb-4">
@@ -550,6 +640,33 @@ export default function LoginModal({ isOpen, onClose }: LoginModalProps) {
               {/* ---- 微信扫码模式 ---- */}
               {panel === 'wechat' && (
                 <div className="flex flex-col items-center py-2">
+                  
+                  {/* 隐私勾选提示 */}
+                  <div className="w-full mb-3 px-1">
+                    <label className="flex items-start gap-2 cursor-pointer select-none text-xs text-zinc-500 dark:text-zinc-400 py-2 px-2.5 bg-zinc-100/50 dark:bg-zinc-850/30 rounded-lg border border-zinc-200/50 dark:border-zinc-700/20">
+                      <input
+                        type="checkbox"
+                        checked={wechatAgreed}
+                        onChange={(e) => setWechatAgreed(e.target.checked)}
+                        className="mt-0.5 w-3.5 h-3.5 rounded border-zinc-350 dark:border-zinc-700 text-[#07C160] focus:ring-[#07C160]/20 cursor-pointer accent-[#07C160]"
+                      />
+                      <span className="leading-tight">
+                        我已阅读并同意
+                        <button
+                          type="button"
+                          onClick={(e) => {
+                            e.preventDefault()
+                            e.stopPropagation()
+                            setShowWechatPolicy(true)
+                          }}
+                          className="text-[#07C160] hover:underline mx-0.5 inline-block font-semibold cursor-pointer"
+                        >
+                          《微信登录服务与隐私协议》
+                        </button>
+                      </span>
+                    </label>
+                  </div>
+
                   {qrLoading ? (
                     <div className="w-[200px] h-[200px] bg-[#F5F6FB] dark:bg-[#1E2035] rounded-xl flex items-center justify-center border border-[#C4C8E6]/40 dark:border-[#727BBA]/20">
                       <Spinner size="lg" />
@@ -568,6 +685,26 @@ export default function LoginModal({ isOpen, onClose }: LoginModalProps) {
                     </div>
                   ) : qrCodeUrl ? (
                     <div className="relative group">
+                      
+                      {/* 如果未同意，显示模糊加锁覆盖层 */}
+                      {!wechatAgreed && (
+                        <div className="absolute inset-0 z-30 flex flex-col items-center justify-center gap-2.5 bg-white/95 dark:bg-[#181B2E]/95 backdrop-blur-[2px] rounded-xl border border-zinc-200/40 dark:border-zinc-800/40 w-[200px] h-[200px]">
+                          <svg className="w-8 h-8 text-zinc-400 dark:text-zinc-500" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={2}>
+                            <path strokeLinecap="round" strokeLinejoin="round" d="M12 15v2m-6 4h12a2 2 0 002-2v-6a2 2 0 00-2-2H6a2 2 0 00-2 2v6a2 2 0 002 2zm10-10V7a4 4 0 00-8 0v4h8z" />
+                          </svg>
+                          <p className="text-[11px] text-zinc-500 dark:text-zinc-400 text-center px-4 font-medium leading-relaxed">
+                            请先勾选上方协议以显示登录二维码
+                          </p>
+                          <button
+                            type="button"
+                            onClick={() => setWechatAgreed(true)}
+                            className="mt-1 px-3 py-1 rounded bg-[#07C160] hover:bg-[#06ad56] text-white text-[10px] font-medium transition-colors cursor-pointer shadow-sm"
+                          >
+                            同意协议并展示
+                          </button>
+                        </div>
+                      )}
+
                       <img
                         src={getSafeImageUrl(qrCodeUrl)}
                         alt="微信登录二维码"
