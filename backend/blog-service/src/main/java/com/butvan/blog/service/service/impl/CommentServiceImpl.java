@@ -74,7 +74,7 @@ public class CommentServiceImpl implements CommentService {
         // 2. 将实体列表批量转化为 VO，并利用 Map 进行缓存检索
         Map<Long, CommentVO> voMap = comments.stream()
                 .map(c -> {
-                    String nickname = c.getUser() != null ? c.getUser().getNickname() : c.getVisitorName();
+                    String nickname = getDisplayNickname(c.getUser(), c.getVisitorName());
                     String avatarUrl = null;
                     if (c.getUser() != null) {
                         avatarUrl = c.getUser().getAvatarUrl();
@@ -92,7 +92,7 @@ public class CommentServiceImpl implements CommentService {
                             .userId(c.getUser() != null ? c.getUser().getId() : null)
                             .nickname(nickname)
                             .avatarUrl(avatarUrl)
-                            .visitorWebsite(c.getVisitorWebsite())
+                            .visitorWebsite(c.getUser() != null ? null : c.getVisitorWebsite())
                             .content(c.getContent())
                             .likeCount(c.getLikeCount())
                             .isAuthorReplied(c.getIsAuthorReplied())
@@ -229,7 +229,7 @@ public class CommentServiceImpl implements CommentService {
         if (saved.getParentId() != null) {
             Comment parent = commentRepository.findById(saved.getParentId()).orElse(null);
             if (parent != null) {
-                replyToName = parent.getUser() != null ? parent.getUser().getNickname() : parent.getVisitorName();
+                replyToName = getDisplayNickname(parent.getUser(), parent.getVisitorName());
             }
         }
 
@@ -239,9 +239,9 @@ public class CommentServiceImpl implements CommentService {
                 .articleId(saved.getArticle().getId())
                 .parentId(saved.getParentId())
                 .userId(saved.getUser() != null ? saved.getUser().getId() : null)
-                .nickname(saved.getVisitorName())
+                .nickname(getDisplayNickname(saved.getUser(), saved.getVisitorName()))
                 .avatarUrl(avatarUrl)
-                .visitorWebsite(saved.getVisitorWebsite())
+                .visitorWebsite(saved.getUser() != null ? null : saved.getVisitorWebsite())
                 .content(saved.getContent())
                 .likeCount(saved.getLikeCount())
                 .isAuthorReplied(saved.getIsAuthorReplied())
@@ -338,7 +338,9 @@ public class CommentServiceImpl implements CommentService {
 
         List<CommentVO> voList = commentPage.getContent().stream()
                 .map(c -> {
-                    String nickname = c.getUser() != null ? c.getUser().getNickname() : c.getVisitorName();
+                    String nickname = c.getUser() != null 
+                            ? (c.getUser().getNickname() != null && !c.getUser().getNickname().isBlank() ? c.getUser().getNickname() : c.getUser().getEmail()) 
+                            : c.getVisitorName();
                     String avatarUrl = null;
                     if (c.getUser() != null) {
                         avatarUrl = c.getUser().getAvatarUrl();
@@ -353,7 +355,9 @@ public class CommentServiceImpl implements CommentService {
                     if (c.getParentId() != null) {
                         Comment parent = commentRepository.findById(c.getParentId()).orElse(null);
                         if (parent != null) {
-                            replyTo = parent.getUser() != null ? parent.getUser().getNickname() : parent.getVisitorName();
+                            replyTo = parent.getUser() != null 
+                                    ? (parent.getUser().getNickname() != null && !parent.getUser().getNickname().isBlank() ? parent.getUser().getNickname() : parent.getUser().getEmail()) 
+                                    : parent.getVisitorName();
                         }
                     }
                     boolean isAuthor = (c.getIsAuthor() != null && c.getIsAuthor()) || (c.getUser() != null);
@@ -557,5 +561,41 @@ public class CommentServiceImpl implements CommentService {
         long approvedCount = commentRepository.countByArticleIdAndStatus(article.getId(), "APPROVED");
         article.setCommentCount(approvedCount);
         articleRepository.save(article);
+    }
+
+    /**
+     * 辅助方法：获取前台展示用的评论者昵称（自动处理已登录用户的邮箱并进行掩码脱敏）
+     */
+    private String getDisplayNickname(User user, String visitorName) {
+        if (user != null) {
+            String nick = user.getNickname();
+            if (nick != null && !nick.isBlank()) {
+                return maskIfEmail(nick);
+            }
+            return maskIfEmail(user.getEmail());
+        }
+        return maskIfEmail(visitorName);
+    }
+
+    /**
+     * 辅助方法：判断并对邮箱字符串进行掩码脱敏（例如：wj5395@outlook.com -> wj***5@outlook.com）
+     */
+    private String maskIfEmail(String text) {
+        if (text == null || text.isBlank()) {
+            return "";
+        }
+        if (!text.contains("@")) {
+            return text;
+        }
+        int atIndex = text.indexOf("@");
+        if (atIndex <= 0) {
+            return text;
+        }
+        String local = text.substring(0, atIndex);
+        String domain = text.substring(atIndex);
+        if (local.length() <= 3) {
+            return local.substring(0, 1) + "***" + domain;
+        }
+        return local.substring(0, 2) + "***" + local.substring(local.length() - 1) + domain;
     }
 }

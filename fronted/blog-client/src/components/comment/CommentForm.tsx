@@ -7,6 +7,8 @@ import { marked } from 'marked'
 import HtmlRenderer from '@/components/common/HtmlRenderer'
 import { post } from '@/lib/http-client'
 
+import { useAuth } from '@/contexts/AuthContext'
+
 // 支持点击快捷输入的 Emoji 列表
 const EMOJIS = ['😄', '🎉', '❤️', '👍', '🚀', '💻', '🤔', '👀', '🔥', '👏']
 const CONTENT_MAX_LENGTH = 500 // 限制评论最大字数
@@ -26,6 +28,8 @@ export default function CommentForm({
   onSuccess,
   onCancel
 }: CommentFormProps) {
+  const { user, isLoggedIn } = useAuth()
+
   // 游客基础信息状态
   const [visitorName, setVisitorName] = useState('')
   const [visitorEmail, setVisitorEmail] = useState('')
@@ -39,20 +43,26 @@ export default function CommentForm({
   const [showEmoji, setShowEmoji] = useState(false)
   const [confirmClear, setConfirmClear] = useState(false)
 
-  // 1. 组件挂载时自动从 localStorage 读取已保存的访客资料
+  // 1. 组件挂载时自动从 localStorage 读取已保存的访客资料，或者在登录时自动填充
   useEffect(() => {
-    try {
-      const savedName = localStorage.getItem('comment_visitor_name')
-      const savedEmail = localStorage.getItem('comment_visitor_email')
-      const savedWebsite = localStorage.getItem('comment_visitor_website')
-      
-      if (savedName) setVisitorName(savedName)
-      if (savedEmail) setVisitorEmail(savedEmail)
-      if (savedWebsite) setVisitorWebsite(savedWebsite)
-    } catch (e) {
-      console.warn('读取 localStorage 缓存的游客资料失败', e)
+    if (isLoggedIn && user) {
+      setVisitorEmail(user.email || '')
+      setVisitorName(user.nickname || user.email || '')
+      setVisitorWebsite('')
+    } else {
+      try {
+        const savedName = localStorage.getItem('comment_visitor_name')
+        const savedEmail = localStorage.getItem('comment_visitor_email')
+        const savedWebsite = localStorage.getItem('comment_visitor_website')
+        
+        if (savedName) setVisitorName(savedName)
+        if (savedEmail) setVisitorEmail(savedEmail)
+        if (savedWebsite) setVisitorWebsite(savedWebsite)
+      } catch (e) {
+        console.warn('读取 localStorage 缓存的游客资料失败', e)
+      }
     }
-  }, [])
+  }, [isLoggedIn, user])
 
   // 2. 插入表情
   const handleInsertEmoji = (emoji: string) => {
@@ -108,13 +118,15 @@ export default function CommentForm({
         content: content.trim()
       })
 
-      // 保存游客资料到本地 localStorage 供下一次自动回显
-      try {
-        localStorage.setItem('comment_visitor_name', visitorName.trim())
-        localStorage.setItem('comment_visitor_email', visitorEmail.trim())
-        localStorage.setItem('comment_visitor_website', visitorWebsite.trim())
-      } catch (e) {
-        console.warn('缓存游客资料到 localStorage 失败', e)
+      // 保存游客资料到本地 localStorage 供下一次自动回显 (仅非登录用户)
+      if (!isLoggedIn) {
+        try {
+          localStorage.setItem('comment_visitor_name', visitorName.trim())
+          localStorage.setItem('comment_visitor_email', visitorEmail.trim())
+          localStorage.setItem('comment_visitor_website', visitorWebsite.trim())
+        } catch (e) {
+          console.warn('缓存游客资料到 localStorage 失败', e)
+        }
       }
 
       // 清空输入框内容与预览模式
@@ -172,44 +184,54 @@ export default function CommentForm({
         </div>
       )}
 
-      {/* 游客个人信息填写栅格（三列：昵称、邮箱、网址）- 重构为极简 underlined 下划线无框风格 */}
-      <div className="grid grid-cols-1 sm:grid-cols-3 gap-6">
-        <div className="relative flex items-center border-b border-zinc-200 dark:border-zinc-800/80 hover:border-zinc-300 dark:hover:border-zinc-700 focus-within:border-[#727BBA] dark:focus-within:border-[#8E97D5] transition-colors h-9 px-0 gap-2">
-          <User size={13} className="text-zinc-400 dark:text-zinc-650 flex-shrink-0" />
-          <input
-            type="text"
-            placeholder="称呼 *"
-            value={visitorName}
-            onChange={(e) => setVisitorName(e.target.value)}
-            className="w-full bg-transparent border-none outline-none text-xs font-serif text-zinc-700 dark:text-zinc-350 placeholder:text-zinc-350 dark:placeholder:text-zinc-650"
-            required
-            disabled={submitting}
-          />
+      {/* 游客个人信息或登录信息展示 */}
+      {isLoggedIn && user ? (
+        <div className="flex items-center gap-2 py-2 px-3 bg-[#F5F6FB] dark:bg-[#1E2035] rounded-xl border border-[#C4C8E6]/40 dark:border-[#727BBA]/15 w-fit select-none shadow-sm">
+          <Mail size={13} className="text-[#727BBA] dark:text-[#8E97D5]" />
+          <span className="text-xs text-zinc-500 dark:text-zinc-450">
+            已登录邮箱：<strong className="text-zinc-700 dark:text-zinc-300 font-mono font-semibold">{user.email}</strong>
+          </span>
         </div>
-        <div className="relative flex items-center border-b border-zinc-200 dark:border-zinc-800/80 hover:border-zinc-300 dark:hover:border-zinc-700 focus-within:border-[#727BBA] dark:focus-within:border-[#8E97D5] transition-colors h-9 px-0 gap-2">
-          <Mail size={13} className="text-zinc-400 dark:text-zinc-650 flex-shrink-0" />
-          <input
-            type="email"
-            placeholder="邮箱 (头像拉取) *"
-            value={visitorEmail}
-            onChange={(e) => setVisitorEmail(e.target.value)}
-            className="w-full bg-transparent border-none outline-none text-xs font-serif text-zinc-700 dark:text-zinc-350 placeholder:text-zinc-350 dark:placeholder:text-zinc-650"
-            required
-            disabled={submitting}
-          />
+      ) : (
+        /* 游客个人信息填写栅格（三列：昵称、邮箱、网址）- 重构为极简 underlined 下划线无框风格 */
+        <div className="grid grid-cols-1 sm:grid-cols-3 gap-6">
+          <div className="relative flex items-center border-b border-zinc-200 dark:border-zinc-800/80 hover:border-zinc-300 dark:hover:border-zinc-700 focus-within:border-[#727BBA] dark:focus-within:border-[#8E97D5] transition-colors h-9 px-0 gap-2">
+            <User size={13} className="text-zinc-400 dark:text-zinc-650 flex-shrink-0" />
+            <input
+              type="text"
+              placeholder="称呼 *"
+              value={visitorName}
+              onChange={(e) => setVisitorName(e.target.value)}
+              className="w-full bg-transparent border-none outline-none text-xs font-serif text-zinc-700 dark:text-zinc-350 placeholder:text-zinc-350 dark:placeholder:text-zinc-650"
+              required
+              disabled={submitting}
+            />
+          </div>
+          <div className="relative flex items-center border-b border-zinc-200 dark:border-zinc-800/80 hover:border-zinc-300 dark:hover:border-zinc-700 focus-within:border-[#727BBA] dark:focus-within:border-[#8E97D5] transition-colors h-9 px-0 gap-2">
+            <Mail size={13} className="text-zinc-400 dark:text-zinc-650 flex-shrink-0" />
+            <input
+              type="email"
+              placeholder="邮箱 (头像拉取) *"
+              value={visitorEmail}
+              onChange={(e) => setVisitorEmail(e.target.value)}
+              className="w-full bg-transparent border-none outline-none text-xs font-serif text-zinc-700 dark:text-zinc-350 placeholder:text-zinc-350 dark:placeholder:text-zinc-650"
+              required
+              disabled={submitting}
+            />
+          </div>
+          <div className="relative flex items-center border-b border-zinc-200 dark:border-zinc-800/80 hover:border-zinc-300 dark:hover:border-zinc-700 focus-within:border-[#727BBA] dark:focus-within:border-[#8E97D5] transition-colors h-9 px-0 gap-2">
+            <Globe size={13} className="text-zinc-400 dark:text-zinc-650 flex-shrink-0" />
+            <input
+              type="text"
+              placeholder="个人主页 (https://)"
+              value={visitorWebsite}
+              onChange={(e) => setVisitorWebsite(e.target.value)}
+              className="w-full bg-transparent border-none outline-none text-xs font-serif text-zinc-700 dark:text-zinc-350 placeholder:text-zinc-350 dark:placeholder:text-zinc-650"
+              disabled={submitting}
+            />
+          </div>
         </div>
-        <div className="relative flex items-center border-b border-zinc-200 dark:border-zinc-800/80 hover:border-zinc-300 dark:hover:border-zinc-700 focus-within:border-[#727BBA] dark:focus-within:border-[#8E97D5] transition-colors h-9 px-0 gap-2">
-          <Globe size={13} className="text-zinc-400 dark:text-zinc-650 flex-shrink-0" />
-          <input
-            type="text"
-            placeholder="个人主页 (https://)"
-            value={visitorWebsite}
-            onChange={(e) => setVisitorWebsite(e.target.value)}
-            className="w-full bg-transparent border-none outline-none text-xs font-serif text-zinc-700 dark:text-zinc-350 placeholder:text-zinc-350 dark:placeholder:text-zinc-650"
-            disabled={submitting}
-          />
-        </div>
-      </div>
+      )}
 
       {/* 文本输入区上方增加：编辑/预览双模式切换小按钮 */}
       <div className="flex items-center gap-2 select-none text-[11px] font-serif">
