@@ -93,9 +93,13 @@ export default function DashboardPage() {
   }, []);
 
   useEffect(() => {
-    // 从后端获取统计数据
+    // 使用 AbortController 规避 React 18 StrictMode 开发环境下组件双挂载导致的重复网络请求
+    const controller = new AbortController();
+    
     apiClient
-      .get<ApiResponse<DashboardStats>>("/admin/dashboard")
+      .get<ApiResponse<DashboardStats>>("/admin/dashboard", {
+        signal: controller.signal
+      })
       .then((res) => {
         if (res.data?.data) {
           const data = res.data.data;
@@ -112,6 +116,10 @@ export default function DashboardPage() {
         }
       })
       .catch((err) => {
+        // 若为取消请求错误，则静默忽略不设置 loading 和 stats
+        if (err.name === 'CanceledError' || err.message === 'canceled') {
+          return;
+        }
         console.error('获取工作台数据失败:', err);
         setStats({
           articleCount: 0,
@@ -121,7 +129,16 @@ export default function DashboardPage() {
           recentArticles: []
         });
       })
-      .finally(() => setLoading(false));
+      .finally(() => {
+        if (!controller.signal.aborted) {
+          setLoading(false);
+        }
+      });
+
+    return () => {
+      // 组件卸载（或者是 StrictMode 重复初始化）时，立刻取消上一次请求
+      controller.abort();
+    };
   }, []);
 
   // 实时根据 backend 传回的 trafficTrend 计算德芙般丝滑的 SVG 折线路径
@@ -234,7 +251,7 @@ export default function DashboardPage() {
           </div>
         </div>
         
-        {/* 系统实时微件状态 (提高数据功能密集度) */}
+        {/* 系统实时微件状态 */}
         <div className="flex items-center gap-3 text-[10px] text-zinc-400 dark:text-zinc-550 font-mono bg-white dark:bg-zinc-900/50 px-2.5 py-1.25 rounded-md border border-zinc-200 dark:border-zinc-800 shadow-xs shrink-0 self-start md:self-end">
           <div className="flex items-center gap-1">
             <span className="w-1.5 h-1.5 rounded-full bg-emerald-500 animate-pulse" />
@@ -250,7 +267,7 @@ export default function DashboardPage() {
       {/* 控制台一体化工作面板 (去卡片化大平铺) */}
       <div className="bg-white dark:bg-zinc-950 border border-zinc-200 dark:border-zinc-800 rounded-xl overflow-hidden shadow-[0_2px_8px_rgba(0,0,0,0.02)]">
         
-        {/* 1. 核心指标平铺格栅栏 (细隔线，无卡片，横向贯通) */}
+        {/* 1. 核心指标平铺格栅栏 */}
         {loading ? (
           <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 divide-y sm:divide-y-0 sm:divide-x divide-zinc-200 dark:divide-zinc-800 border-b border-zinc-200 dark:border-zinc-800">
             {Array.from({ length: 4 }).map((_, i) => (
@@ -267,7 +284,7 @@ export default function DashboardPage() {
                 <div>
                   <p className="text-[10px] font-bold text-zinc-400 dark:text-zinc-550 uppercase tracking-wider">{card.label}</p>
                   <div className="flex items-baseline gap-2 mt-1">
-                    <span className="text-2xl font-bold text-zinc-900 dark:text-zinc-50 tracking-tight">{card.value}</span>
+                    <span className="text-2xl font-bold text-zinc-900 dark:text-zinc-5  0 tracking-tight">{card.value}</span>
                     <span className={cn("text-[9px] font-bold px-1.5 py-0.25 rounded", card.trendBg)}>
                       {card.trend}
                     </span>
@@ -281,7 +298,7 @@ export default function DashboardPage() {
           </div>
         )}
 
-        {/* 2. 分析展示层 (左：细线趋势分析，右：系统核心指标盘) */}
+        {/* 2. 分析展示层 */}
         <div className="grid grid-cols-1 lg:grid-cols-12 divide-y lg:divide-y-0 lg:divide-x divide-zinc-200 dark:divide-zinc-800 border-b border-zinc-200 dark:border-zinc-800">
           
           {/* 左栏：流量走势 */}
@@ -326,36 +343,36 @@ export default function DashboardPage() {
             </div>
           </div>
 
-          {/* 右栏：核心负载指标与系统剩余度量 (3个环形 SVG 精致面板) */}
+          {/* 右栏：博客内容健康度与存储指标 (3个环形 SVG 精致面板) */}
           <div className="lg:col-span-4 p-4 flex flex-col justify-between">
             <div className="flex flex-col gap-0.5 mb-2">
               <h3 className="text-xs font-bold text-zinc-800 dark:text-zinc-200 flex items-center gap-1.5 uppercase tracking-wider">
                 <span className="w-0.75 h-3 bg-secondary rounded-full" />
-                推理节点负载与 Token 指标
+                博客内容健康度与存储指标
               </h3>
-              <p className="text-[10px] text-zinc-400">实时同步 AI 客户端调用数据</p>
+              <p className="text-[10px] text-zinc-400">实时同步内容整理及服务空间空闲状态</p>
             </div>
 
             {/* 三个环形进度度量器 (动态计算偏移) */}
             <div className="grid grid-cols-3 gap-2 py-2">
               {[
                 { 
-                  label: "Token 余额", 
-                  val: `${stats?.aiStorageMetrics?.tokenBalance ?? 84.5}%`, 
+                  label: "文章分类规整率", 
+                  val: `${stats?.aiStorageMetrics?.tokenBalance ?? 100.0}%`, 
                   color: "text-[#9B8AFB]", 
-                  percent: stats?.aiStorageMetrics?.tokenBalance ?? 84.5 
+                  percent: stats?.aiStorageMetrics?.tokenBalance ?? 100.0 
                 },
                 { 
-                  label: "推理成功率", 
-                  val: `${stats?.aiStorageMetrics?.inferenceSuccessRate ?? 99.8}%`, 
+                  label: "评论正常通过率", 
+                  val: `${stats?.aiStorageMetrics?.inferenceSuccessRate ?? 100.0}%`, 
                   color: "text-emerald-500", 
-                  percent: stats?.aiStorageMetrics?.inferenceSuccessRate ?? 99.8 
+                  percent: stats?.aiStorageMetrics?.inferenceSuccessRate ?? 100.0 
                 },
                 { 
-                  label: "存储空余", 
-                  val: `${stats?.aiStorageMetrics?.storageFree ?? 76.2}%`, 
+                  label: "存储空间空闲率", 
+                  val: `${stats?.aiStorageMetrics?.storageFree ?? 75.0}%`, 
                   color: "text-[#4ea3ff]", 
-                  percent: stats?.aiStorageMetrics?.storageFree ?? 76.2 
+                  percent: stats?.aiStorageMetrics?.storageFree ?? 75.0 
                 },
               ].map((ring) => (
                 <div key={ring.label} className="flex flex-col items-center gap-1 text-center">
@@ -386,14 +403,14 @@ export default function DashboardPage() {
             <div className="bg-zinc-50 dark:bg-zinc-900/30 border border-zinc-200 dark:border-zinc-800 rounded-lg p-2.5 flex items-center justify-between text-[10px] font-medium">
               <div className="flex items-center gap-1.5 text-zinc-500">
                 <Activity size={12} className="text-[#9B8AFB]" />
-                <span>模型推理引擎状态:</span>
+                <span>数据库与物理空间状态:</span>
               </div>
-              <span className="font-mono font-bold text-emerald-500 uppercase">健康 (Active)</span>
+              <span className="font-mono font-bold text-emerald-500 uppercase">运行良好 (Normal)</span>
             </div>
           </div>
         </div>
 
-        {/* 3. 数据列表与交互命令面板 (下半部，左右分割) */}
+        {/* 3. 数据列表与交互命令面板 */}
         <div className="grid grid-cols-1 lg:grid-cols-12 divide-y lg:divide-y-0 lg:divide-x divide-zinc-200 dark:divide-zinc-800">
           
           {/* 左栏：最近发布文章数据展示 */}
