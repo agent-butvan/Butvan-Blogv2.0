@@ -16,27 +16,29 @@ import java.io.InputStream;
 public interface FileStorageService {
 
     /**
-     * 上传文件到存储介质
+     * 上传文件到存储介质（带分类目录规划）
      *
      * @param file         MultipartFile 上传文件
      * @param objectName   存储对象名（如 UUID 文件名，不含路径前缀）
+     * @param category     分类前缀目录（如 AVATAR, ARTICLE 等）
      * @param contentType  MIME 类型
      * @return 文件的访问 URL 或相对路径
      * @throws IOException IO 异常
      */
-    String upload(MultipartFile file, String objectName, String contentType) throws IOException;
+    String upload(MultipartFile file, String objectName, String category, String contentType) throws IOException;
 
     /**
-     * 从 InputStream 上传文件（适用于非 MultipartFile 场景）
+     * 从 InputStream 上传文件（适用于非 MultipartFile 场景，带分类目录规划）
      *
      * @param inputStream  输入流
      * @param objectName   存储对象名
+     * @param category     分类前缀目录（如 AVATAR, ARTICLE 等）
      * @param contentType  MIME 类型
      * @param size         文件大小（字节）
      * @return 文件的访问 URL 或相对路径
      * @throws IOException IO 异常
      */
-    String upload(InputStream inputStream, String objectName, String contentType, long size) throws IOException;
+    String upload(InputStream inputStream, String objectName, String category, String contentType, long size) throws IOException;
 
     /**
      * 删除存储介质中的文件

@@ -35,5 +35,11 @@ public class StorageProperties {
 
         /** 默认存储桶名称 */
         private String bucket = "butvan-blog";
+
+        /** 是否为公共只读存储桶（为 true 时使用永久直连链接，否则使用带有效期的预签名链接） */
+        private Boolean publicRead = true;
+
+        /** 自定义访问域名（例如配合 CDN，配置为：https://cdn.butvan.com） */
+        private String customDomain;
     }
 }
