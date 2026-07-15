@@ -34,19 +34,21 @@ public class MinioFileStorageService implements FileStorageService {
     }
 
     @Override
-    public String upload(MultipartFile file, String objectName, String contentType) throws IOException {
+    public String upload(MultipartFile file, String objectName, String category, String contentType) throws IOException {
         String bucket = storageProperties.getMinio().getBucket();
-        minioUtils.upload(bucket, objectName, file.getInputStream(), contentType, file.getSize());
-        log.info("MinIO 文件上传成功: {}/{}", bucket, objectName);
-        return getAccessUrl(objectName);
+        String actualObjectName = getActualObjectName(category, objectName);
+        minioUtils.upload(bucket, actualObjectName, file.getInputStream(), contentType, file.getSize());
+        log.info("MinIO 文件上传成功: {}/{}", bucket, actualObjectName);
+        return getAccessUrl(actualObjectName);
     }
 
     @Override
-    public String upload(InputStream inputStream, String objectName, String contentType, long size) throws IOException {
+    public String upload(InputStream inputStream, String objectName, String category, String contentType, long size) throws IOException {
         String bucket = storageProperties.getMinio().getBucket();
-        minioUtils.upload(bucket, objectName, inputStream, contentType, size);
-        log.info("MinIO 文件（流）上传成功: {}/{}", bucket, objectName);
-        return getAccessUrl(objectName);
+        String actualObjectName = getActualObjectName(category, objectName);
+        minioUtils.upload(bucket, actualObjectName, inputStream, contentType, size);
+        log.info("MinIO 文件（流）上传成功: {}/{}", bucket, actualObjectName);
+        return getAccessUrl(actualObjectName);
     }
 
     @Override
@@ -57,8 +59,33 @@ public class MinioFileStorageService implements FileStorageService {
 
     @Override
     public String getAccessUrl(String objectName) {
-        String bucket = storageProperties.getMinio().getBucket();
-        // 生成 7 天有效的预签名 URL
-        return minioUtils.getPresignedUrl(bucket, objectName, 7, TimeUnit.DAYS);
+        StorageProperties.Minio cfg = storageProperties.getMinio();
+        if (Boolean.TRUE.equals(cfg.getPublicRead())) {
+            // 公共桶返回直连的永久 URL
+            String domain = cfg.getCustomDomain();
+            if (org.springframework.util.StringUtils.hasText(domain)) {
+                // 使用自定义域名（例如：https://cdn.butvan.com/AVATAR/20260715/uuid.png）
+                String base = domain.endsWith("/") ? domain : domain + "/";
+                return base + objectName;
+            } else {
+                // 使用默认端点拼接（例如：http://127.0.0.1:9000/butvan-blog/AVATAR/20260715/uuid.png）
+                String endpoint = cfg.getEndpoint();
+                String base = endpoint.endsWith("/") ? endpoint : endpoint + "/";
+                return base + cfg.getBucket() + "/" + objectName;
+            }
+        } else {
+            // 私有桶，生成 7 天有效的预签名 URL
+            String bucket = cfg.getBucket();
+            return minioUtils.getPresignedUrl(bucket, objectName, 7, TimeUnit.DAYS);
+        }
+    }
+
+    /**
+     * 拼接实际的存储对象名（格式：[分类大写]/[当前日期yyyyMMdd]/[原始UUID文件名]）
+     */
+    private String getActualObjectName(String category, String objectName) {
+        String datePrefix = java.time.LocalDate.now().format(java.time.format.DateTimeFormatter.ofPattern("yyyyMMdd"));
+        String cleanCategory = org.springframework.util.StringUtils.hasText(category) ? category.toUpperCase() : "MANUAL";
+        return cleanCategory + "/" + datePrefix + "/" + objectName;
     }
 }

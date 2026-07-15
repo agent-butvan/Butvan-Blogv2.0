@@ -30,21 +30,23 @@ public class LocalFileStorageService implements FileStorageService {
     }
 
     @Override
-    public String upload(MultipartFile file, String objectName, String contentType) throws IOException {
-        ensureUploadDirExists();
-        File destFile = new File(uploadDir, objectName);
+    public String upload(MultipartFile file, String objectName, String category, String contentType) throws IOException {
+        String actualObjectName = getActualObjectName(category, objectName);
+        File destFile = new File(uploadDir, actualObjectName);
+        ensureParentDirExists(destFile);
         file.transferTo(destFile);
         log.info("本地文件上传成功: {}", destFile.getAbsolutePath());
-        return "/uploads/" + objectName;
+        return "/uploads/" + actualObjectName;
     }
 
     @Override
-    public String upload(InputStream inputStream, String objectName, String contentType, long size) throws IOException {
-        ensureUploadDirExists();
-        File destFile = new File(uploadDir, objectName);
+    public String upload(InputStream inputStream, String objectName, String category, String contentType, long size) throws IOException {
+        String actualObjectName = getActualObjectName(category, objectName);
+        File destFile = new File(uploadDir, actualObjectName);
+        ensureParentDirExists(destFile);
         Files.copy(inputStream, destFile.toPath(), StandardCopyOption.REPLACE_EXISTING);
         log.info("本地文件（流）上传成功: {}", destFile.getAbsolutePath());
-        return "/uploads/" + objectName;
+        return "/uploads/" + actualObjectName;
     }
 
     @Override
@@ -70,13 +72,22 @@ public class LocalFileStorageService implements FileStorageService {
     }
 
     /**
-     * 确保上传目录存在
+     * 确保父级目录存在
      */
-    private void ensureUploadDirExists() {
-        File dir = new File(uploadDir);
-        if (!dir.exists()) {
-            dir.mkdirs();
+    private void ensureParentDirExists(File file) {
+        File parent = file.getParentFile();
+        if (parent != null && !parent.exists()) {
+            parent.mkdirs();
         }
+    }
+
+    /**
+     * 拼接实际的本地存储对象路径名（格式：[分类大写]/[当前日期yyyyMMdd]/[原始UUID文件名]）
+     */
+    private String getActualObjectName(String category, String objectName) {
+        String datePrefix = java.time.LocalDate.now().format(java.time.format.DateTimeFormatter.ofPattern("yyyyMMdd"));
+        String cleanCategory = org.springframework.util.StringUtils.hasText(category) ? category.toUpperCase() : "MANUAL";
+        return cleanCategory + File.separator + datePrefix + File.separator + objectName;
     }
 }
 
