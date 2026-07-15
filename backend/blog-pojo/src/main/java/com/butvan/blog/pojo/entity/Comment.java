@@ -96,7 +96,7 @@ public class Comment {
             this.isAuthorReplied = false;
         }
         if (this.isAuthor == null) {
-            this.isAuthor = this.user != null;
+            this.isAuthor = this.user != null && "ADMIN".equalsIgnoreCase(this.user.getRole());
         }
         if (this.isPinned == null) {
             this.isPinned = false;

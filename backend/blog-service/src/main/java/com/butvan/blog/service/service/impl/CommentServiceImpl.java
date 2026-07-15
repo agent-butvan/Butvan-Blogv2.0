@@ -84,7 +84,7 @@ public class CommentServiceImpl implements CommentService {
                     } else {
                         avatarUrl = getGravatarUrl(c.getVisitorEmail());
                     }
-                    boolean isAuthor = (c.getIsAuthor() != null && c.getIsAuthor()) || (c.getUser() != null);
+                    boolean isAuthor = (c.getIsAuthor() != null && c.getIsAuthor()) || (c.getUser() != null && "ADMIN".equalsIgnoreCase(c.getUser().getRole()));
                     return CommentVO.builder()
                             .id(c.getId())
                             .articleId(c.getArticle().getId())
@@ -233,7 +233,7 @@ public class CommentServiceImpl implements CommentService {
             }
         }
 
-        boolean isAuthor = (saved.getIsAuthor() != null && saved.getIsAuthor()) || (saved.getUser() != null);
+        boolean isAuthor = (saved.getIsAuthor() != null && saved.getIsAuthor()) || (saved.getUser() != null && "ADMIN".equalsIgnoreCase(saved.getUser().getRole()));
         return CommentVO.builder()
                 .id(saved.getId())
                 .articleId(saved.getArticle().getId())
@@ -360,7 +360,7 @@ public class CommentServiceImpl implements CommentService {
                                     : parent.getVisitorName();
                         }
                     }
-                    boolean isAuthor = (c.getIsAuthor() != null && c.getIsAuthor()) || (c.getUser() != null);
+                    boolean isAuthor = (c.getIsAuthor() != null && c.getIsAuthor()) || (c.getUser() != null && "ADMIN".equalsIgnoreCase(c.getUser().getRole()));
 
                     return CommentVO.builder()
                             .id(c.getId())
@@ -449,7 +449,7 @@ public class CommentServiceImpl implements CommentService {
         article.setCommentCount(approvedCount);
         articleRepository.save(article);
 
-        boolean isAuthor = (savedReply.getIsAuthor() != null && savedReply.getIsAuthor()) || (savedReply.getUser() != null);
+        boolean isAuthor = (savedReply.getIsAuthor() != null && savedReply.getIsAuthor()) || (savedReply.getUser() != null && "ADMIN".equalsIgnoreCase(savedReply.getUser().getRole()));
         return CommentVO.builder()
                 .id(savedReply.getId())
                 .articleId(savedReply.getArticle().getId())
