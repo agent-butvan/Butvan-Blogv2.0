@@ -30,4 +30,13 @@ public class DashboardStatsVO {
 
     /** 最近发布的文章列表 */
     private List<RecentArticleVO> recentArticles;
+
+    /** 系统负载资源指标 */
+    private SystemMetricsVO systemMetrics;
+
+    /** AI推理与存储空余指标 */
+    private AiStorageMetricsVO aiStorageMetrics;
+
+    /** 7 日流量与访问走势数据 */
+    private List<TrafficTrendVO> trafficTrend;
 }
