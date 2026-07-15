@@ -76,10 +76,11 @@ public class MediaServiceImpl implements MediaService {
             Media existingMedia = existingMedias.get(0);
             log.info("触发秒传，文件 SHA-256 为: {}, 物理路径: {}", sha256, existingMedia.getFilePath());
             
+            String freshUrl = fileStorageService.getAccessUrl(existingMedia.getFilePath());
             Media newMedia = Media.builder()
                     .fileName(originalFilename)
                     .filePath(existingMedia.getFilePath())
-                    .fileUrl(existingMedia.getFileUrl())
+                    .fileUrl(freshUrl)
                     .fileType(existingMedia.getFileType())
                     .mimeType(existingMedia.getMimeType())
                     .fileSize(existingMedia.getFileSize())
