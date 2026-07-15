@@ -13,6 +13,7 @@ import {
 import apiClient from "@/lib/api";
 import type { ApiResponse } from "@/types/common";
 import { cn } from "@heroui/react";
+import TrafficTrendChart from "@/components/dashboard/TrafficTrendChart";
 
 /** 仪表盘统计数据 */
 interface DashboardStats {
@@ -141,43 +142,6 @@ export default function DashboardPage() {
     };
   }, []);
 
-  // 实时根据 backend 传回的 trafficTrend 计算德芙般丝滑的 SVG 折线路径
-  const generateChartPaths = () => {
-    const trend = stats?.trafficTrend || [];
-    if (trend.length === 0) {
-      // 动态兜底展示数据
-      return {
-        linePath: "M 0 95 Q 50 105 100 75 T 200 60 T 300 85 T 400 40 T 500 50 T 600 25",
-        fillPath: "M 0 130 L 0 95 Q 50 105 100 75 T 200 60 T 300 85 T 400 40 T 500 50 T 600 25 L 600 130 Z",
-        maxPv: 100
-      };
-    }
-
-    const maxPv = Math.max(...trend.map(d => d.pv), 10);
-    const points = trend.map((item, i) => {
-      const x = i * 100; // 600 / 6 = 100
-      const y = 115 - (item.pv / maxPv) * 95; // 映射在 15px ~ 115px 画布安全高度区间
-      return { x, y };
-    });
-
-    // 构建平滑的三次贝塞尔样条切线
-    let linePath = `M ${points[0].x} ${points[0].y}`;
-    for (let i = 0; i < points.length - 1; i++) {
-      const curr = points[i];
-      const next = points[i + 1];
-      const cp1x = curr.x + 50;
-      const cp1y = curr.y;
-      const cp2x = next.x - 50;
-      const cp2y = next.y;
-      linePath += ` C ${cp1x} ${cp1y}, ${cp2x} ${cp2y}, ${next.x} ${next.y}`;
-    }
-
-    const fillPath = `${linePath} L 600 130 L 0 130 Z`;
-    return { linePath, fillPath, maxPv };
-  };
-
-  const { linePath, fillPath } = generateChartPaths();
-
   const statCards = [
     { 
       label: "文章总数", 
@@ -220,7 +184,7 @@ export default function DashboardPage() {
       <div className="flex flex-col md:flex-row md:items-end justify-between pb-3 border-b border-zinc-200 dark:border-zinc-800 gap-4">
         <div className="flex flex-col gap-0.5 text-left">
           {/* 日期小字 */}
-          <span className="text-[10px] font-medium text-zinc-400 dark:text-zinc-500 tracking-wider">
+          <span className="text-[10px] font-medium text-zinc-400 dark:text-zinc-555 tracking-wider">
             {formattedDate || "今天是6月21日星期日"}
           </span>
           
@@ -243,7 +207,7 @@ export default function DashboardPage() {
               </div>
               <p className="text-xs text-zinc-600 dark:text-zinc-400 font-normal pl-3 flex items-center flex-wrap gap-1">
                 <span>{quote.text}</span>
-                <span className="text-[10px] text-zinc-400 dark:text-zinc-500 font-medium tracking-wide">
+                <span className="text-[10px] text-zinc-400 dark:text-zinc-555 font-medium tracking-wide">
                   —— {quote.author} {quote.source}
                 </span>
               </p>
@@ -252,7 +216,7 @@ export default function DashboardPage() {
         </div>
         
         {/* 系统实时微件状态 */}
-        <div className="flex items-center gap-3 text-[10px] text-zinc-400 dark:text-zinc-550 font-mono bg-white dark:bg-zinc-900/50 px-2.5 py-1.25 rounded-md border border-zinc-200 dark:border-zinc-800 shadow-xs shrink-0 self-start md:self-end">
+        <div className="flex items-center gap-3 text-[10px] text-zinc-400 dark:text-zinc-555 font-mono bg-white dark:bg-zinc-900/50 px-2.5 py-1.25 rounded-md border border-zinc-200 dark:border-zinc-800 shadow-xs shrink-0 self-start md:self-end">
           <div className="flex items-center gap-1">
             <span className="w-1.5 h-1.5 rounded-full bg-emerald-500 animate-pulse" />
             <span>API: 正常 ({stats?.systemMetrics?.apiDelay ?? 14}ms)</span>
@@ -282,9 +246,9 @@ export default function DashboardPage() {
             {statCards.map((card) => (
               <div key={card.label} className="p-4 flex items-center justify-between">
                 <div>
-                  <p className="text-[10px] font-bold text-zinc-400 dark:text-zinc-550 uppercase tracking-wider">{card.label}</p>
+                  <p className="text-[10px] font-bold text-zinc-400 dark:text-zinc-555 uppercase tracking-wider">{card.label}</p>
                   <div className="flex items-baseline gap-2 mt-1">
-                    <span className="text-2xl font-bold text-zinc-900 dark:text-zinc-5  0 tracking-tight">{card.value}</span>
+                    <span className="text-2xl font-bold text-zinc-900 dark:text-zinc-50 tracking-tight">{card.value}</span>
                     <span className={cn("text-[9px] font-bold px-1.5 py-0.25 rounded", card.trendBg)}>
                       {card.trend}
                     </span>
@@ -301,7 +265,7 @@ export default function DashboardPage() {
         {/* 2. 分析展示层 */}
         <div className="grid grid-cols-1 lg:grid-cols-12 divide-y lg:divide-y-0 lg:divide-x divide-zinc-200 dark:divide-zinc-800 border-b border-zinc-200 dark:border-zinc-800">
           
-          {/* 左栏：流量走势 */}
+          {/* 左栏：流量走势 (挂载新图表组件) */}
           <div className="lg:col-span-8 p-4">
             <div className="flex items-center justify-between mb-2">
               <h3 className="text-xs font-bold text-zinc-800 dark:text-zinc-200 flex items-center gap-1.5 uppercase tracking-wider">
@@ -313,34 +277,8 @@ export default function DashboardPage() {
               </span>
             </div>
             
-            {/* SVG 极简流畅渐变折线图 (动态坐标渲染) */}
-            <div className="h-40 w-full relative flex items-center justify-center pt-2">
-              <svg viewBox="0 0 600 130" className="w-full h-full" preserveAspectRatio="none">
-                <defs>
-                  <linearGradient id="chartGradient" x1="0" y1="0" x2="0" y2="1">
-                    <stop offset="0%" stopColor="#9B8AFB" stopOpacity="0.25"/>
-                    <stop offset="100%" stopColor="#9B8AFB" stopOpacity="0.01"/>
-                  </linearGradient>
-                </defs>
-                {/* 刻度辅助线 */}
-                <line x1="0" y1="30" x2="600" y2="30" stroke="currentColor" className="text-zinc-100 dark:text-zinc-900/40" strokeDasharray="3 3" />
-                <line x1="0" y1="65" x2="600" y2="65" stroke="currentColor" className="text-zinc-100 dark:text-zinc-900/40" strokeDasharray="3 3" />
-                <line x1="0" y1="100" x2="600" y2="100" stroke="currentColor" className="text-zinc-100 dark:text-zinc-900/40" strokeDasharray="3 3" />
-                
-                {/* 走势阴影填充 */}
-                <path d={fillPath} fill="url(#chartGradient)" />
-                {/* 走势主曲线 */}
-                <path d={linePath} fill="none" stroke="#9B8AFB" strokeWidth="2.5" strokeLinecap="round" />
-              </svg>
-            </div>
-            
-            {/* 日期刻度底标 (动态绑定) */}
-            <div className="flex justify-between items-center text-[9px] text-zinc-400 dark:text-zinc-550 font-mono mt-1 px-0.5">
-              <span>{stats?.trafficTrend?.[0]?.date || "06-09"}</span>
-              <span>{stats?.trafficTrend?.[2]?.date || "06-11"}</span>
-              <span>{stats?.trafficTrend?.[4]?.date || "06-13"}</span>
-              <span>今天 ({stats?.trafficTrend?.[6]?.date || "06-15"})</span>
-            </div>
+            {/* 封装后的高颜值交互图表组件 */}
+            <TrafficTrendChart data={stats?.trafficTrend || []} loading={loading} />
           </div>
 
           {/* 右栏：博客内容健康度与存储指标 (3个环形 SVG 精致面板) */}
@@ -394,7 +332,7 @@ export default function DashboardPage() {
                     </svg>
                     <span className="absolute text-[8px] font-mono font-bold text-zinc-700 dark:text-zinc-300">{ring.val}</span>
                   </div>
-                  <span className="text-[10px] text-zinc-400 dark:text-zinc-550 font-semibold">{ring.label}</span>
+                  <span className="text-[10px] text-zinc-400 dark:text-zinc-555 font-semibold">{ring.label}</span>
                 </div>
               ))}
             </div>
@@ -448,7 +386,7 @@ export default function DashboardPage() {
                             "text-[9px] font-bold px-1.5 py-0.5 rounded",
                             article.status === "PUBLISHED" 
                               ? "bg-emerald-500/10 text-emerald-600 dark:text-emerald-400" 
-                              : "bg-zinc-100 text-zinc-500 dark:bg-zinc-900/60 dark:text-zinc-500"
+                              : "bg-zinc-100 text-zinc-500 dark:bg-zinc-900/60 dark:text-zinc-555"
                           )}>
                             {article.status === "PUBLISHED" ? "已发布" : "草稿"}
                           </span>
@@ -456,7 +394,7 @@ export default function DashboardPage() {
                         <td className="py-2 text-right font-mono font-bold text-zinc-650 dark:text-zinc-400">
                           {article.viewCount}
                         </td>
-                        <td className="py-2 text-right text-zinc-400 dark:text-zinc-550 font-mono text-[10px]">
+                        <td className="py-2 text-right text-zinc-400 dark:text-zinc-555 font-mono text-[10px]">
                           {article.publishedAt
                             ? new Date(article.publishedAt).toLocaleDateString("zh-CN")
                             : "—"}
@@ -500,9 +438,9 @@ export default function DashboardPage() {
                       <span className="text-xs font-semibold text-zinc-700 dark:text-zinc-300 group-hover:text-primary transition-colors">
                         {item.label}
                       </span>
-                      <span className="text-[9px] text-zinc-400 dark:text-zinc-550">{item.desc}</span>
+                      <span className="text-[9px] text-zinc-400 dark:text-zinc-555">{item.desc}</span>
                     </div>
-                    <kbd className="inline-flex h-4.5 items-center rounded border border-zinc-200 dark:border-zinc-800 bg-white dark:bg-zinc-900 px-1.25 font-mono text-[9px] font-bold text-zinc-400 dark:text-zinc-550 shadow-xs">
+                    <kbd className="inline-flex h-4.5 items-center rounded border border-zinc-200 dark:border-zinc-800 bg-white dark:bg-zinc-900 px-1.25 font-mono text-[9px] font-bold text-zinc-400 dark:text-zinc-555 shadow-xs">
                       {item.key}
                     </kbd>
                   </a>
@@ -511,7 +449,7 @@ export default function DashboardPage() {
             </div>
 
             {/* 提示挂件 */}
-            <div className="text-[10px] text-zinc-400 dark:text-zinc-500 leading-normal bg-zinc-50 dark:bg-zinc-900/10 border border-zinc-200 dark:border-zinc-800 p-2.5 rounded-lg flex items-start gap-2">
+            <div className="text-[10px] text-zinc-400 dark:text-zinc-555 leading-normal bg-zinc-50 dark:bg-zinc-900/10 border border-zinc-200 dark:border-zinc-800 p-2.5 rounded-lg flex items-start gap-2">
               <span className="text-[#9B8AFB] mt-0.5 font-bold">ⓘ</span>
               <span>您可以通过顶栏的“控制中心”面包屑与右侧的主题切换来快速导航并切换视觉效果。</span>
             </div>
