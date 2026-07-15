@@ -53,7 +53,7 @@ public class WeiXinAuthLoginServiceImpl implements WeiXinAuthLoginService {
         // 4. 上传二维码图片到文件存储（自动适配本地 / MinIO）
         String objectName = "qrcode/" + UUID.randomUUID() + ".jpg";
         try (InputStream inputStream = new ByteArrayInputStream(qrCodeImage)) {
-            String accessUrl = fileStorageService.upload(inputStream, objectName, "image/jpg", qrCodeImage.length);
+            String accessUrl = fileStorageService.upload(inputStream, objectName, "WECHAT", "image/jpg", qrCodeImage.length);
             log.info("微信二维码图片已上传，访问地址: {}", accessUrl);
 
             // 5. 构造一个之后与服务端 ws 连接的id

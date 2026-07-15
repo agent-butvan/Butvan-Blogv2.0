@@ -416,7 +416,7 @@ public class AuthServiceImpl implements AuthService {
             }
 
             // 7. 上传新头像
-            String accessUrl = fileStorageService.upload(file, objectName, contentType);
+            String accessUrl = fileStorageService.upload(file, objectName, "USER_AVATAR", contentType);
             log.info("用户 [{}] 头像上传成功: {}", username, accessUrl);
 
             // 8. 更新数据库中的头像 URL
