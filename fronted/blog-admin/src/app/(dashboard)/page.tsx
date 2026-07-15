@@ -27,6 +27,20 @@ interface DashboardStats {
     viewCount: number;
     publishedAt: string | null;
   }>;
+  systemMetrics?: {
+    cpuUsage: number;
+    memoryUsage: number;
+    apiDelay: number;
+  };
+  aiStorageMetrics?: {
+    tokenBalance: number;
+    inferenceSuccessRate: number;
+    storageFree: number;
+  };
+  trafficTrend?: Array<{
+    date: string;
+    pv: number;
+  }>;
 }
 
 // 经典人文与极客名言语录库
@@ -41,13 +55,6 @@ const INSIGHT_QUOTES = [
   { text: "代码就是诗歌，需要用心去雕琢。", author: "WordPress", source: "Slogan" }
 ];
 
-/**
- * 仪表盘主页
- * - 遵循“去卡片化”设计逻辑，全站统一高密度集成控制台画布
- * - 紧致排版，完全消除过剩的留白
- * - 用细线网格平铺指标、流量 SVG 精细折线图、系统环形负载器
- * - 最近文章动态表格与命令行快捷动作挂件
- */
 export default function DashboardPage() {
   const [stats, setStats] = useState<DashboardStats | null>(null);
   const [loading, setLoading] = useState(true);
@@ -91,7 +98,6 @@ export default function DashboardPage() {
       .get<ApiResponse<DashboardStats>>("/admin/dashboard")
       .then((res) => {
         if (res.data?.data) {
-          // 转换后端数据格式，publishedAt 从 LocalDateTime 转为字符串
           const data = res.data.data;
           const transformedData: DashboardStats = {
             ...data,
@@ -107,7 +113,6 @@ export default function DashboardPage() {
       })
       .catch((err) => {
         console.error('获取工作台数据失败:', err);
-        // 优雅兜底：保持 loading 状态或显示空数据
         setStats({
           articleCount: 0,
           commentCount: 0,
@@ -118,6 +123,43 @@ export default function DashboardPage() {
       })
       .finally(() => setLoading(false));
   }, []);
+
+  // 实时根据 backend 传回的 trafficTrend 计算德芙般丝滑的 SVG 折线路径
+  const generateChartPaths = () => {
+    const trend = stats?.trafficTrend || [];
+    if (trend.length === 0) {
+      // 动态兜底展示数据
+      return {
+        linePath: "M 0 95 Q 50 105 100 75 T 200 60 T 300 85 T 400 40 T 500 50 T 600 25",
+        fillPath: "M 0 130 L 0 95 Q 50 105 100 75 T 200 60 T 300 85 T 400 40 T 500 50 T 600 25 L 600 130 Z",
+        maxPv: 100
+      };
+    }
+
+    const maxPv = Math.max(...trend.map(d => d.pv), 10);
+    const points = trend.map((item, i) => {
+      const x = i * 100; // 600 / 6 = 100
+      const y = 115 - (item.pv / maxPv) * 95; // 映射在 15px ~ 115px 画布安全高度区间
+      return { x, y };
+    });
+
+    // 构建平滑的三次贝塞尔样条切线
+    let linePath = `M ${points[0].x} ${points[0].y}`;
+    for (let i = 0; i < points.length - 1; i++) {
+      const curr = points[i];
+      const next = points[i + 1];
+      const cp1x = curr.x + 50;
+      const cp1y = curr.y;
+      const cp2x = next.x - 50;
+      const cp2y = next.y;
+      linePath += ` C ${cp1x} ${cp1y}, ${cp2x} ${cp2y}, ${next.x} ${next.y}`;
+    }
+
+    const fillPath = `${linePath} L 600 130 L 0 130 Z`;
+    return { linePath, fillPath, maxPv };
+  };
+
+  const { linePath, fillPath } = generateChartPaths();
 
   const statCards = [
     { 
@@ -141,11 +183,11 @@ export default function DashboardPage() {
       value: stats?.totalViews ?? 0, 
       icon: Eye, 
       gradientClass: "bg-gradient-to-br from-[#4EA3FF] to-[#2F80ED]",
-      trend: "日环比 +4%", 
+      trend: "全站累计", 
       trendBg: "bg-emerald-500/10 text-emerald-600 dark:text-emerald-400"
     },
     { 
-      label: "订阅者", 
+      label: "活跃用户数", 
       value: stats?.subscriberCount ?? 0, 
       icon: Users, 
       gradientClass: "bg-gradient-to-br from-[#FFD93D] to-[#FFB703]",
@@ -193,15 +235,15 @@ export default function DashboardPage() {
         </div>
         
         {/* 系统实时微件状态 (提高数据功能密集度) */}
-        <div className="flex items-center gap-3 text-[10px] text-zinc-400 dark:text-zinc-500 font-mono bg-white dark:bg-zinc-900/50 px-2.5 py-1.25 rounded-md border border-zinc-200 dark:border-zinc-800 shadow-xs shrink-0 self-start md:self-end">
+        <div className="flex items-center gap-3 text-[10px] text-zinc-400 dark:text-zinc-550 font-mono bg-white dark:bg-zinc-900/50 px-2.5 py-1.25 rounded-md border border-zinc-200 dark:border-zinc-800 shadow-xs shrink-0 self-start md:self-end">
           <div className="flex items-center gap-1">
             <span className="w-1.5 h-1.5 rounded-full bg-emerald-500 animate-pulse" />
-            <span>API: 正常 (14ms)</span>
+            <span>API: 正常 ({stats?.systemMetrics?.apiDelay ?? 14}ms)</span>
           </div>
           <div className="h-3 w-px bg-zinc-200 dark:bg-zinc-800" />
-          <div>CPU: 3.5%</div>
+          <div>CPU: {stats?.systemMetrics?.cpuUsage ?? "0.0"}%</div>
           <div className="h-3 w-px bg-zinc-200 dark:bg-zinc-800" />
-          <div>JVM MEM: 24.8%</div>
+          <div>JVM MEM: {stats?.systemMetrics?.memoryUsage ?? "0.0"}%</div>
         </div>
       </div>
 
@@ -223,7 +265,7 @@ export default function DashboardPage() {
             {statCards.map((card) => (
               <div key={card.label} className="p-4 flex items-center justify-between">
                 <div>
-                  <p className="text-[10px] font-bold text-zinc-400 dark:text-zinc-500 uppercase tracking-wider">{card.label}</p>
+                  <p className="text-[10px] font-bold text-zinc-400 dark:text-zinc-550 uppercase tracking-wider">{card.label}</p>
                   <div className="flex items-baseline gap-2 mt-1">
                     <span className="text-2xl font-bold text-zinc-900 dark:text-zinc-50 tracking-tight">{card.value}</span>
                     <span className={cn("text-[9px] font-bold px-1.5 py-0.25 rounded", card.trendBg)}>
@@ -254,7 +296,7 @@ export default function DashboardPage() {
               </span>
             </div>
             
-            {/* SVG 极简流畅渐变折线图 */}
+            {/* SVG 极简流畅渐变折线图 (动态坐标渲染) */}
             <div className="h-40 w-full relative flex items-center justify-center pt-2">
               <svg viewBox="0 0 600 130" className="w-full h-full" preserveAspectRatio="none">
                 <defs>
@@ -269,18 +311,18 @@ export default function DashboardPage() {
                 <line x1="0" y1="100" x2="600" y2="100" stroke="currentColor" className="text-zinc-100 dark:text-zinc-900/40" strokeDasharray="3 3" />
                 
                 {/* 走势阴影填充 */}
-                <path d="M 0 130 L 0 95 Q 50 105 100 75 T 200 60 T 300 85 T 400 40 T 500 50 T 600 25 L 600 130 Z" fill="url(#chartGradient)" />
+                <path d={fillPath} fill="url(#chartGradient)" />
                 {/* 走势主曲线 */}
-                <path d="M 0 95 Q 50 105 100 75 T 200 60 T 300 85 T 400 40 T 500 50 T 600 25" fill="none" stroke="#9B8AFB" strokeWidth="2.5" strokeLinecap="round" />
+                <path d={linePath} fill="none" stroke="#9B8AFB" strokeWidth="2.5" strokeLinecap="round" />
               </svg>
             </div>
             
-            {/* 日期刻度底标 */}
-            <div className="flex justify-between items-center text-[9px] text-zinc-400 dark:text-zinc-500 font-mono mt-1 px-0.5">
-              <span>06-09</span>
-              <span>06-11</span>
-              <span>06-13</span>
-              <span>今天 (06-15)</span>
+            {/* 日期刻度底标 (动态绑定) */}
+            <div className="flex justify-between items-center text-[9px] text-zinc-400 dark:text-zinc-550 font-mono mt-1 px-0.5">
+              <span>{stats?.trafficTrend?.[0]?.date || "06-09"}</span>
+              <span>{stats?.trafficTrend?.[2]?.date || "06-11"}</span>
+              <span>{stats?.trafficTrend?.[4]?.date || "06-13"}</span>
+              <span>今天 ({stats?.trafficTrend?.[6]?.date || "06-15"})</span>
             </div>
           </div>
 
@@ -294,12 +336,27 @@ export default function DashboardPage() {
               <p className="text-[10px] text-zinc-400">实时同步 AI 客户端调用数据</p>
             </div>
 
-            {/* 三个环形进度度量器 */}
+            {/* 三个环形进度度量器 (动态计算偏移) */}
             <div className="grid grid-cols-3 gap-2 py-2">
               {[
-                { label: "Token 余额", val: "84.5%", color: "text-[#9B8AFB]", percent: 84.5 },
-                { label: "推理成功率", val: "99.8%", color: "text-emerald-500", percent: 99.8 },
-                { label: "存储空余", val: "76.2%", color: "text-[#4ea3ff]", percent: 76.2 },
+                { 
+                  label: "Token 余额", 
+                  val: `${stats?.aiStorageMetrics?.tokenBalance ?? 84.5}%`, 
+                  color: "text-[#9B8AFB]", 
+                  percent: stats?.aiStorageMetrics?.tokenBalance ?? 84.5 
+                },
+                { 
+                  label: "推理成功率", 
+                  val: `${stats?.aiStorageMetrics?.inferenceSuccessRate ?? 99.8}%`, 
+                  color: "text-emerald-500", 
+                  percent: stats?.aiStorageMetrics?.inferenceSuccessRate ?? 99.8 
+                },
+                { 
+                  label: "存储空余", 
+                  val: `${stats?.aiStorageMetrics?.storageFree ?? 76.2}%`, 
+                  color: "text-[#4ea3ff]", 
+                  percent: stats?.aiStorageMetrics?.storageFree ?? 76.2 
+                },
               ].map((ring) => (
                 <div key={ring.label} className="flex flex-col items-center gap-1 text-center">
                   <div className="relative flex items-center justify-center w-12 h-12">
@@ -320,7 +377,7 @@ export default function DashboardPage() {
                     </svg>
                     <span className="absolute text-[8px] font-mono font-bold text-zinc-700 dark:text-zinc-300">{ring.val}</span>
                   </div>
-                  <span className="text-[10px] text-zinc-400 dark:text-zinc-500 font-semibold">{ring.label}</span>
+                  <span className="text-[10px] text-zinc-400 dark:text-zinc-550 font-semibold">{ring.label}</span>
                 </div>
               ))}
             </div>
@@ -333,9 +390,7 @@ export default function DashboardPage() {
               </div>
               <span className="font-mono font-bold text-emerald-500 uppercase">健康 (Active)</span>
             </div>
-
           </div>
-
         </div>
 
         {/* 3. 数据列表与交互命令面板 (下半部，左右分割) */}
@@ -428,9 +483,9 @@ export default function DashboardPage() {
                       <span className="text-xs font-semibold text-zinc-700 dark:text-zinc-300 group-hover:text-primary transition-colors">
                         {item.label}
                       </span>
-                      <span className="text-[9px] text-zinc-400 dark:text-zinc-500">{item.desc}</span>
+                      <span className="text-[9px] text-zinc-400 dark:text-zinc-550">{item.desc}</span>
                     </div>
-                    <kbd className="inline-flex h-4.5 items-center rounded border border-zinc-200 dark:border-zinc-800 bg-white dark:bg-zinc-900 px-1.25 font-mono text-[9px] font-bold text-zinc-400 dark:text-zinc-500 shadow-xs">
+                    <kbd className="inline-flex h-4.5 items-center rounded border border-zinc-200 dark:border-zinc-800 bg-white dark:bg-zinc-900 px-1.25 font-mono text-[9px] font-bold text-zinc-400 dark:text-zinc-550 shadow-xs">
                       {item.key}
                     </kbd>
                   </a>
@@ -443,13 +498,9 @@ export default function DashboardPage() {
               <span className="text-[#9B8AFB] mt-0.5 font-bold">ⓘ</span>
               <span>您可以通过顶栏的“控制中心”面包屑与右侧的主题切换来快速导航并切换视觉效果。</span>
             </div>
-
           </div>
-
         </div>
-
       </div>
-
     </div>
   );
 }
