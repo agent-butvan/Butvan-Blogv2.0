@@ -451,10 +451,8 @@ export default function CommentsPage() {
                       <div className="flex items-center gap-2 flex-wrap">
                         <span className="font-bold text-sm text-neutral-dark dark:text-zinc-200 leading-snug flex items-center">
                           <span>{comment.nickname}</span>
-                          {comment.userId ? (
+                          {comment.isAuthor ? (
                             <VerifiedBadge type="admin" />
-                          ) : comment.isAuthor ? (
-                            <VerifiedBadge type="author" />
                           ) : null}
                         </span>
                         {comment.replyTo && (
