@@ -20,4 +20,9 @@ public interface MediaRepository extends JpaRepository<Media, Long>, JpaSpecific
      * 根据文件哈希统计媒体记录数，用于判断多处引用与去重
      */
     long countByFileHash(String fileHash);
+
+    /**
+     * 查询指定状态且创建时间在特定时间点之前的媒体资源
+     */
+    java.util.List<Media> findByStatusAndCreatedAtBefore(Integer status, java.time.LocalDateTime dateTime);
 }

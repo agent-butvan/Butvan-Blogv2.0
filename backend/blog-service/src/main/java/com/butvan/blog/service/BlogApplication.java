@@ -14,6 +14,7 @@ import com.butvan.blog.common.properties.SecurityProperties;
 @EntityScan(basePackages = "com.butvan.blog.pojo.entity")
 @EnableJpaRepositories(basePackages = "com.butvan.blog.service.repository")
 @EnableConfigurationProperties({WeiXinProperties.class, StorageProperties.class, SecurityProperties.class})
+@org.springframework.scheduling.annotation.EnableScheduling
 public class BlogApplication {
     public static void main(String[] args) {
         SpringApplication.run(BlogApplication.class, args);
