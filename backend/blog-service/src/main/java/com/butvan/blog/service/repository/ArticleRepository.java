@@ -50,6 +50,11 @@ public interface ArticleRepository extends JpaRepository<Article, Long>, JpaSpec
     Long sumViewCountByStatus(String status);
 
     /**
+     * 统计没有分配任何分类的文章数
+     */
+    long countByCategoryIsNull();
+
+    /**
      * 查询最近发布的文章列表
      *
      * @param status   文章状态

@@ -16,6 +16,7 @@ import com.butvan.blog.pojo.vo.article.ArticleLikeVO;
 import com.butvan.blog.service.repository.ArticleLikeRepository;
 import com.butvan.blog.service.repository.ArticleRepository;
 import com.butvan.blog.service.repository.CategoryRepository;
+import com.butvan.blog.service.repository.DailyStatsRepository;
 import com.butvan.blog.service.repository.TagRepository;
 import com.butvan.blog.service.repository.UserRepository;
 import com.butvan.blog.service.service.ArticleService;
@@ -48,10 +49,16 @@ public class ArticleServiceImpl implements ArticleService {
     private final TagRepository tagRepository;
     private final UserRepository userRepository;
     private final ArticleLikeRepository articleLikeRepository;
+    private final DailyStatsRepository dailyStatsRepository;
 
     @Override
     public PageResult pageArticles(ArticleQueryDTO queryDTO) {
         log.info("分页检索文章列表，参数: {}", queryDTO);
+        try {
+            dailyStatsRepository.incrementTodayPv();
+        } catch (Exception e) {
+            log.warn("累加每日流量PV失败: {}", e.getMessage());
+        }
         
         // 1. 解析分页参数 (前端传来的页码是 1-based, JPA 需要 0-based)
         int pageIndex = queryDTO.getPage() != null && queryDTO.getPage() > 0 ? queryDTO.getPage() - 1 : 0;
@@ -122,6 +129,11 @@ public class ArticleServiceImpl implements ArticleService {
     @Override
     public ArticleDetailVO getArticleDetail(String idOrSlug) {
         log.info("获取文章详情，标识: {}", idOrSlug);
+        try {
+            dailyStatsRepository.incrementTodayPv();
+        } catch (Exception e) {
+            log.warn("累加每日流量PV失败: {}", e.getMessage());
+        }
         Article article = null;
         try {
             Long id = Long.parseLong(idOrSlug);

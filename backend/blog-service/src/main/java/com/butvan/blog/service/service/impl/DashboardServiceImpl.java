@@ -1,9 +1,11 @@
 package com.butvan.blog.service.service.impl;
 
 import com.butvan.blog.pojo.entity.Article;
+import com.butvan.blog.pojo.entity.DailyStats;
 import com.butvan.blog.pojo.vo.dashboard.*;
 import com.butvan.blog.service.repository.ArticleRepository;
 import com.butvan.blog.service.repository.CommentRepository;
+import com.butvan.blog.service.repository.DailyStatsRepository;
 import com.butvan.blog.service.repository.UserRepository;
 import com.butvan.blog.service.service.DashboardService;
 import lombok.RequiredArgsConstructor;
@@ -12,8 +14,11 @@ import org.springframework.data.domain.PageRequest;
 import org.springframework.data.domain.Sort;
 import org.springframework.stereotype.Service;
 
+import java.time.LocalDate;
+import java.time.format.DateTimeFormatter;
 import java.util.ArrayList;
 import java.util.List;
+import java.util.Map;
 import java.util.stream.Collectors;
 
 /**
@@ -27,10 +32,11 @@ public class DashboardServiceImpl implements DashboardService {
     private final ArticleRepository articleRepository;
     private final CommentRepository commentRepository;
     private final UserRepository userRepository;
+    private final DailyStatsRepository dailyStatsRepository;
 
     @Override
     public DashboardStatsVO getDashboardStats() {
-        log.info("开始获取工作台统计数据...");
+        log.info("开始获取工作台真实统计数据...");
 
         // 1. 统计文章总数（已发布 + 草稿，不包含已删除）
         long articleCount = articleRepository.count();
@@ -47,7 +53,7 @@ public class DashboardServiceImpl implements DashboardService {
         }
         log.debug("累计访问量: {}", totalViews);
 
-        // 4. 订阅者数量（真实映射为：博客总注册用户数量）
+        // 4. 注册用户数（真实映射为：博客总注册用户数量）
         long subscriberCount = userRepository.count();
         log.debug("注册用户数: {}", subscriberCount);
 
@@ -101,7 +107,24 @@ public class DashboardServiceImpl implements DashboardService {
                 .apiDelay(apiDelay)
                 .build();
 
-        // 7. 计算 AI 推理与存储空余指标
+        // 7. 计算真实博客内容健康度与存储指标
+        // 指标 1：已分类文章规整率 (对应原 tokenBalance 字段渲染)
+        double tokenBalance = 100.0;
+        if (articleCount > 0) {
+            long uncategorizedCount = articleRepository.countByCategoryIsNull();
+            double rate = (double) (articleCount - uncategorizedCount) * 100.0 / articleCount;
+            tokenBalance = Math.round(rate * 10.0) / 10.0;
+        }
+
+        // 指标 2：正常评论比例 (对应原 inferenceSuccessRate 字段渲染)
+        double inferenceSuccessRate = 100.0;
+        if (commentCount > 0) {
+            long approvedCommentCount = commentRepository.countByStatus("APPROVED");
+            double rate = (double) approvedCommentCount * 100.0 / commentCount;
+            inferenceSuccessRate = Math.round(rate * 10.0) / 10.0;
+        }
+
+        // 指标 3：物理磁盘存储空闲率 (对应原 storageFree 字段渲染)
         double storageFree = 75.0; // 默认可用磁盘比例
         try {
             java.io.File file = new java.io.File(System.getProperty("user.dir"));
@@ -113,9 +136,6 @@ public class DashboardServiceImpl implements DashboardService {
         } catch (Throwable e) {
             log.warn("获取磁盘剩余空间失败，回退到默认: {}", e.getMessage());
         }
-
-        double inferenceSuccessRate = 99.6 + (Math.round(Math.random() * 3.0) / 10.0); // 99.6% ~ 99.9%
-        double tokenBalance = 80.0 + (java.time.LocalDate.now().getDayOfMonth() % 10) * 1.5; // 月份进度模拟 Token
         
         AiStorageMetricsVO aiStorageMetrics = AiStorageMetricsVO.builder()
                 .tokenBalance(tokenBalance)
@@ -123,25 +143,38 @@ public class DashboardServiceImpl implements DashboardService {
                 .storageFree(storageFree)
                 .build();
 
-        // 8. 估算 7 日 PV 流量动态波动曲线数据
+        // 8. 统计数据库中真实的 7 日 PV 流量动态波动曲线数据
         List<TrafficTrendVO> trafficTrend = new ArrayList<>();
-        java.time.LocalDate today = java.time.LocalDate.now();
-        java.time.format.DateTimeFormatter formatter = java.time.format.DateTimeFormatter.ofPattern("MM-dd");
-        
-        for (int i = 6; i >= 0; i--) {
-            java.time.LocalDate date = today.minusDays(i);
-            int dayOfWeek = date.getDayOfWeek().getValue();
-            
-            // 依据全站文章总阅读量算出一个合理的日均底数
-            long dailyAverage = Math.max(80, totalViews / 150); 
-            double dayWeight = (dayOfWeek == 6 || dayOfWeek == 7) ? 0.65 : 1.25; // 周六日下降，工作日攀升
-            double randomNoise = 0.9 + (Math.random() * 0.2); // 加入小幅高斯噪声
-            
-            int pv = (int) Math.round(dailyAverage * dayWeight * randomNoise);
-            trafficTrend.add(TrafficTrendVO.builder()
-                    .date(date.format(formatter))
-                    .pv(pv)
-                    .build());
+        LocalDate today = LocalDate.now();
+        LocalDate startDate = today.minusDays(6);
+        DateTimeFormatter formatter = DateTimeFormatter.ofPattern("MM-dd");
+
+        try {
+            // 获取数据库中这 7 天所有的 PV 统计记录
+            List<DailyStats> statsList = dailyStatsRepository.findByStatDateBetweenOrderByStatDateAsc(startDate, today);
+            Map<LocalDate, Long> statsMap = statsList.stream()
+                    .collect(Collectors.toMap(DailyStats::getStatDate, DailyStats::getPvCount));
+
+            // 对最近 7 天进行循环并提取数据，未统计日期自动补 0
+            for (int i = 6; i >= 0; i--) {
+                LocalDate date = today.minusDays(i);
+                long pv = statsMap.getOrDefault(date, 0L);
+                
+                trafficTrend.add(TrafficTrendVO.builder()
+                        .date(date.format(formatter))
+                        .pv((int) pv)
+                        .build());
+            }
+        } catch (Exception e) {
+            log.warn("获取真实 7 日 PV 流量数据失败，将回退兜底:", e);
+            // 失败时做平滑兜底
+            for (int i = 6; i >= 0; i--) {
+                LocalDate date = today.minusDays(i);
+                trafficTrend.add(TrafficTrendVO.builder()
+                        .date(date.format(formatter))
+                        .pv(0)
+                        .build());
+            }
         }
 
         log.info("工作台统计数据获取完成");
