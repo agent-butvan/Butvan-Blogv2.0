@@ -65,6 +65,18 @@ public class Media {
     @Column(name = "source_detail", length = 255)
     private String sourceDetail; // 详细来源说明文本（如：文章《xxx》的插图）
 
+    @Column(name = "file_hash", length = 64)
+    private String fileHash; // 文件内容的 SHA-256 哈希值，用于秒传去重
+
+    @Column(name = "ip_address", length = 50)
+    private String ipAddress; // 上传者的客户端 IP 地址
+
+    @Column(name = "user_agent", length = 500)
+    private String userAgent; // 上传者客户端 User-Agent
+
+    @Column(name = "status")
+    private Integer status; // 文件状态：0-临时(草稿未保存)，1-正常(已关联实体)
+
     @Column(name = "created_at", nullable = false, updatable = false)
     private LocalDateTime createdAt; // 文件的上传完成时间戳
 
@@ -79,6 +91,9 @@ public class Media {
         }
         if (this.sourceType == null) {
             this.sourceType = "MANUAL";
+        }
+        if (this.status == null) {
+            this.status = 1;
         }
     }
 }

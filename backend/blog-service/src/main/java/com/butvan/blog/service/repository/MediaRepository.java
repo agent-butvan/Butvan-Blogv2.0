@@ -10,4 +10,14 @@ import org.springframework.stereotype.Repository;
  */
 @Repository
 public interface MediaRepository extends JpaRepository<Media, Long>, JpaSpecificationExecutor<Media> {
+
+    /**
+     * 根据文件哈希查找媒体资源列表
+     */
+    java.util.List<Media> findByFileHash(String fileHash);
+
+    /**
+     * 根据文件哈希统计媒体记录数，用于判断多处引用与去重
+     */
+    long countByFileHash(String fileHash);
 }

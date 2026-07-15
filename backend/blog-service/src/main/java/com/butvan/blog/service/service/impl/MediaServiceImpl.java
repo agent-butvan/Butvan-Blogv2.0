@@ -40,6 +40,7 @@ public class MediaServiceImpl implements MediaService {
     private final MediaRepository mediaRepository;
     private final FileStorageService fileStorageService;
     private final StorageProperties storageProperties;
+    private final jakarta.servlet.http.HttpServletRequest request;
 
     private static final List<String> IMAGE_EXTENSIONS = Arrays.asList("jpg", "jpeg", "png", "gif", "webp", "bmp");
 
@@ -62,38 +63,84 @@ public class MediaServiceImpl implements MediaService {
             extension = originalFilename.substring(dotIndex + 1).toLowerCase();
         }
 
-        // 2. 生成唯一的 UUID 文件名
+        // 2. 计算文件的 SHA-256 哈希值用于去重及秒传
+        String sha256 = calculateSha256(file);
+
+        // 3. 获取客户端 IP 和 User-Agent
+        String ip = getClientIp(request);
+        String ua = request != null ? request.getHeader("User-Agent") : "UNKNOWN";
+
+        // 4. 判断是否触发秒传
+        List<Media> existingMedias = mediaRepository.findByFileHash(sha256);
+        if (!existingMedias.isEmpty()) {
+            Media existingMedia = existingMedias.get(0);
+            log.info("触发秒传，文件 SHA-256 为: {}, 物理路径: {}", sha256, existingMedia.getFilePath());
+            
+            Media newMedia = Media.builder()
+                    .fileName(originalFilename)
+                    .filePath(existingMedia.getFilePath())
+                    .fileUrl(existingMedia.getFileUrl())
+                    .fileType(existingMedia.getFileType())
+                    .mimeType(existingMedia.getMimeType())
+                    .fileSize(existingMedia.getFileSize())
+                    .bucketName(existingMedia.getBucketName())
+                    .width(existingMedia.getWidth())
+                    .height(existingMedia.getHeight())
+                    .altText(existingMedia.getAltText())
+                    .sourceType(org.springframework.util.StringUtils.hasText(sourceType) ? sourceType : "MANUAL")
+                    .sourceId(sourceId)
+                    .sourceDetail(sourceDetail)
+                    .fileHash(sha256)
+                    .ipAddress(ip)
+                    .userAgent(ua)
+                    .status(1) // 正常使用状态
+                    .build();
+            return mediaRepository.save(newMedia);
+        }
+
+        // 5. 生成唯一的 UUID 文件名
         String newFilename = UUID.randomUUID().toString() + (extension.isEmpty() ? "" : "." + extension);
 
-        // 3. 通过 FileStorageService 上传文件（自动适配本地 / MinIO）
+        // 6. 确定存储分类目录（category），如果前端没传 sourceType 则默认为 MANUAL
+        String category = org.springframework.util.StringUtils.hasText(sourceType) ? sourceType.toUpperCase() : "MANUAL";
+
+        // 7. 通过 FileStorageService 上传文件（支持自动按分类归档）
         String accessUrl;
         try {
-            accessUrl = fileStorageService.upload(file, newFilename, file.getContentType());
-            log.info("文件上传成功: {}", accessUrl);
+            accessUrl = fileStorageService.upload(file, newFilename, category, file.getContentType());
+            log.info("文件物理存储上传成功: {}", accessUrl);
         } catch (IOException e) {
             log.error("文件存储失败", e);
             throw new BusinessException("文件上传存储失败：" + e.getMessage());
         }
 
-        // 5. 判定文件类型
+        // 8. 判定文件大类
         String fileType = "OTHER";
         if (IMAGE_EXTENSIONS.contains(extension)) {
             fileType = "IMAGE";
         }
 
-        // 6. 持久化记录到数据库中
+        // 9. 拼接保存在数据库中的 filePath 相对路径（统一使用 / 作为对象路径分隔符）
+        String dateStr = java.time.LocalDate.now().format(java.time.format.DateTimeFormatter.ofPattern("yyyyMMdd"));
+        String savedFilePath = category + "/" + dateStr + "/" + newFilename;
+
+        // 10. 持久化记录到数据库中
         String bucketName = storageProperties.getType();
         Media media = Media.builder()
                 .fileName(originalFilename)
-                .filePath(newFilename)
+                .filePath(savedFilePath)
                 .fileUrl(accessUrl)
                 .fileType(fileType)
                 .mimeType(file.getContentType())
                 .fileSize(file.getSize())
                 .bucketName(bucketName)
-                .sourceType(org.springframework.util.StringUtils.hasText(sourceType) ? sourceType : "MANUAL")
+                .sourceType(category)
                 .sourceId(sourceId)
                 .sourceDetail(sourceDetail)
+                .fileHash(sha256)
+                .ipAddress(ip)
+                .userAgent(ua)
+                .status(1) // 默认正常使用状态
                 .build();
 
         return mediaRepository.save(media);
@@ -101,10 +148,10 @@ public class MediaServiceImpl implements MediaService {
 
     /**
      * 上传图片但不记录到数据库（用于公开上传场景，如友链头像）
-     * 仅支持图片格式，返回相对路径 /uploads/filename.ext
+     * 仅支持图片格式，返回相对路径或完整 URL
      *
      * @param file 上传的图片文件
-     * @return 相对路径
+     * @return 访问 URL 链接
      */
     public String uploadFileWithoutDb(MultipartFile file) {
         if (file.isEmpty()) {
@@ -131,10 +178,10 @@ public class MediaServiceImpl implements MediaService {
         // 2. 生成唯一的 UUID 文件名
         String newFilename = UUID.randomUUID().toString() + "." + extension;
 
-        // 3. 通过 FileStorageService 上传文件（自动适配本地 / MinIO）
+        // 3. 通过 FileStorageService 上传文件（指定公开分类目录为 FRIEND_LINK）
         String accessUrl;
         try {
-            accessUrl = fileStorageService.upload(file, newFilename, file.getContentType());
+            accessUrl = fileStorageService.upload(file, newFilename, "FRIEND_LINK", file.getContentType());
             log.info("公开接口文件上传成功: {}", accessUrl);
         } catch (IOException e) {
             log.error("文件存储失败", e);
@@ -193,18 +240,77 @@ public class MediaServiceImpl implements MediaService {
         Media media = mediaRepository.findById(id)
                 .orElseThrow(() -> new BusinessException("媒体资源不存在或已被删除"));
 
-        // 1. 通过 FileStorageService 删除存储中的文件（自动适配本地 / MinIO）
-        String objectName = media.getFilePath();
-        if (org.springframework.util.StringUtils.hasText(objectName)) {
-            boolean deleted = fileStorageService.delete(objectName);
-            if (deleted) {
-                log.info("存储文件删除成功: {}", objectName);
-            } else {
-                log.warn("存储文件删除失败: {}", objectName);
+        String fileHash = media.getFileHash();
+        boolean shouldPhysicalDelete = true;
+
+        // 1. 若存在文件 Hash，校验当前系统中的引用计数
+        if (org.springframework.util.StringUtils.hasText(fileHash)) {
+            long count = mediaRepository.countByFileHash(fileHash);
+            if (count > 1) {
+                log.info("媒体文件 Hash 引用数为 {}, 大于 1, 仅删除当前数据库记录, 暂不执行物理存储删除", count);
+                shouldPhysicalDelete = false;
             }
         }
 
-        // 2. 从数据库删除记录
+        // 2. 没有其他秒传引用时，真正发起物理删除
+        if (shouldPhysicalDelete) {
+            String objectName = media.getFilePath();
+            if (org.springframework.util.StringUtils.hasText(objectName)) {
+                boolean deleted = fileStorageService.delete(objectName);
+                if (deleted) {
+                    log.info("存储物理文件删除成功: {}", objectName);
+                } else {
+                    log.warn("存储物理文件删除失败: {}", objectName);
+                }
+            }
+        }
+
+        // 3. 从数据库删除记录
         mediaRepository.delete(media);
+    }
+
+    /**
+     * 计算文件的 SHA-256 哈希值
+     */
+    private String calculateSha256(MultipartFile file) {
+        try (java.io.InputStream is = file.getInputStream()) {
+            java.security.MessageDigest digest = java.security.MessageDigest.getInstance("SHA-256");
+            byte[] buffer = new byte[8192];
+            int read;
+            while ((read = is.read(buffer)) > 0) {
+                digest.update(buffer, 0, read);
+            }
+            byte[] hash = digest.digest();
+            StringBuilder hexString = new StringBuilder();
+            for (byte b : hash) {
+                String hex = Integer.toHexString(0xff & b);
+                if (hex.length() == 1) hexString.append('0');
+                hexString.append(hex);
+            }
+            return hexString.toString();
+        } catch (Exception e) {
+            log.error("计算文件 SHA-256 异常", e);
+            throw new BusinessException("文件哈希解析失败: " + e.getMessage());
+        }
+    }
+
+    /**
+     * 获取客户端真实 IP
+     */
+    private String getClientIp(jakarta.servlet.http.HttpServletRequest request) {
+        if (request == null) {
+            return "UNKNOWN";
+        }
+        String ip = request.getHeader("X-Forwarded-For");
+        if (ip == null || ip.isEmpty() || "unknown".equalsIgnoreCase(ip)) {
+            ip = request.getHeader("Proxy-Client-IP");
+        }
+        if (ip == null || ip.isEmpty() || "unknown".equalsIgnoreCase(ip)) {
+            ip = request.getHeader("WL-Proxy-Client-IP");
+        }
+        if (ip == null || ip.isEmpty() || "unknown".equalsIgnoreCase(ip)) {
+            ip = request.getRemoteAddr();
+        }
+        return ip != null && ip.contains(",") ? ip.split(",")[0].trim() : ip;
     }
 }
