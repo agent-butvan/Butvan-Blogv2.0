@@ -178,7 +178,7 @@ export default function DashboardPage() {
     <div className="space-y-3 font-sans text-zinc-800 dark:text-zinc-200 text-left">
       
       {/* 顶部极简整合式横幅：完全平铺无卡片背景 */}
-      <div className="flex flex-col md:flex-row md:items-center justify-between pb-2.5 border-b border-zinc-200 dark:border-zinc-800/80 gap-3">
+      <div className="pb-2.5 border-b border-zinc-200 dark:border-zinc-800/80">
         <div className="flex flex-col gap-0.5 text-left">
           <div className="flex items-center gap-2">
             <h1 className="text-lg font-extrabold text-zinc-900 dark:text-zinc-100 tracking-tight leading-none">
@@ -197,18 +197,6 @@ export default function DashboardPage() {
               —— {quote.author} {quote.source}
             </span>
           </p>
-        </div>
-        
-        {/* 系统实时微件状态（扁平化胶囊） */}
-        <div className="flex items-center gap-2.5 text-[9px] text-zinc-400 dark:text-zinc-500 font-mono bg-zinc-50/60 dark:bg-zinc-900/30 px-2 py-1 rounded border border-zinc-200/50 dark:border-zinc-800/60 shadow-none shrink-0 self-start md:self-center">
-          <div className="flex items-center gap-1.5">
-            <span className="w-1.5 h-1.5 rounded-full bg-emerald-500 animate-pulse" />
-            <span>API: {stats?.systemMetrics?.apiDelay ?? 14}ms</span>
-          </div>
-          <div className="h-2.5 w-px bg-zinc-200 dark:bg-zinc-800" />
-          <div>CPU: {stats?.systemMetrics?.cpuUsage ?? "0.0"}%</div>
-          <div className="h-2.5 w-px bg-zinc-200 dark:bg-zinc-800" />
-          <div>JVM: {stats?.systemMetrics?.memoryUsage ?? "0.0"}%</div>
         </div>
       </div>
 
