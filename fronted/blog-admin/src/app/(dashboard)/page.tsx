@@ -1,20 +1,17 @@
 "use client";
 
 import { useEffect, useState } from "react";
-import Link from "next/link";
+import apiClient from "@/lib/api";
+import type { ApiResponse } from "@/types/common";
+import { cn } from "@heroui/react";
+import TrafficTrendChart from "@/components/dashboard/TrafficTrendChart";
 import {
   FileText,
   MessageSquare,
   Eye,
   Users,
-  ArrowRight,
-  Activity,
-  ChevronRight
+  Activity
 } from "lucide-react";
-import apiClient from "@/lib/api";
-import type { ApiResponse } from "@/types/common";
-import { cn } from "@heroui/react";
-import TrafficTrendChart from "@/components/dashboard/TrafficTrendChart";
 
 /** 仪表盘统计数据 */
 interface DashboardStats {
@@ -22,13 +19,6 @@ interface DashboardStats {
   commentCount: number;
   totalViews: number;
   subscriberCount: number;
-  recentArticles: Array<{
-    id: number;
-    title: string;
-    status: string;
-    viewCount: number;
-    publishedAt: string | null;
-  }>;
   systemMetrics?: {
     cpuUsage: number;
     memoryUsage: number;
@@ -65,7 +55,6 @@ export default function DashboardPage() {
   const [quote, setQuote] = useState({ text: "你的选择，毫无意义。", author: "TOBY FOX", source: "《DELTARUNE》" });
 
   useEffect(() => {
-    // 动态生成日期
     const now = new Date();
     const month = now.getMonth() + 1;
     const date = now.getDate();
@@ -73,7 +62,6 @@ export default function DashboardPage() {
     const dayOfWeek = dayNames[now.getDay()];
     setFormattedDate(`今天是 ${month}月${date}日 ${dayOfWeek}`);
 
-    // 动态生成问候语
     const hour = now.getHours();
     let greet = "你好";
     if (hour >= 5 && hour < 9) greet = "早上好";
@@ -84,12 +72,11 @@ export default function DashboardPage() {
     else greet = "深夜好";
     setGreeting(greet);
 
-    // 随机语录
     try {
       const randomIndex = Math.floor(Math.random() * INSIGHT_QUOTES.length);
       setQuote(INSIGHT_QUOTES[randomIndex] || INSIGHT_QUOTES[0]);
     } catch {
-      // 优雅防错
+      // 优雅防崩
     }
   }, []);
 
@@ -102,17 +89,7 @@ export default function DashboardPage() {
       })
       .then((res) => {
         if (res.data?.data) {
-          const data = res.data.data;
-          const transformedData: DashboardStats = {
-            ...data,
-            recentArticles: data.recentArticles?.map(article => ({
-              ...article,
-              publishedAt: article.publishedAt
-                ? new Date(article.publishedAt).toISOString()
-                : null
-            })) || []
-          };
-          setStats(transformedData);
+          setStats(res.data.data);
         }
       })
       .catch((err) => {
@@ -124,8 +101,7 @@ export default function DashboardPage() {
           articleCount: 0,
           commentCount: 0,
           totalViews: 0,
-          subscriberCount: 0,
-          recentArticles: []
+          subscriberCount: 0
         });
       })
       .finally(() => {
@@ -177,21 +153,20 @@ export default function DashboardPage() {
   return (
     <div className="space-y-3 font-sans text-zinc-800 dark:text-zinc-200 text-left">
       
-      {/* 顶部极简整合式横幅：完全平铺无卡片背景 */}
+      {/* 顶部极简整合式横幅 */}
       <div className="pb-2.5 border-b border-zinc-200 dark:border-zinc-800/80">
         <div className="flex flex-col gap-0.5 text-left">
           <div className="flex items-center gap-2">
             <h1 className="text-lg font-extrabold text-zinc-900 dark:text-zinc-100 tracking-tight leading-none">
               {greeting}，可梵
             </h1>
-            <span className="text-[9px] font-mono font-medium text-zinc-400 dark:text-zinc-500 bg-zinc-100 dark:bg-zinc-900 px-1.5 py-0.5 rounded">
+            <span className="text-[9px] font-mono font-medium text-zinc-400 dark:text-zinc-555 bg-zinc-100 dark:bg-zinc-900 px-1.5 py-0.5 rounded">
               {formattedDate}
             </span>
           </div>
           
-          {/* 金句一句话平铺 */}
           <p className="text-[11px] text-zinc-500 dark:text-zinc-400 font-normal mt-1 flex items-center flex-wrap gap-1 leading-none">
-            <span className="text-zinc-350 dark:text-zinc-600 select-none">“</span>
+            <span className="text-zinc-350 dark:text-zinc-650 select-none">“</span>
             <span>{quote.text}</span>
             <span className="text-[10px] text-zinc-400 dark:text-zinc-500 font-mono">
               —— {quote.author} {quote.source}
@@ -200,7 +175,7 @@ export default function DashboardPage() {
         </div>
       </div>
 
-      {/* 大工业网格分割面板 (全扁平，去卡片，0 shadow，仅极细内边框) */}
+      {/* 大工业网格分割面板 (扁平工业格栅，0 shadow) */}
       <div className="w-full border border-zinc-200 dark:border-zinc-800/80 rounded-xl overflow-hidden divide-y divide-zinc-200 dark:divide-zinc-800/80 bg-white dark:bg-zinc-950">
         
         {/* 1. 四大核心指标横幅（极细分栏） */}
@@ -218,7 +193,7 @@ export default function DashboardPage() {
             {statCards.map((card) => (
               <div key={card.label} className="p-3 flex items-center justify-between hover:bg-zinc-50/30 dark:hover:bg-zinc-900/10 transition-colors duration-150">
                 <div className="space-y-0.5">
-                  <p className="text-[10px] font-bold text-zinc-400 dark:text-zinc-500 uppercase tracking-wider">{card.label}</p>
+                  <p className="text-[10px] font-bold text-zinc-400 dark:text-zinc-555 uppercase tracking-wider">{card.label}</p>
                   <div className="flex items-baseline gap-1.5">
                     <span className="text-xl font-bold font-mono text-zinc-900 dark:text-zinc-50 tracking-tight leading-none">
                       {card.value}
@@ -236,10 +211,10 @@ export default function DashboardPage() {
           </div>
         )}
 
-        {/* 2. 分析展示层（流量趋势与内容健康舱并排） */}
+        {/* 2. 分析展示层（图表与内容健康舱并排） */}
         <div className="grid grid-cols-1 lg:grid-cols-12 divide-y lg:divide-y-0 lg:divide-x divide-zinc-200 dark:divide-zinc-800/80">
           
-          {/* 左侧：流量大底座图表舱 */}
+          {/* 左侧：Recharts 流量大图表舱 */}
           <div className="lg:col-span-8 p-3 flex flex-col justify-between">
             <div className="flex items-center justify-between mb-1.5">
               <h3 className="text-[10px] font-extrabold text-zinc-400 dark:text-zinc-500 flex items-center gap-1.5 uppercase tracking-widest">
@@ -257,17 +232,17 @@ export default function DashboardPage() {
             </div>
           </div>
 
-          {/* 右侧：博客内容健康度与空闲空间（3环圆形指示器） */}
+          {/* 右侧：主站内容健康度与空间 */}
           <div className="lg:col-span-4 p-3 flex flex-col justify-between gap-3 bg-zinc-50/10 dark:bg-zinc-950/20">
             <div className="flex flex-col gap-0.5">
-              <h3 className="text-[10px] font-extrabold text-zinc-400 dark:text-zinc-500 flex items-center gap-1.5 uppercase tracking-widest">
+              <h3 className="text-[10px] font-extrabold text-zinc-400 dark:text-zinc-555 flex items-center gap-1.5 uppercase tracking-widest">
                 <span className="w-1 h-2.5 bg-emerald-500 rounded-xs" />
                 主站内容健康度与物理空间
               </h3>
-              <p className="text-[9px] text-zinc-400 dark:text-zinc-500 font-medium">实时检测并聚合核心业务归档率与审核状况</p>
+              <p className="text-[9px] text-zinc-400 dark:text-zinc-500 font-medium">实时检测并归档核心业务分类率与审核状况</p>
             </div>
 
-            {/* 3圆进度盘并列 */}
+            {/* 3圆进度盘 */}
             <div className="grid grid-cols-3 gap-2 py-1">
               {[
                 { 
@@ -277,7 +252,7 @@ export default function DashboardPage() {
                   percent: stats?.aiStorageMetrics?.tokenBalance ?? 100.0 
                 },
                 { 
-                  label: "正常评论率", 
+                  label: "评论正常率", 
                   val: `${stats?.aiStorageMetrics?.inferenceSuccessRate ?? 100.0}%`, 
                   color: "text-emerald-500", 
                   percent: stats?.aiStorageMetrics?.inferenceSuccessRate ?? 100.0 
@@ -313,9 +288,9 @@ export default function DashboardPage() {
               ))}
             </div>
 
-            {/* 一体化极简状态底栏：去多余背景底座 */}
+            {/* 状态底栏 */}
             <div className="border-t border-zinc-200/60 dark:border-zinc-800/80 pt-2 flex items-center justify-between text-[9px] font-medium font-mono select-none">
-              <div className="flex items-center gap-1.5 text-zinc-400 dark:text-zinc-500">
+              <div className="flex items-center gap-1.5 text-zinc-400 dark:text-zinc-550">
                 <Activity size={10} className="text-indigo-500 animate-pulse" />
                 <span>DB & CLOUD STORAGE STATUS:</span>
               </div>
@@ -324,112 +299,31 @@ export default function DashboardPage() {
           </div>
         </div>
 
-        {/* 3. 数据列表与快捷通道（近期文章与命令面板并排） */}
-        <div className="grid grid-cols-1 lg:grid-cols-12 divide-y lg:divide-y-0 lg:divide-x divide-zinc-200 dark:divide-zinc-800/80">
-          
-          {/* 左下：近期博文动态与热度统计 */}
-          <div className="lg:col-span-8 p-3 flex flex-col justify-between">
-            <div className="flex items-center justify-between mb-2">
-              <h3 className="text-[10px] font-extrabold text-zinc-400 dark:text-zinc-500 flex items-center gap-1.5 uppercase tracking-widest">
-                <span className="w-1 h-2.5 bg-amber-500 rounded-xs" />
-                近期博文发布动态与浏览热度
-              </h3>
-              <Link href="/articles" className="text-[9px] text-indigo-500 hover:text-indigo-600 flex items-center gap-0.5 font-bold tracking-wider uppercase leading-none">
-                管理列表 <ChevronRight size={10} />
-              </Link>
-            </div>
-
-            <div className="overflow-x-auto custom-scrollbar">
-              <table className="w-full text-left text-xs border-collapse min-w-[400px]">
-                <thead>
-                  <tr className="border-b border-zinc-200 dark:border-zinc-800 text-zinc-450 dark:text-zinc-500 text-[8px] uppercase font-mono tracking-widest">
-                    <th className="pb-1.5 font-extrabold">博文标题</th>
-                    <th className="pb-1.5 font-extrabold text-center">状态</th>
-                    <th className="pb-1.5 font-extrabold text-right">浏览量 (PV)</th>
-                    <th className="pb-1.5 font-extrabold text-right">发布时间</th>
-                  </tr>
-                </thead>
-                <tbody className="divide-y divide-zinc-100 dark:divide-zinc-900/40">
-                  {stats?.recentArticles && stats.recentArticles.length > 0 ? (
-                    stats.recentArticles.map((article) => (
-                      <tr key={article.id} className="hover:bg-zinc-50/50 dark:hover:bg-zinc-900/10 transition-colors duration-100">
-                        <td className="py-1.5 font-medium text-zinc-800 dark:text-zinc-250 max-w-[280px] truncate text-[11px]">
-                          {article.title}
-                        </td>
-                        <td className="py-1.5 text-center">
-                          <span className={cn(
-                            "text-[8px] font-bold px-1.25 py-0.25 rounded",
-                            article.status === "PUBLISHED" 
-                              ? "bg-emerald-500/10 text-emerald-600 dark:text-emerald-400" 
-                              : "bg-zinc-100 text-zinc-400 dark:bg-zinc-900/60 dark:text-zinc-500"
-                          )}>
-                            {article.status === "PUBLISHED" ? "已发布" : "草稿"}
-                          </span>
-                        </td>
-                        <td className="py-1.5 text-right font-mono font-bold text-zinc-600 dark:text-zinc-400 text-[11px]">
-                          {article.viewCount}
-                        </td>
-                        <td className="py-1.5 text-right text-zinc-400 dark:text-zinc-500 font-mono text-[9px]">
-                          {article.publishedAt
-                            ? new Date(article.publishedAt).toLocaleDateString("zh-CN")
-                            : "—"}
-                        </td>
-                      </tr>
-                    ))
-                  ) : (
-                    <tr>
-                      <td colSpan={4} className="py-6 text-center text-zinc-400 text-[10px] font-mono">
-                        NO ARTICLES FOUND
-                      </td>
-                    </tr>
-                  )}
-                </tbody>
-              </table>
-            </div>
-          </div>
-
-          {/* 右下：微型按键控制命令栏 */}
-          <div className="lg:col-span-4 p-3 flex flex-col justify-between gap-4 bg-zinc-50/10 dark:bg-zinc-950/20">
-            <div>
-              <h3 className="text-[10px] font-extrabold text-zinc-400 dark:text-zinc-550 flex items-center gap-1.5 uppercase tracking-widest mb-2.5">
-                <span className="w-1 h-2.5 bg-red-500 rounded-xs" />
-                系统快速命令按键矩阵
-              </h3>
-              
-              {/* 高频一体化指令组，平铺仅留细边 */}
-              <div className="flex flex-col gap-1">
-                {[
-                  { label: "撰写新文章", key: "W", path: "/articles/new", desc: "Markdown 创作" },
-                  { label: "配置场景热区", key: "E", path: "/scenes", desc: "主视觉 Sprite" },
-                  { label: "审核读者评论", key: "C", path: "/comments", desc: "审核与审核反馈" },
-                  { label: "静态媒体图库", key: "M", path: "/media", desc: "MinIO 图床" },
-                  { label: "配置系统偏好", key: "S", path: "/settings", desc: "社交配置" }
-                ].map((item) => (
-                  <a
-                    key={item.path}
-                    href={item.path}
-                    className="flex items-center justify-between px-2 py-1.5 rounded border border-zinc-200/60 dark:border-zinc-800/80 bg-white/50 dark:bg-zinc-950/30 hover:border-indigo-500/30 hover:bg-indigo-50/5 dark:hover:bg-indigo-500/5 transition-all duration-150 group"
-                  >
-                    <div className="flex flex-col text-left">
-                      <span className="text-[11px] font-bold text-zinc-700 dark:text-zinc-350 group-hover:text-indigo-500 transition-colors">
-                        {item.label}
-                      </span>
-                      <span className="text-[8px] text-zinc-400 dark:text-zinc-550 font-medium">{item.desc}</span>
-                    </div>
-                    <kbd className="inline-flex h-4 items-center rounded border border-zinc-200 dark:border-zinc-800 bg-zinc-50 dark:bg-zinc-900 px-1 font-mono text-[8px] font-extrabold text-zinc-400 dark:text-zinc-500 select-none shadow-xs group-hover:bg-indigo-500 group-hover:text-white group-hover:border-indigo-500 transition-all">
-                      {item.key}
-                    </kbd>
-                  </a>
-                ))}
+        {/* 3. 常用模块快捷指令五分栏通栏格栅 */}
+        <div className="grid grid-cols-1 sm:grid-cols-2 md:grid-cols-5 divide-y sm:divide-y-0 sm:divide-x md:divide-y-0 divide-zinc-200 dark:divide-zinc-800/80">
+          {[
+            { label: "撰写新文章", key: "W", path: "/articles/new", desc: "Markdown 创作" },
+            { label: "配置场景热区", key: "E", path: "/scenes", desc: "主视觉 Sprite" },
+            { label: "审核读者评论", key: "C", path: "/comments", desc: "评论审核与反馈" },
+            { label: "静态媒体图库", key: "M", path: "/media", desc: "MinIO 图床" },
+            { label: "配置系统偏好", key: "S", path: "/settings", desc: "社交配置" }
+          ].map((item) => (
+            <a
+              key={item.path}
+              href={item.path}
+              className="flex flex-col justify-between p-3 min-h-[72px] bg-white dark:bg-zinc-950 hover:bg-zinc-50/60 dark:hover:bg-zinc-900/10 transition-all duration-150 group"
+            >
+              <div className="flex items-center justify-between">
+                <span className="text-[11px] font-bold text-zinc-700 dark:text-zinc-350 group-hover:text-indigo-500 transition-colors">
+                  {item.label}
+                </span>
+                <kbd className="inline-flex h-4 items-center rounded border border-zinc-200 dark:border-zinc-800 bg-zinc-50 dark:bg-zinc-900 px-1 font-mono text-[8px] font-extrabold text-zinc-400 dark:text-zinc-500 select-none shadow-xs group-hover:bg-indigo-500 group-hover:text-white group-hover:border-indigo-500 transition-all">
+                  {item.key}
+                </kbd>
               </div>
-            </div>
-
-            {/* 胶囊状态提示 */}
-            <div className="text-[9px] text-zinc-400 dark:text-zinc-500 leading-relaxed bg-white/40 dark:bg-zinc-950/20 border border-zinc-200/50 dark:border-zinc-800/60 p-2 rounded flex items-start gap-1.5 font-medium select-none">
-              <span className="text-indigo-500 shrink-0 font-bold">ℹ</span>
-              <span>工作台以一式分割网格集中承载统计指标，您可以利用侧边栏与快捷 Kbd 快速进行博文运维。</span>
-            </div>
-          </div>
+              <span className="text-[9px] text-zinc-450 dark:text-zinc-500 font-semibold mt-2">{item.desc}</span>
+            </a>
+          ))}
         </div>
       </div>
     </div>
