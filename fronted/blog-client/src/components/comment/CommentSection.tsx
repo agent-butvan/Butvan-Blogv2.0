@@ -303,10 +303,8 @@ export default function CommentSection({
                         <span>{comment.nickname}</span>
                       </span>
                     )}
-                    {comment.userId ? (
+                    {comment.isAuthor ? (
                       <VerifiedBadge type="admin" />
-                    ) : comment.isAuthor ? (
-                      <VerifiedBadge type="author" />
                     ) : null}
                     {comment.status === 'PENDING' && (
                       <span className="bg-amber-100/70 dark:bg-amber-950/30 border border-amber-200/50 dark:border-amber-900/30 text-amber-600 dark:text-amber-400 text-[9px] px-1.5 py-0.5 rounded font-medium select-none ml-1 shrink-0 animate-pulse">
@@ -442,10 +440,8 @@ export default function CommentSection({
                                   <span>{reply.nickname}</span>
                                 </span>
                               )}
-                              {reply.userId ? (
+                              {reply.isAuthor ? (
                                 <VerifiedBadge type="admin" />
-                              ) : reply.isAuthor ? (
-                                <VerifiedBadge type="author" />
                               ) : null}
                               {reply.status === 'PENDING' && (
                                 <span className="bg-amber-100/70 dark:bg-amber-950/30 border border-amber-200/50 dark:border-amber-900/30 text-amber-600 dark:text-amber-400 text-[9px] px-1.5 py-0.5 rounded font-medium select-none ml-1 shrink-0 animate-pulse">
