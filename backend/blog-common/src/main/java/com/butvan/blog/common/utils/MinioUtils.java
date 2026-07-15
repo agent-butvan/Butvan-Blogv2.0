@@ -97,6 +97,44 @@ public class MinioUtils {
         }
     }
 
+    /**
+     * 设置 Bucket 的访问策略为公共匿名只读 (ReadOnly)
+     *
+     * @param bucketName 存储桶名称
+     */
+    public void setBucketPublicReadOnly(String bucketName) {
+        try {
+            // 构造 MinIO 公共只读访问策略 JSON（允许匿名下载和定位）
+            String policy = "{\n" +
+                    "    \"Version\": \"2012-10-17\",\n" +
+                    "    \"Statement\": [\n" +
+                    "        {\n" +
+                    "            \"Effect\": \"Allow\",\n" +
+                    "            \"Principal\": {\n" +
+                    "                \"AWS\": [\"*\"]\n" +
+                    "            },\n" +
+                    "            \"Action\": [\n" +
+                    "                \"s3:GetBucketLocation\",\n" +
+                    "                \"s3:GetObject\"\n" +
+                    "            ],\n" +
+                    "            \"Resource\": [\n" +
+                    "                \"arn:aws:s3:::" + bucketName + "\",\n" +
+                    "                \"arn:aws:s3:::" + bucketName + "/*\"\n" +
+                    "            ]\n" +
+                    "        }\n" +
+                    "    ]\n" +
+                    "}";
+            client.setBucketPolicy(SetBucketPolicyArgs.builder()
+                    .bucket(bucketName)
+                    .config(policy)
+                    .build());
+            log.info("已成功将 Bucket [{}] 的访问权限设置为公共只读 Policy", bucketName);
+        } catch (Exception e) {
+            log.error("设置 Bucket [{}] 公共只读 Policy 失败", bucketName, e);
+            throw new RuntimeException("设置 Bucket 只读策略失败: " + bucketName, e);
+        }
+    }
+
     // ==================== 对象操作 ====================
 
     /**

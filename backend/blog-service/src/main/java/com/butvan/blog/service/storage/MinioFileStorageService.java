@@ -22,14 +22,14 @@ public class MinioFileStorageService implements FileStorageService {
     private final StorageProperties storageProperties;
     private final MinioUtils minioUtils;
 
-    /**
-     * 构造即连接 MinIO 并确保 Bucket 存在
-     */
     public MinioFileStorageService(StorageProperties storageProperties) {
         this.storageProperties = storageProperties;
         StorageProperties.Minio cfg = storageProperties.getMinio();
         this.minioUtils = new MinioUtils(cfg.getEndpoint(), cfg.getAccessKey(), cfg.getSecretKey());
         this.minioUtils.ensureBucket(cfg.getBucket());
+        if (Boolean.TRUE.equals(cfg.getPublicRead())) {
+            this.minioUtils.setBucketPublicReadOnly(cfg.getBucket());
+        }
         log.info("MinIO 文件存储已就绪，Bucket: {}", cfg.getBucket());
     }
 
