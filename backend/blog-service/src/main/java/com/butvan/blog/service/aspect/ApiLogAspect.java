@@ -31,56 +31,71 @@ public class ApiLogAspect {
     private final ApiLogRepository apiLogRepository;
 
     /**
-     * 环绕拦截所有 Controller 中的方法，自动测速并记录耗时到日志表中。
-     * 支持 @TrackApi 注解的自定义名称抓取；如未加注解，则以 "类名.方法名" 作为默认接口描述。
+     * 环绕拦截所有 Controller（含微信包）中的方法，自动测速并记录耗时到日志表中。
+     * 采用主线程同步极速提取上下文数据，跨线程仅用于异步数据库持久化，彻底杜绝 ThreadLocal 跨线程丢失的 Bug。
      */
-    @Around("execution(* com.butvan.blog.service.controller..*.*(..))")
+    @Around("execution(* com.butvan.blog.service.controller..*.*(..)) || execution(* com.butvan.blog.service.weixin.controller..*.*(..))")
     public Object trackCostTime(ProceedingJoinPoint joinPoint) throws Throwable {
         long startTime = System.currentTimeMillis();
+        
+        // 1. 主线程同步解析当前请求网络元数据，防止异步线程 ThreadLocal 丢失
+        String ip = "127.0.0.1";
+        String uri = "/unknown";
+        String methodType = "UNKNOWN";
+        try {
+            ServletRequestAttributes attributes = (ServletRequestAttributes) RequestContextHolder.getRequestAttributes();
+            if (attributes != null) {
+                HttpServletRequest request = attributes.getRequest();
+                ip = IpUtils.getClientIp(request);
+                uri = request.getRequestURI();
+                methodType = request.getMethod();
+            }
+        } catch (Exception e) {
+            log.warn("API 日志拦截 in main thread 解析网络请求数据发生异常:", e);
+        }
+
+        // 2. 主线程同步反射读取标注注解 @TrackApi 的接口中文名称
+        String apiName;
+        try {
+            MethodSignature signature = (MethodSignature) joinPoint.getSignature();
+            Method method = signature.getMethod();
+            TrackApi trackApi = method.getAnnotation(TrackApi.class);
+            if (trackApi != null && StringUtils.hasText(trackApi.value())) {
+                apiName = trackApi.value();
+            } else {
+                // 降级使用 类名.方法名 作为描述
+                apiName = joinPoint.getTarget().getClass().getSimpleName() + "." + method.getName();
+            }
+        } catch (Exception e) {
+            apiName = joinPoint.getSignature().getName();
+        }
+
         Object result;
         try {
             result = joinPoint.proceed();
         } finally {
             long costTime = System.currentTimeMillis() - startTime;
             
-            // 异步解析并保存请求日志，避免阻塞主接口渲染
+            // 3. 拷贝不可变参数，在新线程中异步执行耗时的持久化操作，保证零阻塞渲染
+            final String finalIp = ip;
+            final String finalUri = uri;
+            final String finalMethodType = methodType;
+            final String finalApiName = apiName;
+            
             CompletableFuture.runAsync(() -> {
                 try {
-                    ServletRequestAttributes attributes = (ServletRequestAttributes) RequestContextHolder.getRequestAttributes();
-                    if (attributes == null) {
-                        return;
-                    }
-                    HttpServletRequest request = attributes.getRequest();
-                    
-                    // 获取反射方法，提取 @TrackApi 自定义描述
-                    MethodSignature signature = (MethodSignature) joinPoint.getSignature();
-                    Method method = signature.getMethod();
-                    TrackApi trackApi = method.getAnnotation(TrackApi.class);
-                    
-                    String apiName;
-                    if (trackApi != null && StringUtils.hasText(trackApi.value())) {
-                        apiName = trackApi.value();
-                    } else {
-                        // 降级使用 类名.方法名
-                        apiName = joinPoint.getTarget().getClass().getSimpleName() + "." + method.getName();
-                    }
-
-                    String ip = IpUtils.getClientIp(request);
-                    String uri = request.getRequestURI();
-                    String methodType = request.getMethod();
-
                     ApiLog apiLog = ApiLog.builder()
-                            .apiName(apiName)
-                            .method(methodType)
-                            .uri(uri)
-                            .ip(ip)
+                            .apiName(finalApiName)
+                            .method(finalMethodType)
+                            .uri(finalUri)
+                            .ip(finalIp)
                             .costTime((int) costTime)
                             .build();
 
                     apiLogRepository.save(apiLog);
-                    log.debug("API 测速拦截完成: {} ({} {}) - 耗时 {}ms", apiName, methodType, uri, costTime);
+                    log.debug("API 测速拦截并异步入库完成: {} ({} {}) - 耗时 {}ms", finalApiName, finalMethodType, finalUri, costTime);
                 } catch (Exception e) {
-                    log.error("API 测速日志保存异常:", e);
+                    log.error("API 测速日志持久化至数据库失败:", e);
                 }
             });
         }
