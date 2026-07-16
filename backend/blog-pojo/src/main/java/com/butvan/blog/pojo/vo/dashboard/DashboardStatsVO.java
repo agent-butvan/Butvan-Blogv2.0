@@ -25,8 +25,8 @@ public class DashboardStatsVO {
     /** 累计访问量 */
     private Long totalViews;
 
-    /** 订阅者数量（暂无订阅功能，暂为0） */
-    private Long subscriberCount;
+    /** 手记总数 */
+    private Long noteCount;
 
     /** 最近发布的文章列表 */
     private List<RecentArticleVO> recentArticles;

@@ -2,6 +2,7 @@
 
 import { useEffect, useState } from "react";
 import Link from "next/link";
+import { useRouter } from "next/navigation";
 import {
   FileText,
   MessageSquare,
@@ -25,7 +26,7 @@ interface DashboardStats {
   articleCount: number;
   commentCount: number;
   totalViews: number;
-  subscriberCount: number;
+  noteCount: number;
   recentArticles: Array<{
     id: number;
     title: string;
@@ -61,15 +62,13 @@ const INSIGHT_QUOTES = [
 ];
 
 export default function DashboardPage() {
+  const router = useRouter();
   const [stats, setStats] = useState<DashboardStats | null>(null);
   const [loading, setLoading] = useState(true);
 
   const [formattedDate, setFormattedDate] = useState("");
   const [greeting, setGreeting] = useState("");
   const [quote, setQuote] = useState({ text: "你的选择，毫无意义。", author: "TOBY FOX", source: "《DELTARUNE》" });
-  
-  // 头部 Tab 状态
-  const [activeTab, setActiveTab] = useState("overview");
 
   useEffect(() => {
     // 动态生成日期
@@ -99,6 +98,36 @@ export default function DashboardPage() {
       // 优雅防崩
     }
   }, []);
+
+  // 绑定快捷键，支持 W/E/C/M/S 快速导航
+  useEffect(() => {
+    const handleKeyDown = (e: KeyboardEvent) => {
+      const activeEl = document.activeElement;
+      if (activeEl && (activeEl.tagName === "INPUT" || activeEl.tagName === "TEXTAREA" || activeEl.getAttribute("contenteditable") === "true")) {
+        return;
+      }
+      const key = e.key.toLowerCase();
+      switch (key) {
+        case "w":
+          router.push("/articles/new");
+          break;
+        case "e":
+          router.push("/scenes");
+          break;
+        case "c":
+          router.push("/comments");
+          break;
+        case "m":
+          router.push("/media");
+          break;
+        case "s":
+          router.push("/settings");
+          break;
+      }
+    };
+    window.addEventListener("keydown", handleKeyDown);
+    return () => window.removeEventListener("keydown", handleKeyDown);
+  }, [router]);
 
   useEffect(() => {
     const controller = new AbortController();
@@ -131,7 +160,7 @@ export default function DashboardPage() {
           articleCount: 0,
           commentCount: 0,
           totalViews: 0,
-          subscriberCount: 0,
+          noteCount: 0,
           recentArticles: []
         });
       })
@@ -148,46 +177,38 @@ export default function DashboardPage() {
 
   const statCards = [
     { 
-      label: "Revenue / 文章数", 
+      label: "文章总数", 
       value: stats?.articleCount ?? 0, 
       icon: FileText, 
-      iconColor: "text-blue-650 dark:text-blue-400 bg-blue-50 dark:bg-blue-950/30",
-      trend: "↑ 3.3%", 
-      trendColor: "bg-emerald-500/10 text-emerald-600 dark:text-emerald-400"
+      iconColor: "text-blue-650 dark:text-blue-400 bg-blue-50 dark:bg-blue-950/30"
     },
     { 
-      label: "Expenses / 评论数", 
+      label: "评论总数", 
       value: stats?.commentCount ?? 0, 
       icon: MessageSquare, 
-      iconColor: "text-pink-650 dark:text-pink-400 bg-pink-50 dark:bg-pink-950/30",
-      trend: "↓ 1.2%", 
-      trendColor: "bg-red-500/10 text-red-650 dark:text-red-400" 
+      iconColor: "text-pink-650 dark:text-pink-400 bg-pink-50 dark:bg-pink-950/30"
     },
     { 
-      label: "Sales / 累计访问", 
+      label: "累计访问量", 
       value: stats?.totalViews ?? 0, 
       icon: Eye, 
-      iconColor: "text-indigo-650 dark:text-indigo-400 bg-indigo-50 dark:bg-indigo-950/30",
-      trend: "↑ 4.1%", 
-      trendColor: "bg-emerald-500/10 text-emerald-600 dark:text-emerald-400"
+      iconColor: "text-indigo-650 dark:text-indigo-400 bg-indigo-50 dark:bg-indigo-950/30"
     },
     { 
-      label: "Profit / 订阅总数", 
-      value: stats?.subscriberCount ?? 0, 
+      label: "手记总数", 
+      value: stats?.noteCount ?? 0, 
       icon: Users, 
-      iconColor: "text-amber-650 dark:text-amber-400 bg-amber-50 dark:bg-amber-950/30",
-      trend: "↑ 2.5%", 
-      trendColor: "bg-emerald-500/10 text-emerald-600 dark:text-emerald-400"
+      iconColor: "text-amber-650 dark:text-amber-400 bg-amber-50 dark:bg-amber-950/30"
     },
   ];
 
   return (
     <div className="min-h-screen bg-[#F8F9FA] dark:bg-zinc-950 p-4 sm:p-6 -m-4 sm:-m-6 font-sans text-zinc-800 dark:text-zinc-200 transition-colors duration-200 text-left">
       
-      {/* 1. NextUI Header 横幅带 Tabs 椭圆药丸 & 胶囊 CTA */}
+      {/* 1. NextUI Header 横幅带胶囊 CTA */}
       <div className="flex flex-col md:flex-row md:items-center justify-between pb-5 border-b border-zinc-200/50 dark:border-zinc-850 gap-4 mb-6">
         <div className="flex flex-col gap-1">
-          <h1 className="text-xl sm:text-2xl font-bold tracking-tight text-zinc-900 dark:text-zinc-50">
+          <h1 className="text-xl sm:text-2xl font-bold tracking-tight text-zinc-900 dark:text-zinc-550 tracking-tight leading-none">
             {greeting}，可梵
           </h1>
           {/* 金句极简一行 */}
@@ -201,28 +222,6 @@ export default function DashboardPage() {
 
         {/* 交互右侧控制栏 */}
         <div className="flex items-center flex-wrap gap-3.5">
-          {/* NextUI Tabs 椭圆滑块切换 */}
-          <div className="bg-zinc-200/50 dark:bg-zinc-900/60 p-0.75 rounded-full flex items-center select-none">
-            {[
-              { id: "overview", label: "Overview" },
-              { id: "analytics", label: "Analytics" },
-              { id: "system", label: "System" }
-            ].map((tab) => (
-              <button
-                key={tab.id}
-                onClick={() => setActiveTab(tab.id)}
-                className={cn(
-                  "px-3 py-1 rounded-full text-xs font-semibold tracking-wide transition-all duration-200 leading-none",
-                  activeTab === tab.id
-                    ? "bg-white dark:bg-zinc-800 text-zinc-900 dark:text-zinc-50 shadow-sm"
-                    : "text-zinc-500 dark:text-zinc-400 hover:text-zinc-850 dark:hover:text-zinc-300"
-                )}
-              >
-                {tab.label}
-              </button>
-            ))}
-          </div>
-
           <div className="flex items-center gap-2">
             {/* 时间指示标签 */}
             <span className="hidden sm:inline-block text-[10px] font-bold text-zinc-400 dark:text-zinc-500 font-mono bg-white dark:bg-zinc-900 border border-zinc-200/60 dark:border-zinc-800/80 px-2.5 py-1.5 rounded-xl shadow-xs">
@@ -263,9 +262,6 @@ export default function DashboardPage() {
               <div className="flex items-baseline justify-between mt-2.5">
                 <span className="text-2xl font-bold font-mono text-zinc-900 dark:text-zinc-50 tracking-tight leading-none">
                   {loading ? "..." : card.value}
-                </span>
-                <span className={cn("text-[9px] font-extrabold px-1.5 py-0.5 rounded-md", card.trend)}>
-                  {card.trend}
                 </span>
               </div>
             </div>
@@ -387,29 +383,7 @@ export default function DashboardPage() {
                   {stats?.recentArticles?.length ?? 0}
                 </span>
               </div>
-              
-              {/* NextUI Style 胶囊筛选按钮与 Search */}
-              <div className="flex items-center flex-wrap gap-2">
-                <div className="flex items-center gap-1 bg-zinc-50 dark:bg-zinc-950 px-2 py-1 rounded-lg border border-zinc-200/50 dark:border-zinc-800/80 w-36 sm:w-44 shadow-xs">
-                  <Search size={11} className="text-zinc-400 shrink-0" />
-                  <input
-                    type="text"
-                    placeholder="Search titles..."
-                    className="w-full text-[10px] bg-transparent outline-hidden border-none text-zinc-700 dark:text-zinc-300 placeholder-zinc-400"
-                    disabled
-                  />
-                </div>
-                
-                <button className="flex items-center gap-1 px-2.5 py-1 text-[10px] font-bold text-zinc-500 bg-white dark:bg-zinc-900 border border-zinc-200 dark:border-zinc-850 hover:bg-zinc-50 rounded-lg shadow-xs select-none">
-                  <SlidersHorizontal size={10} /> Filter
-                </button>
-                <button className="flex items-center gap-1 px-2.5 py-1 text-[10px] font-bold text-zinc-500 bg-white dark:bg-zinc-900 border border-zinc-200 dark:border-zinc-850 hover:bg-zinc-50 rounded-lg shadow-xs select-none">
-                  <ArrowUpDown size={10} /> Sort
-                </button>
-                <button className="flex items-center gap-1 px-2.5 py-1 text-[10px] font-bold text-zinc-500 bg-white dark:bg-zinc-900 border border-zinc-200 dark:border-zinc-850 hover:bg-zinc-50 rounded-lg shadow-xs select-none">
-                  <Columns4 size={10} /> Columns
-                </button>
-              </div>
+
             </div>
 
             {/* NextUI Grid Table */}

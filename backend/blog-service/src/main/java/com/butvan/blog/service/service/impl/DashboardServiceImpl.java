@@ -6,6 +6,7 @@ import com.butvan.blog.pojo.vo.dashboard.*;
 import com.butvan.blog.service.repository.ArticleRepository;
 import com.butvan.blog.service.repository.CommentRepository;
 import com.butvan.blog.service.repository.DailyStatsRepository;
+import com.butvan.blog.service.repository.NoteRepository;
 import com.butvan.blog.service.repository.UserRepository;
 import com.butvan.blog.service.service.DashboardService;
 import lombok.RequiredArgsConstructor;
@@ -33,6 +34,7 @@ public class DashboardServiceImpl implements DashboardService {
     private final CommentRepository commentRepository;
     private final UserRepository userRepository;
     private final DailyStatsRepository dailyStatsRepository;
+    private final NoteRepository noteRepository;
 
     @Override
     public DashboardStatsVO getDashboardStats() {
@@ -53,9 +55,9 @@ public class DashboardServiceImpl implements DashboardService {
         }
         log.debug("累计访问量: {}", totalViews);
 
-        // 4. 注册用户数（真实映射为：博客总注册用户数量）
-        long subscriberCount = userRepository.count();
-        log.debug("注册用户数: {}", subscriberCount);
+        // 4. 统计手记总数 (真实映射为：博客公开手记数量)
+        long noteCount = noteRepository.count();
+        log.debug("手记总数: {}", noteCount);
 
         // 5. 获取最近发布的 5 篇文章（包含草稿和已发布，按创建时间倒序）
         List<Article> recentArticles = articleRepository.findAll(
@@ -183,7 +185,7 @@ public class DashboardServiceImpl implements DashboardService {
                 .articleCount(articleCount)
                 .commentCount(commentCount)
                 .totalViews(totalViews)
-                .subscriberCount(subscriberCount)
+                .noteCount(noteCount)
                 .recentArticles(recentArticleVOList)
                 .systemMetrics(systemMetrics)
                 .aiStorageMetrics(aiStorageMetrics)
