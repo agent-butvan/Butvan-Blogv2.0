@@ -441,14 +441,25 @@ public class AuthServiceImpl implements AuthService {
         }
         // 如果是完整 URL，提取路径部分
         if (url.startsWith("http://") || url.startsWith("https://")) {
-            int idx = url.indexOf("/avatars/");
+            int idx = url.indexOf("/USER_AVATAR/");
+            if (idx >= 0) {
+                return url.substring(idx + 1); // 去掉开头的 /，提取出以 USER_AVATAR 开头的路径
+            }
+            // 兼容可能存在的旧格式（如 bucket 根目录下的 avatars/）
+            idx = url.indexOf("/avatars/");
             if (idx >= 0) {
                 return url.substring(idx + 1); // 去掉开头的 /
             }
             return null;
         }
-        // 如果是相对路径，直接返回（去掉开头的 /）
-        return url.startsWith("/") ? url.substring(1) : url;
+        // 如果是相对路径，提取时需排除 "/uploads/" 虚拟目录映射前缀
+        if (url.startsWith("/")) {
+            if (url.startsWith("/uploads/")) {
+                return url.substring(9); // 去掉 "/uploads/"，剩下实际在存储桶/上传目录中的相对路径
+            }
+            return url.substring(1);
+        }
+        return url;
     }
 
     /**
