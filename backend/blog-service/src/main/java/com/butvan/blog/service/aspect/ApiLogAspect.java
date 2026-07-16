@@ -101,6 +101,9 @@ public class ApiLogAspect {
                     try {
                         cn.hutool.json.JSONObject wsMsg = cn.hutool.json.JSONUtil.createObj();
                         wsMsg.set("type", "api-log");
+                        if (apiLog.getCreatedAt() == null) {
+                            apiLog.setCreatedAt(java.time.LocalDateTime.now());
+                        }
                         wsMsg.set("data", apiLog);
                         webSocketServer.sendToAll(cn.hutool.json.JSONUtil.toJsonStr(wsMsg));
                     } catch (Exception wsEx) {
