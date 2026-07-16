@@ -26,13 +26,17 @@ public class LocalFileStorageService implements FileStorageService {
      */
     public LocalFileStorageService(String uploadDir) {
         this.uploadDir = uploadDir;
-        ensureUploadDirExists();
+        File dir = new File(uploadDir);
+        if (!dir.exists()) {
+            dir.mkdirs();
+        }
     }
 
     @Override
     public String upload(MultipartFile file, String objectName, String category, String contentType) throws IOException {
         String actualObjectName = getActualObjectName(category, objectName);
-        File destFile = new File(uploadDir, actualObjectName);
+        String localPath = actualObjectName.replace("/", File.separator).replace("\\", File.separator);
+        File destFile = new File(uploadDir, localPath);
         ensureParentDirExists(destFile);
         file.transferTo(destFile);
         log.info("本地文件上传成功: {}", destFile.getAbsolutePath());
@@ -42,7 +46,8 @@ public class LocalFileStorageService implements FileStorageService {
     @Override
     public String upload(InputStream inputStream, String objectName, String category, String contentType, long size) throws IOException {
         String actualObjectName = getActualObjectName(category, objectName);
-        File destFile = new File(uploadDir, actualObjectName);
+        String localPath = actualObjectName.replace("/", File.separator).replace("\\", File.separator);
+        File destFile = new File(uploadDir, localPath);
         ensureParentDirExists(destFile);
         Files.copy(inputStream, destFile.toPath(), StandardCopyOption.REPLACE_EXISTING);
         log.info("本地文件（流）上传成功: {}", destFile.getAbsolutePath());
@@ -51,7 +56,8 @@ public class LocalFileStorageService implements FileStorageService {
 
     @Override
     public boolean delete(String objectName) {
-        String filePath = uploadDir + File.separator + objectName;
+        String normalizedPath = objectName.replace("/", File.separator).replace("\\", File.separator);
+        String filePath = uploadDir + File.separator + normalizedPath;
         File file = new File(filePath);
         if (file.exists() && file.isFile()) {
             boolean deleted = file.delete();
@@ -82,12 +88,12 @@ public class LocalFileStorageService implements FileStorageService {
     }
 
     /**
-     * 拼接实际的本地存储对象路径名（格式：[分类大写]/[当前日期yyyyMMdd]/[原始UUID文件名]）
+     * 拼接实际的本地存储对象路径名（格式：[分类大写]/[当前日期yyyyMMdd]/[原始UUID文件名]），统一以 / 作为相对路径前缀
      */
     private String getActualObjectName(String category, String objectName) {
         String datePrefix = java.time.LocalDate.now().format(java.time.format.DateTimeFormatter.ofPattern("yyyyMMdd"));
         String cleanCategory = org.springframework.util.StringUtils.hasText(category) ? category.toUpperCase() : "MANUAL";
-        return cleanCategory + File.separator + datePrefix + File.separator + objectName;
+        return cleanCategory + "/" + datePrefix + "/" + objectName;
     }
 }
 
