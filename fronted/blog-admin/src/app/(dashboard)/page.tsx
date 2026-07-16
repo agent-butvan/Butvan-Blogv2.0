@@ -99,6 +99,7 @@ export default function DashboardPage() {
 
   // SVG 折点 Hover tooltip 状态
   const [hoveredPoint, setHoveredPoint] = useState<{ x: number; y: number; value: number; name: string } | null>(null);
+  const [hoveredIndex, setHoveredIndex] = useState<number | null>(null);
 
   // 用来产生实时闪烁动效的指示
   const [hasNewPulse, setHasNewPulse] = useState(false);
@@ -654,11 +655,12 @@ export default function DashboardPage() {
                   <div
                     className="absolute z-20 pointer-events-none bg-zinc-950/95 dark:bg-zinc-900/95 text-white text-[9.5px] p-2 rounded-lg border border-zinc-800 shadow-md flex flex-col space-y-0.5 select-none font-sans"
                     style={{
-                      left: `${hoveredPoint.x + 16}px`,
-                      top: `${hoveredPoint.y + 12}px`,
+                      left: `${hoveredPoint.x}px`,
+                      top: `${hoveredPoint.y - 8}px`,
+                      transform: 'translate(-50%, -100%)',
                     }}
                   >
-                    <span className="font-extrabold text-[8px] uppercase tracking-wider text-zinc-400 max-w-[150px] truncate block">
+                    <span className="font-extrabold text-[8px] uppercase tracking-wider text-zinc-450 max-w-[150px] truncate block">
                       {hoveredPoint.name}
                     </span>
                     <span className="font-bold font-mono text-emerald-400">
@@ -704,17 +706,45 @@ export default function DashboardPage() {
                         />
                       )}
                       
-                      {/* 透明触控点实现 Hover Tooltip */}
+                      {/* 实实在在渲染出折点小圈以提供高亮交互反馈 */}
                       {svgData.points.map((p, idx) => (
                         <circle
-                          key={idx}
+                          key={`dot-${idx}`}
                           cx={p.x}
                           cy={p.y}
-                          r="8"
+                          r={hoveredIndex === idx ? 3.5 : 1.5}
+                          className={cn(
+                            "transition-all duration-200 pointer-events-none",
+                            hoveredIndex === idx
+                              ? "fill-emerald-400 stroke-white dark:stroke-zinc-950 stroke-1"
+                              : "fill-blue-500 stroke-white dark:stroke-zinc-950 stroke-[0.5]"
+                          )}
+                        />
+                      ))}
+
+                      {/* 透明触控点实现 Hover Tooltip (利用 clientRect 差值保证 100% 真实物理像素坐标映射) */}
+                      {svgData.points.map((p, idx) => (
+                        <circle
+                          key={`touch-${idx}`}
+                          cx={p.x}
+                          cy={p.y}
+                          r="12"
                           fill="transparent"
                           className="cursor-pointer pointer-events-auto"
-                          onMouseEnter={() => setHoveredPoint({ x: p.x, y: p.y, value: p.value, name: p.name })}
-                          onMouseLeave={() => setHoveredPoint(null)}
+                          onMouseEnter={(e) => {
+                            setHoveredIndex(idx);
+                            const rect = e.currentTarget.parentElement?.getBoundingClientRect();
+                            const circleRect = e.currentTarget.getBoundingClientRect();
+                            if (rect) {
+                              const x = circleRect.left - rect.left + circleRect.width / 2;
+                              const y = circleRect.top - rect.top;
+                              setHoveredPoint({ x, y, value: p.value, name: p.name });
+                            }
+                          }}
+                          onMouseLeave={() => {
+                            setHoveredIndex(null);
+                            setHoveredPoint(null);
+                          }}
                         />
                       ))}
                     </svg>
