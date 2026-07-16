@@ -62,18 +62,21 @@ public class WebSocketServer {
     }
 
     /**
-     * 向所有客户端广播消息
+     * 向所有后台大屏控制台客户端广播 API 日志消息
      * @param message 广播消息文本
      */
-    public void sendToAll(String message) {
+    public void broadcastApiLog(String message) {
         sessionMap.forEach((id, session) -> {
-            if (session != null && session.isOpen()) {
-                try {
-                    synchronized (session) {
-                        session.getBasicRemote().sendText(message);
+            // 过滤：只有 id 包含 admin- 或是 dashboard 相关的管理大屏连接，才进行广播，防止干扰普通微信登录的前台会话
+            if (id != null && (id.startsWith("admin-") || id.contains("dashboard"))) {
+                if (session != null && session.isOpen()) {
+                    try {
+                        synchronized (session) {
+                            session.getBasicRemote().sendText(message);
+                        }
+                    } catch (IOException e) {
+                        log.error("广播发送 ws 大屏日志消息失败，客户端 id: [{}], 报错信息: [{}]", id, e.getMessage());
                     }
-                } catch (IOException e) {
-                    log.error("广播发送 ws 消息失败，客户端 id: [{}], 报错信息: [{}]", id, e.getMessage());
                 }
             }
         });

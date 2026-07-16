@@ -105,7 +105,7 @@ public class ApiLogAspect {
                             apiLog.setCreatedAt(java.time.LocalDateTime.now());
                         }
                         wsMsg.set("data", apiLog);
-                        webSocketServer.sendToAll(cn.hutool.json.JSONUtil.toJsonStr(wsMsg));
+                        webSocketServer.broadcastApiLog(cn.hutool.json.JSONUtil.toJsonStr(wsMsg));
                     } catch (Exception wsEx) {
                         log.warn("通过 WebSocket 广播 API 日志消息异常:", wsEx);
                     }

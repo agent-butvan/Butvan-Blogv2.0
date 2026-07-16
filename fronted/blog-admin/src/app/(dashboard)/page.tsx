@@ -245,9 +245,9 @@ export default function DashboardPage() {
     let url = "";
     try {
       const parsed = new URL(backendUrl);
-      url = `${wsProto}://${parsed.host}/ws/admin-dashboard-monitor`;
+      url = `${wsProto}://${parsed.host}/ws/admin-dashboard-${Math.random().toString(36).substring(2, 9)}`;
     } catch {
-      url = `${wsProto}://${window.location.host}/ws/admin-dashboard-monitor`;
+      url = `${wsProto}://${window.location.host}/ws/admin-dashboard-${Math.random().toString(36).substring(2, 9)}`;
     }
 
     const connectWs = () => {
