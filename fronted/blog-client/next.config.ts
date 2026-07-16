@@ -11,6 +11,7 @@ const allowedDevOrigins = process.env.NEXT_PUBLIC_DEV_ORIGINS
   : ["10.100.135.154"];
 
 const nextConfig: NextConfig = {
+  output: "standalone",
   allowedDevOrigins,
   /** 开发环境代理 API 与静态上传资源，支持局域网设备同源访问 */
   async rewrites() {

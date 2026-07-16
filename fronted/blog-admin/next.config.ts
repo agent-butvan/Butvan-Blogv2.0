@@ -9,6 +9,7 @@ const allowedDevOrigins = process.env.NEXT_PUBLIC_DEV_ORIGINS
   : ["10.100.135.154"];
 
 const nextConfig: NextConfig = {
+  output: "standalone",
   allowedDevOrigins,
   /**
    * 开发环境将 /api/*、/uploads/* 代理到后端。
