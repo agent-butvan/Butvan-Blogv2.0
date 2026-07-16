@@ -17,8 +17,26 @@ const apiClient: AxiosInstance = axios.create({
   },
 });
 
+if (typeof window !== "undefined") {
+  axios.get("https://api.ipify.org?format=json", { timeout: 3000 })
+    .then((res) => {
+      if (res.data?.ip) {
+        localStorage.setItem("client_real_ip", res.data.ip);
+      }
+    })
+    .catch(() => {
+      axios.get("https://api.ip.sb/ip", { timeout: 3000 })
+        .then((res) => {
+          if (res.data) {
+            localStorage.setItem("client_real_ip", String(res.data).trim());
+          }
+        })
+        .catch(() => {});
+    });
+}
+
 /**
- * 请求拦截器 — 自动注入 JWT Token
+ * 请求拦截器 — 自动注入 JWT Token 与真实客户端 IP
  */
 apiClient.interceptors.request.use(
   (config) => {
@@ -27,6 +45,10 @@ apiClient.interceptors.request.use(
       const token = localStorage.getItem("access_token");
       if (token) {
         config.headers.Authorization = `Bearer ${token}`;
+      }
+      const realIp = localStorage.getItem("client_real_ip");
+      if (realIp) {
+        config.headers["X-Client-Real-IP"] = realIp;
       }
     }
     // 当请求体为 FormData 时，删除手动设置的 Content-Type，

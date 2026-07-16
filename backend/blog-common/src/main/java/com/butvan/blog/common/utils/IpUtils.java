@@ -25,6 +25,7 @@ public class IpUtils {
         
         // 依次从常见的 HTTP 头部字段获取 IP
         String[] headers = {
+            "X-Client-Real-IP",
             "X-Forwarded-For",
             "X-Real-IP",
             "Proxy-Client-IP",
