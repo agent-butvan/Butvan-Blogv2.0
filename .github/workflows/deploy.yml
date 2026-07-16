@@ -19,7 +19,7 @@ jobs:
       - name: Log in to Aliyun Container Registry
         uses: docker/login-action@v3
         with:
-          registry: registry.cn-hangzhou.aliyuncs.com
+          registry: crpi-46o5657v3drrpfcl.cn-hangzhou.personal.cr.aliyuncs.com
           username: ${{ secrets.REGISTRY_USERNAME }}
           password: ${{ secrets.REGISTRY_PASSWORD }}
 
@@ -30,7 +30,7 @@ jobs:
           context: ./backend
           file: ./backend/Dockerfile
           push: true
-          tags: registry.cn-hangzhou.aliyuncs.com/butvan/blog-service:latest
+          tags: crpi-46o5657v3drrpfcl.cn-hangzhou.personal.cr.aliyuncs.com/butvan/blog-service:latest
 
       # 2. 构建并推送管理后台前端镜像
       - name: Build and Push Admin Frontend
@@ -39,7 +39,7 @@ jobs:
           context: ./fronted/blog-admin
           file: ./fronted/blog-admin/Dockerfile
           push: true
-          tags: registry.cn-hangzhou.aliyuncs.com/butvan/blog-admin:latest
+          tags: crpi-46o5657v3drrpfcl.cn-hangzhou.personal.cr.aliyuncs.com/butvan/blog-admin:latest
 
       # 3. 构建并推送博客前台前端镜像
       - name: Build and Push Client Frontend
@@ -48,7 +48,7 @@ jobs:
           context: ./fronted/blog-client
           file: ./fronted/blog-client/Dockerfile
           push: true
-          tags: registry.cn-hangzhou.aliyuncs.com/butvan/blog-client:latest
+          tags: crpi-46o5657v3drrpfcl.cn-hangzhou.personal.cr.aliyuncs.com/butvan/blog-client:latest
 
   deploy:
     needs: build-and-push
