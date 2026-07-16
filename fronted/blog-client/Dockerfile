@@ -14,6 +14,8 @@ FROM node:20-alpine AS builder
 WORKDIR /app
 COPY --from=deps /app/node_modules ./node_modules
 COPY . .
+# 构建时注入后端地址，让 Next.js rewrites 代理目标指向 Docker 内网的后端服务
+ENV BACKEND_URL=http://blog-service:8080
 RUN npm install -g pnpm@9 && pnpm build
 
 # -----------------
