@@ -13,19 +13,18 @@ const allowedDevOrigins = process.env.NEXT_PUBLIC_DEV_ORIGINS
 const nextConfig: NextConfig = {
   output: "standalone",
   allowedDevOrigins,
-  /** 开发环境代理 API 与静态上传资源，支持局域网设备同源访问 */
+  /** API 与静态上传资源代理，支持同源访问 */
   async rewrites() {
-    if (process.env.NODE_ENV !== "development") {
-      return [];
-    }
+    /** 运行时后端地址：Docker 容器内使用 BACKEND_URL 环境变量 */
+    const proxyTarget = process.env.BACKEND_URL || backendUrl;
     return [
       {
         source: "/api/:path*",
-        destination: `${backendUrl}/api/:path*`,
+        destination: `${proxyTarget}/api/:path*`,
       },
       {
         source: "/uploads/:path*",
-        destination: `${backendUrl}/uploads/:path*`,
+        destination: `${proxyTarget}/uploads/:path*`,
       },
     ];
   },

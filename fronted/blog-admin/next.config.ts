@@ -12,22 +12,19 @@ const nextConfig: NextConfig = {
   output: "standalone",
   allowedDevOrigins,
   /**
-   * 开发环境将 /api/*、/uploads/* 代理到后端。
-   * 配合 api.ts baseURL="/api" 与 resolveAssetUrl 同源路径，支持局域网设备访问。
-   * 生产环境不启用代理，需配置 NEXT_PUBLIC_API_BASE_URL 指向真实后端。
+   * 将 /api/*、/uploads/* 代理到后端，支持同源访问。
+   * Docker 容器内通过 BACKEND_URL 环境变量指定后端地址。
    */
   async rewrites() {
-    if (process.env.NODE_ENV !== "development") {
-      return [];
-    }
+    const proxyTarget = process.env.BACKEND_URL || backendUrl;
     return [
       {
         source: "/api/:path*",
-        destination: `${backendUrl}/api/:path*`,
+        destination: `${proxyTarget}/api/:path*`,
       },
       {
         source: "/uploads/:path*",
-        destination: `${backendUrl}/uploads/:path*`,
+        destination: `${proxyTarget}/uploads/:path*`,
       },
     ];
   },
