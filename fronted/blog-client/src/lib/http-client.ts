@@ -24,6 +24,26 @@ import { AppError, classifyError, classifyNetworkError } from './error-handler'
 
 // ---- 配置常量 -----------------------------------------------------------
 
+if (typeof window !== 'undefined') {
+  fetch('https://api.ipify.org?format=json')
+    .then((res) => res.json())
+    .then((data) => {
+      if (data?.ip) {
+        localStorage.setItem('client_real_ip', data.ip)
+      }
+    })
+    .catch(() => {
+      fetch('https://api.ip.sb/ip')
+        .then((res) => res.text())
+        .then((text) => {
+          if (text) {
+            localStorage.setItem('client_real_ip', text.trim())
+          }
+        })
+        .catch(() => {})
+    })
+}
+
 /** 后端 API 基地址
  * 使用相对路径，兼容所有部署环境：
  * - 开发环境：通过 Next.js rewrites 代理到 localhost:8080
@@ -170,6 +190,13 @@ export async function request<T = unknown>(
 
   // 构建请求头
   const headers: Record<string, string> = { ...(customHeaders as Record<string, string>) }
+
+  if (typeof window !== 'undefined') {
+    const realIp = localStorage.getItem('client_real_ip')
+    if (realIp) {
+      headers['X-Client-Real-IP'] = realIp
+    }
+  }
 
   // Cookie 模式下无需手动注入 Authorization，浏览器自动携带 httpOnly Cookie
 
