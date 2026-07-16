@@ -12,6 +12,10 @@ Butvan Blog2.0/                                    # 📦 项目根目录
 ├── PRODUCT.md                                     # 产品迭代需求文档（v0.1 / v0.2）
 ├── DATA_MODEL.md                                  # 数据库模型完整设计（11模块21张表）
 ├── fWdgJuAOF.jpeg                                 # 默认「Cozy Room」场景高清背景图
+├── docker-compose.yml                             # 🐳 Docker Compose 容器编排配置文件
+├── .github/                                       # ⚙️ GitHub 自动化配置目录
+│   └── workflows/
+│       └── deploy.yml                             #   GitHub Actions 自动化部署流水线
 ├── .graphifyignore                                # 🔍 Graphify 本地提取忽略规则配置（剔除文档/媒体文件以实现免 LLM 提取）
 │
 ├── .agents/                                       # 🤖 智能体辅助开发配置
@@ -147,7 +151,8 @@ Butvan Blog2.0/                                    # 📦 项目根目录
 │   │   ├── tsconfig.json                          #     TypeScript 配置
 │   │   ├── eslint.config.mjs                      #     ESLint 规则
 │   │   ├── package.json                           #     依赖声明（next, heroui, tailwind 等）
-│   │   └── .gitignore                             #     Git 忽略规则
+│   │   ├── .gitignore                             #     Git 忽略规则
+│   │   └── Dockerfile                             #     Next.js 独立构建 Dockerfile
 │   │
 │   └── blog-admin/                                #   管理后台端（内容管理）
 │       ├── public/                                #     静态资源
@@ -234,11 +239,13 @@ Butvan Blog2.0/                                    # 📦 项目根目录
 │       ├── tsconfig.json
 │       ├── eslint.config.mjs
 │       ├── package.json
-│       └── .gitignore
+│       ├── .gitignore
+│       └── Dockerfile                             #     Next.js 独立构建 Dockerfile
 │
 └── backend/                                        # ⚙️【后端】Spring Boot 3.2 + Maven 多模块 + JPA + PostgreSQL
     │
     ├── pom.xml                                     #   Maven 父工程 POM（统一依赖版本管理、模块聚合）
+    ├── Dockerfile                                  #   Spring Boot 多阶段构建 Dockerfile
     ├── migration-v0.2.sql                          #   数据库迁移脚本 (v0.2 版本)
     ├── uploads/                                    #   📁 静态资源上传映射物理目录（本地测试图片存储）
     │   └── sprites/                                #     透明 PNG 热区悬浮物品切片存储目录

@@ -1,0 +1,83 @@
+version: '3.8'
+
+services:
+  # 1. 数据库 PostgreSQL
+  postgres:
+    image: postgres:16-alpine
+    container_name: blog-postgres
+    restart: always
+    environment:
+      POSTGRES_DB: butvan_blog
+      POSTGRES_USER: blog_user
+      POSTGRES_PASSWORD: blog_secure_password
+    volumes:
+      # 将容器内的数据库数据挂载到宿主机当前目录下的 data/postgres 目录，保证数据持久化
+      - ./data/postgres:/var/lib/postgresql/data
+    ports:
+      - "5432:5432"
+    networks:
+      - blog-network
+
+  # 2. 缓存 Redis
+  redis:
+    image: redis:7-alpine
+    container_name: blog-redis
+    restart: always
+    command: redis-server --requirepass blog_redis_secure_password
+    volumes:
+      # 挂载 Redis 数据目录
+      - ./data/redis:/data
+    ports:
+      - "6379:6379"
+    networks:
+      - blog-network
+
+  # 3. Spring Boot 后端
+  blog-service:
+    image: registry.cn-hangzhou.aliyuncs.com/butvan/blog-service:latest
+    container_name: blog-service
+    restart: always
+    depends_on:
+      - postgres
+      - redis
+    environment:
+      SPRING_DATASOURCE_URL: jdbc:postgresql://postgres:5432/butvan_blog
+      SPRING_DATASOURCE_USERNAME: blog_user
+      SPRING_DATASOURCE_PASSWORD: blog_secure_password
+      SPRING_DATA_REDIS_HOST: redis
+      SPRING_DATA_REDIS_PORT: 6379
+      SPRING_DATA_REDIS_PASSWORD: blog_redis_secure_password
+    ports:
+      - "8080:8080"
+    volumes:
+      - ./uploads:/app/uploads
+    networks:
+      - blog-network
+
+  # 4. 后台管理前端
+  blog-admin:
+    image: registry.cn-hangzhou.aliyuncs.com/butvan/blog-admin:latest
+    container_name: blog-admin
+    restart: always
+    ports:
+      - "3000:3000"
+    environment:
+      NEXT_PUBLIC_API_URL: http://blog-service:8080
+    networks:
+      - blog-network
+
+  # 5. 博客前台前端
+  blog-client:
+    image: registry.cn-hangzhou.aliyuncs.com/butvan/blog-client:latest
+    container_name: blog-client
+    restart: always
+    ports:
+      - "3001:3000" # 宿主机 3001 映射容器内 3000 端口
+    environment:
+      NEXT_PUBLIC_API_URL: http://blog-service:8080
+    networks:
+      - blog-network
+
+networks:
+  blog-network:
+    driver: bridge

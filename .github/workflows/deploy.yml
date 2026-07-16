@@ -1,0 +1,73 @@
+name: Build and Deploy Butvan Blog 2.0
+
+on:
+  push:
+    branches:
+      - main # 代码推送到 main 分支时自动触发流水线
+
+jobs:
+  build-and-push:
+    runs-on: ubuntu-latest
+    steps:
+      - name: Checkout Code
+        uses: actions/checkout@v4
+
+      # 登录到 Docker 镜像托管仓库（默认示例使用阿里云 ACR，可以根据需要替换为腾讯云、Docker Hub等）
+      - name: Log in to Container Registry
+        uses: docker/login-action@v3
+        with:
+          registry: registry.cn-hangzhou.aliyuncs.com
+          username: ${{ secrets.REGISTRY_USERNAME }}
+          password: ${{ secrets.REGISTRY_PASSWORD }}
+
+      # 1. 构建并推送后端 Java 服务镜像
+      - name: Build and Push Backend
+        uses: docker/build-push-action@v5
+        with:
+          context: ./backend
+          file: ./backend/Dockerfile
+          push: true
+          tags: registry.cn-hangzhou.aliyuncs.com/butvan/blog-service:latest
+
+      # 2. 构建并推送管理后台前端镜像
+      - name: Build and Push Admin Frontend
+        uses: docker/build-push-action@v5
+        with:
+          context: ./fronted/blog-admin
+          file: ./fronted/blog-admin/Dockerfile
+          push: true
+          tags: registry.cn-hangzhou.aliyuncs.com/butvan/blog-admin:latest
+
+      # 3. 构建并推送博客前台前端镜像
+      - name: Build and Push Client Frontend
+        uses: docker/build-push-action@v5
+        with:
+          context: ./fronted/blog-client
+          file: ./fronted/blog-client/Dockerfile
+          push: true
+          tags: registry.cn-hangzhou.aliyuncs.com/butvan/blog-client:latest
+
+  deploy:
+    needs: build-and-push
+    runs-on: ubuntu-latest
+    steps:
+      # 通过 SSH 登录到目标服务器，进入部署目录执行 Docker 升级命令
+      - name: Deploy to Server via SSH
+        uses: appleboy/ssh-action@v1.0.3
+        with:
+          host: ${{ secrets.SERVER_HOST }}
+          username: ${{ secrets.SERVER_USER }}
+          key: ${{ secrets.SERVER_SSH_KEY }}
+          port: ${{ secrets.SERVER_PORT }}
+          script: |
+            # 进入你服务器上的项目部署目录（根据实际情况修改）
+            cd /opt/blog
+            
+            # 拉取最新构建好的镜像
+            docker compose pull
+            
+            # 启动并重启发生变更的容器
+            docker compose up -d --remove-orphans
+            
+            # 自动清理服务器上残留的无标签虚无镜像，节省磁盘空间
+            docker image prune -f
