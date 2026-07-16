@@ -7,9 +7,9 @@ services:
     container_name: blog-postgres
     restart: always
     environment:
-      POSTGRES_DB: butvan_blog
-      POSTGRES_USER: butvan
-      POSTGRES_PASSWORD: wj08265395
+      POSTGRES_DB: ${POSTGRES_DB:-butvan_blog}
+      POSTGRES_USER: ${POSTGRES_USER:-butvan}
+      POSTGRES_PASSWORD: ${POSTGRES_PASSWORD}
     volumes:
       # 将容器内的数据库数据挂载到宿主机当前目录下的 data/postgres 目录，保证数据持久化
       - ./data/postgres:/var/lib/postgresql/data
@@ -23,7 +23,7 @@ services:
     image: redis:7-alpine
     container_name: blog-redis
     restart: always
-    command: redis-server --requirepass wj08265395
+    command: redis-server --requirepass ${REDIS_PASSWORD}
     volumes:
       # 挂载 Redis 数据目录
       - ./data/redis:/data
@@ -41,12 +41,12 @@ services:
       - postgres
       - redis
     environment:
-      SPRING_DATASOURCE_URL: jdbc:postgresql://postgres:5432/butvan_blog
-      SPRING_DATASOURCE_USERNAME: butvan
-      SPRING_DATASOURCE_PASSWORD: wj08265395
+      SPRING_DATASOURCE_URL: jdbc:postgresql://postgres:5432/${POSTGRES_DB:-butvan_blog}
+      SPRING_DATASOURCE_USERNAME: ${POSTGRES_USER:-butvan}
+      SPRING_DATASOURCE_PASSWORD: ${POSTGRES_PASSWORD}
       SPRING_DATA_REDIS_HOST: redis
       SPRING_DATA_REDIS_PORT: 6379
-      SPRING_DATA_REDIS_PASSWORD: wj08265395
+      SPRING_DATA_REDIS_PASSWORD: ${REDIS_PASSWORD}
     ports:
       - "8080:8080"
     volumes:

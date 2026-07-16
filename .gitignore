@@ -64,3 +64,6 @@ videos/
 # docx
 docx/
 design-system/
+
+# Local Environment Configuration
+.env
