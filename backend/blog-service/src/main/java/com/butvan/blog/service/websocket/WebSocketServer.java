@@ -62,6 +62,24 @@ public class WebSocketServer {
     }
 
     /**
+     * 向所有客户端广播消息
+     * @param message 广播消息文本
+     */
+    public void sendToAll(String message) {
+        sessionMap.forEach((id, session) -> {
+            if (session != null && session.isOpen()) {
+                try {
+                    synchronized (session) {
+                        session.getBasicRemote().sendText(message);
+                    }
+                } catch (IOException e) {
+                    log.error("广播发送 ws 消息失败，客户端 id: [{}], 报错信息: [{}]", id, e.getMessage());
+                }
+            }
+        });
+    }
+
+    /**
      * 向指定客户端发送消息
      * @param id
      * @param message

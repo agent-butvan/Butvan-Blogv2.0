@@ -1,6 +1,6 @@
 "use client";
 
-import { useEffect, useState } from "react";
+import { useEffect, useState, useRef } from "react";
 import Link from "next/link";
 import { useRouter } from "next/navigation";
 import {
@@ -9,7 +9,8 @@ import {
   Eye,
   Users,
   Plus,
-  ArrowRight
+  ArrowRight,
+  Zap
 } from "lucide-react";
 import apiClient from "@/lib/api";
 import type { ApiResponse } from "@/types/common";
@@ -59,9 +60,17 @@ export default function DashboardPage() {
   const [greeting, setGreeting] = useState("");
   const [quote, setQuote] = useState({ text: "你的选择，毫无意义。", author: "TOBY FOX", source: "《DELTARUNE》" });
 
-  // 实时 API 请求日志状态
+  // 实时 API 日志列表（保存最新 8 条）
   const [apiLogs, setApiLogs] = useState<ApiLogItem[]>([]);
   const [logsLoading, setLogsLoading] = useState(true);
+
+  // 实时脉冲波形图（保持 15 个点）
+  const [pulseData, setPulseData] = useState<number[]>([15, 35, 10, 45, 20, 60, 15, 30, 25, 70, 12, 38, 55, 22, 45]);
+  const [pulseIndex, setPulseIndex] = useState(0);
+
+  // 用来产生实时闪烁动效的指示
+  const [hasNewPulse, setHasNewPulse] = useState(false);
+  const wsRef = useRef<WebSocket | null>(null);
 
   useEffect(() => {
     // 动态生成日期
@@ -158,30 +167,74 @@ export default function DashboardPage() {
     };
   }, []);
 
-  // 每 8 秒自动增量刷新实时 API 日志
+  // 1. 初始化拉取最近日志做占位
+  // 2. 建立与后端的 WebSocket 连接
   useEffect(() => {
-    let timer: NodeJS.Timeout;
-    
-    const loadRealtimeLogs = async () => {
-      try {
-        const res = await apiClient.get<ApiResponse<{ records: ApiLogItem[] }>>("/admin/api-logs", {
-          params: { page: 1, size: 8 }
-        });
-        if (res.data?.data?.records) {
-          setApiLogs(res.data.data.records);
-        }
-      } catch (err) {
-        console.error("工作台实时日志拉取失败:", err);
-      } finally {
-        setLogsLoading(false);
+    // 拉取初始化日志
+    apiClient.get<ApiResponse<{ records: ApiLogItem[] }>>("/admin/api-logs", {
+      params: { page: 1, size: 8 }
+    }).then((res) => {
+      if (res.data?.data?.records) {
+        setApiLogs(res.data.data.records);
       }
+    }).catch((err) => {
+      console.error("加载初始化日志失败:", err);
+    }).finally(() => {
+      setLogsLoading(false);
+    });
+
+    if (typeof window === "undefined") return;
+
+    // 建立 WS 连接
+    const wsProto = window.location.protocol === 'https:' ? 'wss' : 'ws';
+    const backendUrl = process.env.NEXT_PUBLIC_BACKEND_URL || 'http://localhost:8080';
+    let url = "";
+    try {
+      const parsed = new URL(backendUrl);
+      url = `${wsProto}://${parsed.host}/ws/admin-dashboard-monitor`;
+    } catch {
+      url = `${wsProto}://${window.location.host}/ws/admin-dashboard-monitor`;
+    }
+
+    const connectWs = () => {
+      const ws = new WebSocket(url);
+      wsRef.current = ws;
+
+      ws.onmessage = (event) => {
+        try {
+          const payload = JSON.parse(event.data);
+          if (payload.type === "api-log" && payload.data) {
+            const newLog = payload.data as ApiLogItem;
+            // 实时滚动：新生成的日志滑入顶部
+            setApiLogs(prev => [newLog, ...prev.slice(0, 7)]);
+            // 脉冲波形图向左滚动并存入最新耗时
+            setPulseData(prev => [...prev.slice(1), newLog.costTime]);
+            setPulseIndex(i => i + 1);
+            // 激活脉冲闪烁效果
+            setHasNewPulse(true);
+            setTimeout(() => setHasNewPulse(false), 800);
+          }
+        } catch (err) {
+          // 降级防崩溃
+        }
+      };
+
+      ws.onclose = () => {
+        // 断线 5 秒后尝试重连
+        setTimeout(() => {
+          if (wsRef.current?.readyState === WebSocket.CLOSED) {
+            connectWs();
+          }
+        }, 5000);
+      };
     };
 
-    loadRealtimeLogs();
-    timer = setInterval(loadRealtimeLogs, 8000);
-    
+    connectWs();
+
     return () => {
-      if (timer) clearInterval(timer);
+      if (wsRef.current) {
+        wsRef.current.close();
+      }
     };
   }, []);
 
@@ -253,6 +306,43 @@ export default function DashboardPage() {
     return "text-emerald-600 dark:text-emerald-400";
   };
 
+  // 生成实时脉冲折线图的 SVG 数据坐标
+  const buildSvgPath = () => {
+    const width = 280;
+    const height = 90;
+    const padding = 10;
+    const chartWidth = width - padding * 2;
+    const chartHeight = height - padding * 2;
+
+    const count = pulseData.length;
+    const stepX = chartWidth / (count - 1);
+
+    // 最大耗时映射，最小设为 120ms 防止图表太平
+    const maxVal = Math.max(...pulseData, 120);
+
+    const points = pulseData.map((val, idx) => {
+      const x = padding + idx * stepX;
+      // 耗时映射到 Y 轴（数值越大 Y 坐标越小，在折线图上为尖峰）
+      const ratio = val / maxVal;
+      const y = padding + chartHeight - ratio * chartHeight;
+      return { x, y };
+    });
+
+    const polylinePoints = points.map(p => `${p.x.toFixed(1)},${p.y.toFixed(1)}`).join(" ");
+    
+    // 生成闭合的填充区域
+    const fillPath = `M ${points[0].x.toFixed(1)} ${height - padding} ` +
+                     points.map(p => `L ${p.x.toFixed(1)} ${p.y.toFixed(1)}`).join(" ") +
+                     ` L ${points[points.length - 1].x.toFixed(1)} ${height - padding} Z`;
+
+    const lastPoint = points[points.length - 1];
+
+    return { polylinePoints, fillPath, lastPoint };
+  };
+
+  const svgData = buildSvgPath();
+  const currentCostTime = pulseData[pulseData.length - 1];
+
   return (
     <div className="min-h-screen bg-[#F8F9FA] dark:bg-zinc-950 p-4 sm:p-6 -m-4 sm:-m-6 font-sans text-zinc-800 dark:text-zinc-200 transition-colors duration-200 text-left">
       
@@ -263,7 +353,7 @@ export default function DashboardPage() {
             {greeting}，可梵
           </h1>
           {/* 金句极简一行 */}
-          <p className="text-xs text-zinc-500 dark:text-zinc-450 flex items-center flex-wrap gap-1 leading-none font-medium mt-0.5">
+          <p className="text-xs text-zinc-500 dark:text-zinc-455 flex items-center flex-wrap gap-1 leading-none font-medium mt-0.5">
             <span>{quote.text}</span>
             <span className="text-[10px] text-zinc-400 dark:text-zinc-550 font-normal">
               —— {quote.author} {quote.source}
@@ -275,7 +365,7 @@ export default function DashboardPage() {
         <div className="flex items-center flex-wrap gap-3.5">
           <div className="flex items-center gap-2">
             {/* 时间指示标签 */}
-            <span className="hidden sm:inline-block text-[10px] font-bold text-zinc-400 dark:text-zinc-500 font-mono bg-white dark:bg-zinc-900 border border-zinc-200/60 dark:border-zinc-800/80 px-2.5 py-1.5 rounded-xl shadow-xs">
+            <span className="hidden sm:inline-block text-[10px] font-bold text-zinc-400 dark:text-zinc-550 font-mono bg-white dark:bg-zinc-900 border border-zinc-200/60 dark:border-zinc-800/80 px-2.5 py-1.5 rounded-xl shadow-xs">
               {formattedDate}
             </span>
             
@@ -294,7 +384,7 @@ export default function DashboardPage() {
       {/* 主页面格栅 */}
       <div className="space-y-6">
         
-        {/* 2. 四大核心指标卡片（NextUI Pro 浮空卡片） */}
+        {/* 2. 四大核心指标卡片 */}
         <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-4 sm:gap-5">
           {statCards.map((card, i) => (
             <div
@@ -302,7 +392,7 @@ export default function DashboardPage() {
               className="bg-white dark:bg-zinc-900 border border-zinc-200/50 dark:border-zinc-850 p-5 rounded-2xl shadow-[0_1px_3px_rgba(0,0,0,0.01),0_10px_20px_-5px_rgba(0,0,0,0.025)] dark:shadow-[0_8px_30px_rgba(0,0,0,0.2)] hover:shadow-[0_15px_30px_-10px_rgba(0,0,0,0.05)] dark:hover:shadow-[0_15px_30px_-10px_rgba(0,0,0,0.3)] hover:-translate-y-0.5 transition-all duration-200 flex flex-col justify-between h-28"
             >
               <div className="flex items-center justify-between">
-                <span className="text-[10px] font-bold text-zinc-400 dark:text-zinc-550 uppercase tracking-widest leading-none">
+                <span className="text-[10px] font-bold text-zinc-400 dark:text-zinc-500 uppercase tracking-widest leading-none">
                   {card.label}
                 </span>
                 <div className={cn("p-1.5 rounded-lg shrink-0", card.iconColor)}>
@@ -420,73 +510,146 @@ export default function DashboardPage() {
           </div>
         </div>
 
-        {/* 4. 底层：实时接口日志卡片 & 快捷指令面板 */}
+        {/* 4. 底层：实时监控与滚动日志 + 心跳波形图的完美组合 */}
         <div className="grid grid-cols-1 lg:grid-cols-12 gap-5">
           
-          {/* 左侧：Realtime API Logs 实时日志卡片 */}
-          <div className="lg:col-span-8 bg-white dark:bg-zinc-900 border border-zinc-200/50 dark:border-zinc-850 p-5 rounded-2xl shadow-[0_1px_3px_rgba(0,0,0,0.01),0_10px_20px_-5px_rgba(0,0,0,0.025)] dark:shadow-[0_8px_30px_rgba(0,0,0,0.2)] flex flex-col justify-between">
+          {/* 左侧大面板：Live API 日志与假可视化的极致组合 */}
+          <div className="lg:col-span-8 bg-white dark:bg-zinc-900 border border-zinc-200/50 dark:border-zinc-850 p-5 rounded-2xl shadow-[0_1px_3px_rgba(0,0,0,0.01),0_10px_20px_-5px_rgba(0,0,0,0.025)] dark:shadow-[0_8px_30px_rgba(0,0,0,0.2)] flex flex-col justify-between min-h-[360px]">
             <div>
-              {/* Card Header with real-time breathing light */}
-              <div className="flex items-center justify-between mb-4 border-b border-zinc-100 dark:border-zinc-800 pb-3.5">
+              {/* 看板头部 */}
+              <div className="flex items-center justify-between mb-4.5 border-b border-zinc-100 dark:border-zinc-800 pb-3.5">
                 <div className="flex items-center gap-2">
-                  <h3 className="text-sm font-bold text-zinc-850 dark:text-zinc-200">实时接口日志</h3>
-                  <span className="text-[10px] text-zinc-400 dark:text-zinc-500 bg-zinc-50 dark:bg-zinc-950 px-2 py-0.5 rounded-md border border-zinc-200/30 font-bold font-mono">
-                    LIVE
+                  <h3 className="text-sm font-bold text-zinc-850 dark:text-zinc-200">实时接口监控大屏</h3>
+                  <span className="text-[8.5px] font-extrabold text-white bg-rose-500 px-1.5 py-0.5 rounded-md font-mono flex items-center gap-0.5 uppercase tracking-wide">
+                    <Zap size={9} fill="white" />
+                    WebSocket Connected
                   </span>
                 </div>
-                {/* 8秒呼吸指示灯 */}
+                {/* 实时闪烁标志 */}
                 <div className="flex items-center gap-1.5 select-none">
                   <span className="relative flex h-2 w-2">
-                    <span className="animate-ping absolute inline-flex h-full w-full rounded-full bg-emerald-400 opacity-75"></span>
-                    <span className="relative inline-flex rounded-full h-2 w-2 bg-emerald-500"></span>
+                    <span className={cn("absolute inline-flex h-full w-full rounded-full bg-emerald-400 opacity-75", hasNewPulse && "animate-ping")}></span>
+                    <span className={cn("relative inline-flex rounded-full h-2 w-2 transition-colors duration-300", hasNewPulse ? "bg-emerald-400" : "bg-emerald-500")}></span>
                   </span>
-                  <span className="text-[9px] font-bold text-zinc-400 dark:text-zinc-500 font-mono tracking-wider">
-                    MONITORING (8s)
+                  <span className="text-[9px] font-bold text-zinc-400 dark:text-zinc-550 font-mono tracking-wider">
+                    REALTIME STREAMING
                   </span>
                 </div>
               </div>
 
-              {/* Data Table */}
+              {/* 上半部核心：假可视化 + 心跳波形图的物理折线 */}
+              <div className="grid grid-cols-1 md:grid-cols-12 gap-5 mb-5 items-center select-none bg-zinc-50/40 dark:bg-zinc-950/20 border border-zinc-200/30 dark:border-zinc-800/40 rounded-2xl p-4">
+                {/* 左侧：精美心跳波形图 (SVG) */}
+                <div className="md:col-span-8 flex flex-col items-center">
+                  <div className="w-full relative h-24 bg-white dark:bg-zinc-950 border border-zinc-100 dark:border-zinc-850 rounded-xl shadow-2xs overflow-hidden flex items-center justify-center">
+                    {/* 背景网格线 */}
+                    <div className="absolute inset-0 bg-[linear-gradient(to_right,rgba(0,112,243,0.03)_1px,transparent_1px),linear-gradient(to_bottom,rgba(0,112,243,0.03)_1px,transparent_1px)] bg-[size:20px_20px]" />
+                    
+                    <svg className="w-full h-full" viewBox="0 0 280 90" preserveAspectRatio="none">
+                      <defs>
+                        {/* 折线渐变 */}
+                        <linearGradient id="strokeGradient" x1="0" y1="0" x2="1" y2="0">
+                          <stop offset="0%" stopColor="#8b5cf6" stopOpacity="0.4" />
+                          <stop offset="50%" stopColor="#3b82f6" stopOpacity="0.8" />
+                          <stop offset="100%" stopColor="#10b981" stopOpacity="1" />
+                        </linearGradient>
+                        {/* 阴影渐变 */}
+                        <linearGradient id="fillGradient" x1="0" y1="0" x2="0" y2="1">
+                          <stop offset="0%" stopColor="#10b981" stopOpacity="0.18" />
+                          <stop offset="100%" stopColor="#3b82f6" stopOpacity="0.0" />
+                        </linearGradient>
+                      </defs>
+                      {/* 区域面积填充 */}
+                      <path d={svgData.fillPath} fill="url(#fillGradient)" className="transition-all duration-300" />
+                      {/* 核心心跳折线 */}
+                      <polyline
+                        fill="none"
+                        stroke="url(#strokeGradient)"
+                        strokeWidth="2.5"
+                        strokeLinecap="round"
+                        strokeLinejoin="round"
+                        points={svgData.polylinePoints}
+                        className="transition-all duration-300"
+                      />
+                      {/* 最新起伏呼吸点 */}
+                      {svgData.lastPoint && (
+                        <circle
+                          cx={svgData.lastPoint.x}
+                          cy={svgData.lastPoint.y}
+                          r="4"
+                          className={cn("fill-emerald-500 stroke-white dark:stroke-zinc-950 stroke-2", hasNewPulse && "animate-bounce")}
+                        />
+                      )}
+                    </svg>
+                  </div>
+                </div>
+
+                {/* 右侧：测速核心统计卡片 */}
+                <div className="md:col-span-4 flex flex-col justify-center text-left space-y-3.5 md:pl-2">
+                  <div>
+                    <span className="text-[9px] font-bold text-zinc-400 uppercase tracking-wider block">最新接口耗时</span>
+                    <span className={cn("text-3xl font-extrabold font-mono italic tracking-tight block transition-all duration-300", getCostTimeColor(currentCostTime))}>
+                      {currentCostTime} <span className="text-xs font-sans not-italic font-bold text-zinc-400">ms</span>
+                    </span>
+                  </div>
+                  <div className="flex items-center gap-4">
+                    <div>
+                      <span className="text-[9.5px] font-bold text-zinc-400 block">心跳波形数</span>
+                      <span className="text-xs font-bold font-mono text-zinc-800 dark:text-zinc-200">{pulseData.length} pts</span>
+                    </div>
+                    <div className="h-6 w-px bg-zinc-200 dark:bg-zinc-850" />
+                    <div>
+                      <span className="text-[9.5px] font-bold text-zinc-400 block">实时累计推送</span>
+                      <span className="text-xs font-bold font-mono text-zinc-850 dark:text-zinc-200">{pulseIndex} pkts</span>
+                    </div>
+                  </div>
+                </div>
+              </div>
+
+              {/* 下半部核心：实时滚动日志列表 */}
               <div className="overflow-x-auto custom-scrollbar">
                 <table className="w-full text-left text-xs border-collapse min-w-[500px] table-fixed">
                   <thead>
-                    <tr className="border-b border-zinc-200/60 dark:border-zinc-850 text-zinc-400 text-[10px] uppercase font-bold tracking-wider">
+                    <tr className="border-b border-zinc-200/60 dark:border-zinc-850 text-zinc-400 text-[10px] uppercase font-bold tracking-wider select-none">
                       <th className="pb-2 w-20">来源</th>
                       <th className="pb-2 w-1/3">接口描述</th>
                       <th className="pb-2 w-16 text-center">方式</th>
                       <th className="pb-2 w-2/5">请求地址 (URI)</th>
                       <th className="pb-2 w-20 text-right">耗时</th>
-                      <th className="pb-2 w-20 text-right">时间</th>
+                      <th className="pb-2 w-20 text-right">发生时间</th>
                     </tr>
                   </thead>
                   <tbody className="divide-y divide-zinc-100 dark:divide-zinc-900/60 text-zinc-700 dark:text-zinc-300">
                     {logsLoading ? (
                       <tr>
                         <td colSpan={6} className="py-8 text-center text-zinc-400 text-[11px] font-mono">
-                          LOADING REALTIME LOGS...
+                          CONNECTING AND FETCHING LIVE FEED...
                         </td>
                       </tr>
                     ) : apiLogs.length > 0 ? (
                       apiLogs.map((logItem) => (
-                        <tr key={logItem.id} className="hover:bg-zinc-50/50 dark:hover:bg-zinc-900/10 transition-colors">
-                          <td className="py-2.5">
+                        <tr
+                          key={logItem.id}
+                          className="hover:bg-zinc-50/50 dark:hover:bg-zinc-900/10 transition-all duration-300 ease-out animate-[fadeIn_0.5s_ease-out]"
+                        >
+                          <td className="py-2">
                             {renderSourceBadge(logItem.uri)}
                           </td>
-                          <td className="py-2.5 font-semibold text-zinc-850 dark:text-zinc-200 truncate text-[11.5px]" title={logItem.apiName}>
+                          <td className="py-2 font-semibold text-zinc-850 dark:text-zinc-200 truncate text-[11.5px]" title={logItem.apiName}>
                             {logItem.apiName}
                           </td>
-                          <td className="py-2.5 text-center">
+                          <td className="py-2 text-center">
                             <span className={cn("text-[8px] font-extrabold px-1.5 py-0.5 rounded-md uppercase tracking-wider", getMethodStyle(logItem.method))}>
                               {logItem.method}
                             </span>
                           </td>
-                          <td className="py-2.5 font-mono text-zinc-500 truncate text-[10.5px]" title={logItem.uri}>
+                          <td className="py-2 font-mono text-zinc-500 truncate text-[10.5px]" title={logItem.uri}>
                             {logItem.uri}
                           </td>
-                          <td className={cn("py-2.5 text-right font-mono italic text-[11px]", getCostTimeColor(logItem.costTime))}>
+                          <td className={cn("py-2 text-right font-mono italic text-[11px]", getCostTimeColor(logItem.costTime))}>
                             {logItem.costTime} <span className="text-[9px] font-sans not-italic text-zinc-400">ms</span>
                           </td>
-                          <td className="py-2.5 text-right text-zinc-450 dark:text-zinc-550 font-mono text-[10px]">
+                          <td className="py-2 text-right text-zinc-400 dark:text-zinc-550 font-mono text-[10px]">
                             {logItem.createdAt ? new Date(logItem.createdAt).toLocaleTimeString("zh-CN") : "—"}
                           </td>
                         </tr>
@@ -494,7 +657,7 @@ export default function DashboardPage() {
                     ) : (
                       <tr>
                         <td colSpan={6} className="py-8 text-center text-zinc-450 text-[11px] font-mono">
-                          NO LIVE API LOGS RECORDED
+                          NO LIVE API LOGS STREAMING
                         </td>
                       </tr>
                     )}
@@ -542,7 +705,7 @@ export default function DashboardPage() {
                       </span>
                       <span className="text-[9.5px] text-zinc-400 dark:text-zinc-550 leading-none mt-1">{item.desc}</span>
                     </div>
-                    <kbd className="inline-flex h-4.5 items-center rounded-lg border border-zinc-200 dark:border-zinc-800 bg-white dark:bg-zinc-900 px-1.25 font-mono text-[8.5px] font-bold text-zinc-400 dark:text-zinc-550 shadow-2xs group-hover:bg-[#0070F3] group-hover:text-white group-hover:border-[#0070F3] transition-all">
+                    <kbd className="inline-flex h-4.5 items-center rounded-lg border border-zinc-200 dark:border-zinc-800 bg-white dark:bg-zinc-900 px-1.25 font-mono text-[8.5px] font-bold text-zinc-550 shadow-2xs group-hover:bg-[#0070F3] group-hover:text-white group-hover:border-[#0070F3] transition-all">
                       {item.key}
                     </kbd>
                   </a>

@@ -4,6 +4,7 @@ import com.butvan.blog.common.utils.IpUtils;
 import com.butvan.blog.pojo.entity.ApiLog;
 import com.butvan.blog.service.annotation.TrackApi;
 import com.butvan.blog.service.repository.ApiLogRepository;
+import com.butvan.blog.service.websocket.WebSocketServer;
 import jakarta.servlet.http.HttpServletRequest;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
@@ -29,6 +30,7 @@ import java.util.concurrent.CompletableFuture;
 public class ApiLogAspect {
 
     private final ApiLogRepository apiLogRepository;
+    private final WebSocketServer webSocketServer;
 
     /**
      * 环绕拦截所有 Controller（含微信包）中的方法，自动测速并记录耗时到日志表中。
@@ -94,6 +96,16 @@ public class ApiLogAspect {
 
                     apiLogRepository.save(apiLog);
                     log.debug("API 测速拦截并异步入库完成: {} ({} {}) - 耗时 {}ms", finalApiName, finalMethodType, finalUri, costTime);
+
+                    // 广播日志消息到控制台
+                    try {
+                        cn.hutool.json.JSONObject wsMsg = cn.hutool.json.JSONUtil.createObj();
+                        wsMsg.set("type", "api-log");
+                        wsMsg.set("data", apiLog);
+                        webSocketServer.sendToAll(cn.hutool.json.JSONUtil.toJsonStr(wsMsg));
+                    } catch (Exception wsEx) {
+                        log.warn("通过 WebSocket 广播 API 日志消息异常:", wsEx);
+                    }
                 } catch (Exception e) {
                     log.error("API 测速日志持久化至数据库失败:", e);
                 }
