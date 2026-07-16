@@ -2,6 +2,7 @@ package com.butvan.blog.service.repository;
 
 import com.butvan.blog.pojo.entity.ApiLog;
 import org.springframework.data.jpa.repository.JpaRepository;
+import org.springframework.data.jpa.repository.JpaSpecificationExecutor;
 import org.springframework.data.jpa.repository.Query;
 import org.springframework.stereotype.Repository;
 
@@ -9,7 +10,7 @@ import org.springframework.stereotype.Repository;
  * 接口测速日志 JPA 持久化仓储数据层接口
  */
 @Repository
-public interface ApiLogRepository extends JpaRepository<ApiLog, Long> {
+public interface ApiLogRepository extends JpaRepository<ApiLog, Long>, JpaSpecificationExecutor<ApiLog> {
 
     /**
      * 获取最近 100 次 API 调用的真实平均延迟（耗时）

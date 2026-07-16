@@ -1,0 +1,258 @@
+"use client";
+
+import { useEffect, useState, useCallback } from "react";
+import { useRouter } from "next/navigation";
+import {
+  Activity,
+  Trash2,
+  Loader2,
+  X,
+  AlertTriangle
+} from "lucide-react";
+import { cn, SearchField } from "@heroui/react";
+import { fetchApiLogs, clearApiLogs } from "@/lib/api-log";
+import ConfirmModal from "@/components/common/ConfirmModal";
+import type { ApiLogItem } from "@/types/api-log";
+
+export default function ApiLogsPage() {
+  const router = useRouter();
+  const [logs, setLogs] = useState<ApiLogItem[]>([]);
+  const [total, setTotal] = useState(0);
+  const [page, setPage] = useState(1);
+  const [keyword, setKeyword] = useState("");
+  const [loading, setLoading] = useState(true);
+
+  // 操作状态
+  const [actionError, setActionError] = useState<string | null>(null);
+  const [showClearConfirm, setShowClearConfirm] = useState(false);
+  const [actionLoading, setActionLoading] = useState(false);
+
+  const pageSize = 12;
+
+  /** 加载 API 日志列表 */
+  const loadApiLogs = useCallback(async () => {
+    setLoading(true);
+    try {
+      const data = await fetchApiLogs({
+        page,
+        size: pageSize,
+        keyword: keyword || undefined,
+      });
+      setLogs(data.records || []);
+      setTotal(data.total);
+    } catch (err) {
+      console.error("加载 API 测速日志失败:", err);
+      setLogs([]);
+      setTotal(0);
+    } finally {
+      setLoading(false);
+    }
+  }, [page, keyword]);
+
+  useEffect(() => {
+    loadApiLogs();
+  }, [loadApiLogs]);
+
+  /** 执行一键清空日志 */
+  const handleClearLogs = async () => {
+    setActionLoading(true);
+    setActionError(null);
+    try {
+      await clearApiLogs();
+      setShowClearConfirm(false);
+      setPage(1);
+      loadApiLogs();
+    } catch (err: any) {
+      setActionError(err.message || "清空日志失败");
+    } finally {
+      setActionLoading(false);
+    }
+  };
+
+  const totalPages = Math.ceil(total / pageSize);
+
+  /** 请求方式对应的色块配置 */
+  const getMethodStyle = (method: string) => {
+    const norm = (method || "").toUpperCase();
+    if (norm === "GET") return "bg-blue-500/10 text-blue-600 dark:text-blue-400";
+    if (norm === "POST") return "bg-emerald-500/10 text-emerald-600 dark:text-emerald-400";
+    if (norm === "DELETE") return "bg-rose-500/10 text-rose-600 dark:text-rose-400";
+    if (norm === "PUT") return "bg-amber-500/10 text-amber-600 dark:text-amber-400";
+    return "bg-zinc-500/10 text-zinc-600 dark:text-zinc-400";
+  };
+
+  /** 耗时延迟对应的警告样式 */
+  const getCostTimeColor = (cost: number) => {
+    if (cost >= 500) return "text-rose-600 dark:text-rose-400 font-bold";
+    if (cost >= 200) return "text-amber-600 dark:text-amber-400 font-semibold";
+    return "text-emerald-600 dark:text-emerald-400";
+  };
+
+  return (
+    <div className="space-y-5 text-left">
+      {/* 页面头部区域 */}
+      <div className="flex items-center justify-between pb-3.5 border-b border-zinc-200/50 dark:border-zinc-900/60">
+        <div>
+          <h1 className="font-heading text-xl font-bold text-neutral-dark dark:text-zinc-550 flex items-center gap-2">
+            <Activity className="text-primary w-5 h-5 animate-pulse" />
+            接口调用日志
+          </h1>
+          <p className="text-[11px] font-medium text-zinc-400 dark:text-zinc-550 mt-1 font-mono">
+            MONITORING / API SPEED LOGS (共 {total} 条日志记录)
+          </p>
+        </div>
+        
+        {/* 清空日志按钮 */}
+        <button
+          onClick={() => setShowClearConfirm(true)}
+          disabled={logs.length === 0 || loading}
+          className="flex h-9 items-center justify-center gap-1.5 rounded-xl bg-rose-500 hover:bg-rose-600 active:scale-[0.98] py-2 px-4.5 text-xs font-bold text-white transition-all cursor-pointer disabled:opacity-50 disabled:cursor-not-allowed"
+        >
+          <Trash2 size={13} />
+          <span>清空日志</span>
+        </button>
+      </div>
+
+      {/* 异常错误浮筒 */}
+      {actionError && (
+        <div className="rounded-xl bg-red-50 dark:bg-red-950/20 border border-red-200/60 dark:border-red-900/35 p-3.5 text-xs font-medium text-red-700 dark:text-red-400 flex items-center justify-between">
+          <span className="flex items-center gap-1.5">
+            <AlertTriangle size={13} />
+            {actionError}
+          </span>
+          <button onClick={() => setActionError(null)} className="cursor-pointer p-0.5 rounded-full hover:bg-red-100/50">
+            <X size={13} />
+          </button>
+        </div>
+      )}
+
+      {/* 搜索控制栏 */}
+      <div className="flex flex-wrap items-center gap-3">
+        <SearchField
+          value={keyword}
+          onChange={(value) => { setKeyword(value); setPage(1); }}
+          className="w-full sm:max-w-xs"
+        >
+          <SearchField.Group>
+            <SearchField.SearchIcon />
+            <SearchField.Input placeholder="检索接口名称、IP、请求地址..." />
+            <SearchField.ClearButton />
+          </SearchField.Group>
+        </SearchField>
+      </div>
+
+      {/* 数据日志核心表格 */}
+      <div className="overflow-x-auto rounded-2xl border border-zinc-200/60 dark:border-zinc-800 bg-white dark:bg-zinc-950 shadow-xs">
+        <table className="w-full text-xs text-left border-collapse min-w-[850px] table-fixed">
+          <thead>
+            <tr className="border-b border-zinc-200/50 dark:border-zinc-800 bg-zinc-50/70 dark:bg-zinc-900/40 text-[10px] font-bold text-zinc-400 dark:text-zinc-500 uppercase tracking-widest select-none">
+              <th className="px-5 py-3.5 w-1/4">接口描述</th>
+              <th className="px-5 py-3.5 w-20 text-center">方式</th>
+              <th className="px-5 py-3.5 w-1/3">请求地址 (URI)</th>
+              <th className="px-5 py-3.5 w-32">客户端 IP</th>
+              <th className="px-5 py-3.5 w-24 text-right">响应耗时</th>
+              <th className="px-5 py-3.5 w-40 text-right">请求时间</th>
+            </tr>
+          </thead>
+          <tbody className="divide-y divide-zinc-100 dark:divide-zinc-800/50 text-zinc-700 dark:text-zinc-350">
+            {loading ? (
+              <tr>
+                <td colSpan={6} className="px-5 py-16 text-center">
+                  <div className="flex flex-col items-center gap-2 text-zinc-400">
+                    <Loader2 size={20} className="animate-spin" />
+                    <span className="text-[11px] font-medium">正在拉取 API 日志中...</span>
+                  </div>
+                </td>
+              </tr>
+            ) : logs.length === 0 ? (
+              <tr>
+                <td colSpan={6} className="px-5 py-16 text-center text-zinc-400 font-mono">
+                  NO API SPEED LOGS RECORDED
+                </td>
+              </tr>
+            ) : (
+              logs.map((logItem) => (
+                <tr key={logItem.id} className="group border-b border-zinc-200/50 dark:border-zinc-800 hover:bg-zinc-50/50 dark:hover:bg-zinc-900/20 transition-all duration-150">
+                  <td className="px-5 py-3 truncate font-semibold text-neutral-dark dark:text-zinc-150" title={logItem.apiName}>
+                    {logItem.apiName}
+                  </td>
+                  <td className="px-5 py-3 text-center">
+                    <span className={cn("text-[8px] font-extrabold px-2 py-0.5 rounded-md uppercase tracking-wider", getMethodStyle(logItem.method))}>
+                      {logItem.method}
+                    </span>
+                  </td>
+                  <td className="px-5 py-3 truncate font-mono text-[11px] text-zinc-500" title={logItem.uri}>
+                    {logItem.uri}
+                  </td>
+                  <td className="px-5 py-3 font-mono text-zinc-500">
+                    {logItem.ip}
+                  </td>
+                  <td className={cn("px-5 py-3 text-right font-mono italic text-[11.5px]", getCostTimeColor(logItem.costTime))}>
+                    {logItem.costTime} <span className="text-[9px] font-sans not-italic text-zinc-400">ms</span>
+                  </td>
+                  <td className="px-5 py-3 text-right text-zinc-450 dark:text-zinc-550 font-mono text-[10px]">
+                    {logItem.createdAt ? new Date(logItem.createdAt).toLocaleString("zh-CN") : "--"}
+                  </td>
+                </tr>
+              ))
+            )}
+          </tbody>
+        </table>
+      </div>
+
+      {/* 分页控制栏 */}
+      {totalPages > 1 && (
+        <div className="flex items-center justify-between text-xs pt-2 select-none">
+          <span className="text-zinc-500 font-medium font-mono">SHOWING PAGE {page} OF {totalPages} ({total} ITEMS)</span>
+          <div className="flex items-center gap-1.5">
+            <button
+              onClick={() => setPage((p) => Math.max(1, p - 1))}
+              disabled={page <= 1}
+              className="rounded-xl border border-zinc-200/60 dark:border-zinc-800 px-3 py-1.5 hover:bg-zinc-150/40 text-zinc-650 disabled:opacity-30 transition-all cursor-pointer disabled:cursor-not-allowed font-bold"
+            >
+              上一页
+            </button>
+            {Array.from({ length: totalPages }, (_, i) => i + 1)
+              .filter((p) => p === 1 || p === totalPages || Math.abs(p - page) <= 2)
+              .map((p, idx, arr) => (
+                <span key={p}>
+                  {idx > 0 && p - arr[idx - 1] > 1 && <span className="text-zinc-400 px-1">...</span>}
+                  <button
+                    onClick={() => setPage(p)}
+                    className={cn(
+                      "h-8 w-8 rounded-xl text-xs font-bold transition-all cursor-pointer border",
+                      page === p
+                        ? "bg-primary border-primary text-white"
+                        : "border-zinc-200/60 dark:border-zinc-800 hover:bg-zinc-100 dark:hover:bg-zinc-900 text-zinc-600"
+                    )}
+                  >
+                    {p}
+                  </button>
+                </span>
+              ))}
+            <button
+              onClick={() => setPage((p) => Math.min(totalPages, p + 1))}
+              disabled={page >= totalPages}
+              className="rounded-xl border border-zinc-200/60 dark:border-zinc-800 px-3 py-1.5 hover:bg-zinc-150/40 text-zinc-650 disabled:opacity-30 transition-all cursor-pointer disabled:cursor-not-allowed font-bold"
+            >
+              下一页
+            </button>
+          </div>
+        </div>
+      )}
+
+      {/* 清空日志确认弹窗 */}
+      <ConfirmModal
+        open={showClearConfirm}
+        variant="danger"
+        title="确认清空接口日志"
+        description="您确定要清空数据库中所有 API 测速日志记录吗？该操作不可逆，请谨慎选择。"
+        confirmLabel="清空"
+        cancelLabel="取消"
+        loading={actionLoading}
+        onConfirm={handleClearLogs}
+        onCancel={() => setShowClearConfirm(false)}
+      />
+    </div>
+  );
+}
