@@ -3,7 +3,7 @@ name: Build and Deploy Butvan Blog 2.0
 on:
   push:
     branches:
-      - main # 代码推送到 main 分支时自动触发流水线
+      - release # 代码推送到 release 分支时自动触发流水线
 
 jobs:
   build-and-push:
