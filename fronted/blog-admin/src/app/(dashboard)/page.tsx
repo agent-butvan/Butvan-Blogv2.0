@@ -8,18 +8,14 @@ import {
   MessageSquare,
   Eye,
   Users,
-  ArrowRight,
-  Activity,
-  Search,
-  SlidersHorizontal,
-  ArrowUpDown,
-  Columns4,
-  Plus
+  Plus,
+  ArrowRight
 } from "lucide-react";
 import apiClient from "@/lib/api";
 import type { ApiResponse } from "@/types/common";
 import { cn } from "@heroui/react";
 import TrafficTrendChart from "@/components/dashboard/TrafficTrendChart";
+import type { ApiLogItem } from "@/types/api-log";
 
 /** 仪表盘统计数据 */
 interface DashboardStats {
@@ -27,13 +23,6 @@ interface DashboardStats {
   commentCount: number;
   totalViews: number;
   noteCount: number;
-  recentArticles: Array<{
-    id: number;
-    title: string;
-    status: string;
-    viewCount: number;
-    publishedAt: string | null;
-  }>;
   systemMetrics?: {
     cpuUsage: number;
     memoryUsage: number;
@@ -69,6 +58,10 @@ export default function DashboardPage() {
   const [formattedDate, setFormattedDate] = useState("");
   const [greeting, setGreeting] = useState("");
   const [quote, setQuote] = useState({ text: "你的选择，毫无意义。", author: "TOBY FOX", source: "《DELTARUNE》" });
+
+  // 实时 API 请求日志状态
+  const [apiLogs, setApiLogs] = useState<ApiLogItem[]>([]);
+  const [logsLoading, setLogsLoading] = useState(true);
 
   useEffect(() => {
     // 动态生成日期
@@ -129,6 +122,7 @@ export default function DashboardPage() {
     return () => window.removeEventListener("keydown", handleKeyDown);
   }, [router]);
 
+  // 拉取主仪表盘指标
   useEffect(() => {
     const controller = new AbortController();
     
@@ -138,17 +132,7 @@ export default function DashboardPage() {
       })
       .then((res) => {
         if (res.data?.data) {
-          const data = res.data.data;
-          const transformedData: DashboardStats = {
-            ...data,
-            recentArticles: data.recentArticles?.map(article => ({
-              ...article,
-              publishedAt: article.publishedAt
-                ? new Date(article.publishedAt).toISOString()
-                : null
-            })) || []
-          };
-          setStats(transformedData);
+          setStats(res.data.data);
         }
       })
       .catch((err) => {
@@ -160,8 +144,7 @@ export default function DashboardPage() {
           articleCount: 0,
           commentCount: 0,
           totalViews: 0,
-          noteCount: 0,
-          recentArticles: []
+          noteCount: 0
         });
       })
       .finally(() => {
@@ -172,6 +155,33 @@ export default function DashboardPage() {
 
     return () => {
       controller.abort();
+    };
+  }, []);
+
+  // 每 8 秒自动增量刷新实时 API 日志
+  useEffect(() => {
+    let timer: NodeJS.Timeout;
+    
+    const loadRealtimeLogs = async () => {
+      try {
+        const res = await apiClient.get<ApiResponse<{ records: ApiLogItem[] }>>("/admin/api-logs", {
+          params: { page: 1, size: 8 }
+        });
+        if (res.data?.data?.records) {
+          setApiLogs(res.data.data.records);
+        }
+      } catch (err) {
+        console.error("工作台实时日志拉取失败:", err);
+      } finally {
+        setLogsLoading(false);
+      }
+    };
+
+    loadRealtimeLogs();
+    timer = setInterval(loadRealtimeLogs, 8000);
+    
+    return () => {
+      if (timer) clearInterval(timer);
     };
   }, []);
 
@@ -202,17 +212,58 @@ export default function DashboardPage() {
     },
   ];
 
+  /** 根据 URI 判断请求来源并打上 Badge 标记 */
+  const renderSourceBadge = (uri: string) => {
+    const norm = (uri || "").toLowerCase();
+    if (norm.includes("/admin/")) {
+      return (
+        <span className="bg-blue-500/10 text-blue-600 dark:text-blue-400 font-extrabold px-1.5 py-0.5 rounded-md text-[8.5px] tracking-wide select-none">
+          ADMIN
+        </span>
+      );
+    }
+    if (norm.includes("/weixin/")) {
+      return (
+        <span className="bg-purple-500/10 text-purple-600 dark:text-purple-400 font-extrabold px-1.5 py-0.5 rounded-md text-[8.5px] tracking-wide select-none">
+          WECHAT
+        </span>
+      );
+    }
+    return (
+      <span className="bg-emerald-500/10 text-emerald-600 dark:text-emerald-400 font-extrabold px-1.5 py-0.5 rounded-md text-[8.5px] tracking-wide select-none">
+        CLIENT
+      </span>
+    );
+  };
+
+  /** 请求方式对应的色块配置 */
+  const getMethodStyle = (method: string) => {
+    const norm = (method || "").toUpperCase();
+    if (norm === "GET") return "bg-blue-500/10 text-blue-600 dark:text-blue-400";
+    if (norm === "POST") return "bg-emerald-500/10 text-emerald-600 dark:text-emerald-400";
+    if (norm === "DELETE") return "bg-rose-500/10 text-rose-600 dark:text-rose-400";
+    if (norm === "PUT") return "bg-amber-500/10 text-amber-600 dark:text-amber-400";
+    return "bg-zinc-500/10 text-zinc-600 dark:text-zinc-400";
+  };
+
+  /** 耗时延迟对应的警告样式 */
+  const getCostTimeColor = (cost: number) => {
+    if (cost >= 500) return "text-rose-600 dark:text-rose-400 font-bold";
+    if (cost >= 200) return "text-amber-600 dark:text-amber-400 font-semibold";
+    return "text-emerald-600 dark:text-emerald-400";
+  };
+
   return (
     <div className="min-h-screen bg-[#F8F9FA] dark:bg-zinc-950 p-4 sm:p-6 -m-4 sm:-m-6 font-sans text-zinc-800 dark:text-zinc-200 transition-colors duration-200 text-left">
       
       {/* 1. NextUI Header 横幅带胶囊 CTA */}
       <div className="flex flex-col md:flex-row md:items-center justify-between pb-5 border-b border-zinc-200/50 dark:border-zinc-850 gap-4 mb-6">
         <div className="flex flex-col gap-1">
-          <h1 className="text-xl sm:text-2xl font-bold tracking-tight text-zinc-900 dark:text-zinc-550 tracking-tight leading-none">
+          <h1 className="text-xl sm:text-2xl font-bold tracking-tight text-zinc-900 dark:text-zinc-50 tracking-tight leading-none">
             {greeting}，可梵
           </h1>
           {/* 金句极简一行 */}
-          <p className="text-xs text-zinc-500 dark:text-zinc-400 flex items-center flex-wrap gap-1 leading-none font-medium mt-0.5">
+          <p className="text-xs text-zinc-500 dark:text-zinc-450 flex items-center flex-wrap gap-1 leading-none font-medium mt-0.5">
             <span>{quote.text}</span>
             <span className="text-[10px] text-zinc-400 dark:text-zinc-550 font-normal">
               —— {quote.author} {quote.source}
@@ -251,7 +302,7 @@ export default function DashboardPage() {
               className="bg-white dark:bg-zinc-900 border border-zinc-200/50 dark:border-zinc-850 p-5 rounded-2xl shadow-[0_1px_3px_rgba(0,0,0,0.01),0_10px_20px_-5px_rgba(0,0,0,0.025)] dark:shadow-[0_8px_30px_rgba(0,0,0,0.2)] hover:shadow-[0_15px_30px_-10px_rgba(0,0,0,0.05)] dark:hover:shadow-[0_15px_30px_-10px_rgba(0,0,0,0.3)] hover:-translate-y-0.5 transition-all duration-200 flex flex-col justify-between h-28"
             >
               <div className="flex items-center justify-between">
-                <span className="text-[10px] font-bold text-zinc-400 dark:text-zinc-500 uppercase tracking-widest leading-none">
+                <span className="text-[10px] font-bold text-zinc-400 dark:text-zinc-550 uppercase tracking-widest leading-none">
                   {card.label}
                 </span>
                 <div className={cn("p-1.5 rounded-lg shrink-0", card.iconColor)}>
@@ -260,7 +311,7 @@ export default function DashboardPage() {
               </div>
               
               <div className="flex items-baseline justify-between mt-2.5">
-                <span className="text-2xl font-bold font-mono text-zinc-900 dark:text-zinc-50 tracking-tight leading-none">
+                <span className="text-2xl font-bold font-mono text-zinc-900 dark:text-zinc-550 tracking-tight leading-none">
                   {loading ? "..." : card.value}
                 </span>
               </div>
@@ -281,7 +332,7 @@ export default function DashboardPage() {
                 </h3>
                 <p className="text-[10px] text-zinc-400">实时读取主站每日访问 PV 数据统计</p>
               </div>
-              <span className="text-[9px] font-bold text-zinc-400 dark:text-zinc-500 font-mono">
+              <span className="text-[9px] font-bold text-zinc-400 dark:text-zinc-550 font-mono">
                 Last 7 Days
               </span>
             </div>
@@ -341,7 +392,7 @@ export default function DashboardPage() {
                         strokeLinecap="round"
                       />
                     </svg>
-                    <span className="absolute text-[8px] font-mono font-bold text-zinc-700 dark:text-zinc-300">{ring.val}</span>
+                    <span className="absolute text-[8px] font-mono font-bold text-zinc-700 dark:text-zinc-350">{ring.val}</span>
                   </div>
                   <span className="text-[9px] text-zinc-400 dark:text-zinc-550 font-bold tracking-tight">{ring.label}</span>
                 </div>
@@ -351,14 +402,14 @@ export default function DashboardPage() {
             {/* 系统实时微指标 */}
             <div className="flex flex-col gap-2">
               {[
-                { label: "API 响应延迟", val: `${stats?.systemMetrics?.apiDelay ?? 14} ms`, progress: 15, barColor: "bg-indigo-500" },
+                { label: "API 响应延迟", val: `${stats?.systemMetrics?.apiDelay ?? 0} ms`, progress: stats?.systemMetrics?.apiDelay ?? 15, barColor: "bg-indigo-500" },
                 { label: "物理 CPU 占用率", val: `${stats?.systemMetrics?.cpuUsage ?? "0.0"} %`, progress: stats?.systemMetrics?.cpuUsage ?? 5, barColor: "bg-[#0070F3]" },
                 { label: "JVM 内存占用率", val: `${stats?.systemMetrics?.memoryUsage ?? "0.0"} %`, progress: stats?.systemMetrics?.memoryUsage ?? 35, barColor: "bg-emerald-500" }
               ].map((bar, i) => (
                 <div key={i} className="space-y-1">
-                  <div className="flex items-center justify-between text-[10px] font-semibold text-zinc-550">
+                  <div className="flex items-center justify-between text-[10px] font-semibold text-zinc-500">
                     <span>{bar.label}</span>
-                    <span className="font-mono font-bold text-zinc-800 dark:text-zinc-200">{bar.val}</span>
+                    <span className="font-mono font-bold text-zinc-850 dark:text-zinc-200">{bar.val}</span>
                   </div>
                   <div className="h-1.25 w-full bg-zinc-100 dark:bg-zinc-850 rounded-full overflow-hidden">
                     <div className={cn("h-full rounded-full transition-all duration-300", bar.barColor)} style={{ width: `${Math.min(bar.progress, 100)}%` }} />
@@ -369,70 +420,95 @@ export default function DashboardPage() {
           </div>
         </div>
 
-        {/* 4. 底层：近期文章列表卡片 & 快捷指令面板 */}
+        {/* 4. 底层：实时接口日志卡片 & 快捷指令面板 */}
         <div className="grid grid-cols-1 lg:grid-cols-12 gap-5">
           
-          {/* 左侧：All Articles 表格卡片 */}
-          <div className="lg:col-span-8 bg-white dark:bg-zinc-900 border border-zinc-200/50 dark:border-zinc-850 p-5 rounded-2xl shadow-[0_1px_3px_rgba(0,0,0,0.01),0_10px_20px_-5px_rgba(0,0,0,0.025)] dark:shadow-[0_8px_30px_rgba(0,0,0,0.2)]">
-            
-            {/* Table Header Action Bar (胶囊控制组) */}
-            <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-3 mb-4 border-b border-zinc-100 dark:border-zinc-800 pb-3.5">
-              <div className="flex items-center gap-2">
-                <h3 className="text-sm font-bold text-zinc-850 dark:text-zinc-250">近期博文动态</h3>
-                <span className="text-[10px] text-zinc-400 dark:text-zinc-500 bg-zinc-50 dark:bg-zinc-950 px-2 py-0.5 rounded-md border border-zinc-200/30 font-bold font-mono">
-                  {stats?.recentArticles?.length ?? 0}
-                </span>
+          {/* 左侧：Realtime API Logs 实时日志卡片 */}
+          <div className="lg:col-span-8 bg-white dark:bg-zinc-900 border border-zinc-200/50 dark:border-zinc-850 p-5 rounded-2xl shadow-[0_1px_3px_rgba(0,0,0,0.01),0_10px_20px_-5px_rgba(0,0,0,0.025)] dark:shadow-[0_8px_30px_rgba(0,0,0,0.2)] flex flex-col justify-between">
+            <div>
+              {/* Card Header with real-time breathing light */}
+              <div className="flex items-center justify-between mb-4 border-b border-zinc-100 dark:border-zinc-800 pb-3.5">
+                <div className="flex items-center gap-2">
+                  <h3 className="text-sm font-bold text-zinc-850 dark:text-zinc-200">实时接口日志</h3>
+                  <span className="text-[10px] text-zinc-400 dark:text-zinc-500 bg-zinc-50 dark:bg-zinc-950 px-2 py-0.5 rounded-md border border-zinc-200/30 font-bold font-mono">
+                    LIVE
+                  </span>
+                </div>
+                {/* 8秒呼吸指示灯 */}
+                <div className="flex items-center gap-1.5 select-none">
+                  <span className="relative flex h-2 w-2">
+                    <span className="animate-ping absolute inline-flex h-full w-full rounded-full bg-emerald-400 opacity-75"></span>
+                    <span className="relative inline-flex rounded-full h-2 w-2 bg-emerald-500"></span>
+                  </span>
+                  <span className="text-[9px] font-bold text-zinc-400 dark:text-zinc-500 font-mono tracking-wider">
+                    MONITORING (8s)
+                  </span>
+                </div>
               </div>
 
-            </div>
-
-            {/* NextUI Grid Table */}
-            <div className="overflow-x-auto custom-scrollbar">
-              <table className="w-full text-left text-xs border-collapse min-w-[450px]">
-                <thead>
-                  <tr className="border-b border-zinc-200/60 dark:border-zinc-850 text-zinc-400 text-[10px] uppercase font-bold tracking-wider">
-                    <th className="pb-2">博文标题</th>
-                    <th className="pb-2 text-center">状态</th>
-                    <th className="pb-2 text-right">浏览量 (PV)</th>
-                    <th className="pb-2 text-right">发布日期</th>
-                  </tr>
-                </thead>
-                <tbody className="divide-y divide-zinc-100 dark:divide-zinc-900/60">
-                  {stats?.recentArticles && stats.recentArticles.length > 0 ? (
-                    stats.recentArticles.map((article) => (
-                      <tr key={article.id} className="hover:bg-zinc-50/50 dark:hover:bg-zinc-900/10 transition-colors">
-                        <td className="py-2.25 font-semibold text-zinc-700 dark:text-zinc-200 max-w-[280px] truncate text-[11.5px]">
-                          {article.title}
-                        </td>
-                        <td className="py-2.25 text-center">
-                          <span className={cn(
-                            "text-[8px] font-extrabold px-1.5 py-0.5 rounded-full tracking-wide",
-                            article.status === "PUBLISHED" 
-                              ? "bg-emerald-500/10 text-emerald-600 dark:text-emerald-400" 
-                              : "bg-zinc-100 text-zinc-450 dark:bg-zinc-950 dark:text-zinc-500"
-                          )}>
-                            {article.status === "PUBLISHED" ? "已发布" : "草稿"}
-                          </span>
-                        </td>
-                        <td className="py-2.25 text-right font-mono font-bold text-zinc-650 dark:text-zinc-400">
-                          {article.viewCount}
-                        </td>
-                        <td className="py-2.25 text-right text-zinc-400 dark:text-zinc-550 font-mono text-[10px]">
-                          {article.publishedAt
-                            ? new Date(article.publishedAt).toLocaleDateString("zh-CN")
-                            : "—"}
+              {/* Data Table */}
+              <div className="overflow-x-auto custom-scrollbar">
+                <table className="w-full text-left text-xs border-collapse min-w-[500px] table-fixed">
+                  <thead>
+                    <tr className="border-b border-zinc-200/60 dark:border-zinc-850 text-zinc-400 text-[10px] uppercase font-bold tracking-wider">
+                      <th className="pb-2 w-20">来源</th>
+                      <th className="pb-2 w-1/3">接口描述</th>
+                      <th className="pb-2 w-16 text-center">方式</th>
+                      <th className="pb-2 w-2/5">请求地址 (URI)</th>
+                      <th className="pb-2 w-20 text-right">耗时</th>
+                      <th className="pb-2 w-20 text-right">时间</th>
+                    </tr>
+                  </thead>
+                  <tbody className="divide-y divide-zinc-100 dark:divide-zinc-900/60 text-zinc-700 dark:text-zinc-300">
+                    {logsLoading ? (
+                      <tr>
+                        <td colSpan={6} className="py-8 text-center text-zinc-400 text-[11px] font-mono">
+                          LOADING REALTIME LOGS...
                         </td>
                       </tr>
-                    ))
-                  ) : (
-                    <tr>
-                      <td colSpan={4} className="py-8 text-center text-zinc-400 text-[11px] font-mono">
-                        NO ARTICLES RECORDED
-                      </td>
-                    </tr>
-                  )}
-                </tbody>
-              </table>
+                    ) : apiLogs.length > 0 ? (
+                      apiLogs.map((logItem) => (
+                        <tr key={logItem.id} className="hover:bg-zinc-50/50 dark:hover:bg-zinc-900/10 transition-colors">
+                          <td className="py-2.5">
+                            {renderSourceBadge(logItem.uri)}
+                          </td>
+                          <td className="py-2.5 font-semibold text-zinc-850 dark:text-zinc-200 truncate text-[11.5px]" title={logItem.apiName}>
+                            {logItem.apiName}
+                          </td>
+                          <td className="py-2.5 text-center">
+                            <span className={cn("text-[8px] font-extrabold px-1.5 py-0.5 rounded-md uppercase tracking-wider", getMethodStyle(logItem.method))}>
+                              {logItem.method}
+                            </span>
+                          </td>
+                          <td className="py-2.5 font-mono text-zinc-500 truncate text-[10.5px]" title={logItem.uri}>
+                            {logItem.uri}
+                          </td>
+                          <td className={cn("py-2.5 text-right font-mono italic text-[11px]", getCostTimeColor(logItem.costTime))}>
+                            {logItem.costTime} <span className="text-[9px] font-sans not-italic text-zinc-400">ms</span>
+                          </td>
+                          <td className="py-2.5 text-right text-zinc-450 dark:text-zinc-550 font-mono text-[10px]">
+                            {logItem.createdAt ? new Date(logItem.createdAt).toLocaleTimeString("zh-CN") : "—"}
+                          </td>
+                        </tr>
+                      ))
+                    ) : (
+                      <tr>
+                        <td colSpan={6} className="py-8 text-center text-zinc-450 text-[11px] font-mono">
+                          NO LIVE API LOGS RECORDED
+                        </td>
+                      </tr>
+                    )}
+                  </tbody>
+                </table>
+              </div>
+            </div>
+
+            {/* 查看完整日志的链接 */}
+            <div className="flex justify-end border-t border-zinc-100 dark:border-zinc-800/80 pt-3 mt-4 select-none">
+              <Link href="/api-logs" className="text-xs font-bold text-primary hover:text-blue-600 transition-colors flex items-center gap-1 group">
+                查看全部接口日志
+                <ArrowRight size={13} className="transform group-hover:translate-x-0.5 transition-transform" />
+              </Link>
             </div>
           </div>
 
@@ -466,7 +542,7 @@ export default function DashboardPage() {
                       </span>
                       <span className="text-[9.5px] text-zinc-400 dark:text-zinc-550 leading-none mt-1">{item.desc}</span>
                     </div>
-                    <kbd className="inline-flex h-4.5 items-center rounded-lg border border-zinc-200 dark:border-zinc-800 bg-white dark:bg-zinc-900 px-1.25 font-mono text-[8.5px] font-bold text-zinc-400 dark:text-zinc-500 shadow-2xs group-hover:bg-[#0070F3] group-hover:text-white group-hover:border-[#0070F3] transition-all">
+                    <kbd className="inline-flex h-4.5 items-center rounded-lg border border-zinc-200 dark:border-zinc-800 bg-white dark:bg-zinc-900 px-1.25 font-mono text-[8.5px] font-bold text-zinc-400 dark:text-zinc-550 shadow-2xs group-hover:bg-[#0070F3] group-hover:text-white group-hover:border-[#0070F3] transition-all">
                       {item.key}
                     </kbd>
                   </a>
