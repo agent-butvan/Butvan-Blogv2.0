@@ -1,5 +1,7 @@
 package com.butvan.blog.service.weixin.controller;
 
+import com.butvan.blog.service.annotation.TrackApi;
+
 import cn.hutool.crypto.SecureUtil;
 import com.butvan.blog.service.weixin.service.WeiXinEventService;
 import jakarta.servlet.http.HttpServletRequest;
@@ -22,6 +24,7 @@ public class WeiXinEventController {
      * @param request
      * @return
      */
+    @TrackApi("处理微信的POST事件的请求")
     @GetMapping("/callback")
     public String verifyWeixinServer(HttpServletRequest request) {
 
@@ -53,6 +56,7 @@ public class WeiXinEventController {
      * @param xmlData
      * @return
      */
+    @TrackApi("处理微信的POST请求事件推送")
     @PostMapping("/callback")
     public String handleWeixinEvent(@RequestBody String xmlData) {
         log.info("接收到微信的事件推送");

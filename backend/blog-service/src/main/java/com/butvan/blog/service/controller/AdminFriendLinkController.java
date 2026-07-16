@@ -1,5 +1,7 @@
 package com.butvan.blog.service.controller;
 
+import com.butvan.blog.service.annotation.TrackApi;
+
 import com.butvan.blog.common.result.Result;
 import com.butvan.blog.pojo.dto.friend.FriendLinkSaveDTO;
 import com.butvan.blog.pojo.entity.FriendLink;
@@ -28,6 +30,7 @@ public class AdminFriendLinkController {
      *
      * @return 友链列表
      */
+    @TrackApi("获取所有友链")
     @GetMapping
     public Result<List<FriendLink>> getAllFriendLinks() {
         log.info("获取所有友链");
@@ -41,6 +44,7 @@ public class AdminFriendLinkController {
      * @param id 友链ID
      * @return 友链详情
      */
+    @TrackApi("获取友链详情")
     @GetMapping("/{id}")
     public Result<FriendLink> getFriendLinkById(@PathVariable Long id) {
         log.info("获取友链详情: id={}", id);
@@ -54,6 +58,7 @@ public class AdminFriendLinkController {
      * @param dto 友链信息
      * @return 创建的友链
      */
+    @TrackApi("创建友链")
     @PostMapping
     public Result<FriendLink> createFriendLink(@Valid @RequestBody FriendLinkSaveDTO dto) {
         log.info("创建友链: {}", dto.getName());
@@ -68,6 +73,7 @@ public class AdminFriendLinkController {
      * @param dto 友链信息
      * @return 更新后的友链
      */
+    @TrackApi("更新友链")
     @PutMapping("/{id}")
     public Result<FriendLink> updateFriendLink(@PathVariable Long id, @Valid @RequestBody FriendLinkSaveDTO dto) {
         log.info("更新友链: id={}", id);
@@ -82,6 +88,7 @@ public class AdminFriendLinkController {
      * @param params 包含 status 的 JSON
      * @return 结果
      */
+    @TrackApi("更新友链状态（审核）")
     @PatchMapping("/{id}/status")
     public Result<Void> updateFriendLinkStatus(@PathVariable Long id, @RequestBody Map<String, String> params) {
         String status = params.get("status");
@@ -96,6 +103,7 @@ public class AdminFriendLinkController {
      * @param id 友链ID
      * @return 结果
      */
+    @TrackApi("删除友链")
     @DeleteMapping("/{id}")
     public Result<Void> deleteFriendLink(@PathVariable Long id) {
         log.info("删除友链: id={}", id);
@@ -110,6 +118,7 @@ public class AdminFriendLinkController {
      * @param params 包含 sortOrder 的 JSON
      * @return 结果
      */
+    @TrackApi("更新排序")
     @PatchMapping("/{id}/sort")
     public Result<Void> updateSortOrder(@PathVariable Long id, @RequestBody Map<String, Integer> params) {
         Integer sortOrder = params.get("sortOrder");

@@ -1,5 +1,7 @@
 package com.butvan.blog.service.controller;
 
+import com.butvan.blog.service.annotation.TrackApi;
+
 import com.butvan.blog.common.result.Result;
 import com.butvan.blog.pojo.dto.navigation.NavigationSaveDTO;
 import com.butvan.blog.pojo.vo.navigation.NavigationVO;
@@ -27,6 +29,7 @@ public class NavigationController {
      * @param position 菜单配置展示位置，默认获取 HEADER (前台顶部导航)
      * @return 统一格式 Result，携带 NavigationVO 树形根列表
      */
+    @TrackApi("【前台】根据导航位置获取树级展现的导航菜单列表（仅可见菜单）")
     @GetMapping("/navigations")
     public Result<List<NavigationVO>> getNavigations(
             @RequestParam(value = "position", required = false, defaultValue = "HEADER") String position) {
@@ -41,6 +44,7 @@ public class NavigationController {
      * @param position 菜单位置
      * @return 全部菜单的树形列表
      */
+    @TrackApi("【管理后台】获取指定位置的全部导航菜单（含隐藏项）")
     @GetMapping("/admin/navigations")
     public Result<List<NavigationVO>> getAdminNavigations(
             @RequestParam(value = "position", required = false, defaultValue = "HEADER") String position) {
@@ -55,6 +59,7 @@ public class NavigationController {
      * @param dto 创建请求
      * @return 创建后的 VO
      */
+    @TrackApi("【管理后台】创建新导航菜单项")
     @PostMapping("/admin/navigations")
     public Result<NavigationVO> createNavigation(@Valid @RequestBody NavigationSaveDTO dto) {
         log.info("创建新导航菜单: title={}, position={}", dto.getTitle(), dto.getPosition());
@@ -69,6 +74,7 @@ public class NavigationController {
      * @param dto 更新请求
      * @return 更新后的 VO
      */
+    @TrackApi("【管理后台】更新指定导航菜单项")
     @PutMapping("/admin/navigations/{id}")
     public Result<NavigationVO> updateNavigation(
             @PathVariable Long id, @Valid @RequestBody NavigationSaveDTO dto) {
@@ -83,6 +89,7 @@ public class NavigationController {
      * @param id 菜单ID
      * @return 操作结果
      */
+    @TrackApi("【管理后台】删除指定导航菜单项及其所有子孙节点")
     @DeleteMapping("/admin/navigations/{id}")
     public Result<Void> deleteNavigation(@PathVariable Long id) {
         log.info("删除导航菜单: id={}", id);

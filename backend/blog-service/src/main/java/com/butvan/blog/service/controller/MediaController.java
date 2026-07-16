@@ -1,5 +1,7 @@
 package com.butvan.blog.service.controller;
 
+import com.butvan.blog.service.annotation.TrackApi;
+
 import com.butvan.blog.common.result.Result;
 import com.butvan.blog.common.result.PageResult;
 import com.butvan.blog.pojo.dto.media.MediaQueryDTO;
@@ -33,6 +35,7 @@ public class MediaController {
      * @param file 上传的二进制 file 对象
      * @return 统一格式 Result，携带 Media 实体
      */
+    @TrackApi("【管理后台】上传图片或透明 PNG 切片，返回保存后的媒体对象及可供前端预览的 URL")
     @PostMapping("/admin/media/upload")
     public Result<Media> uploadMedia(
             @RequestParam("file") MultipartFile file,
@@ -53,6 +56,7 @@ public class MediaController {
      * @param file 上传的图片文件
      * @return 统一格式 Result，携带相对路径 /uploads/filename.ext
      */
+    @TrackApi("【公开】上传图片（用于友链头像等无需登录的场景）")
     @PostMapping("/public/upload/image")
     public Result<String> uploadPublicImage(@RequestParam("file") MultipartFile file) {
         log.info("公开接口上传图片，原始文件名: {}, 大小: {} 字节", 
@@ -85,6 +89,7 @@ public class MediaController {
      * @param queryDTO 包含搜索、分类及页码参数
      * @return 分页列表统一响应
      */
+    @TrackApi("【管理后台】多条件分页获取已上传媒体资源列表")
     @GetMapping("/admin/media")
     public Result<PageResult> pageMedia(MediaQueryDTO queryDTO) {
         log.info("管理后台分页获取媒体资源列表，检索参数: {}", queryDTO);
@@ -98,6 +103,7 @@ public class MediaController {
      * @param id 媒体唯一ID
      * @return 成功状态
      */
+    @TrackApi("【管理后台】彻底删除单条媒体资源（级联清理物理磁盘文件）")
     @DeleteMapping("/admin/media/{id}")
     public Result<Void> deleteMedia(@PathVariable("id") Long id) {
         log.info("管理后台彻底物理删除媒体资源，ID: {}", id);

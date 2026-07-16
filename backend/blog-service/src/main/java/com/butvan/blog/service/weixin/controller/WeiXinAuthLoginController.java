@@ -1,5 +1,7 @@
 package com.butvan.blog.service.weixin.controller;
 
+import com.butvan.blog.service.annotation.TrackApi;
+
 import com.butvan.blog.common.result.Result;
 import com.butvan.blog.pojo.weixin.AuthLoginDto;
 import com.butvan.blog.service.weixin.service.WeiXinAuthLoginService;
@@ -18,6 +20,7 @@ public class WeiXinAuthLoginController {
     private final WeiXinAuthLoginService weiXinAuthLoginService;
 
 
+    @TrackApi("wei Xin Login")
     @PostMapping("/login")
     public Result<AuthLoginDto> weiXinLogin() {
         AuthLoginDto res = weiXinAuthLoginService.qrcodeLogin();

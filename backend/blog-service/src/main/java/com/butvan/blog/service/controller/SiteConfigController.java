@@ -1,5 +1,7 @@
 package com.butvan.blog.service.controller;
 
+import com.butvan.blog.service.annotation.TrackApi;
+
 import com.butvan.blog.common.result.Result;
 import com.butvan.blog.pojo.dto.site.SiteConfigUpdateDTO;
 import com.butvan.blog.pojo.vo.site.SiteConfigVO;
@@ -27,6 +29,7 @@ public class SiteConfigController {
      * @param configKey 配置键，如 background_image_url
      * @return 配置 VO
      */
+    @TrackApi("【公开】客户端查询指定站点配置项")
     @GetMapping("/site-config/public/{configKey}")
     public Result<SiteConfigVO> getPublicConfig(@PathVariable String configKey) {
         log.info("公开查询站点配置：configKey={}", configKey);
@@ -40,6 +43,7 @@ public class SiteConfigController {
      * @param configKey 配置键
      * @return 配置 VO
      */
+    @TrackApi("【管理端】查询指定站点配置项（需认证）")
     @GetMapping("/admin/site-config/{configKey}")
     public Result<SiteConfigVO> getAdminConfig(@PathVariable String configKey) {
         log.info("管理端查询站点配置：configKey={}", configKey);
@@ -54,6 +58,7 @@ public class SiteConfigController {
      * @param dto       更新 DTO
      * @return 操作结果
      */
+    @TrackApi("【管理端】更新指定站点配置项（需认证）")
     @PutMapping("/admin/site-config/{configKey}")
     public Result<Void> updateConfig(@PathVariable String configKey,
                                       @RequestBody SiteConfigUpdateDTO dto) {

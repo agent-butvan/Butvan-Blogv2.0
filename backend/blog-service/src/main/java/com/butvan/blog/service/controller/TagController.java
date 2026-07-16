@@ -1,5 +1,7 @@
 package com.butvan.blog.service.controller;
 
+import com.butvan.blog.service.annotation.TrackApi;
+
 import com.butvan.blog.common.result.Result;
 import com.butvan.blog.pojo.entity.Tag;
 import com.butvan.blog.pojo.vo.tag.TagSimpleVO;
@@ -25,6 +27,7 @@ public class TagController {
      *
      * @return 统一格式 Result 包装的标签实体列表
      */
+    @TrackApi("【公开/管理端】获取全部标签的完整实体列表")
     @GetMapping("/tags")
     public Result<List<Tag>> listAllTags() {
         log.info("获取全部标签实体列表 API 请求");
@@ -37,6 +40,7 @@ public class TagController {
      *
      * @return 统一格式 Result 包装的极简标签列表
      */
+    @TrackApi("【公开/管理端】获取全部标签的极简下拉信息列表 (仅含 id, name, slug)")
     @GetMapping("/tags/simple")
     public Result<List<TagSimpleVO>> listSimpleTags() {
         log.info("获取极简标签列表 API 请求");
@@ -50,6 +54,7 @@ public class TagController {
      * @param tag 标签实体数据
      * @return 统一格式 Result 包装的新增实体数据
      */
+    @TrackApi("【管理端】新建标签")
     @PostMapping("/tags")
     public Result<Tag> createTag(@RequestBody Tag tag) {
         log.info("新建标签 API 请求: {}", tag.getName());
@@ -64,6 +69,7 @@ public class TagController {
      * @param tag 标签实体数据
      * @return 统一格式 Result 包装的修改后实体数据
      */
+    @TrackApi("【管理端】更新标签")
     @PutMapping("/tags/{id}")
     public Result<Tag> updateTag(@PathVariable Long id, @RequestBody Tag tag) {
         log.info("更新标签 API 请求: id={}, name={}", id, tag.getName());
@@ -78,6 +84,7 @@ public class TagController {
      * @param id 待删除标签主键 ID
      * @return 统一格式 Result 包装的空返回
      */
+    @TrackApi("【管理端】根据 ID 删除标签")
     @DeleteMapping("/tags/{id}")
     public Result<Void> deleteTag(@PathVariable Long id) {
         log.info("删除标签 API 请求: id={}", id);

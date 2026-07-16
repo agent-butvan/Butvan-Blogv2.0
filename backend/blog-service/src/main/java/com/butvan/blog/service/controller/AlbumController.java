@@ -1,5 +1,7 @@
 package com.butvan.blog.service.controller;
 
+import com.butvan.blog.service.annotation.TrackApi;
+
 import com.butvan.blog.common.result.PageResult;
 import com.butvan.blog.common.result.Result;
 import com.butvan.blog.pojo.dto.album.AlbumPhotoSaveDTO;
@@ -41,6 +43,7 @@ public class AlbumController {
      * @param dto 相册保存DTO
      * @return 相册详情VO
      */
+    @TrackApi("【管理后台】创建相册")
     @PostMapping("/admin/albums")
     public Result<AlbumVO> createAlbum(@Valid @RequestBody AlbumSaveDTO dto) {
         log.info("管理后台创建相册: title={}", dto.getTitle());
@@ -55,6 +58,7 @@ public class AlbumController {
      * @param dto 相册保存DTO
      * @return 相册详情VO
      */
+    @TrackApi("【管理后台】更新相册")
     @PutMapping("/admin/albums/{id}")
     public Result<AlbumVO> updateAlbum(@PathVariable Long id, @Valid @RequestBody AlbumSaveDTO dto) {
         log.info("管理后台更新相册: id={}", id);
@@ -68,6 +72,7 @@ public class AlbumController {
      * @param id 相册ID
      * @return 成功状态
      */
+    @TrackApi("【管理后台】删除相册")
     @DeleteMapping("/admin/albums/{id}")
     public Result<Void> deleteAlbum(@PathVariable Long id) {
         log.info("管理后台删除相册: id={}", id);
@@ -81,6 +86,7 @@ public class AlbumController {
      * @param queryDTO 查询DTO
      * @return 分页结果
      */
+    @TrackApi("【管理后台】分页获取相册列表")
     @GetMapping("/admin/albums")
     public Result<PageResult> pageAlbums(AlbumQueryDTO queryDTO) {
         log.info("管理后台分页获取相册列表: {}", queryDTO);
@@ -94,6 +100,7 @@ public class AlbumController {
      * @param id 相册ID
      * @return 相册详情VO
      */
+    @TrackApi("【管理后台】获取相册详情（含照片列表）")
     @GetMapping("/admin/albums/{id}")
     public Result<AlbumVO> getAlbumById(@PathVariable Long id) {
         log.info("管理后台获取相册详情: id={}", id);
@@ -108,6 +115,7 @@ public class AlbumController {
      * @param dto 照片添加DTO
      * @return 相册详情VO
      */
+    @TrackApi("【管理后台】向相册添加照片")
     @PostMapping("/admin/albums/{id}/photos")
     public Result<AlbumVO> addPhoto(@PathVariable Long id, @Valid @RequestBody AlbumPhotoSaveDTO dto) {
         log.info("管理后台向相册添加照片: albumId={}, mediaId={}", id, dto.getMediaId());
@@ -122,6 +130,7 @@ public class AlbumController {
      * @param photoId 照片关联ID
      * @return 成功状态
      */
+    @TrackApi("【管理后台】从相册移除照片")
     @DeleteMapping("/admin/albums/{id}/photos/{photoId}")
     public Result<Void> removePhoto(@PathVariable Long id, @PathVariable Long photoId) {
         log.info("管理后台从相册移除照片: albumId={}, photoId={}", id, photoId);
@@ -136,6 +145,7 @@ public class AlbumController {
      * @param dto 排序DTO
      * @return 成功状态
      */
+    @TrackApi("【管理后台】调整相册照片排序")
     @PutMapping("/admin/albums/{id}/photos/sort")
     public Result<Void> sortPhotos(@PathVariable Long id, @Valid @RequestBody AlbumPhotoSortDTO dto) {
         log.info("管理后台调整相册照片排序: albumId={}, itemsCount={}", id, dto.getItems().size());
@@ -151,6 +161,7 @@ public class AlbumController {
      * @param caption 照片说明（可选）
      * @return 相册详情VO
      */
+    @TrackApi("【管理后台】上传图片并直接添加到相册")
     @PostMapping("/admin/albums/{id}/photos/upload")
     public Result<AlbumVO> uploadPhoto(
             @PathVariable Long id,
@@ -168,6 +179,7 @@ public class AlbumController {
      *
      * @return 相册列表VO
      */
+    @TrackApi("【公开】获取已发布的相册列表")
     @GetMapping("/public/albums")
     public Result<List<AlbumListVO>> listPublicAlbums() {
         log.info("前台获取公开相册列表");
@@ -181,6 +193,7 @@ public class AlbumController {
      * @param slug 相册URL标识
      * @return 相册详情VO
      */
+    @TrackApi("【公开】根据 slug 获取相册详情")
     @GetMapping("/public/albums/{slug}")
     public Result<AlbumVO> getAlbumBySlug(@PathVariable String slug) {
         log.info("前台获取相册详情: slug={}", slug);
@@ -195,6 +208,7 @@ public class AlbumController {
      * @param size 每页大小（默认20，最大50）
      * @return 照片墙分页结果
      */
+    @TrackApi("【公开】分页获取全部已发布相册中的照片（时间线照片墙）")
     @GetMapping("/public/photos")
     public Result<PageResult> pagePublicPhotos(
             @RequestParam(defaultValue = "1") int page,

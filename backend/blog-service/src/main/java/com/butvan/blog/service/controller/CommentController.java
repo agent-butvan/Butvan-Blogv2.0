@@ -1,5 +1,7 @@
 package com.butvan.blog.service.controller;
 
+import com.butvan.blog.service.annotation.TrackApi;
+
 import com.butvan.blog.common.result.Result;
 import com.butvan.blog.common.result.PageResult;
 import com.butvan.blog.common.utils.IpUtils;
@@ -31,6 +33,7 @@ public class CommentController {
      * @param articleId 文章唯一主键 ID
      * @return 统一格式 Result 包装的树形评论 VO 列表
      */
+    @TrackApi("【公开前台】获取指定文章下的所有审核通过的嵌套树形评论列表")
     @GetMapping("/articles/{articleId}/comments")
     public Result<List<CommentVO>> getCommentsByArticleId(
             @PathVariable Long articleId,
@@ -49,6 +52,7 @@ public class CommentController {
      * @param request HTTP Servlet 请求对象，用于解析 IP 与 UA
      * @return 统一格式 Result 包装的新增评论 VO 实体对象
      */
+    @TrackApi("【公开前台】提交发表新评论 (支持独立评论及嵌套回复)")
     @PostMapping("/articles/{articleId}/comments")
     public Result<CommentVO> createComment(
             @PathVariable Long articleId,
@@ -70,6 +74,7 @@ public class CommentController {
      * @param commentId 评论唯一主键 ID
      * @return 空成功 Result 响应
      */
+    @TrackApi("【公开前台】评论点赞喜欢自增")
     @PostMapping("/comments/{commentId}/like")
     public Result<Void> likeComment(@PathVariable Long commentId) {
         log.info("前台评论点赞 API 请求: commentId={}", commentId);
@@ -86,6 +91,7 @@ public class CommentController {
      * @param size 每页记录数，默认 10
      * @return 封装的 PageResult 分页结果
      */
+    @TrackApi("【受保护后台】分页检索评论列表 (全部/待审核/已通过/垃圾评论/回收站)")
     @GetMapping("/admin/comments")
     public Result<PageResult> listAdminComments(
             @RequestParam(required = false) String status,
@@ -104,6 +110,7 @@ public class CommentController {
      * @param body 包含状态字样的 JSON 参数包，如 {"status": "APPROVED"}
      * @return 空成功 Result 响应
      */
+    @TrackApi("【受保护后台】更新评论的审核状态")
     @PutMapping("/admin/comments/{id}/status")
     public Result<Void> updateCommentStatus(
             @PathVariable Long id,
@@ -122,6 +129,7 @@ public class CommentController {
      * @param principal 登录人信息凭证对象
      * @return 产生的子回复评论 VO 实体对象
      */
+    @TrackApi("【受保护后台】快捷回复某条评论")
     @PostMapping("/admin/comments/{id}/reply")
     public Result<CommentVO> replyComment(
             @PathVariable Long id,
@@ -141,6 +149,7 @@ public class CommentController {
      * @param principal 登录人安全凭证
      * @return 空成功 Result 响应
      */
+    @TrackApi("【受保护后台】将指定评论标记为博主本人所写")
     @PutMapping("/admin/comments/{id}/author")
     public Result<Void> markAsAuthor(
             @PathVariable Long id,
@@ -157,6 +166,7 @@ public class CommentController {
      * @param id 评论 ID
      * @return 空成功 Result 响应
      */
+    @TrackApi("【受保护后台】彻底物理删除一条评论")
     @DeleteMapping("/admin/comments/{id}")
     public Result<Void> deleteComment(@PathVariable Long id) {
         log.info("后台物理彻底删除评论: id={}", id);
@@ -167,6 +177,7 @@ public class CommentController {
     /**
      * 【受保护后台】切换评论置顶状态
      */
+    @TrackApi("【受保护后台】切换评论置顶状态")
     @PutMapping("/admin/comments/{id}/pin")
     public Result<Void> togglePinComment(@PathVariable Long id) {
         log.info("后台切换评论置顶: id={}", id);
@@ -177,6 +188,7 @@ public class CommentController {
     /**
      * 【受保护后台】封禁该评论的作者（IP 及其 邮箱）
      */
+    @TrackApi("【受保护后台】封禁该评论的作者（IP 及其 邮箱）")
     @PutMapping("/admin/comments/{id}/ban")
     public Result<Void> banCommentAuthor(@PathVariable Long id) {
         log.info("后台封禁评论作者: id={}", id);

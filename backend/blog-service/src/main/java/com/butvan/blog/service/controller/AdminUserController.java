@@ -1,5 +1,7 @@
 package com.butvan.blog.service.controller;
 
+import com.butvan.blog.service.annotation.TrackApi;
+
 import com.butvan.blog.common.result.PageResult;
 import com.butvan.blog.common.result.Result;
 import com.butvan.blog.pojo.dto.admin.AdminCreateUserDTO;
@@ -37,6 +39,7 @@ public class AdminUserController {
      * @param size    每页大小（默认 10）
      * @return 分页结果
      */
+    @TrackApi("分页查询用户列表")
     @GetMapping
     public Result<PageResult> listUsers(
             @RequestParam(required = false) String keyword,
@@ -56,6 +59,7 @@ public class AdminUserController {
      * @param id 用户 ID
      * @return 用户详情 VO
      */
+    @TrackApi("获取用户详情")
     @GetMapping("/{id}")
     public Result<AdminUserVO> getUserById(@PathVariable Long id) {
         AdminUserVO userVO = adminUserService.getUserById(id);
@@ -68,6 +72,7 @@ public class AdminUserController {
      * @param dto 创建用户表单
      * @return 统一成功响应
      */
+    @TrackApi("创建新用户")
     @PostMapping
     public Result<Void> createUser(@Validated @RequestBody AdminCreateUserDTO dto) {
         log.info("管理员创建用户: username={}", dto.getUsername());
@@ -82,6 +87,7 @@ public class AdminUserController {
      * @param dto 更新表单
      * @return 更新后的用户 VO
      */
+    @TrackApi("编辑用户信息")
     @PutMapping("/{id}")
     public Result<AdminUserVO> updateUser(
             @PathVariable Long id,
@@ -99,6 +105,7 @@ public class AdminUserController {
      * @param principal 当前操作者
      * @return 统一成功响应
      */
+    @TrackApi("切换用户启用/禁用状态")
     @PatchMapping("/{id}/status")
     public Result<Void> toggleUserStatus(@PathVariable Long id, Principal principal) {
         log.info("管理员切换用户状态: id={}, operator={}", id, principal.getName());
@@ -113,6 +120,7 @@ public class AdminUserController {
      * @param principal 当前操作者
      * @return 统一成功响应
      */
+    @TrackApi("删除用户")
     @DeleteMapping("/{id}")
     public Result<Void> deleteUser(@PathVariable Long id, Principal principal) {
         log.info("管理员删除用户: id={}, operator={}", id, principal.getName());
@@ -127,6 +135,7 @@ public class AdminUserController {
      * @param dto 新密码表单
      * @return 统一成功响应
      */
+    @TrackApi("重置用户密码")
     @PutMapping("/{id}/password")
     public Result<Void> resetPassword(
             @PathVariable Long id,
@@ -144,6 +153,7 @@ public class AdminUserController {
      * @param principal 当前操作者
      * @return 统一成功响应
      */
+    @TrackApi("批量切换用户状态")
     @PatchMapping("/batch/status")
     public Result<Void> batchToggleStatus(@RequestBody Map<String, Object> body, Principal principal) {
         @SuppressWarnings("unchecked")

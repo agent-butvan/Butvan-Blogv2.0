@@ -1,5 +1,7 @@
 package com.butvan.blog.service.controller;
 
+import com.butvan.blog.service.annotation.TrackApi;
+
 import com.butvan.blog.common.exception.BusinessException;
 import com.butvan.blog.common.result.PageResult;
 import com.butvan.blog.common.result.Result;
@@ -35,6 +37,7 @@ public class NoteController {
      * @param query 查询传参 DTO
      * @return 统一格式 Result 包装的分页结果 PageResult
      */
+    @TrackApi("【管理端】分页检索手记列表 (支持 keyword、status、mood 筛选)")
     @GetMapping("/admin/notes")
     public Result<PageResult> pageAdminNotes(NoteQueryDTO query) {
         log.info("管理端分页查询手记列表 API 请求");
@@ -48,6 +51,7 @@ public class NoteController {
      * @param idOrSlug 手记唯一主键 ID 或短链接 slug
      * @return 统一格式 Result 包装的手记详情 VO
      */
+    @TrackApi("【管理端】获取手记完整详情信息")
     @GetMapping("/admin/notes/{idOrSlug}")
     public Result<NoteDetailVO> getAdminNoteDetail(@PathVariable String idOrSlug) {
         log.info("管理端获取手记详情 API 请求，idOrSlug: {}", idOrSlug);
@@ -62,6 +66,7 @@ public class NoteController {
      * @param principal 当前登录管理员认证实体，由 Spring Security 注入获取作者名
      * @return 统一格式 Result 包装的最新创建手记详情 VO
      */
+    @TrackApi("【管理端】新增保存一篇手记")
     @PostMapping("/admin/notes")
     public Result<NoteDetailVO> saveNote(@RequestBody NoteSaveDTO dto, Principal principal) {
         String username = principal.getName();
@@ -77,6 +82,7 @@ public class NoteController {
      * @param dto 修改表单数据 DTO
      * @return 统一格式 Result 包装的最新更新后手记详情 VO
      */
+    @TrackApi("【管理端】根据 ID 编辑更新已有手记")
     @PutMapping("/admin/notes/{id}")
     public Result<NoteDetailVO> updateNote(@PathVariable Long id, @RequestBody NoteSaveDTO dto) {
         log.info("管理端修改手记 API 请求，ID: {}", id);
@@ -90,6 +96,7 @@ public class NoteController {
      * @param id 待删除手记主键 ID
      * @return 统一格式 Result，Void 成功标识
      */
+    @TrackApi("【管理端】根据 ID 逻辑删除手记 (移入回收站)")
     @DeleteMapping("/admin/notes/{id}")
     public Result<Void> deleteNote(@PathVariable Long id) {
         log.info("管理端逻辑删除手记 API 请求，ID: {}", id);
@@ -105,6 +112,7 @@ public class NoteController {
      * @param mood 可选的心情筛选
      * @return 统一格式 Result 包装的分页结果
      */
+    @TrackApi("【公开端】分页获取已发布的手记列表（按时间倒序）")
     @GetMapping("/notes")
     public Result<PageResult> pagePublicNotes(
             @RequestParam(defaultValue = "1") Integer page,
@@ -127,6 +135,7 @@ public class NoteController {
      * @param slug 手记 URL 友好标识
      * @return 统一格式 Result 包装的手记详情 VO
      */
+    @TrackApi("【公开端】根据 slug 获取手记详情")
     @GetMapping("/notes/{slug}")
     public Result<NoteDetailVO> getPublicNoteDetail(@PathVariable String slug) {
         log.info("公开端获取手记详情 API 请求，slug: {}", slug);
@@ -141,6 +150,7 @@ public class NoteController {
      * @param request HttpServletRequest 请求实体
      * @return 统一格式 Result 包装的最新点赞总数
      */
+    @TrackApi("【公开端】对手记进行点赞（支持游客，防刷赞，记录登录用户）")
     @PostMapping("/notes/{id}/like")
     public Result<Long> likeNote(@PathVariable Long id, HttpServletRequest request) {
         String ipAddress = IpUtils.getClientIp(request);

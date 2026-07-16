@@ -1,5 +1,7 @@
 package com.butvan.blog.service.controller;
 
+import com.butvan.blog.service.annotation.TrackApi;
+
 import com.butvan.blog.common.exception.BusinessException;
 import com.butvan.blog.common.result.PageResult;
 import com.butvan.blog.common.result.Result;
@@ -35,6 +37,7 @@ public class ArticleController {
      * @param query 查询传参 DTO
      * @return 统一格式 Result 包装的分页结果 PageResult
      */
+    @TrackApi("【公开/管理端】分页检索文章列表 (支持根据 keyword、status、categoryId、tagId 筛选)")
     @GetMapping("/articles")
     public Result<PageResult> pageArticles(ArticleQueryDTO query) {
         log.info("分页查询文章列表 API 请求");
@@ -47,6 +50,7 @@ public class ArticleController {
      *
      * @return 统一格式 Result 包装的极简文章列表
      */
+    @TrackApi("【管理端】获取已发布文章的极简信息列表 (仅含 id, title, slug)")
     @GetMapping("/articles/simple")
     public Result<List<ArticleItemVO>> listSimpleArticles() {
         log.info("获取极简已发布文章列表 API 请求");
@@ -60,6 +64,7 @@ public class ArticleController {
      * @param idOrSlug 文章唯一主键 ID 或短链接 slug
      * @return 统一格式 Result 包装的文章详情 VO
      */
+    @TrackApi("【公开/管理端】获取文章完整详情信息")
     @GetMapping("/articles/{idOrSlug}")
     public Result<ArticleDetailVO> getArticleDetail(@PathVariable String idOrSlug) {
         log.info("获取文章详情 API 请求，idOrSlug: {}", idOrSlug);
@@ -74,6 +79,7 @@ public class ArticleController {
      * @param principal 当前登录管理员认证实体，由 Spring Security 注入获取作者名
      * @return 统一格式 Result 包装的最新文章详情 VO
      */
+    @TrackApi("【管理端】新增保存一篇文章")
     @PostMapping("/articles")
     public Result<ArticleDetailVO> saveArticle(@RequestBody ArticleSaveDTO dto, Principal principal) {
         String username = principal.getName();
@@ -89,6 +95,7 @@ public class ArticleController {
      * @param dto 修改表单数据 DTO
      * @return 统一格式 Result 包装的最新的文章详情 VO
      */
+    @TrackApi("【管理端】根据 ID 编辑更新已有文章")
     @PutMapping("/articles/{id}")
     public Result<ArticleDetailVO> updateArticle(@PathVariable Long id, @RequestBody ArticleSaveDTO dto) {
         log.info("管理端修改文章 API 请求，ID: {}", id);
@@ -102,6 +109,7 @@ public class ArticleController {
      * @param id 待删除文章主键 ID
      * @return 统一格式 Result，Void 成功标识
      */
+    @TrackApi("【管理端】根据 ID 逻辑删除文章 (移入回收站)")
     @DeleteMapping("/articles/{id}")
     public Result<Void> deleteArticle(@PathVariable Long id) {
         log.info("管理端逻辑删除文章 API 请求，ID: {}", id);
@@ -116,6 +124,7 @@ public class ArticleController {
      * @param request HttpServletRequest 请求实体
      * @return 统一格式 Result 包装的最新点赞总数
      */
+    @TrackApi("【公开端】对文章进行点赞 (支持游客，防刷赞，记录登录用户)")
     @PostMapping("/articles/{id}/like")
     public Result<Long> likeArticle(@PathVariable Long id, HttpServletRequest request) {
         String ipAddress = IpUtils.getClientIp(request);
@@ -152,6 +161,7 @@ public class ArticleController {
      * @param keyword 检索过滤字
      * @return 分页列表
      */
+    @TrackApi("【管理端】分页检索点赞记录列表 (支持 IP 或文章标题模糊搜索)")
     @GetMapping("/admin/likes")
     public Result<PageResult> pageLikes(
             @RequestParam(defaultValue = "1") Integer page,
@@ -169,6 +179,7 @@ public class ArticleController {
      * @param ids 点赞记录 ID 集合
      * @return 成功标识
      */
+    @TrackApi("【管理端】批量删除点赞流水记录 (物理删除)")
     @DeleteMapping("/admin/likes")
     public Result<Void> deleteLikes(@RequestBody List<Long> ids) {
         log.info("管理端批量删除点赞记录，待删除数: {}", ids != null ? ids.size() : 0);

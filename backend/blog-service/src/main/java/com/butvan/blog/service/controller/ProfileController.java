@@ -1,5 +1,7 @@
 package com.butvan.blog.service.controller;
 
+import com.butvan.blog.service.annotation.TrackApi;
+
 import com.butvan.blog.common.result.Result;
 import com.butvan.blog.pojo.dto.profile.ProfileUpdateDTO;
 import com.butvan.blog.pojo.vo.profile.ProfileVO;
@@ -28,6 +30,7 @@ public class ProfileController {
      * @param username 登录用户名（如 butvan）
      * @return 公开资料 VO，用户不存在时返回错误
      */
+    @TrackApi("【公开】根据用户名获取个人公开资料")
     @GetMapping("/profile/public/{username}")
     public Result<ProfileVO> getPublicProfile(@PathVariable String username) {
         log.info("公开资料查询请求：username={}", username);
@@ -44,6 +47,7 @@ public class ProfileController {
      * @param principal 安全凭证对象，由 Spring Security 注入
      * @return 个人公开资料 VO
      */
+    @TrackApi("【管理端】获取当前登录管理员的个人公开资料")
     @GetMapping("/admin/profile")
     public Result<ProfileVO> getAdminProfile(Principal principal) {
         String username = principal.getName();
@@ -62,6 +66,7 @@ public class ProfileController {
      * @param principal 安全凭证对象，由 Spring Security 注入
      * @return 统一返回格式 Result，无具体内容
      */
+    @TrackApi("【管理端】更新当前登录管理员的个人公开资料")
     @PutMapping("/admin/profile")
     public Result<Void> updateProfile(@RequestBody ProfileUpdateDTO dto, Principal principal) {
         String username = principal.getName();

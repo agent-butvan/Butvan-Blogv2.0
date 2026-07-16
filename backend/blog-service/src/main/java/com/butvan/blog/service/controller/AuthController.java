@@ -1,5 +1,7 @@
 package com.butvan.blog.service.controller;
 
+import com.butvan.blog.service.annotation.TrackApi;
+
 import com.butvan.blog.common.exception.BusinessException;
 import com.butvan.blog.common.result.Result;
 import com.butvan.blog.pojo.dto.auth.CurrentUserUpdateDTO;
@@ -46,6 +48,7 @@ public class AuthController {
      * @param registerDTO 注册数据表单，入参接受 JSR303 格式验证
      * @return 统一格式响应体 Result
      */
+    @TrackApi("管理后台账号注册接口")
     @PostMapping("/register")
     public Result<Void> register(@Validated @RequestBody RegisterDTO registerDTO) {
         log.info("接收到用户注册 API 请求，用户名: {}", registerDTO.getUsername());
@@ -61,6 +64,7 @@ public class AuthController {
      * @param request  HTTP 请求对象（用于提取客户端 IP）
      * @return 统一格式响应体 Result，携带 LoginVO 载荷
      */
+    @TrackApi("管理后台账号登录接口")
     @PostMapping("/login")
     public Result<LoginVO> login(@Validated @RequestBody LoginDTO loginDTO,
                                   HttpServletRequest request,
@@ -107,6 +111,7 @@ public class AuthController {
      * @param response HTTP 响应（写入新 access_token Cookie）
      * @return 统一成功响应
      */
+    @TrackApi("刷新 Access Token（静默续期）")
     @PostMapping("/refresh")
     public Result<Void> refresh(HttpServletRequest request, HttpServletResponse response) {
         String refreshToken = getCookieValue(request, "refresh_token");
@@ -126,6 +131,7 @@ public class AuthController {
      * @param response HTTP 响应（清除 Cookie）
      * @return 统一成功响应
      */
+    @TrackApi("退出登录")
     @PostMapping("/logout")
     public Result<Void> logout(HttpServletRequest request, HttpServletResponse response) {
         String refreshToken = getCookieValue(request, "refresh_token");
@@ -145,6 +151,7 @@ public class AuthController {
      * @param request HTTP 请求（读取 refresh_token Cookie）
      * @return 当前登录用户资料，会话无效时返回 401
      */
+    @TrackApi("会话有效性检查")
     @GetMapping("/check")
     public Result<CurrentUserVO> checkSession(HttpServletRequest request) {
         String refreshToken = getCookieValue(request, "refresh_token");
@@ -168,6 +175,7 @@ public class AuthController {
      * @param principal 当前登录安全凭证
      * @return 当前登录账号资料
      */
+    @TrackApi("获取当前登录账号个人中心资料")
     @GetMapping("/me")
     public Result<CurrentUserVO> getCurrentUser(Principal principal) {
         CurrentUserVO currentUser = authService.getCurrentUser(principal.getName());
@@ -181,6 +189,7 @@ public class AuthController {
      * @param principal 当前登录安全凭证
      * @return 更新后的账号资料
      */
+    @TrackApi("更新当前登录账号基础资料")
     @PutMapping("/me/profile")
     public Result<CurrentUserVO> updateCurrentUser(
             @Validated @RequestBody CurrentUserUpdateDTO dto,
@@ -197,6 +206,7 @@ public class AuthController {
      * @param principal 当前登录安全凭证
      * @return 统一成功响应
      */
+    @TrackApi("修改当前登录账号密码")
     @PutMapping("/me/password")
     public Result<Void> changePassword(
             @Validated @RequestBody PasswordChangeDTO dto,
@@ -209,6 +219,7 @@ public class AuthController {
     /**
      * 初始化双重认证 (2FA)，下发密钥和扫码 URI
      */
+    @TrackApi("初始化双重认证 (2FA)，下发密钥和扫码 URI")
     @GetMapping("/me/2fa/init")
     public Result<Map<String, String>> initTwoFactor(Principal principal) {
         log.info("用户 [{}] 请求初始化双重验证 2FA", principal.getName());
@@ -219,6 +230,7 @@ public class AuthController {
     /**
      * 验证并启用双重认证 (2FA)
      */
+    @TrackApi("验证并启用双重认证 (2FA)")
     @PostMapping("/me/2fa/enable")
     public Result<Void> enableTwoFactor(
             @Validated @RequestBody TwoFactorEnableDTO dto,
@@ -232,6 +244,7 @@ public class AuthController {
     /**
      * 校验并关闭双重认证 (2FA)
      */
+    @TrackApi("校验并关闭双重认证 (2FA)")
     @PostMapping("/me/2fa/disable")
     public Result<Void> disableTwoFactor(
             @Validated @RequestBody TwoFactorDisableDTO dto,
@@ -245,6 +258,7 @@ public class AuthController {
     /**
      * 绑定 GitHub 账号
      */
+    @TrackApi("绑定 GitHub 账号")
     @PostMapping("/me/github/bind")
     public Result<Void> bindGithub(
             @Validated @RequestBody GithubBindDTO dto,
@@ -258,6 +272,7 @@ public class AuthController {
     /**
      * 解绑 GitHub 账号
      */
+    @TrackApi("解绑 GitHub 账号")
     @PostMapping("/me/github/unbind")
     public Result<Void> unbindGithub(Principal principal) {
         log.info("用户 [{}] 解绑 GitHub 账号", principal.getName());
@@ -272,6 +287,7 @@ public class AuthController {
      * @param principal 当前登录安全凭证
      * @return 更新后的当前账号资料视图对象
      */
+    @TrackApi("上传当前登录用户的头像")
     @PostMapping("/me/avatar")
     public Result<CurrentUserVO> uploadAvatar(
             @RequestParam("avatar") MultipartFile file,
@@ -308,6 +324,7 @@ public class AuthController {
      * @param response HTTP 响应（写入 Cookie）
      * @return 登录用户信息
      */
+    @TrackApi("微信扫码登录 Token 交换")
     @PostMapping("/wechat/exchange")
     public Result<LoginVO> wechatExchange(@RequestBody Map<String, String> body,
                                           HttpServletResponse response) {
@@ -333,6 +350,7 @@ public class AuthController {
      * @param body 请求体，包含 email
      * @return 统一响应
      */
+    @TrackApi("发送邮箱登录/注册验证码")
     @PostMapping("/email/code")
     public Result<Void> sendEmailCode(@RequestBody Map<String, String> body) {
         String email = body.get("email");
@@ -347,6 +365,7 @@ public class AuthController {
      * @param response HTTP 响应（写入 Cookie）
      * @return 登录用户信息
      */
+    @TrackApi("邮箱验证码登录/注册并下发 Token Cookie")
     @PostMapping("/email/login")
     public Result<LoginVO> emailLogin(@RequestBody Map<String, String> body,
                                        HttpServletResponse response) {
