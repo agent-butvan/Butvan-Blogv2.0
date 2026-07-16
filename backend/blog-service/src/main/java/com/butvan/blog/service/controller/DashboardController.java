@@ -2,6 +2,7 @@ package com.butvan.blog.service.controller;
 
 import com.butvan.blog.common.result.Result;
 import com.butvan.blog.pojo.vo.dashboard.DashboardStatsVO;
+import com.butvan.blog.service.annotation.TrackApi;
 import com.butvan.blog.service.service.DashboardService;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
@@ -32,6 +33,7 @@ public class DashboardController {
      * @return 统计数据 VO
      */
     @GetMapping("/dashboard")
+    @TrackApi("获取工作台统计数据")
     public Result<DashboardStatsVO> getDashboardStats() {
         log.info("获取工作台统计数据 API 请求");
         DashboardStatsVO stats = dashboardService.getDashboardStats();
