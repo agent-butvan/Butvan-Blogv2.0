@@ -60,7 +60,7 @@ services:
     container_name: blog-admin
     restart: always
     ports:
-      - "3000:3000"
+      - "3001:3000" # 宿主机 3001 映射容器内 3000 端口
     environment:
       NEXT_PUBLIC_API_URL: http://blog-service:8080
     networks:
@@ -72,7 +72,7 @@ services:
     container_name: blog-client
     restart: always
     ports:
-      - "3001:3000" # 宿主机 3001 映射容器内 3000 端口
+      - "3000:3000" # 宿主机 3000 映射容器内 3000 端口
     environment:
       NEXT_PUBLIC_API_URL: http://blog-service:8080
     networks:
