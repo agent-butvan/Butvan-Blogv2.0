@@ -34,22 +34,20 @@ interface UseWebSocketReturn {
 /**
  * 构建 WebSocket 连接地址
  *
- * 开发环境直连后端（Next.js rewrite 不支持 WS 代理），
- * 生产环境同源（由 Nginx 等反向代理统一转发）。
+ * WebSocket 协议不走 Next.js rewrites 代理，需要浏览器直连后端。
+ * - 优先使用 NEXT_PUBLIC_WS_BASE_URL 显式配置
+ * - 开发环境直连 localhost:8080
+ * - 生产环境使用当前页面的 hostname + 后端端口（8080）
  */
 function buildWsUrl(wsId: string): string {
-  // 1. 优先使用显式配置的 WebSocket 基地址 (如 ws://localhost:8080/ws 或 wss://domain.com/ws)
+  // 1. 优先使用显式配置的 WebSocket 基地址
   const wsBase = process.env.NEXT_PUBLIC_WS_BASE_URL
   if (wsBase) {
     const formattedBase = wsBase.endsWith('/') ? wsBase : `${wsBase}/`
     return `${formattedBase}${wsId}`
   }
 
-  // 开发环境：直连后端 Spring Boot
-  const backendUrl = process.env.NEXT_PUBLIC_BACKEND_URL || 'http://localhost:8080'
-  const protocol = backendUrl.startsWith('https') ? 'wss' : 'ws'
-
-  // 如果配置了 NEXT_PUBLIC_API_BASE_URL 且非相对路径，从中提取 host
+  // 2. 如果配置了完整的后端 URL（非相对路径），从中提取 host
   const apiBase = process.env.NEXT_PUBLIC_API_BASE_URL
   if (apiBase && apiBase.startsWith('http')) {
     const host = apiBase.replace(/\/api\/?$/, '').replace(/\/$/, '')
@@ -57,14 +55,25 @@ function buildWsUrl(wsId: string): string {
     return `${wsProto}://${new URL(host).host}/ws/${wsId}`
   }
 
-  // 开发环境默认：直连 localhost:8080
+  // 3. 判断运行环境
+  if (typeof window !== 'undefined') {
+    const { hostname, protocol } = window.location
+    const wsProto = protocol === 'https:' ? 'wss' : 'ws'
+
+    // 生产环境：使用当前页面的 hostname + 后端 8080 端口
+    if (hostname !== 'localhost' && hostname !== '127.0.0.1') {
+      return `${wsProto}://${hostname}:8080/ws/${wsId}`
+    }
+  }
+
+  // 4. 开发环境兜底：直连 localhost:8080
+  const backendUrl = process.env.NEXT_PUBLIC_BACKEND_URL || 'http://localhost:8080'
+  const protocol = backendUrl.startsWith('https') ? 'wss' : 'ws'
   try {
     const url = new URL(backendUrl)
     return `${protocol}://${url.host}/ws/${wsId}`
   } catch {
-    // 兜底：同源
-    const wsProto = window.location.protocol === 'https:' ? 'wss' : 'ws'
-    return `${wsProto}://${window.location.host}/ws/${wsId}`
+    return `ws://localhost:8080/ws/${wsId}`
   }
 }
 
