@@ -41,7 +41,7 @@
 ### 5. 修复 Spring Security 对 WebSocket 端点安全放行失效的 Bug
 - **文件**：[SecurityConfig.java](file:///Users/butvan/Butvan_Projets/my_code/Butvan%20Blog2.0/backend/blog-service/src/main/java/com/butvan/blog/service/security/SecurityConfig.java)
 - **修改**：在解析配置文件的放行路径时，将默认以 `MvcRequestMatcher` 匹配路由的方式修改为显式使用 `AntPathRequestMatcher.antMatcher(...)` 匹配。
-- **原因**：Spring Security 6 默认将裸字符串配置路径识别为基于 MVC DispatcherServlet 分发的接口。而 JSR-356 WebSocket（`@ServerEndpoint` 声明的 `/ws/**`）在到达 DispatcherServlet 之前就被 Tomcat 容器分发并触发握手。因此基于 MVC 的拦截器匹配失效，导致请求被回退 to 需要鉴权，抛出 401 拦截。改用 `AntPathRequestMatcher` 可 100% 正确放行非 Spring MVC 接管的特殊接口。
+- **原因**：Spring Security 6 默认将裸字符串配置路径识别为基于 MVC DispatcherServlet 分发的接口。而 JSR-356 WebSocket（`@ServerEndpoint` 声明的 `/ws/**`）在到达 DispatcherServlet 之前就被 Tomcat 容器分发并触发握手。因此基于 MVC 的拦截器匹配失效，导致请求被回退到需要鉴权，抛出 401 拦截。改用 `AntPathRequestMatcher` 可 100% 正确放行非 Spring MVC 接管的特殊接口。
 
 ### 6. 大厂级本地日志文件滚动归档与内存高速缓存方案上线
 - **文件**：
@@ -66,7 +66,7 @@
   - 改由大厂标准的 SLF4J 统一日志通道进行输出控制，将 `logging.level.org.hibernate.SQL` 设为 `debug`，使 SQL 打印在带上标准时间戳、线程号、日志级别的同时保持整洁单行。
   - 启用了 `logging.level.org.hibernate.orm.jdbc.bind` 为 `trace`，使得调试时可以清晰追溯到 SQL 占位符具体绑定的参数值，兼顾格式的美观度与运维的可追踪性。
 
-### 8. 日志功能多维扩展（历史归档管理 + 系统控制台实时日志 Terminal 终端）
+### 8. 日志功能多维扩展与纯动态菜单绑定
 - **文件**：
   - [LogArchiveVO.java](file:///Users/butvan/Butvan_Projets/my_code/Butvan%20Blog2.0/backend/blog-pojo/src/main/java/com/butvan/blog/pojo/vo/log/LogArchiveVO.java) (新增)
   - [WebConsoleAppender.java](file:///Users/butvan/Butvan_Projets/my_code/Butvan%20Blog2.0/backend/blog-service/src/main/java/com/butvan/blog/service/log/WebConsoleAppender.java) (新增)
@@ -75,11 +75,12 @@
   - [ApiLogServiceImpl.java](file:///Users/butvan/Butvan_Projets/my_code/Butvan%20Blog2.0/backend/blog-service/src/main/java/com/butvan/blog/service/service/impl/ApiLogServiceImpl.java)
   - [api-logs/page.tsx](file:///Users/butvan/Butvan_Projets/my_code/Butvan%20Blog2.0/fronted/blog-admin/src/app/%28dashboard%29/api-logs/page.tsx)
   - [system-logs/page.tsx](file:///Users/butvan/Butvan_Projets/my_code/Butvan%20Blog2.0/fronted/blog-admin/src/app/%28dashboard%29/system-logs/page.tsx) (新增)
+  - [V202607171042__add_system_log_menu.sql](file:///Users/butvan/Butvan_Projets/my_code/Butvan%20Blog2.0/backend/blog-service/src/main/resources/db/migration/V202607171042__add_system_log_menu.sql) (新增)
   - [Sidebar.tsx](file:///Users/butvan/Butvan_Projets/my_code/Butvan%20Blog2.0/fronted/blog-admin/src/components/layout/Sidebar.tsx)
 - **修改方式**：
   - **后端**：在 Service 和 Controller 层新增了获取历史归档包列表、安全下载归档日志包（流式流传）和物理删除日志包的 API。同时，编写了 Logback 底层 Appender `WebConsoleAppender` 拦截 root 所有的标准日志，通过专有的 WebSocket 信道实现精确推送。
   - **前端**：在后台 `/api-logs` 中追加了“归档管理”选项卡，实现了日志压缩包表格、下载和物理删除功能。在后台新增了 `/system-logs` 路由，并实现了一个黑金极客风的 Terminal 终端页面，接入 WebSocket 实时系统日志流，配有按日志级别筛选、关键字过滤、滚屏锁定（Pause Scrolling）和清屏等优秀的大厂级运维功能。
-  - **侧边栏三重防御追加**：在前端 `Sidebar.tsx` 中配置了三重防御追加算法。如果一级菜单包含 API 日志子路由或一级菜单名称带有系统/设置/运维等字样，将自动追加“系统控制台日志”菜单。如果连前两项都不满足，将在最外层最下方动态强行追加独立的系统控制台入口，实现 100% 菜单项可见。
+  - **纯动态菜单绑定**：放弃了前端硬编码追加拦截器，完全遵循后台动态菜单设计。新建 Flyway SQL 插入脚本 `V202607171042__add_system_log_menu.sql`，往数据库的导航菜单表 `blog_navigation` 中自动写入该路由，前端 Sidebar 接收后端路由后直接动态渲染展现，彻底实现数据库源头统一驱动。
 
 ---
 
@@ -98,10 +99,13 @@
 11. `fix(log): apiLog 在内存构建时补充自增 id 字段以解决前端 React 渲染 key 重复报错` (改动哈希: `16d107d`)
 12. `style(log): JPA的SQL打印改由SLF4J标准日志控制输出并优化打印格式` (改动哈希: `a803ade`)
 13. `fix(ui): 前端大屏接收 WS 日志时添加去重过滤以根治偶发性 React key 冲突` (改动哈希: `223f77a`)
-14. `feat(log): 后端支持历史日志归档包管理及系统控制台实时日志拦截推送` (改动哈希: `e28033e`)
+14. `feat(log): 后端支持历史日志归档包管理及 system 控制台实时日志推送` (改动哈希: `e28033e`)
 15. `feat(ui): 前端支持日志归档包管理Tab及系统控制台实时日志展示Terminal` (改动哈希: `ec73300`)
 16. `docs(docs): 在 DIRECTORY.md 中补全系统日志与归档VO等新增文件映射` (改动哈希: `b09900d`)
 17. `fix(ui): 升级 Sidebar 菜单动态拦截为三重防御策略以保证系统日志入口 100% 展现` (改动哈希: `0fd7a8d`)
+18. `feat(log): 后端增加菜单插入迁移SQL并在前端还原侧边栏纯动态渲染` (改动哈希: `c8e44a7`)
+19. `docs(docs): 在 DIRECTORY.md 中登记系统实时日志菜单插入迁移 SQL 文件` (改动哈希: `6b90b4a`)
+20. `docs(docs): 更新 walkthrough.md，包含侧边栏纯动态数据库菜单同步机制` (改动哈希: `e1599eb`)
 
 ---
 
@@ -110,4 +114,4 @@
 由于本次重构包含 Flyway 数据库下线表迁移脚本与全新的日志配置，您**无需修改服务器上的 Nginx 配置**，只需要按照以下步骤更新您的容器镜像：
 1. 在本地将我为您重构并 Git 提交好的最新后端代码重新打包编译。
 2. 构建后端 Docker 镜像并推送至您的阿里云镜像仓库。
-3. 在您的服务器上拉取最新镜像，重启 `blog-service` 容器使 Flyway 自动下线数据库旧表并让日志优化彻底生效即可！
+3. 在您的服务器上拉取最新镜像，重启 `blog-service` 容器使 Flyway 自动下线数据库旧表、自动往菜单表插入“系统控制台日志”菜单并让日志优化彻底生效即可！
