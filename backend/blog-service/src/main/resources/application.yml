@@ -14,3 +14,8 @@ spring:
       - classpath:application-storage.yml
       - classpath:application-security.yml
       - classpath:application-mail.yml
+
+logging:
+  level:
+    org.hibernate.SQL: debug
+    org.hibernate.orm.jdbc.bind: trace
