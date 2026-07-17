@@ -1,0 +1,40 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<configuration>
+    <!-- 引入 Spring Boot 默认的 Logback 基础配置 -->
+    <include resource="org/springframework/boot/logging/logback/defaults.xml" />
+    <include resource="org/springframework/boot/logging/logback/console-appender.xml" />
+
+    <!-- 1. 定义应用默认的 Root 级别日志控制台输出 -->
+    <root level="INFO">
+        <appender-ref ref="CONSOLE" />
+    </root>
+
+    <!-- 2. 定义 API 日志文件的输出 Appender（按天滚动分割 + 压缩归档 + 30天过期） -->
+    <appender name="API_FILE" class="ch.qos.logback.core.rolling.RollingFileAppender">
+        <!-- 存储文件路径 -->
+        <file>logs/api-log.log</file>
+        
+        <!-- 滚动切割策略 -->
+        <rollingPolicy class="ch.qos.logback.core.rolling.SizeAndTimeBasedRollingPolicy">
+            <!-- 每天产生一个压缩包，按文件名递增分卷 -->
+            <fileNamePattern>logs/archive/api-log-%d{yyyy-MM-dd}.%i.log.gz</fileNamePattern>
+            <!-- 每个日志文件最大 10MB -->
+            <maxFileSize>10MB</maxFileSize>
+            <!-- 日志文件总保留 30 天 -->
+            <maxHistory>30</maxHistory>
+            <!-- 所有归档包的最大磁盘总空间 -->
+            <totalSizeCap>1GB</totalSizeCap>
+        </rollingPolicy>
+        
+        <!-- 纯净日志格式输出：只打印消息本身 + 换行（不带线程名、时间等，利于 JSON 读取解析） -->
+        <encoder>
+            <pattern>%msg%n</pattern>
+            <charset>UTF-8</charset>
+        </encoder>
+    </appender>
+
+    <!-- 3. 定义专属于 api-log 的独立 Logger。其 additivity="false" 确保它的日志不会输出到控制台 console 造成刷屏 -->
+    <logger name="api-log" level="INFO" additivity="false">
+        <appender-ref ref="API_FILE" />
+    </logger>
+</configuration>

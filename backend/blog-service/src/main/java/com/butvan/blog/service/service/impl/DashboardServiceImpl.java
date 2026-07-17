@@ -3,7 +3,7 @@ package com.butvan.blog.service.service.impl;
 import com.butvan.blog.pojo.entity.Article;
 import com.butvan.blog.pojo.entity.DailyStats;
 import com.butvan.blog.pojo.vo.dashboard.*;
-import com.butvan.blog.service.repository.ApiLogRepository;
+import com.butvan.blog.service.aspect.ApiLogAspect;
 import com.butvan.blog.service.repository.ArticleRepository;
 import com.butvan.blog.service.repository.CommentRepository;
 import com.butvan.blog.service.repository.DailyStatsRepository;
@@ -41,7 +41,6 @@ public class DashboardServiceImpl implements DashboardService {
     private final UserRepository userRepository;
     private final DailyStatsRepository dailyStatsRepository;
     private final NoteRepository noteRepository;
-    private final ApiLogRepository apiLogRepository;
     private final DataSource dataSource;
     private final StringRedisTemplate redisTemplate;
     private final FileStorageService fileStorageService;
@@ -112,8 +111,11 @@ public class DashboardServiceImpl implements DashboardService {
         } catch (Throwable e) {
             log.warn("无法计算 JVM 堆内存，将回退默认: {}", e.getMessage());
         }
-        Double avgCost = apiLogRepository.findAverageCostTimeOfRecent();
-        int apiDelay = avgCost != null ? avgCost.intValue() : 0;
+        double avgCost = ApiLogAspect.RECENT_COST_TIMES.stream()
+                .mapToLong(Long::longValue)
+                .average()
+                .orElse(0.0);
+        int apiDelay = (int) Math.round(avgCost);
 
         SystemMetricsVO systemMetrics = SystemMetricsVO.builder()
                 .cpuUsage(cpuUsage)

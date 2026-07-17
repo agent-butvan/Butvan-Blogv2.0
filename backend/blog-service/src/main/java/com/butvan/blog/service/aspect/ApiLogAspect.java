@@ -20,9 +20,13 @@ import org.springframework.web.context.request.ServletRequestAttributes;
 
 import java.lang.reflect.Method;
 import java.time.LocalDateTime;
+import java.util.Queue;
 import java.util.concurrent.CompletableFuture;
+import java.util.concurrent.ConcurrentLinkedQueue;
 import cn.hutool.json.JSONObject;
 import cn.hutool.json.JSONUtil;
+import org.slf4j.Logger;
+import org.slf4j.LoggerFactory;
 
 /**
  * 接口测速与日志拦截统一处理切面
@@ -33,7 +37,13 @@ import cn.hutool.json.JSONUtil;
 @Slf4j
 public class ApiLogAspect {
 
-    private final ApiLogRepository apiLogRepository;
+    private static final Logger apiLogger = LoggerFactory.getLogger("api-log");
+
+    // 内存中缓存最新的 100 条接口请求流水明细，支持工作台秒级拉取
+    public static final Queue<ApiLog> RECENT_LOGS = new ConcurrentLinkedQueue<>();
+    // 内存中缓存最近 100 次 API 响应的耗时数据（毫秒）用于高速响应平均时间计算
+    public static final Queue<Long> RECENT_COST_TIMES = new ConcurrentLinkedQueue<>();
+
     private final DailyStatsRepository dailyStatsRepository;
     private final WebSocketServer webSocketServer;
 
@@ -97,12 +107,23 @@ public class ApiLogAspect {
                             .uri(finalUri)
                             .ip(finalIp)
                             .costTime((int) costTime)
+                            .createdAt(LocalDateTime.now())
                             .build();
 
-                    apiLogRepository.save(apiLog);
-                    log.debug("API 测速拦截并异步入库完成: {} ({} {}) - 耗时 {}ms", finalApiName, finalMethodType, finalUri, costTime);
+                    // 1. 打印到本地日志文件（JSON格式，自动滚动压缩）
+                    apiLogger.info(JSONUtil.toJsonStr(apiLog));
 
-                    // 增加 PV 流量统计：仅前台公开的 GET 请求（排除 /admin/ 和 /ws/）
+                    // 2. 存入内存滑动队列，用于大屏及平均延迟高速计算
+                    RECENT_COST_TIMES.offer(costTime);
+                    while (RECENT_COST_TIMES.size() > 100) {
+                        RECENT_COST_TIMES.poll();
+                    }
+                    RECENT_LOGS.offer(apiLog);
+                    while (RECENT_LOGS.size() > 100) {
+                        RECENT_LOGS.poll();
+                    }
+
+                    // 3. 增加 PV 流量统计：仅前台公开的 GET 请求（排除 /admin/ 和 /ws/）
                     if ("GET".equalsIgnoreCase(finalMethodType) && !finalUri.contains("/admin/") && !finalUri.contains("/ws/")) {
                         try {
                             dailyStatsRepository.incrementTodayPv();
@@ -111,20 +132,17 @@ public class ApiLogAspect {
                         }
                     }
 
-                    // 广播日志消息到控制台
+                    // 4. 广播日志消息到控制台
                     try {
                         JSONObject wsMsg = JSONUtil.createObj();
                         wsMsg.set("type", "api-log");
-                        if (apiLog.getCreatedAt() == null) {
-                            apiLog.setCreatedAt(LocalDateTime.now());
-                        }
                         wsMsg.set("data", apiLog);
                         webSocketServer.broadcastApiLog(JSONUtil.toJsonStr(wsMsg));
                     } catch (Exception wsEx) {
                         log.warn("通过 WebSocket 广播 API 日志消息异常:", wsEx);
                     }
                 } catch (Exception e) {
-                    log.error("API 测速日志持久化至数据库失败:", e);
+                    log.error("API 测速日志本地归档处理失败:", e);
                 }
             });
         }
