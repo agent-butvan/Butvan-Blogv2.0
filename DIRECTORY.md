@@ -439,7 +439,8 @@ Butvan Blog2.0/                                    # 📦 项目根目录
             │       ├── logback-spring.xml          #         Logback 全局及 API 专用滚动归档日志配置文件 (新增)
             │       └── db/
             │           └── migration/              #         Flyway 数据库表结构变更同步迁移脚本目录 (新增)
-            │               └── V202607171000__drop_api_log.sql  # 物理表下线清理脚本
+            │               ├── V202607171000__drop_api_log.sql  # 物理表下线清理脚本
+            │               └── V202607171042__add_system_log_menu.sql  # 系统控制台实时日志菜单安全插入脚本
             └── test/
                 └── java/com/butvan/blog/service/   #       🧪 单元测试与集成测试
 ```
