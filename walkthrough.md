@@ -66,6 +66,20 @@
   - 改由大厂标准的 SLF4J 统一日志通道进行输出控制，将 `logging.level.org.hibernate.SQL` 设为 `debug`，使 SQL 打印在带上标准时间戳、线程号、日志级别的同时保持整洁单行。
   - 启用了 `logging.level.org.hibernate.orm.jdbc.bind` 为 `trace`，使得调试时可以清晰追溯到 SQL 占位符具体绑定的参数值，兼顾格式的美观度与运维的可追踪性。
 
+### 8. 日志功能多维扩展（历史归档管理 + 系统控制台实时日志 Terminal 终端）
+- **文件**：
+  - [LogArchiveVO.java](file:///Users/butvan/Butvan_Projets/my_code/Butvan%20Blog2.0/backend/blog-pojo/src/main/java/com/butvan/blog/pojo/vo/log/LogArchiveVO.java) (新增)
+  - [WebConsoleAppender.java](file:///Users/butvan/Butvan_Projets/my_code/Butvan%20Blog2.0/backend/blog-service/src/main/java/com/butvan/blog/service/log/WebConsoleAppender.java) (新增)
+  - [logback-spring.xml](file:///Users/butvan/Butvan_Projets/my_code/Butvan%20Blog2.0/backend/blog-service/src/main/resources/logback-spring.xml)
+  - [ApiLogController.java](file:///Users/butvan/Butvan_Projets/my_code/Butvan%20Blog2.0/backend/blog-service/src/main/java/com/butvan/blog/service/controller/ApiLogController.java)
+  - [ApiLogServiceImpl.java](file:///Users/butvan/Butvan_Projets/my_code/Butvan%20Blog2.0/backend/blog-service/src/main/java/com/butvan/blog/service/service/impl/ApiLogServiceImpl.java)
+  - [api-logs/page.tsx](file:///Users/butvan/Butvan_Projets/my_code/Butvan%20Blog2.0/fronted/blog-admin/src/app/%28dashboard%29/api-logs/page.tsx)
+  - [system-logs/page.tsx](file:///Users/butvan/Butvan_Projets/my_code/Butvan%20Blog2.0/fronted/blog-admin/src/app/%28dashboard%29/system-logs/page.tsx) (新增)
+  - [Sidebar.tsx](file:///Users/butvan/Butvan_Projets/my_code/Butvan%20Blog2.0/fronted/blog-admin/src/components/layout/Sidebar.tsx)
+- **修改方式**：
+  - **后端**：在 Service 和 Controller 层新增了获取历史归档包列表、安全下载归档日志包（流式流传）和物理删除日志包的 API。同时，编写了 Logback 底层 Appender `WebConsoleAppender` 拦截 root 所有的标准日志，通过专有的 WebSocket 信道实现精确推送。
+  - **前端**：在后台 `/api-logs` 中追加了“归档管理”选项卡，实现了日志压缩包表格、下载和物理删除功能。在后台新增了 `/system-logs` 路由，并实现了一个黑金极客风的 Terminal 终端页面，接入 WebSocket 实时系统日志流，配有按日志级别筛选、关键字过滤、滚屏锁定（Pause Scrolling）和清屏等优秀的大厂级运维功能。
+
 ---
 
 ## 📈 Git 提交记录
@@ -82,6 +96,10 @@
 10. `fix(repository): 彻底物理删除废弃 of ApiLogRepository 以消除 JPA Bean 的初始化报错` (改动哈希: `e43f086`)
 11. `fix(log): apiLog 在内存构建时补充自增 id 字段以解决前端 React 渲染 key 重复报错` (改动哈希: `16d107d`)
 12. `style(log): JPA的SQL打印改由SLF4J标准日志控制输出并优化打印格式` (改动哈希: `a803ade`)
+13. `fix(ui): 前端大屏接收 WS 日志时添加去重过滤以根治偶发性 React key 冲突` (改动哈希: `223f77a`)
+14. `feat(log): 后端支持历史日志归档包管理及系统控制台实时日志拦截推送` (改动哈希: `e28033e`)
+15. `feat(ui): 前端支持日志归档包管理Tab及系统控制台实时日志展示Terminal` (改动哈希: `ec73300`)
+16. `docs(docs): 在 DIRECTORY.md 中补全系统日志与归档VO等新增文件映射` (改动哈希: `b09900d`)
 
 ---
 
