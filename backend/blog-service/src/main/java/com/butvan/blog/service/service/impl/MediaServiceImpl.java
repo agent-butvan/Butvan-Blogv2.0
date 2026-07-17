@@ -20,10 +20,13 @@ import org.springframework.data.domain.Sort;
 import org.springframework.data.jpa.domain.Specification;
 
 import java.io.IOException;
+import java.time.LocalDate;
+import java.time.format.DateTimeFormatter;
 import java.util.ArrayList;
 import java.util.Arrays;
 import java.util.List;
 import java.util.UUID;
+import jakarta.servlet.http.HttpServletRequest;
 
 /**
  * 媒体资源管理服务实现类
@@ -40,7 +43,7 @@ public class MediaServiceImpl implements MediaService {
     private final MediaRepository mediaRepository;
     private final FileStorageService fileStorageService;
     private final StorageProperties storageProperties;
-    private final jakarta.servlet.http.HttpServletRequest request;
+    private final HttpServletRequest request;
 
     private static final List<String> IMAGE_EXTENSIONS = Arrays.asList("jpg", "jpeg", "png", "gif", "webp", "bmp");
 
@@ -122,7 +125,7 @@ public class MediaServiceImpl implements MediaService {
         }
 
         // 9. 拼接保存在数据库中的 filePath 相对路径（统一使用 / 作为对象路径分隔符）
-        String dateStr = java.time.LocalDate.now().format(java.time.format.DateTimeFormatter.ofPattern("yyyyMMdd"));
+        String dateStr = LocalDate.now().format(DateTimeFormatter.ofPattern("yyyyMMdd"));
         String savedFilePath = category + "/" + dateStr + "/" + newFilename;
 
         // 10. 持久化记录到数据库中

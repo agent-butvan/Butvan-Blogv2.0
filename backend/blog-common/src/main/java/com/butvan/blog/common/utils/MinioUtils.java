@@ -11,6 +11,7 @@ import java.io.IOException;
 import java.io.InputStream;
 import java.security.InvalidKeyException;
 import java.security.NoSuchAlgorithmException;
+import java.util.ArrayList;
 import java.util.List;
 import java.util.concurrent.TimeUnit;
 import java.util.stream.Collectors;
@@ -222,7 +223,7 @@ public class MinioUtils {
         try {
             Iterable<Result<DeleteError>> results = client.removeObjects(
                     RemoveObjectsArgs.builder().bucket(bucketName).objects(objects).build());
-            List<String> errors = new java.util.ArrayList<>();
+            List<String> errors = new ArrayList<>();
             for (Result<DeleteError> result : results) {
                 try {
                     DeleteError error = result.get();

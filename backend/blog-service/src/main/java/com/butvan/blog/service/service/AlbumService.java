@@ -9,6 +9,7 @@ import com.butvan.blog.pojo.vo.album.AlbumListVO;
 import com.butvan.blog.pojo.vo.album.AlbumVO;
 import com.butvan.blog.pojo.vo.album.PhotoWallVO;
 import org.springframework.web.multipart.MultipartFile;
+import java.util.List;
 
 /**
  * 相册管理服务层接口
@@ -68,7 +69,7 @@ public interface AlbumService {
      *
      * @return 相册列表VO
      */
-    java.util.List<AlbumListVO> listPublicAlbums();
+    List<AlbumListVO> listPublicAlbums();
 
     /**
      * 向相册添加照片

@@ -19,7 +19,10 @@ import org.springframework.web.context.request.RequestContextHolder;
 import org.springframework.web.context.request.ServletRequestAttributes;
 
 import java.lang.reflect.Method;
+import java.time.LocalDateTime;
 import java.util.concurrent.CompletableFuture;
+import cn.hutool.json.JSONObject;
+import cn.hutool.json.JSONUtil;
 
 /**
  * 接口测速与日志拦截统一处理切面
@@ -110,13 +113,13 @@ public class ApiLogAspect {
 
                     // 广播日志消息到控制台
                     try {
-                        cn.hutool.json.JSONObject wsMsg = cn.hutool.json.JSONUtil.createObj();
+                        JSONObject wsMsg = JSONUtil.createObj();
                         wsMsg.set("type", "api-log");
                         if (apiLog.getCreatedAt() == null) {
-                            apiLog.setCreatedAt(java.time.LocalDateTime.now());
+                            apiLog.setCreatedAt(LocalDateTime.now());
                         }
                         wsMsg.set("data", apiLog);
-                        webSocketServer.broadcastApiLog(cn.hutool.json.JSONUtil.toJsonStr(wsMsg));
+                        webSocketServer.broadcastApiLog(JSONUtil.toJsonStr(wsMsg));
                     } catch (Exception wsEx) {
                         log.warn("通过 WebSocket 广播 API 日志消息异常:", wsEx);
                     }
