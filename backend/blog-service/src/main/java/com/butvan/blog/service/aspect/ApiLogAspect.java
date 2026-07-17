@@ -22,6 +22,7 @@ import java.time.LocalDateTime;
 import java.util.Queue;
 import java.util.concurrent.CompletableFuture;
 import java.util.concurrent.ConcurrentLinkedQueue;
+import java.util.concurrent.atomic.AtomicLong;
 import cn.hutool.json.JSONObject;
 import cn.hutool.json.JSONUtil;
 import org.slf4j.Logger;
@@ -37,6 +38,9 @@ import org.slf4j.LoggerFactory;
 public class ApiLogAspect {
 
     private static final Logger apiLogger = LoggerFactory.getLogger("api-log");
+    
+    // 生成内存唯一的自增日志ID，供前端 React 渲染做唯一 key，防止 null 冲突报错
+    private static final AtomicLong logIdCounter = new AtomicLong(1);
 
     // 内存中缓存最新的 100 条接口请求流水明细，支持工作台秒级拉取
     public static final Queue<ApiLog> RECENT_LOGS = new ConcurrentLinkedQueue<>();
@@ -101,6 +105,7 @@ public class ApiLogAspect {
             CompletableFuture.runAsync(() -> {
                 try {
                     ApiLog apiLog = ApiLog.builder()
+                            .id(logIdCounter.getAndIncrement())
                             .apiName(finalApiName)
                             .method(finalMethodType)
                             .uri(finalUri)
