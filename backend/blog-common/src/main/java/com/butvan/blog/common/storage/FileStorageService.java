@@ -55,4 +55,11 @@ public interface FileStorageService {
      * @return 完整的访问 URL，本地存储返回相对路径
      */
     String getAccessUrl(String objectName);
+
+    /**
+     * 测试存储连接状态是否健康可用
+     *
+     * @return true 正常，false 异常/无法连接
+     */
+    boolean testConnection();
 }

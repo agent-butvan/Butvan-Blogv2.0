@@ -39,4 +39,7 @@ public class DashboardStatsVO {
 
     /** 7 日流量与访问走势数据 */
     private List<TrafficTrendVO> trafficTrend;
+
+    /** 核心底层服务健康监测状态 */
+    private ServiceStatusVO serviceStatus;
 }

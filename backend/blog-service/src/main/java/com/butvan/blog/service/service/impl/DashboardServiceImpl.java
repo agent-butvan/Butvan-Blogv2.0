@@ -22,6 +22,11 @@ import java.util.ArrayList;
 import java.util.List;
 import java.util.Map;
 import java.util.stream.Collectors;
+import javax.sql.DataSource;
+import java.sql.Connection;
+import org.springframework.data.redis.core.StringRedisTemplate;
+import com.butvan.blog.common.storage.FileStorageService;
+import com.butvan.blog.common.properties.StorageProperties;
 
 /**
  * 工作台仪表盘 Service 实现类
@@ -37,6 +42,10 @@ public class DashboardServiceImpl implements DashboardService {
     private final DailyStatsRepository dailyStatsRepository;
     private final NoteRepository noteRepository;
     private final ApiLogRepository apiLogRepository;
+    private final DataSource dataSource;
+    private final StringRedisTemplate redisTemplate;
+    private final FileStorageService fileStorageService;
+    private final StorageProperties storageProperties;
 
     @Override
     public DashboardStatsVO getDashboardStats() {
@@ -182,6 +191,42 @@ public class DashboardServiceImpl implements DashboardService {
             }
         }
 
+        // 9. 检测核心服务连接健康度 (Database / Redis / Storage)
+        boolean dbOk = false;
+        try (Connection conn = dataSource.getConnection()) {
+            dbOk = conn.isValid(1);
+        } catch (Exception e) {
+            log.warn("Database 连通性测试失败: {}", e.getMessage());
+        }
+
+        boolean redisOk = false;
+        try {
+            Object reply = redisTemplate.getConnectionFactory().getConnection().ping();
+            if (reply instanceof String) {
+                redisOk = "PONG".equalsIgnoreCase((String) reply);
+            } else if (reply instanceof byte[]) {
+                redisOk = "PONG".equalsIgnoreCase(new String((byte[]) reply));
+            } else if (reply != null) {
+                redisOk = "PONG".equalsIgnoreCase(reply.toString());
+            }
+        } catch (Exception e) {
+            log.warn("Redis 连通性测试失败: {}", e.getMessage());
+        }
+
+        boolean storageOk = false;
+        try {
+            storageOk = fileStorageService.testConnection();
+        } catch (Exception e) {
+            log.warn("Storage 连通性测试失败: {}", e.getMessage());
+        }
+
+        ServiceStatusVO serviceStatus = ServiceStatusVO.builder()
+                .database(dbOk)
+                .redis(redisOk)
+                .minio(storageOk)
+                .storageType(storageProperties.getType())
+                .build();
+
         log.info("工作台统计数据获取完成");
 
         return DashboardStatsVO.builder()
@@ -193,6 +238,7 @@ public class DashboardServiceImpl implements DashboardService {
                 .systemMetrics(systemMetrics)
                 .aiStorageMetrics(aiStorageMetrics)
                 .trafficTrend(trafficTrend)
+                .serviceStatus(serviceStatus)
                 .build();
     }
 }

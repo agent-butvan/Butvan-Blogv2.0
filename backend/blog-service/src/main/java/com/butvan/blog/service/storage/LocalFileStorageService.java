@@ -9,6 +9,9 @@ import java.io.IOException;
 import java.io.InputStream;
 import java.nio.file.Files;
 import java.nio.file.StandardCopyOption;
+import java.time.LocalDate;
+import java.time.format.DateTimeFormatter;
+import org.springframework.util.StringUtils;
 
 /**
  * 本地磁盘文件存储实现（纯 Java 类，不依赖 Spring 条件装配）
@@ -77,6 +80,20 @@ public class LocalFileStorageService implements FileStorageService {
         return "/uploads/" + objectName;
     }
 
+    @Override
+    public boolean testConnection() {
+        try {
+            File file = new File(uploadDir);
+            if (!file.exists()) {
+                return file.mkdirs();
+            }
+            return file.canWrite();
+        } catch (Exception e) {
+            log.warn("本地磁盘存储连通性/可写性测试失败: {}", e.getMessage());
+            return false;
+        }
+    }
+
     /**
      * 确保父级目录存在
      */
@@ -91,8 +108,8 @@ public class LocalFileStorageService implements FileStorageService {
      * 拼接实际的本地存储对象路径名（格式：[分类大写]/[当前日期yyyyMMdd]/[原始UUID文件名]），统一以 / 作为相对路径前缀
      */
     private String getActualObjectName(String category, String objectName) {
-        String datePrefix = java.time.LocalDate.now().format(java.time.format.DateTimeFormatter.ofPattern("yyyyMMdd"));
-        String cleanCategory = org.springframework.util.StringUtils.hasText(category) ? category.toUpperCase() : "MANUAL";
+        String datePrefix = LocalDate.now().format(DateTimeFormatter.ofPattern("yyyyMMdd"));
+        String cleanCategory = StringUtils.hasText(category) ? category.toUpperCase() : "MANUAL";
         return cleanCategory + "/" + datePrefix + "/" + objectName;
     }
 }

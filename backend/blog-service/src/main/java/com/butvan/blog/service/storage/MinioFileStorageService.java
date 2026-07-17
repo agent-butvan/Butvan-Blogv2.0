@@ -8,7 +8,10 @@ import org.springframework.web.multipart.MultipartFile;
 
 import java.io.IOException;
 import java.io.InputStream;
+import java.time.LocalDate;
+import java.time.format.DateTimeFormatter;
 import java.util.concurrent.TimeUnit;
+import org.springframework.util.StringUtils;
 
 /**
  * MinIO 对象存储实现（纯 Java 类，不依赖 Spring 条件装配）
@@ -80,12 +83,23 @@ public class MinioFileStorageService implements FileStorageService {
         }
     }
 
+    @Override
+    public boolean testConnection() {
+        try {
+            String bucket = storageProperties.getMinio().getBucket();
+            return minioUtils.bucketExists(bucket);
+        } catch (Exception e) {
+            log.warn("MinIO 对象存储连通性测试失败: {}", e.getMessage());
+            return false;
+        }
+    }
+
     /**
      * 拼接实际的存储对象名（格式：[分类大写]/[当前日期yyyyMMdd]/[原始UUID文件名]）
      */
     private String getActualObjectName(String category, String objectName) {
-        String datePrefix = java.time.LocalDate.now().format(java.time.format.DateTimeFormatter.ofPattern("yyyyMMdd"));
-        String cleanCategory = org.springframework.util.StringUtils.hasText(category) ? category.toUpperCase() : "MANUAL";
+        String datePrefix = LocalDate.now().format(DateTimeFormatter.ofPattern("yyyyMMdd"));
+        String cleanCategory = StringUtils.hasText(category) ? category.toUpperCase() : "MANUAL";
         return cleanCategory + "/" + datePrefix + "/" + objectName;
     }
 }
