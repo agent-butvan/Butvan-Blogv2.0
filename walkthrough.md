@@ -51,7 +51,6 @@
   - [DashboardServiceImpl.java](file:///Users/butvan/Butvan_Projets/my_code/Butvan%20Blog2.0/backend/blog-service/src/main/java/com/butvan/blog/service/service/impl/DashboardServiceImpl.java)
   - [ApiLog.java](file:///Users/butvan/Butvan_Projets/my_code/Butvan%20Blog2.0/backend/blog-pojo/src/main/java/com/butvan/blog/pojo/entity/ApiLog.java)
   - [V202607171000__drop_api_log.sql](file:///Users/butvan/Butvan_Projets/my_code/Butvan%20Blog2.0/backend/blog-service/src/main/resources/db/migration/V202607171000__drop_api_log.sql) (新增)
-  - [ApiLogRepository.java](file:///Users/butvan/Butvan_Projets/my_code/Butvan%20Blog2.0/backend/blog-service/src/main/java/com/butvan/blog/service/repository/ApiLogRepository.java) (物理删除)
 - **修改方式**：
   - **物理落盘**：引入了 Logback 物理文件滚动日志，每天凌晨将前一天的 API 日志自动打包压缩为 `.log.gz`，并**自动物理删除 30 天以前**的压缩文件包。
   - **指标与缓存**：废除了原有 `api_log` 的数据库物理表写入，降级 `ApiLog.java` 上的所有 JPA 持久化注解，彻底避开 Hibernate 启动时的 Schema 校验问题。改为在内存中使用两个并发双端队列（`RECENT_LOGS` 和 `RECENT_COST_TIMES`），保留最新的 100 条接口请求明细和耗时指标。
