@@ -41,7 +41,7 @@
 ### 5. 修复 Spring Security 对 WebSocket 端点安全放行失效的 Bug
 - **文件**：[SecurityConfig.java](file:///Users/butvan/Butvan_Projets/my_code/Butvan%20Blog2.0/backend/blog-service/src/main/java/com/butvan/blog/service/security/SecurityConfig.java)
 - **修改**：在解析配置文件的放行路径时，将默认以 `MvcRequestMatcher` 匹配路由的方式修改为显式使用 `AntPathRequestMatcher.antMatcher(...)` 匹配。
-- **原因**：Spring Security 6 默认将裸字符串配置路径识别为基于 MVC DispatcherServlet 分发的接口。而 JSR-356 WebSocket（`@ServerEndpoint` 声明的 `/ws/**`）在到达 DispatcherServlet 之前就被 Tomcat 容器分发并触发握手。因此基于 MVC 的拦截器匹配失效，导致请求被回退到需要鉴权，抛出 401 拦截。改用 `AntPathRequestMatcher` 可 100% 正确放行非 Spring MVC 接管的特殊接口。
+- **原因**：Spring Security 6 默认将裸字符串配置路径识别为基于 MVC DispatcherServlet 分发的接口。而 JSR-356 WebSocket（`@ServerEndpoint` 声明的 `/ws/**`）在到达 DispatcherServlet 之前就被 Tomcat 容器分发并触发握手。因此基于 MVC 的拦截器匹配失效，导致请求被回退 to 需要鉴权，抛出 401 拦截。改用 `AntPathRequestMatcher` 可 100% 正确放行非 Spring MVC 接管的特殊接口。
 
 ### 6. 大厂级本地日志文件滚动归档与内存高速缓存方案上线
 - **文件**：
@@ -79,6 +79,7 @@
 - **修改方式**：
   - **后端**：在 Service 和 Controller 层新增了获取历史归档包列表、安全下载归档日志包（流式流传）和物理删除日志包的 API。同时，编写了 Logback 底层 Appender `WebConsoleAppender` 拦截 root 所有的标准日志，通过专有的 WebSocket 信道实现精确推送。
   - **前端**：在后台 `/api-logs` 中追加了“归档管理”选项卡，实现了日志压缩包表格、下载和物理删除功能。在后台新增了 `/system-logs` 路由，并实现了一个黑金极客风的 Terminal 终端页面，接入 WebSocket 实时系统日志流，配有按日志级别筛选、关键字过滤、滚屏锁定（Pause Scrolling）和清屏等优秀的大厂级运维功能。
+  - **侧边栏三重防御追加**：在前端 `Sidebar.tsx` 中配置了三重防御追加算法。如果一级菜单包含 API 日志子路由或一级菜单名称带有系统/设置/运维等字样，将自动追加“系统控制台日志”菜单。如果连前两项都不满足，将在最外层最下方动态强行追加独立的系统控制台入口，实现 100% 菜单项可见。
 
 ---
 
@@ -100,6 +101,7 @@
 14. `feat(log): 后端支持历史日志归档包管理及系统控制台实时日志拦截推送` (改动哈希: `e28033e`)
 15. `feat(ui): 前端支持日志归档包管理Tab及系统控制台实时日志展示Terminal` (改动哈希: `ec73300`)
 16. `docs(docs): 在 DIRECTORY.md 中补全系统日志与归档VO等新增文件映射` (改动哈希: `b09900d`)
+17. `fix(ui): 升级 Sidebar 菜单动态拦截为三重防御策略以保证系统日志入口 100% 展现` (改动哈希: `0fd7a8d`)
 
 ---
 
