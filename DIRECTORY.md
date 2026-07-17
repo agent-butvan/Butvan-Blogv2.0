@@ -430,7 +430,11 @@ Butvan Blog2.0/                                    # 📦 项目根目录
             │       ├── application-weixin.yml      #         微信配置（appid / appsecret）
             │       ├── application-storage.yml     #         文件存储配置（local / minio 切换）
             │       ├── application-security.yml    #         Security 放行路径配置（新增接口只需改此文件）
-            │       └── application-mail.yml        #         Mail 邮件发送 SMTP 服务器配置文件（发信账号及密钥）
+            │       ├── application-mail.yml        #         Mail 邮件发送 SMTP 服务器配置文件（发信账号及密钥）
+            │       ├── logback-spring.xml          #         Logback 全局及 API 专用滚动归档日志配置文件 (新增)
+            │       └── db/
+            │           └── migration/              #         Flyway 数据库表结构变更同步迁移脚本目录 (新增)
+            │               └── V202607171000__drop_api_log.sql  # 物理表下线清理脚本
             └── test/
                 └── java/com/butvan/blog/service/   #       🧪 单元测试与集成测试
 ```
@@ -513,4 +517,4 @@ Butvan Blog2.0/                                    # 📦 项目根目录
 
 ---
 
-*最后更新：2025-07-14*
+*最后更新：2026-07-17*
