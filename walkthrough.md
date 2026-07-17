@@ -60,6 +60,13 @@
   - **物理表下线**：提供了 Flyway 下线脚本，启动时自动 `DROP` 掉原数据库中的 `api_log` 表，彻底回收磁盘空间。
   - **效果**：控制台大屏和日志分页拉取直接在内存中拦截并计算，查询和计算延迟降为 **0ms 级别**。
 
+### 7. SQL 打印格式大厂规范化重构
+- **文件**：[application.yml](file:///Users/butvan/Butvan_Projets/my_code/Butvan%20Blog2.0/backend/blog-service/src/main/resources/application.yml) 和 [application-database.yml](file:///Users/butvan/Butvan_Projets/my_code/Butvan%20Blog2.0/backend/blog-service/src/main/resources/application-database.yml)
+- **修改**：
+  - 将 Hibernate 默认的原生控制台 SQL 打印选项 `spring.jpa.show-sql` 和 `format_sql` 均设为 `false`（废除原始的 System.out 折行输出，避免干扰正常日志解析）。
+  - 改由大厂标准的 SLF4J 统一日志通道进行输出控制，将 `logging.level.org.hibernate.SQL` 设为 `debug`，使 SQL 打印在带上标准时间戳、线程号、日志级别的同时保持整洁单行。
+  - 启用了 `logging.level.org.hibernate.orm.jdbc.bind` 为 `trace`，使得调试时可以清晰追溯到 SQL 占位符具体绑定的参数值，兼顾格式的美观度与运维的可追踪性。
+
 ---
 
 ## 📈 Git 提交记录
@@ -75,6 +82,7 @@
 9. `fix(pojo): 去除 ApiLog 实体的 JPA 注解以解决 Hibernate 的 DDL 启动校验报错` (改动哈希: `d2be114`)
 10. `fix(repository): 彻底物理删除废弃 of ApiLogRepository 以消除 JPA Bean 的初始化报错` (改动哈希: `e43f086`)
 11. `fix(log): apiLog 在内存构建时补充自增 id 字段以解决前端 React 渲染 key 重复报错` (改动哈希: `16d107d`)
+12. `style(log): JPA的SQL打印改由SLF4J标准日志控制输出并优化打印格式` (改动哈希: `a803ade`)
 
 ---
 
