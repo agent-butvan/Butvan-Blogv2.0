@@ -197,6 +197,8 @@ Butvan Blog2.0/                                    # 📦 项目根目录
 │       │   │   │   │   └── page.tsx               #           订阅列表、邮件群发入口
 │       │   │   │   ├── users/                     #         用户管理
 │       │   │   │   │   └── page.tsx               #           用户列表（筛选、搜索、批量启禁用、重置密码、CRUD）
+│       │   │   │   ├── system-logs/               #         系统控制台实时日志
+│       │   │   │   │   └── page.tsx               #           暗黑 Terminal 实时滚屏监控页面
 │       │   │   │   ├── profile/                   #         个人中心
 │       │   │   │   │   └── page.tsx               #           当前账号资料、安全改密、邮箱与第三方绑定状态
 │       │   │   │   └── settings/                  #         系统设置
@@ -324,7 +326,8 @@ Butvan Blog2.0/                                    # 📦 项目根目录
     │           ├── site/                           #         站点配置相关：SiteConfigVO
     │           ├── profile/                        #         个人资料相关：ProfileVO
 │           ├── album/                          #         相册相关：AlbumVO, AlbumListVO, AlbumPhotoVO
-    │           └── common/                         #         通用：PageVO, StatisticsVO
+│           ├── log/                            #         日志相关：LogArchiveVO (历史日志归档包数据传输对象)
+            └── common/                         #         通用：PageVO, StatisticsVO
     │
     └── blog-service/                               #   📦 主业务服务模块（启动入口 + 业务逻辑）
         ├── pom.xml                                 #     Maven 子模块 POM（依赖 blog-common + blog-pojo + Spring Boot Starter）
@@ -418,6 +421,8 @@ Butvan Blog2.0/                                    # 📦 项目根目录
             │   │   │       ├── WeiXinAuthLoginService.java
             │   │   │       └── impl/
             │   │   │           └── WeiXinAuthLoginServiceImpl.java
+            │   │   ├── log/                        #       📝 日志模块
+            │   │   │   └── WebConsoleAppender.java  #         自定义 Logback 系统日志 WebSocket 拦截 Appender
             │   │   └── security/                   #       🔒 安全模块
             │   │       ├── JwtAuthFilter.java      #         JWT 认证过滤器（每次请求校验 Token）
             │   │       ├── JwtUtil.java            #         JWT 工具类（签发、解析、校验 Token）
