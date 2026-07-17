@@ -21,6 +21,7 @@ import org.springframework.security.crypto.password.PasswordEncoder;
 import org.springframework.security.config.annotation.web.configurers.AbstractHttpConfigurer;
 import org.springframework.security.web.SecurityFilterChain;
 import org.springframework.security.web.authentication.UsernamePasswordAuthenticationFilter;
+import org.springframework.security.web.util.matcher.AntPathRequestMatcher;
 import org.springframework.web.cors.CorsConfiguration;
 import org.springframework.web.cors.CorsConfigurationSource;
 import org.springframework.web.cors.UrlBasedCorsConfigurationSource;
@@ -184,11 +185,11 @@ public class SecurityConfig {
                 String method = trimmed.substring(0, spaceIdx).toUpperCase();
                 String path = trimmed.substring(spaceIdx + 1).trim();
                 HttpMethod httpMethod = HttpMethod.valueOf(method);
-                auth.requestMatchers(httpMethod, path).permitAll();
+                auth.requestMatchers(AntPathRequestMatcher.antMatcher(httpMethod, path)).permitAll();
                 log.debug("[SecurityConfig] 放行 {} {}", method, path);
             } else {
                 // 不带方法的规则，匹配所有 HTTP 方法
-                auth.requestMatchers(trimmed).permitAll();
+                auth.requestMatchers(AntPathRequestMatcher.antMatcher(trimmed)).permitAll();
                 log.debug("[SecurityConfig] 放行 ALL {}", trimmed);
             }
         }
