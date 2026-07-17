@@ -266,8 +266,8 @@ export default function DashboardPage() {
           if (payload.type === "api-log" && payload.data) {
             const newLog = payload.data as ApiLogItem;
             
-            // 收到新消息，塞入大池子最前端 (保持大池子最多 50 条做筛选过滤)
-            setApiLogs(prev => [newLog, ...prev.slice(0, 49)]);
+            // 收到新消息，塞入大池子最前端 (保持大池子最多 50 条做筛选过滤，过滤重复 id 规避 React key 冲突)
+            setApiLogs(prev => [newLog, ...prev.filter(item => item.id !== newLog.id).slice(0, 49)]);
 
             // 同时推送并滚动对应分类的电波数组
             const uri = (newLog.uri || "").toLowerCase();
