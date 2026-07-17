@@ -29,7 +29,7 @@ Butvan Blog2.0
     - **大型功能 / 复杂需求开发**（如微信登录、Flyway 导入等）：必须从 `main` 拉取特性分支（格式：`feat/功能名`，如 `feat/wechat-login`）进行开发，并在本地验证通过后，通过 Squash Merge 或普通 Merge 合并回 `main` 分支。
     - **线上紧急 Bug 修复**：必须从 `main` 拉取修复分支（格式：`fix/缺陷名`，如 `fix/comment-loading`）进行修复，验证后合并回 `main`，以保证在大需求开发途中可随时切回 `main` 快速修 Bug。
     - **日常微小修改**（如文案调整、简单的样式或配置微调）：允许直接在本地 `main` 分支进行修改与提交，避免过度工程化。
-- 在后端 Java 编码中，注解（例如 `@PostConstruct`）切勿直接在代码中使用全限定名（如 `@jakarta.annotation.PostConstruct`）进行编写，必须通过 `import` 显式导入后使用简写格式。
+- 在后端 Java 编码中，无论是注解、类名还是接口名，切勿在具体编码中直接使用全限定名（例如 `@jakarta.annotation.PostConstruct`、`java.util.TimeZone` ），必须通过 `import` 显式导入后使用简写格式。仅在同文件内存在不可避免的类名命名冲突（如同时实例化 `java.util.Date` 和 `java.sql.Date` ）等极端情况下，方可使用全限定名进行区分。
 
 
 ## 工作流程
