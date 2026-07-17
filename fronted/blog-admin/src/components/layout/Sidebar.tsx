@@ -50,78 +50,7 @@ export default function Sidebar({ isMobile = false, isOpen = false, onClose }: S
     setError(false);
     try {
       const res = await apiClient.get<ApiResponse<NavigationItem[]>>("/navigations?position=ADMIN_SIDEBAR");
-      const rawData = res.data.data || [];
-      
-      // 三重防御性动态追加策略，保证系统实时日志在侧边栏中 100% 可视可访问
-      let appended = false;
-      let nextItems = rawData.map(item => {
-        if (item.children && item.children.length > 0) {
-          const hasApiLogs = item.children.some(child => child.linkUrl === "/api-logs" || child.linkUrl === "api-logs");
-          const hasSystemLogs = item.children.some(child => child.linkUrl === "/system-logs" || child.linkUrl === "system-logs");
-          if (hasApiLogs && !hasSystemLogs) {
-            appended = true;
-            return {
-              ...item,
-              children: [
-                ...item.children,
-                {
-                  id: -999,
-                  title: "系统控制台日志",
-                  linkUrl: "/system-logs",
-                  icon: "Terminal",
-                  sortOrder: 99
-                } as any
-              ]
-            };
-          }
-        }
-        return item;
-      });
-
-      // 备份策略 1：如果未根据 api-logs 追加成功，则寻找名为 "设置"、"系统"、"运维" 或 "工具" 的一级菜单追加进去
-      if (!appended) {
-        nextItems = nextItems.map(item => {
-          const title = item.title || "";
-          const matches = title.includes("设置") || title.includes("系统") || title.includes("运维") || title.includes("工具");
-          if (matches && !appended) {
-            appended = true;
-            const children = item.children || [];
-            const hasSystemLogs = children.some(child => child.linkUrl === "/system-logs" || child.linkUrl === "system-logs");
-            if (!hasSystemLogs) {
-              return {
-                ...item,
-                children: [
-                  ...children,
-                  {
-                    id: -999,
-                    title: "系统控制台日志",
-                    linkUrl: "/system-logs",
-                    icon: "Terminal",
-                    sortOrder: 99
-                  } as any
-                ]
-              };
-            }
-          }
-          return item;
-        });
-      }
-
-      // 备份策略 2：如果依旧没追加成功，直接强行在最外层最后追加一个独立的一级菜单项
-      if (!appended) {
-        const hasSystemLogs = nextItems.some(item => item.linkUrl === "/system-logs");
-        if (!hasSystemLogs) {
-          nextItems.push({
-            id: -999,
-            title: "系统控制台日志",
-            linkUrl: "/system-logs",
-            icon: "Terminal",
-            children: []
-          } as any);
-        }
-      }
-
-      setMenuItems(nextItems);
+      setMenuItems(res.data.data || []);
     } catch (err) {
       console.error("加载后台侧边栏菜单失败: ", err);
       setError(true);
