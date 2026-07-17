@@ -54,11 +54,6 @@ public class ArticleServiceImpl implements ArticleService {
     @Override
     public PageResult pageArticles(ArticleQueryDTO queryDTO) {
         log.info("分页检索文章列表，参数: {}", queryDTO);
-        try {
-            dailyStatsRepository.incrementTodayPv();
-        } catch (Exception e) {
-            log.warn("累加每日流量PV失败: {}", e.getMessage());
-        }
         
         // 1. 解析分页参数 (前端传来的页码是 1-based, JPA 需要 0-based)
         int pageIndex = queryDTO.getPage() != null && queryDTO.getPage() > 0 ? queryDTO.getPage() - 1 : 0;
@@ -129,11 +124,6 @@ public class ArticleServiceImpl implements ArticleService {
     @Override
     public ArticleDetailVO getArticleDetail(String idOrSlug) {
         log.info("获取文章详情，标识: {}", idOrSlug);
-        try {
-            dailyStatsRepository.incrementTodayPv();
-        } catch (Exception e) {
-            log.warn("累加每日流量PV失败: {}", e.getMessage());
-        }
         Article article = null;
         try {
             Long id = Long.parseLong(idOrSlug);

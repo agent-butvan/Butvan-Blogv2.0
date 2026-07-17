@@ -16,7 +16,15 @@ import com.butvan.blog.common.properties.SecurityProperties;
 @EnableConfigurationProperties({WeiXinProperties.class, StorageProperties.class, SecurityProperties.class})
 @org.springframework.scheduling.annotation.EnableScheduling
 public class BlogApplication {
+
+    @jakarta.annotation.PostConstruct
+    public void init() {
+        // 强制设置全局 JVM 时区为东八区，保证本地时间计算均以北京时间为准
+        java.util.TimeZone.setDefault(java.util.TimeZone.getTimeZone("Asia/Shanghai"));
+    }
+
     public static void main(String[] args) {
         SpringApplication.run(BlogApplication.class, args);
     }
 }
+

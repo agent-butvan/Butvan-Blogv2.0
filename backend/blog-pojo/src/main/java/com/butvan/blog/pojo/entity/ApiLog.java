@@ -38,6 +38,11 @@ public class ApiLog {
     @Column(name = "cost_time", nullable = false)
     private Integer costTime; // 接口耗时 (毫秒)
 
-    @Column(name = "created_at", insertable = false, updatable = false)
+    @Column(name = "created_at", nullable = false, updatable = false)
     private LocalDateTime createdAt; // 记录创建时间
+
+    @PrePersist
+    protected void onCreate() {
+        this.createdAt = LocalDateTime.now();
+    }
 }

@@ -4,6 +4,7 @@ import com.butvan.blog.common.utils.IpUtils;
 import com.butvan.blog.pojo.entity.ApiLog;
 import com.butvan.blog.service.annotation.TrackApi;
 import com.butvan.blog.service.repository.ApiLogRepository;
+import com.butvan.blog.service.repository.DailyStatsRepository;
 import com.butvan.blog.service.websocket.WebSocketServer;
 import jakarta.servlet.http.HttpServletRequest;
 import lombok.RequiredArgsConstructor;
@@ -30,6 +31,7 @@ import java.util.concurrent.CompletableFuture;
 public class ApiLogAspect {
 
     private final ApiLogRepository apiLogRepository;
+    private final DailyStatsRepository dailyStatsRepository;
     private final WebSocketServer webSocketServer;
 
     /**
@@ -96,6 +98,15 @@ public class ApiLogAspect {
 
                     apiLogRepository.save(apiLog);
                     log.debug("API 测速拦截并异步入库完成: {} ({} {}) - 耗时 {}ms", finalApiName, finalMethodType, finalUri, costTime);
+
+                    // 增加 PV 流量统计：仅前台公开的 GET 请求（排除 /admin/ 和 /ws/）
+                    if ("GET".equalsIgnoreCase(finalMethodType) && !finalUri.contains("/admin/") && !finalUri.contains("/ws/")) {
+                        try {
+                            dailyStatsRepository.incrementTodayPv();
+                        } catch (Exception pvEx) {
+                            log.warn("AOP异步累加每日流量PV失败: {}", pvEx.getMessage());
+                        }
+                    }
 
                     // 广播日志消息到控制台
                     try {
