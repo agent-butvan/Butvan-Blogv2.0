@@ -4,9 +4,19 @@
     <include resource="org/springframework/boot/logging/logback/defaults.xml" />
     <include resource="org/springframework/boot/logging/logback/console-appender.xml" />
 
+    <!-- 定义 Web 实时控制台日志 Appender -->
+    <appender name="WEB_CONSOLE" class="com.butvan.blog.service.log.WebConsoleAppender">
+        <encoder class="ch.qos.logback.classic.encoder.PatternLayoutEncoder">
+            <!-- 格式化输出：时间、线程名、级别、类名及消息 -->
+            <pattern>%d{yyyy-MM-dd HH:mm:ss.SSS} [%thread] %-5level %logger{36} - %msg%n</pattern>
+            <charset>UTF-8</charset>
+        </encoder>
+    </appender>
+
     <!-- 1. 定义应用默认的 Root 级别日志控制台输出 -->
     <root level="INFO">
         <appender-ref ref="CONSOLE" />
+        <appender-ref ref="WEB_CONSOLE" />
     </root>
 
     <!-- 2. 定义 API 日志文件的输出 Appender（按天滚动分割 + 压缩归档 + 30天过期） -->

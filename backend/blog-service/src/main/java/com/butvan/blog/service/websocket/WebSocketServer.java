@@ -7,6 +7,7 @@ import jakarta.websocket.server.ServerEndpoint;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
 import org.springframework.stereotype.Component;
+import cn.hutool.json.JSONObject;
 
 import java.io.IOException;
 import java.util.Map;
@@ -117,7 +118,32 @@ public class WebSocketServer {
                 throw new RuntimeException(e);
             }
         }
-
         sessionMap.remove(id);
+    }
+
+    /**
+     * 向订阅了系统实时控制台的客户端广播实时系统日志
+     *
+     * @param formattedLog 格式化后的日志单行文本
+     */
+    public void sendSystemLog(String formattedLog) {
+        JSONObject json = new JSONObject();
+        json.set("type", "system-log");
+        json.set("data", formattedLog);
+        String text = json.toString();
+
+        sessionMap.forEach((id, session) -> {
+            if (id != null && (id.startsWith("system-") || id.contains("console"))) {
+                if (session != null && session.isOpen()) {
+                    try {
+                        synchronized (session) {
+                            session.getBasicRemote().sendText(text);
+                        }
+                    } catch (IOException e) {
+                        // 静默处理，防止再次打印触发死循环
+                    }
+                }
+            }
+        });
     }
 }
