@@ -38,6 +38,12 @@ interface DashboardStats {
     date: string;
     pv: number;
   }>;
+  serviceStatus?: {
+    database: boolean;
+    redis: boolean;
+    minio: boolean;
+    storageType: string;
+  };
 }
 
 interface PulsePoint {
@@ -846,48 +852,105 @@ export default function DashboardPage() {
             </div>
           </div>
 
-          {/* 右侧：System Operations 快捷控制面板 */}
+          {/* 右侧：System Operations 服务连接状态监控面板 */}
           <div className="lg:col-span-4 bg-white dark:bg-zinc-900 border border-zinc-200/50 dark:border-zinc-850 p-5 rounded-2xl shadow-[0_1px_3px_rgba(0,0,0,0.01),0_10px_20px_-5px_rgba(0,0,0,0.025)] dark:shadow-[0_8px_30px_rgba(0,0,0,0.2)] flex flex-col justify-between gap-5">
             <div>
               <div className="flex items-center justify-between mb-4 border-b border-zinc-100 dark:border-zinc-800 pb-3">
                 <h3 className="text-sm font-bold text-zinc-800 dark:text-zinc-200 flex items-center gap-1.5">
                   <span className="w-1 h-3.5 bg-indigo-500 rounded-full" />
-                  Quick Access / 快捷指令
+                  Service Status / 服务连接监控
                 </h3>
-                <span className="text-[9px] font-bold text-zinc-400">Shortcuts</span>
+                <span className="text-[9px] font-bold text-zinc-400">Monitoring</span>
               </div>
               
               <div className="flex flex-col gap-2">
                 {[
-                  { label: "撰写博文", key: "W", path: "/articles/new", desc: "Markdown 编辑器" },
-                  { label: "配置场景热区", key: "E", path: "/scenes", desc: "Sprite 热区图裁剪" },
-                  { label: "审核最新评论", key: "C", path: "/comments", desc: "互动与过滤中心" },
-                  { label: "媒体资源管理器", key: "M", path: "/media", desc: "MinIO 图床管理器" },
-                  { label: "博主公开名片", key: "S", path: "/settings", desc: "主页社交与页脚" }
-                ].map((item) => (
-                  <a
-                    key={item.path}
-                    href={item.path}
-                    className="flex items-center justify-between p-2 rounded-xl border border-zinc-200/50 dark:border-zinc-800 bg-zinc-50/20 dark:bg-zinc-900/10 hover:border-indigo-500/20 hover:bg-indigo-50/20 dark:hover:bg-indigo-500/5 transition-all group shadow-2xs hover:shadow-xs"
-                  >
-                    <div className="flex flex-col text-left">
-                      <span className="text-xs font-semibold text-zinc-700 dark:text-zinc-300 group-hover:text-indigo-500 transition-colors">
-                        {item.label}
-                      </span>
-                      <span className="text-[9.5px] text-zinc-400 dark:text-zinc-550 leading-none mt-1">{item.desc}</span>
+                  {
+                    name: "PostgreSQL 数据库",
+                    driver: "Driver: org.postgresql.Driver",
+                    port: "Port: 5432",
+                    status: stats ? (stats.serviceStatus?.database ? "healthy" : "error") : "loading"
+                  },
+                  {
+                    name: "Redis 缓存引擎",
+                    driver: "Driver: Lettuce (Spring Data)",
+                    port: "Port: 6379",
+                    status: stats ? (stats.serviceStatus?.redis ? "healthy" : "error") : "loading"
+                  },
+                  {
+                    name: "Storage / 存储媒介",
+                    driver: stats?.serviceStatus?.storageType === "local" ? "Storage: Local File System" : "Bucket: butvan-blog",
+                    port: stats?.serviceStatus?.storageType === "local" ? "uploads/" : "Port: 9000",
+                    status: stats ? (stats.serviceStatus?.storageType === "local" ? "inactive" : (stats.serviceStatus?.minio ? "healthy" : "error")) : "loading"
+                  }
+                ].map((item) => {
+                  let cardStyle = "border-zinc-200/50 dark:border-zinc-800 bg-zinc-50/20 dark:bg-zinc-900/10";
+                  let lightClass = "bg-zinc-400";
+                  let pulseClass = "";
+                  let statusLabel = "N/A";
+                  let textColor = "text-zinc-400";
+
+                  if (item.status === "healthy") {
+                    cardStyle = "border-emerald-500/10 hover:border-emerald-500/20 bg-emerald-50/5 dark:bg-emerald-500/5 hover:bg-emerald-50/10 dark:hover:bg-emerald-500/10";
+                    lightClass = "bg-emerald-500";
+                    pulseClass = "animate-ping bg-emerald-400";
+                    statusLabel = "Connected";
+                    textColor = "text-emerald-500";
+                  } else if (item.status === "error") {
+                    cardStyle = "border-rose-500/15 hover:border-rose-500/30 bg-rose-50/5 dark:bg-rose-500/5 hover:bg-rose-50/10 dark:hover:bg-rose-500/10 animate-pulse";
+                    lightClass = "bg-rose-500";
+                    pulseClass = "animate-ping bg-rose-400";
+                    statusLabel = "Disconnected";
+                    textColor = "text-rose-500";
+                  } else if (item.status === "loading") {
+                    cardStyle = "border-amber-500/10 hover:border-amber-500/25 bg-amber-50/5 dark:bg-amber-500/5";
+                    lightClass = "bg-amber-500";
+                    pulseClass = "animate-ping bg-amber-400";
+                    statusLabel = "Checking...";
+                    textColor = "text-amber-500";
+                  } else if (item.status === "inactive") {
+                    cardStyle = "border-zinc-200/50 dark:border-zinc-800 bg-zinc-50/10 dark:bg-zinc-900/5 hover:bg-zinc-50/20 dark:hover:bg-zinc-900/10";
+                    lightClass = "bg-zinc-400";
+                    statusLabel = "Local Active";
+                    textColor = "text-zinc-500";
+                  }
+
+                  return (
+                    <div
+                      key={item.name}
+                      className={`flex items-center justify-between p-3 rounded-xl border transition-all duration-300 shadow-2xs hover:shadow-xs group select-none ${cardStyle}`}
+                    >
+                      <div className="flex flex-col text-left">
+                        <span className="text-xs font-bold text-zinc-700 dark:text-zinc-300 group-hover:text-zinc-900 dark:group-hover:text-white transition-colors">
+                          {item.name}
+                        </span>
+                        <span className="text-[9.5px] text-zinc-400 dark:text-zinc-550 leading-none mt-1.5 flex gap-2">
+                          <span>{item.driver}</span>
+                          <span className="opacity-40">|</span>
+                          <span>{item.port}</span>
+                        </span>
+                      </div>
+                      <div className="flex items-center gap-2">
+                        <span className={`text-[10px] font-bold tracking-tight ${textColor}`}>
+                          {statusLabel}
+                        </span>
+                        <span className="relative flex h-2 w-2">
+                          {pulseClass && (
+                            <span className={`absolute inline-flex h-full w-full rounded-full opacity-75 ${pulseClass}`}></span>
+                          )}
+                          <span className={`relative inline-flex rounded-full h-2 w-2 ${lightClass}`}></span>
+                        </span>
+                      </div>
                     </div>
-                    <kbd className="inline-flex h-4.5 items-center rounded-lg border border-zinc-200 dark:border-zinc-800 bg-white dark:bg-zinc-900 px-1.25 font-mono text-[8.5px] font-bold text-zinc-550 shadow-2xs group-hover:bg-[#0070F3] group-hover:text-white group-hover:border-[#0070F3] transition-all">
-                      {item.key}
-                    </kbd>
-                  </a>
-                ))}
+                  );
+                })}
               </div>
             </div>
 
             {/* 提示胶囊 */}
             <div className="text-[9.5px] text-zinc-400 dark:text-zinc-550 leading-relaxed bg-zinc-50/30 dark:bg-zinc-950/20 border border-zinc-200/40 dark:border-zinc-800/80 p-3 rounded-xl flex items-start gap-2 shadow-3xs select-none">
-              <span className="text-[#0070F3] mt-0.5 font-bold">ⓘ</span>
-              <span>当前面板已升级为 NextUI Pro 微悬浮质感。您可以利用侧边栏与快捷 kbd 模块极速运维您的主站。</span>
+              <span className="text-indigo-500 mt-0.5 font-bold">ⓘ</span>
+              <span>核心服务状态每当您进入工作台时实时测试连通，以确保发布、缓存清除及媒体上传的稳定。</span>
             </div>
           </div>
         </div>
