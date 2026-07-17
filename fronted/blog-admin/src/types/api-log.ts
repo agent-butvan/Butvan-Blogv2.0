@@ -19,3 +19,12 @@ export interface ApiLogQuery {
   size?: number;
   keyword?: string;
 }
+
+/**
+ * 历史日志归档包数据项
+ */
+export interface LogArchiveItem {
+  fileName: string;
+  fileSize: string;
+  lastModified: string;
+}

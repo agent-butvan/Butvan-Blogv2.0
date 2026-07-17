@@ -50,7 +50,32 @@ export default function Sidebar({ isMobile = false, isOpen = false, onClose }: S
     setError(false);
     try {
       const res = await apiClient.get<ApiResponse<NavigationItem[]>>("/navigations?position=ADMIN_SIDEBAR");
-      setMenuItems(res.data.data || []);
+      const rawData = res.data.data || [];
+      
+      // 动态拦截：在包含 "/api-logs" (接口日志) 的菜单父项中，静态追加 "/system-logs" (系统控制台日志)
+      const nextItems = rawData.map(item => {
+        if (item.children && item.children.length > 0) {
+          const hasApiLogs = item.children.some(child => child.linkUrl === "/api-logs");
+          const hasSystemLogs = item.children.some(child => child.linkUrl === "/system-logs");
+          if (hasApiLogs && !hasSystemLogs) {
+            return {
+              ...item,
+              children: [
+                ...item.children,
+                {
+                  id: -999,
+                  title: "系统控制台日志",
+                  linkUrl: "/system-logs",
+                  icon: "Terminal",
+                  sortOrder: 99
+                } as any
+              ]
+            };
+          }
+        }
+        return item;
+      });
+      setMenuItems(nextItems);
     } catch (err) {
       console.error("加载后台侧边栏菜单失败: ", err);
       setError(true);

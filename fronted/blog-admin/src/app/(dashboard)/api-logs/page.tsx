@@ -7,12 +7,20 @@ import {
   Trash2,
   Loader2,
   X,
-  AlertTriangle
+  AlertTriangle,
+  Download,
+  FileArchive
 } from "lucide-react";
 import { cn, SearchField } from "@heroui/react";
-import { fetchApiLogs, clearApiLogs } from "@/lib/api-log";
+import {
+  fetchApiLogs,
+  clearApiLogs,
+  fetchLogArchives,
+  deleteLogArchive,
+  downloadLogArchive
+} from "@/lib/api-log";
 import ConfirmModal from "@/components/common/ConfirmModal";
-import type { ApiLogItem } from "@/types/api-log";
+import type { ApiLogItem, LogArchiveItem } from "@/types/api-log";
 
 export default function ApiLogsPage() {
   const router = useRouter();
@@ -22,12 +30,67 @@ export default function ApiLogsPage() {
   const [keyword, setKeyword] = useState("");
   const [loading, setLoading] = useState(true);
 
+  // 选项卡状态与归档包数据
+  const [activeTab, setActiveTab] = useState<"logs" | "archives">("logs");
+  const [archives, setArchives] = useState<LogArchiveItem[]>([]);
+  const [archivesLoading, setArchivesLoading] = useState(false);
+  const [selectedArchive, setSelectedArchive] = useState<string | null>(null);
+  const [showArchiveDeleteConfirm, setShowArchiveDeleteConfirm] = useState(false);
+
   // 操作状态
   const [actionError, setActionError] = useState<string | null>(null);
   const [showClearConfirm, setShowClearConfirm] = useState(false);
   const [actionLoading, setActionLoading] = useState(false);
 
   const pageSize = 12;
+
+  /** 加载归档包列表 */
+  const loadArchives = useCallback(async () => {
+    setArchivesLoading(true);
+    try {
+      const data = await fetchLogArchives();
+      setArchives(data);
+    } catch (err) {
+      console.error("加载日志归档失败:", err);
+      setArchives([]);
+    } finally {
+      setArchivesLoading(false);
+    }
+  }, []);
+
+  /** 执行归档流式下载 */
+  const handleDownloadArchive = async (filename: string) => {
+    try {
+      const blob = await downloadLogArchive(filename);
+      const url = window.URL.createObjectURL(blob);
+      const link = document.createElement("a");
+      link.href = url;
+      link.setAttribute("download", filename);
+      document.body.appendChild(link);
+      link.click();
+      link.remove();
+      window.URL.revokeObjectURL(url);
+    } catch (err: any) {
+      setActionError(err.message || "下载归档包失败");
+    }
+  };
+
+  /** 物理删除归档包 */
+  const handleConfirmDeleteArchive = async () => {
+    if (!selectedArchive) return;
+    setActionLoading(true);
+    setActionError(null);
+    try {
+      await deleteLogArchive(selectedArchive);
+      setShowArchiveDeleteConfirm(false);
+      setSelectedArchive(null);
+      loadArchives();
+    } catch (err: any) {
+      setActionError(err.message || "删除归档包失败");
+    } finally {
+      setActionLoading(false);
+    }
+  };
 
   /** 加载 API 日志列表 */
   const loadApiLogs = useCallback(async () => {
@@ -50,8 +113,12 @@ export default function ApiLogsPage() {
   }, [page, keyword]);
 
   useEffect(() => {
-    loadApiLogs();
-  }, [loadApiLogs]);
+    if (activeTab === "logs") {
+      loadApiLogs();
+    } else {
+      loadArchives();
+    }
+  }, [activeTab, loadApiLogs, loadArchives]);
 
   /** 执行一键清空日志 */
   const handleClearLogs = async () => {
@@ -113,9 +180,35 @@ export default function ApiLogsPage() {
         </button>
       </div>
 
+      {/* 选项卡 Tab 控制 - Pills 悬浮胶囊风格 */}
+      <div className="flex gap-2 p-1.5 bg-zinc-100 dark:bg-zinc-900/60 border border-zinc-200/20 w-fit rounded-2xl select-none">
+        <button
+          onClick={() => setActiveTab("logs")}
+          className={cn(
+            "px-4 py-1.5 rounded-xl text-xs font-bold transition-all cursor-pointer",
+            activeTab === "logs"
+              ? "bg-white dark:bg-zinc-800 text-neutral-dark dark:text-white shadow-sm border border-zinc-250/20"
+              : "text-zinc-500 hover:text-zinc-700 dark:text-zinc-400 dark:hover:text-zinc-250"
+          )}
+        >
+          接口测速日志
+        </button>
+        <button
+          onClick={() => setActiveTab("archives")}
+          className={cn(
+            "px-4 py-1.5 rounded-xl text-xs font-bold transition-all cursor-pointer",
+            activeTab === "archives"
+              ? "bg-white dark:bg-zinc-800 text-neutral-dark dark:text-white shadow-sm border border-zinc-250/20"
+              : "text-zinc-500 hover:text-zinc-700 dark:text-zinc-400 dark:hover:text-zinc-250"
+          )}
+        >
+          日志归档管理
+        </button>
+      </div>
+
       {/* 异常错误浮筒 */}
       {actionError && (
-        <div className="rounded-xl bg-red-50 dark:bg-red-950/20 border border-red-200/60 dark:border-red-900/35 p-3.5 text-xs font-medium text-red-700 dark:text-red-400 flex items-center justify-between">
+        <div className="rounded-xl bg-red-50 dark:bg-red-950/20 border border-red-200/60 dark:border-red-900/35 p-3.5 text-xs font-medium text-red-700 dark:text-red-400 flex items-center justify-between animate-fadeIn">
           <span className="flex items-center gap-1.5">
             <AlertTriangle size={13} />
             {actionError}
@@ -126,118 +219,192 @@ export default function ApiLogsPage() {
         </div>
       )}
 
-      {/* 搜索控制栏 */}
-      <div className="flex flex-wrap items-center gap-3">
-        <SearchField
-          value={keyword}
-          onChange={(value) => { setKeyword(value); setPage(1); }}
-          className="w-full sm:max-w-xs"
-        >
-          <SearchField.Group>
-            <SearchField.SearchIcon />
-            <SearchField.Input placeholder="检索接口名称、IP、请求地址..." />
-            <SearchField.ClearButton />
-          </SearchField.Group>
-        </SearchField>
-      </div>
+      {activeTab === "logs" ? (
+        <>
+          {/* 搜索控制栏 */}
+          <div className="flex flex-wrap items-center gap-3">
+            <SearchField
+              value={keyword}
+              onChange={(value) => { setKeyword(value); setPage(1); }}
+              className="w-full sm:max-w-xs"
+            >
+              <SearchField.Group>
+                <SearchField.SearchIcon />
+                <SearchField.Input placeholder="检索接口名称、IP、请求地址..." />
+                <SearchField.ClearButton />
+              </SearchField.Group>
+            </SearchField>
+          </div>
 
-      {/* 数据日志核心表格 */}
-      <div className="overflow-x-auto rounded-2xl border border-zinc-200/60 dark:border-zinc-800 bg-white dark:bg-zinc-950 shadow-xs">
-        <table className="w-full text-xs text-left border-collapse min-w-[850px] table-fixed">
-          <thead>
-            <tr className="border-b border-zinc-200/50 dark:border-zinc-800 bg-zinc-50/70 dark:bg-zinc-900/40 text-[10px] font-bold text-zinc-400 dark:text-zinc-500 uppercase tracking-widest select-none">
-              <th className="px-5 py-3.5 w-1/4">接口描述</th>
-              <th className="px-5 py-3.5 w-20 text-center">方式</th>
-              <th className="px-5 py-3.5 w-1/3">请求地址 (URI)</th>
-              <th className="px-5 py-3.5 w-32">客户端 IP</th>
-              <th className="px-5 py-3.5 w-24 text-right">响应耗时</th>
-              <th className="px-5 py-3.5 w-40 text-right">请求时间</th>
-            </tr>
-          </thead>
-          <tbody className="divide-y divide-zinc-100 dark:divide-zinc-800/50 text-zinc-700 dark:text-zinc-350">
-            {loading ? (
-              <tr>
-                <td colSpan={6} className="px-5 py-16 text-center">
-                  <div className="flex flex-col items-center gap-2 text-zinc-400">
-                    <Loader2 size={20} className="animate-spin" />
-                    <span className="text-[11px] font-medium">正在拉取 API 日志中...</span>
-                  </div>
-                </td>
-              </tr>
-            ) : logs.length === 0 ? (
-              <tr>
-                <td colSpan={6} className="px-5 py-16 text-center text-zinc-400 font-mono">
-                  NO API SPEED LOGS RECORDED
-                </td>
-              </tr>
-            ) : (
-              logs.map((logItem) => (
-                <tr key={logItem.id} className="group border-b border-zinc-200/50 dark:border-zinc-800 hover:bg-zinc-50/50 dark:hover:bg-zinc-900/20 transition-all duration-150">
-                  <td className="px-5 py-3 truncate font-semibold text-neutral-dark dark:text-zinc-150" title={logItem.apiName}>
-                    {logItem.apiName}
-                  </td>
-                  <td className="px-5 py-3 text-center">
-                    <span className={cn("text-[8px] font-extrabold px-2 py-0.5 rounded-md uppercase tracking-wider", getMethodStyle(logItem.method))}>
-                      {logItem.method}
+          {/* 数据日志核心表格 */}
+          <div className="overflow-x-auto rounded-2xl border border-zinc-200/60 dark:border-zinc-800 bg-white dark:bg-zinc-950 shadow-xs">
+            <table className="w-full text-xs text-left border-collapse min-w-[850px] table-fixed">
+              <thead>
+                <tr className="border-b border-zinc-200/50 dark:border-zinc-800 bg-zinc-50/70 dark:bg-zinc-900/40 text-[10px] font-bold text-zinc-400 dark:text-zinc-500 uppercase tracking-widest select-none">
+                  <th className="px-5 py-3.5 w-1/4">接口描述</th>
+                  <th className="px-5 py-3.5 w-20 text-center">方式</th>
+                  <th className="px-5 py-3.5 w-1/3">请求地址 (URI)</th>
+                  <th className="px-5 py-3.5 w-32">客户端 IP</th>
+                  <th className="px-5 py-3.5 w-24 text-right">响应耗时</th>
+                  <th className="px-5 py-3.5 w-40 text-right">请求时间</th>
+                </tr>
+              </thead>
+              <tbody className="divide-y divide-zinc-100 dark:divide-zinc-800/50 text-zinc-700 dark:text-zinc-350">
+                {loading ? (
+                  <tr>
+                    <td colSpan={6} className="px-5 py-16 text-center">
+                      <div className="flex flex-col items-center gap-2 text-zinc-400">
+                        <Loader2 size={20} className="animate-spin" />
+                        <span className="text-[11px] font-medium">正在拉取 API 日志中...</span>
+                      </div>
+                    </td>
+                  </tr>
+                ) : logs.length === 0 ? (
+                  <tr>
+                    <td colSpan={6} className="px-5 py-16 text-center text-zinc-400 font-mono">
+                      NO API SPEED LOGS RECORDED
+                    </td>
+                  </tr>
+                ) : (
+                  logs.map((logItem) => (
+                    <tr key={logItem.id} className="group border-b border-zinc-200/50 dark:border-zinc-800 hover:bg-zinc-50/50 dark:hover:bg-zinc-900/20 transition-all duration-150">
+                      <td className="px-5 py-3 truncate font-semibold text-neutral-dark dark:text-zinc-150" title={logItem.apiName}>
+                        {logItem.apiName}
+                      </td>
+                      <td className="px-5 py-3 text-center">
+                        <span className={cn("text-[8px] font-extrabold px-2 py-0.5 rounded-md uppercase tracking-wider", getMethodStyle(logItem.method))}>
+                          {logItem.method}
+                        </span>
+                      </td>
+                      <td className="px-5 py-3 truncate font-mono text-[11px] text-zinc-500" title={logItem.uri}>
+                        {logItem.uri}
+                      </td>
+                      <td className="px-5 py-3 font-mono text-zinc-500">
+                        {logItem.ip}
+                      </td>
+                      <td className={cn("px-5 py-3 text-right font-mono italic text-[11.5px]", getCostTimeColor(logItem.costTime))}>
+                        {logItem.costTime} <span className="text-[9px] font-sans not-italic text-zinc-400">ms</span>
+                      </td>
+                      <td className="px-5 py-3 text-right text-zinc-450 dark:text-zinc-550 font-mono text-[10px]">
+                        {logItem.createdAt ? new Date(logItem.createdAt).toLocaleString("zh-CN") : "--"}
+                      </td>
+                    </tr>
+                  ))
+                )}
+              </tbody>
+            </table>
+          </div>
+
+          {/* 分页控制栏 */}
+          {totalPages > 1 && (
+            <div className="flex items-center justify-between text-xs pt-2 select-none">
+              <span className="text-zinc-500 font-medium font-mono">SHOWING PAGE {page} OF {totalPages} ({total} ITEMS)</span>
+              <div className="flex items-center gap-1.5">
+                <button
+                  onClick={() => setPage((p) => Math.max(1, p - 1))}
+                  disabled={page <= 1}
+                  className="rounded-xl border border-zinc-200/60 dark:border-zinc-800 px-3 py-1.5 hover:bg-zinc-150/40 text-zinc-650 disabled:opacity-30 transition-all cursor-pointer disabled:cursor-not-allowed font-bold"
+                >
+                  上一页
+                </button>
+                {Array.from({ length: totalPages }, (_, i) => i + 1)
+                  .filter((p) => p === 1 || p === totalPages || Math.abs(p - page) <= 2)
+                  .map((p, idx, arr) => (
+                    <span key={p}>
+                      {idx > 0 && p - arr[idx - 1] > 1 && <span className="text-zinc-400 px-1">...</span>}
+                      <button
+                        onClick={() => setPage(p)}
+                        className={cn(
+                          "h-8 w-8 rounded-xl text-xs font-bold transition-all cursor-pointer border",
+                          page === p
+                            ? "bg-primary border-primary text-white"
+                            : "border-zinc-200/60 dark:border-zinc-800 hover:bg-zinc-100 dark:hover:bg-zinc-900 text-zinc-600"
+                        )}
+                      >
+                        {p}
+                      </button>
                     </span>
-                  </td>
-                  <td className="px-5 py-3 truncate font-mono text-[11px] text-zinc-500" title={logItem.uri}>
-                    {logItem.uri}
-                  </td>
-                  <td className="px-5 py-3 font-mono text-zinc-500">
-                    {logItem.ip}
-                  </td>
-                  <td className={cn("px-5 py-3 text-right font-mono italic text-[11.5px]", getCostTimeColor(logItem.costTime))}>
-                    {logItem.costTime} <span className="text-[9px] font-sans not-italic text-zinc-400">ms</span>
-                  </td>
-                  <td className="px-5 py-3 text-right text-zinc-450 dark:text-zinc-550 font-mono text-[10px]">
-                    {logItem.createdAt ? new Date(logItem.createdAt).toLocaleString("zh-CN") : "--"}
+                  ))}
+                <button
+                  onClick={() => setPage((p) => Math.min(totalPages, p + 1))}
+                  disabled={page >= totalPages}
+                  className="rounded-xl border border-zinc-200/60 dark:border-zinc-800 px-3 py-1.5 hover:bg-zinc-150/40 text-zinc-650 disabled:opacity-30 transition-all cursor-pointer disabled:cursor-not-allowed font-bold"
+                >
+                  下一页
+                </button>
+              </div>
+            </div>
+          )}
+        </>
+      ) : (
+        /* 日志归档包管理核心表格 */
+        <div className="overflow-x-auto rounded-2xl border border-zinc-200/60 dark:border-zinc-800 bg-white dark:bg-zinc-950 shadow-xs">
+          <table className="w-full text-xs text-left border-collapse min-w-[700px] table-fixed">
+            <thead>
+              <tr className="border-b border-zinc-200/50 dark:border-zinc-800 bg-zinc-50/70 dark:bg-zinc-900/40 text-[10px] font-bold text-zinc-400 dark:text-zinc-550 uppercase tracking-widest select-none">
+                <th className="px-5 py-3.5 w-1/2">归档日志包名称</th>
+                <th className="px-5 py-3.5 w-32 text-center">文件大小</th>
+                <th className="px-5 py-3.5 w-48 text-right">生成日期</th>
+                <th className="px-5 py-3.5 w-32 text-center">操作</th>
+              </tr>
+            </thead>
+            <tbody className="divide-y divide-zinc-100 dark:divide-zinc-800/50 text-zinc-700 dark:text-zinc-350">
+              {archivesLoading ? (
+                <tr>
+                  <td colSpan={4} className="px-5 py-16 text-center">
+                    <div className="flex flex-col items-center gap-2 text-zinc-400">
+                      <Loader2 size={20} className="animate-spin" />
+                      <span className="text-[11px] font-medium">正在扫描物理日志文件...</span>
+                    </div>
                   </td>
                 </tr>
-              ))
-            )}
-          </tbody>
-        </table>
-      </div>
-
-      {/* 分页控制栏 */}
-      {totalPages > 1 && (
-        <div className="flex items-center justify-between text-xs pt-2 select-none">
-          <span className="text-zinc-500 font-medium font-mono">SHOWING PAGE {page} OF {totalPages} ({total} ITEMS)</span>
-          <div className="flex items-center gap-1.5">
-            <button
-              onClick={() => setPage((p) => Math.max(1, p - 1))}
-              disabled={page <= 1}
-              className="rounded-xl border border-zinc-200/60 dark:border-zinc-800 px-3 py-1.5 hover:bg-zinc-150/40 text-zinc-650 disabled:opacity-30 transition-all cursor-pointer disabled:cursor-not-allowed font-bold"
-            >
-              上一页
-            </button>
-            {Array.from({ length: totalPages }, (_, i) => i + 1)
-              .filter((p) => p === 1 || p === totalPages || Math.abs(p - page) <= 2)
-              .map((p, idx, arr) => (
-                <span key={p}>
-                  {idx > 0 && p - arr[idx - 1] > 1 && <span className="text-zinc-400 px-1">...</span>}
-                  <button
-                    onClick={() => setPage(p)}
-                    className={cn(
-                      "h-8 w-8 rounded-xl text-xs font-bold transition-all cursor-pointer border",
-                      page === p
-                        ? "bg-primary border-primary text-white"
-                        : "border-zinc-200/60 dark:border-zinc-800 hover:bg-zinc-100 dark:hover:bg-zinc-900 text-zinc-600"
-                    )}
-                  >
-                    {p}
-                  </button>
-                </span>
-              ))}
-            <button
-              onClick={() => setPage((p) => Math.min(totalPages, p + 1))}
-              disabled={page >= totalPages}
-              className="rounded-xl border border-zinc-200/60 dark:border-zinc-800 px-3 py-1.5 hover:bg-zinc-150/40 text-zinc-650 disabled:opacity-30 transition-all cursor-pointer disabled:cursor-not-allowed font-bold"
-            >
-              下一页
-            </button>
-          </div>
+              ) : archives.length === 0 ? (
+                <tr>
+                  <td colSpan={4} className="px-5 py-16 text-center text-zinc-400 font-mono">
+                    NO LOG ARCHIVES FOUND
+                  </td>
+                </tr>
+              ) : (
+                archives.map((archive) => (
+                  <tr key={archive.fileName} className="group border-b border-zinc-200/50 dark:border-zinc-800 hover:bg-zinc-50/50 dark:hover:bg-zinc-900/20 transition-all duration-150">
+                    <td className="px-5 py-3 truncate font-mono text-[11.5px] font-bold text-neutral-dark dark:text-zinc-150" title={archive.fileName}>
+                      <div className="flex items-center gap-2">
+                        <FileArchive size={14} className="text-zinc-400 dark:text-zinc-500 group-hover:text-primary transition-all" />
+                        {archive.fileName}
+                      </div>
+                    </td>
+                    <td className="px-5 py-3 text-center font-mono text-[11px] text-zinc-500 font-semibold">
+                      {archive.fileSize}
+                    </td>
+                    <td className="px-5 py-3 text-right text-zinc-450 dark:text-zinc-550 font-mono text-[10.5px]">
+                      {archive.lastModified ? new Date(archive.lastModified).toLocaleString("zh-CN") : "--"}
+                    </td>
+                    <td className="px-5 py-3 text-center">
+                      <div className="flex items-center justify-center gap-2.5">
+                        <button
+                          onClick={() => handleDownloadArchive(archive.fileName)}
+                          className="p-1.5 rounded-lg bg-zinc-100 hover:bg-zinc-200 dark:bg-zinc-805 dark:hover:bg-zinc-700 text-zinc-650 dark:text-zinc-300 transition-all cursor-pointer active:scale-95"
+                          title="流式下载此日志包"
+                        >
+                          <Download size={13} />
+                        </button>
+                        <button
+                          onClick={() => {
+                            setSelectedArchive(archive.fileName);
+                            setShowArchiveDeleteConfirm(true);
+                          }}
+                          className="p-1.5 rounded-lg bg-rose-500/10 hover:bg-rose-500 text-rose-600 hover:text-white transition-all cursor-pointer active:scale-95"
+                          title="物理删除此归档"
+                        >
+                          <Trash2 size={13} />
+                        </button>
+                      </div>
+                    </td>
+                  </tr>
+                ))
+              )}
+            </tbody>
+          </table>
         </div>
       )}
 
