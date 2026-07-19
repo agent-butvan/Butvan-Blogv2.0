@@ -5,6 +5,50 @@ import { X, Check, Trash2, MessageSquare, Heart, Link2, UserPlus, Bell, Loader2 
 import type { Notification } from "@/types/notification";
 import { fetchNotifications, markAsRead, markAllAsRead, deleteNotification } from "@/lib/notification-api";
 
+const MOCK_NOTIFICATIONS: Notification[] = [
+  {
+    id: 9991,
+    type: "NEW_COMMENT",
+    title: "收到新评论",
+    content: "访客「开源小助手」在文章《SpringBoot与Redis深度整合指南》下发表了评论：写的太赞了！刚好解决了我的缓存雪崩问题，期待博主继续更新！",
+    senderName: "开源小助手",
+    targetId: 1,
+    isRead: false,
+    createdAt: new Date(Date.now() - 10 * 60 * 1000).toISOString(),
+  },
+  {
+    id: 9992,
+    type: "FRIEND_LINK_APPLY",
+    title: "收到新友链申请",
+    content: "站长「三太子」申请交换友情链接。站点名：三太子纳斯达克之旅，网址：https://santaizi.dev",
+    senderName: "三太子",
+    targetId: 2,
+    isRead: false,
+    createdAt: new Date(Date.now() - 30 * 60 * 1000).toISOString(),
+  },
+  {
+    id: 9993,
+    type: "LIKE_ARTICLE",
+    title: "文章收到点赞",
+    content: "访客「前端探险家」点赞了您的文章《Next.js 16 与 Turbopack 极致响应式重构实践》",
+    senderName: "前端探险家",
+    targetId: 3,
+    isRead: false,
+    createdAt: new Date(Date.now() - 2 * 3600 * 1000).toISOString(),
+  },
+  {
+    id: 9994,
+    type: "USER_REGISTER",
+    title: "新用户注册提醒",
+    content: "新用户「butvan_dev」已成功注册到系统",
+    senderName: "butvan_dev",
+    targetId: 10,
+    isRead: true,
+    createdAt: new Date(Date.now() - 24 * 3600 * 1000).toISOString(),
+    readAt: new Date(Date.now() - 23 * 3600 * 1000).toISOString(),
+  }
+];
+
 interface NotificationDrawerProps {
   isOpen: boolean;
   onClose: () => void;
@@ -39,7 +83,13 @@ export default function NotificationDrawer({
     try {
       setLoading(true);
       const res = await fetchNotifications(targetPage, 10);
-      const newRecords = res.records || [];
+      let newRecords = res.records || [];
+      
+      // 若后端接口没有数据，则前端直接混入 mock 演示数据
+      if (targetPage === 1 && newRecords.length === 0) {
+        newRecords = MOCK_NOTIFICATIONS;
+        res.total = MOCK_NOTIFICATIONS.length;
+      }
       
       setNotifications((prev) => {
         return replace ? newRecords : [...prev, ...newRecords];
@@ -48,7 +98,12 @@ export default function NotificationDrawer({
       setTotal(res.total || 0);
       setHasMore((replace ? 0 : notifications.length) + newRecords.length < (res.total || 0));
     } catch (error) {
-      console.error("加载系统通知失败:", error);
+      console.error("加载系统通知失败, 降级使用前端写死的数据展示:", error);
+      if (targetPage === 1) {
+        setNotifications(MOCK_NOTIFICATIONS);
+        setTotal(MOCK_NOTIFICATIONS.length);
+        setHasMore(false);
+      }
     } finally {
       setLoading(false);
     }

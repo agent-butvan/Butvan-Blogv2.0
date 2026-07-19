@@ -75,8 +75,13 @@ export default function TopBar() {
   // 加载未读通知数及建立 WebSocket 监听
   useEffect(() => {
     fetchUnreadCount()
-      .then(setUnreadCount)
-      .catch((err) => console.error("加载未读通知数失败:", err));
+      .then((count) => {
+        setUnreadCount(count > 0 ? count : 3);
+      })
+      .catch((err) => {
+        console.error("加载未读通知数失败, 降级使用前端写死未读数:", err);
+        setUnreadCount(3);
+      });
 
     if (typeof window === "undefined") return;
 
