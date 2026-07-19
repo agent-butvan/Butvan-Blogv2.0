@@ -30,6 +30,9 @@ public class DailyStats {
     @Column(name = "pv_count")
     private Long pvCount; // 访问量 (PV)
 
+    @Column(name = "uv_count")
+    private Long uvCount; // 独立访客量 (UV)
+
     @Column(name = "created_at", nullable = false, updatable = false)
     private LocalDateTime createdAt; // 创建时间
 
@@ -42,6 +45,9 @@ public class DailyStats {
         this.updatedAt = LocalDateTime.now();
         if (this.pvCount == null) {
             this.pvCount = 0L;
+        }
+        if (this.uvCount == null) {
+            this.uvCount = 0L;
         }
     }
 

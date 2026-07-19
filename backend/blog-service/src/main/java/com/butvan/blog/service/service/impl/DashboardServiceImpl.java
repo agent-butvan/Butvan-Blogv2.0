@@ -159,36 +159,40 @@ public class DashboardServiceImpl implements DashboardService {
                 .storageFree(storageFree)
                 .build();
 
-        // 8. 统计数据库中真实的 7 日 PV 流量动态波动曲线数据
+        // 8. 统计数据库中真实的 7 日 PV & UV 流量动态波动曲线数据
         List<TrafficTrendVO> trafficTrend = new ArrayList<>();
         LocalDate today = LocalDate.now();
         LocalDate startDate = today.minusDays(6);
         DateTimeFormatter formatter = DateTimeFormatter.ofPattern("MM-dd");
 
         try {
-            // 获取数据库中这 7 天所有的 PV 统计记录
+            // 获取数据库中这 7 天所有的流量统计记录
             List<DailyStats> statsList = dailyStatsRepository.findByStatDateBetweenOrderByStatDateAsc(startDate, today);
-            Map<LocalDate, Long> statsMap = statsList.stream()
-                    .collect(Collectors.toMap(DailyStats::getStatDate, DailyStats::getPvCount));
+            Map<LocalDate, DailyStats> statsMap = statsList.stream()
+                    .collect(Collectors.toMap(DailyStats::getStatDate, s -> s));
 
             // 对最近 7 天进行循环并提取数据，未统计日期自动补 0
             for (int i = 6; i >= 0; i--) {
                 LocalDate date = today.minusDays(i);
-                long pv = statsMap.getOrDefault(date, 0L);
+                DailyStats stats = statsMap.get(date);
+                long pv = stats != null && stats.getPvCount() != null ? stats.getPvCount() : 0L;
+                long uv = stats != null && stats.getUvCount() != null ? stats.getUvCount() : 0L;
                 
                 trafficTrend.add(TrafficTrendVO.builder()
                         .date(date.format(formatter))
                         .pv((int) pv)
+                        .uv((int) uv)
                         .build());
             }
         } catch (Exception e) {
-            log.warn("获取真实 7 日 PV 流量数据失败，将回退兜底:", e);
+            log.warn("获取真实 7 日 PV/UV 流量数据失败，将回退兜底:", e);
             // 失败时做平滑兜底
             for (int i = 6; i >= 0; i--) {
                 LocalDate date = today.minusDays(i);
                 trafficTrend.add(TrafficTrendVO.builder()
                         .date(date.format(formatter))
                         .pv(0)
+                        .uv(0)
                         .build());
             }
         }

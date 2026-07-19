@@ -37,6 +37,7 @@ interface DashboardStats {
   trafficTrend?: Array<{
     date: string;
     pv: number;
+    uv: number;
   }>;
   serviceStatus?: {
     database: boolean;

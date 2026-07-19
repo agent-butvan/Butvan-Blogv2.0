@@ -17,6 +17,8 @@ import org.springframework.util.StringUtils;
 import org.springframework.web.context.request.RequestContextHolder;
 import org.springframework.web.context.request.ServletRequestAttributes;
 
+import org.springframework.data.redis.core.StringRedisTemplate;
+import java.time.LocalDate;
 import java.lang.reflect.Method;
 import java.time.LocalDateTime;
 import java.util.Queue;
@@ -54,6 +56,7 @@ public class ApiLogAspect {
 
     private final DailyStatsRepository dailyStatsRepository;
     private final WebSocketServer webSocketServer;
+    private final StringRedisTemplate stringRedisTemplate;
 
     /**
      * 系统启动时从本地 api-log.log 文件中恢复最近的日志数据到内存中，以保持数据一致
@@ -186,9 +189,16 @@ public class ApiLogAspect {
                     // 3. 增加 PV 流量统计：仅前台公开的 GET 请求（排除 /admin/ 和 /ws/）
                     if ("GET".equalsIgnoreCase(finalMethodType) && !finalUri.contains("/admin/") && !finalUri.contains("/ws/")) {
                         try {
-                            dailyStatsRepository.incrementTodayPv();
-                        } catch (Exception pvEx) {
-                            log.warn("AOP异步累加每日流量PV失败: {}", pvEx.getMessage());
+                            String todayStr = LocalDate.now().toString();
+                            String pvKey = "blog:traffic:pv:" + todayStr;
+                            String uvKey = "blog:traffic:uv:" + todayStr;
+
+                            // 累加 Redis 中的 PV 计数值
+                            stringRedisTemplate.opsForValue().increment(pvKey);
+                            // 将访客 IP 写入 HyperLogLog 进行去重 UV 统计
+                            stringRedisTemplate.opsForHyperLogLog().add(uvKey, finalIp);
+                        } catch (Exception redisEx) {
+                            log.warn("AOP异步写入Redis每日流量缓存失败: {}", redisEx.getMessage());
                         }
                     }
 

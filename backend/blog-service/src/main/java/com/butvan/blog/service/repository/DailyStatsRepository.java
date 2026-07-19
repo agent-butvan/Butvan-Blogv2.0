@@ -7,6 +7,7 @@ import org.springframework.data.jpa.repository.Query;
 import org.springframework.stereotype.Repository;
 import org.springframework.transaction.annotation.Transactional;
 
+import org.springframework.data.repository.query.Param;
 import java.time.LocalDate;
 import java.util.Optional;
 import java.util.List;
@@ -22,14 +23,14 @@ public interface DailyStatsRepository extends JpaRepository<DailyStats, Long> {
     List<DailyStats> findByStatDateBetweenOrderByStatDateAsc(LocalDate startDate, LocalDate endDate);
 
     /**
-     * 利用 PostgreSQL 的 ON CONFLICT 机制进行高效的原子性每日 PV 计数累加
+     * 利用 PostgreSQL 的 ON CONFLICT 机制进行高效的原子性每日 PV / UV 数据定时覆盖更新
      */
     @Modifying
     @Transactional
-    @Query(value = "INSERT INTO blog_daily_stats (stat_date, pv_count, created_at, updated_at) " +
-            "VALUES (CURRENT_DATE, 1, CURRENT_TIMESTAMP, CURRENT_TIMESTAMP) " +
+    @Query(value = "INSERT INTO blog_daily_stats (stat_date, pv_count, uv_count, created_at, updated_at) " +
+            "VALUES (:statDate, :pvCount, :uvCount, CURRENT_TIMESTAMP, CURRENT_TIMESTAMP) " +
             "ON CONFLICT (stat_date) " +
-            "DO UPDATE SET pv_count = blog_daily_stats.pv_count + 1, updated_at = CURRENT_TIMESTAMP", 
+            "DO UPDATE SET pv_count = :pvCount, uv_count = :uvCount, updated_at = CURRENT_TIMESTAMP", 
             nativeQuery = true)
-    void incrementTodayPv();
+    void updateTodayTraffic(@Param("statDate") LocalDate statDate, @Param("pvCount") Long pvCount, @Param("uvCount") Long uvCount);
 }

@@ -19,4 +19,7 @@ public class TrafficTrendVO {
 
     /** 访问量 PV 数值 (如 125) */
     private Integer pv;
+
+    /** 独立访客量 UV 数值 (如 50) */
+    private Integer uv;
 }
