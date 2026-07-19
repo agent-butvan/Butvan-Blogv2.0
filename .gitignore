@@ -67,3 +67,6 @@ design-system/
 
 # Local Environment Configuration
 .env
+
+# Backend Logs
+backend/logs/
