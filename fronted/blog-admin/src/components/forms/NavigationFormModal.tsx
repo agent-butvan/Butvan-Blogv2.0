@@ -16,29 +16,69 @@ import type { ClientRoute } from "@/types/route";
 
 // 预定义的常用 Lucide 导航图标选项列表
 const POPULAR_ICONS = [
-  { value: "", label: "无图标" },
-  { value: "Home", label: "控制台 / 首页" },
-  { value: "BookOpen", label: "文章列表 / 写作" },
-  { value: "FolderOpen", label: "分类管理" },
-  { value: "Tag", label: "标签管理" },
-  { value: "MessageSquare", label: "评论管理" },
-  { value: "HardDrive", label: "资源管理" },
-  { value: "Image", label: "媒体内容" },
-  { value: "Camera", label: "相册 / 照片" },
-  { value: "Wallpaper", label: "场景空间 / 热区" },
-  { value: "Settings", label: "系统设置" },
-  { value: "Compass", label: "导航配置" },
-  { value: "User", label: "个人中心" },
-  { value: "UserCheck", label: "个人资料" },
-  { value: "Heart", label: "点赞记录" },
-  { value: "Sparkles", label: "特效 / 推荐" },
-  { value: "Bell", label: "通知中心" },
-  { value: "Layers3", label: "标签页签 / 多图层" },
-  { value: "Link", label: "外部链接" },
-  { value: "Mail", label: "订阅管理" },
-  { value: "Lock", label: "安全认证 / 密码" },
-  { value: "FileText", label: "单页管理" },
-  { value: "HelpCircle", label: "帮助说明" }
+  { value: "", label: "无图标 (-)" },
+  // 1. 基础 & 核心
+  { value: "Home", label: "控制台 / 首页 (Home)" },
+  { value: "Settings", label: "系统设置 (Settings)" },
+  { value: "Compass", label: "导航配置 (Compass)" },
+  { value: "LayoutDashboard", label: "仪表盘 (LayoutDashboard)" },
+  { value: "AppWindow", label: "应用窗口 (AppWindow)" },
+  { value: "Info", label: "关于 / 信息 (Info)" },
+  { value: "HelpCircle", label: "帮助说明 (HelpCircle)" },
+  
+  // 2. 内容 & 写作
+  { value: "BookOpen", label: "文章列表 / 写作 (BookOpen)" },
+  { value: "Book", label: "书籍 / 教程 (Book)" },
+  { value: "FileText", label: "单页 / 文档 (FileText)" },
+  { value: "FolderOpen", label: "分类管理 (FolderOpen)" },
+  { value: "Folder", label: "文件夹 (Folder)" },
+  { value: "Tag", label: "标签管理 (Tag)" },
+  { value: "Tags", label: "多标签 (Tags)" },
+  { value: "PenTool", label: "文章写作 (PenTool)" },
+  { value: "Archive", label: "归档日志 / 历史 (Archive)" },
+  
+  // 3. 社交 & 互动
+  { value: "MessageSquare", label: "评论管理 (MessageSquare)" },
+  { value: "MessageCircle", label: "微语 / 动态 (MessageCircle)" },
+  { value: "Heart", label: "点赞 / 收藏 (Heart)" },
+  { value: "ThumbsUp", label: "点赞赞同 (ThumbsUp)" },
+  { value: "Share2", label: "分享转发 (Share2)" },
+  { value: "Mail", label: "邮件订阅 (Mail)" },
+  { value: "Bell", label: "消息通知 (Bell)" },
+  { value: "Send", label: "发送 (Send)" },
+
+  // 4. 用户 & 安全
+  { value: "User", label: "个人中心 (User)" },
+  { value: "Users", label: "用户管理 (Users)" },
+  { value: "UserCheck", label: "个人资料 (UserCheck)" },
+  { value: "UserPlus", label: "注册加入 (UserPlus)" },
+  { value: "Lock", label: "安全 / 密码 (Lock)" },
+  { value: "Shield", label: "防护盾牌 (Shield)" },
+  { value: "Key", label: "密钥管理 (Key)" },
+
+  // 5. 媒体 & 创意
+  { value: "Image", label: "媒体资源 (Image)" },
+  { value: "Images", label: "相册画廊 (Images)" },
+  { value: "Camera", label: "相机拍照 (Camera)" },
+  { value: "Video", label: "视频多媒体 (Video)" },
+  { value: "Music", label: "音乐电台 (Music)" },
+  { value: "Wallpaper", label: "壁纸背景 (Wallpaper)" },
+  { value: "Palette", label: "主题调色 (Palette)" },
+  { value: "Sparkles", label: "特效推荐 (Sparkles)" },
+  { value: "Brush", label: "画笔设计 (Brush)" },
+
+  // 6. 系统 & 数据
+  { value: "HardDrive", label: "物理资源 (HardDrive)" },
+  { value: "Database", label: "数据库管理 (Database)" },
+  { value: "Server", label: "服务器监控 (Server)" },
+  { value: "Cpu", label: "核心计算 (Cpu)" },
+  { value: "Activity", label: "系统监控 (Activity)" },
+  { value: "Terminal", label: "命令终端 (Terminal)" },
+  { value: "Cloud", label: "云端存储 (Cloud)" },
+  { value: "Globe", label: "全球化 (Globe)" },
+  { value: "Code", label: "代码开发 (Code)" },
+  { value: "Layers3", label: "图层页签 (Layers3)" },
+  { value: "Link", label: "外部链接 (Link)" }
 ];
 
 /**
@@ -426,29 +466,34 @@ export default function NavigationFormModal({
                   </Select>
                 </div>
               ) : (
-                <div className="flex gap-2 animate-fade-in">
-                  <input
-                    type="text"
-                    value={icon}
-                    onChange={(e) => setIcon(e.target.value)}
-                    placeholder="输入 Lucide 图标键名，例如: Smile"
-                    className={inputClass}
-                  />
-                  {icon && (
-                    <div className="flex h-9 w-9 shrink-0 items-center justify-center rounded-lg border border-zinc-200 dark:border-zinc-800 bg-zinc-50 dark:bg-zinc-900 text-zinc-650 dark:text-zinc-350">
-                      {renderIconPreview(icon)}
-                    </div>
-                  )}
-                  <button
-                    type="button"
-                    onClick={() => {
-                      setIsCustomIcon(false);
-                      setIcon("");
-                    }}
-                    className="h-9 px-3 shrink-0 rounded-lg border border-zinc-200 dark:border-zinc-800 hover:bg-zinc-50 dark:hover:bg-zinc-900 text-xs font-semibold text-zinc-500 dark:text-zinc-400 cursor-pointer"
-                  >
-                    返回选择
-                  </button>
+                <div className="space-y-1.5 animate-fade-in">
+                  <div className="flex gap-2">
+                    <input
+                      type="text"
+                      value={icon}
+                      onChange={(e) => setIcon(e.target.value)}
+                      placeholder="输入 Lucide 图标键名，例如: Smile"
+                      className={inputClass}
+                    />
+                    {icon && (
+                      <div className="flex h-9 w-9 shrink-0 items-center justify-center rounded-lg border border-zinc-200 dark:border-zinc-800 bg-zinc-50 dark:bg-zinc-900 text-zinc-650 dark:text-zinc-350">
+                        {renderIconPreview(icon)}
+                      </div>
+                    )}
+                    <button
+                      type="button"
+                      onClick={() => {
+                        setIsCustomIcon(false);
+                        setIcon("");
+                      }}
+                      className="h-9 px-3 shrink-0 rounded-lg border border-zinc-200 dark:border-zinc-800 hover:bg-zinc-50 dark:hover:bg-zinc-900 text-xs font-semibold text-zinc-500 dark:text-zinc-400 cursor-pointer"
+                    >
+                      返回选择
+                    </button>
+                  </div>
+                  <p className="text-[10px] text-zinc-400 dark:text-zinc-500 font-medium leading-normal pl-0.5">
+                    💡 提示：支持任意 Lucide 图标。您可以前往 <a href="https://lucide.dev" target="_blank" rel="noopener noreferrer" className="text-primary dark:text-[#b0a2ff] hover:underline font-bold">lucide.dev</a> 搜索数千个图标名称（如 Smile、Github）并填入此处。
+                  </p>
                 </div>
               )}
             </div>
