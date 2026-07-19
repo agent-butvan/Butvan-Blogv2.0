@@ -20,6 +20,11 @@ import org.springframework.web.context.request.ServletRequestAttributes;
 import java.lang.reflect.Method;
 import java.time.LocalDateTime;
 import java.util.Queue;
+import java.util.LinkedList;
+import java.io.BufferedReader;
+import java.io.File;
+import java.io.FileReader;
+import jakarta.annotation.PostConstruct;
 import java.util.concurrent.CompletableFuture;
 import java.util.concurrent.ConcurrentLinkedQueue;
 import java.util.concurrent.atomic.AtomicLong;
@@ -49,6 +54,57 @@ public class ApiLogAspect {
 
     private final DailyStatsRepository dailyStatsRepository;
     private final WebSocketServer webSocketServer;
+
+    /**
+     * 系统启动时从本地 api-log.log 文件中恢复最近的日志数据到内存中，以保持数据一致
+     */
+    @PostConstruct
+    public void init() {
+        log.info("开始从本地 API 日志文件 logs/api-log.log 恢复最近的日志历史...");
+        File file = new File("logs/api-log.log");
+        if (file.exists() && file.isFile()) {
+            try (BufferedReader reader = new BufferedReader(new FileReader(file))) {
+                String line;
+                Queue<ApiLog> queue = new LinkedList<>();
+                while ((line = reader.readLine()) != null) {
+                    if (StringUtils.hasText(line)) {
+                        try {
+                            ApiLog apiLog = JSONUtil.toBean(line, ApiLog.class);
+                            if (apiLog != null) {
+                                queue.offer(apiLog);
+                                if (queue.size() > 1000) {
+                                    queue.poll();
+                                }
+                            }
+                        } catch (Exception ex) {
+                            // 静默异常，忽略个别行解析错误
+                        }
+                    }
+                }
+                RECENT_LOGS.addAll(queue);
+                
+                // 恢复自增 ID 计数器
+                long maxId = queue.stream()
+                        .mapToLong(ApiLog::getId)
+                        .max()
+                        .orElse(0L);
+                logIdCounter.set(maxId + 1);
+                
+                log.info("本地 API 日志历史恢复成功，共恢复数据 {} 条，当前自增 ID 计数器为: {}", RECENT_LOGS.size(), logIdCounter.get());
+            } catch (Exception e) {
+                log.error("从本地 api-log.log 恢复历史日志失败: ", e);
+            }
+        } else {
+            log.info("未发现本地 api-log.log 文件，跳过历史日志恢复");
+        }
+    }
+
+    /**
+     * 重置日志自增计数器
+     */
+    public static void clearLogCounter() {
+        logIdCounter.set(1);
+    }
 
     /**
      * 环绕拦截所有 Controller（含微信包）中的方法，自动测速并记录耗时到日志表中。

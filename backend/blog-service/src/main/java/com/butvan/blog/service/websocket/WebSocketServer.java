@@ -94,6 +94,14 @@ public class WebSocketServer {
     }
 
     /**
+     * WebSocket 会话发生错误回调
+     */
+    @OnError
+    public void onError(Session session, Throwable error) {
+        log.warn("WebSocket 会话 [id: {}] 发生异常，原因: {}", session != null ? session.getId() : "null", error.getMessage());
+    }
+
+    /**
      * 向所有后台大屏控制台客户端广播 API 日志消息
      * @param message 广播消息文本
      */

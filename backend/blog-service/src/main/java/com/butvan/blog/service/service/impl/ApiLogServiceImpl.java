@@ -94,8 +94,20 @@ public class ApiLogServiceImpl implements ApiLogService {
 
     @Override
     public void clearAllLogs() {
-        log.warn("执行清空内存请求日志操作");
+        log.warn("执行清空内存和本地物理请求日志操作");
         ApiLogAspect.RECENT_LOGS.clear();
+        ApiLogAspect.clearLogCounter();
+
+        // 同步清空本地日志文件 logs/api-log.log
+        File file = new File("logs/api-log.log");
+        if (file.exists() && file.isFile()) {
+            try {
+                java.nio.file.Files.write(file.toPath(), new byte[0]);
+                log.info("本地 api-log.log 物理文件内容已同步清空");
+            } catch (Exception e) {
+                log.warn("清空本地 api-log.log 物理文件内容失败: {}", e.getMessage());
+            }
+        }
     }
 
     @Override
