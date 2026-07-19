@@ -11,7 +11,9 @@ import cn.hutool.json.JSONObject;
 
 import java.io.IOException;
 import java.util.Map;
+import java.util.Queue;
 import java.util.concurrent.ConcurrentHashMap;
+import java.util.concurrent.ConcurrentLinkedQueue;
 
 @Slf4j
 @Component
@@ -25,6 +27,12 @@ public class WebSocketServer {
      */
     private final static Map<String, Session> sessionMap = new ConcurrentHashMap<>();
 
+    /**
+     * 存放系统日志历史队列
+     */
+    private final static Queue<String> systemLogQueue = new ConcurrentLinkedQueue<>();
+    private final static int MAX_SYSTEM_LOGS = 1000;
+
 
     /**
      * 连接建立成功
@@ -35,6 +43,29 @@ public class WebSocketServer {
     public void onOpen(Session session, @PathParam("id") String id) {
         log.info("客户端id:[{}]连接建立成功",id);
         sessionMap.put(id,session);
+        
+        // 如果是系统控制台日志连接，推送已缓存的历史日志
+        if (id != null && (id.startsWith("system-") || id.contains("console"))) {
+            sendSystemLogHistory(session);
+        }
+    }
+
+    /**
+     * 向指定系统日志客户端推送最近的历史日志
+     * @param session WebSocket 会话
+     */
+    private void sendSystemLogHistory(Session session) {
+        try {
+            JSONObject json = new JSONObject();
+            json.set("type", "system-log-history");
+            json.set("data", new java.util.ArrayList<>(systemLogQueue));
+            String text = json.toString();
+            synchronized (session) {
+                session.getBasicRemote().sendText(text);
+            }
+        } catch (Exception e) {
+            log.error("推送系统日志历史异常: {}", e.getMessage());
+        }
     }
 
     /**
@@ -127,6 +158,13 @@ public class WebSocketServer {
      * @param formattedLog 格式化后的日志单行文本
      */
     public void sendSystemLog(String formattedLog) {
+        if (formattedLog != null) {
+            systemLogQueue.add(formattedLog);
+            while (systemLogQueue.size() > MAX_SYSTEM_LOGS) {
+                systemLogQueue.poll();
+            }
+        }
+
         JSONObject json = new JSONObject();
         json.set("type", "system-log");
         json.set("data", formattedLog);

@@ -52,6 +52,28 @@ public class ApiLogServiceImpl implements ApiLogService {
                     .collect(Collectors.toList());
         }
 
+        // 3.1 支持请求方式筛选
+        if (StringUtils.hasText(queryDTO.getMethod())) {
+            String method = queryDTO.getMethod().trim().toUpperCase();
+            allLogs = allLogs.stream()
+                    .filter(item -> item.getMethod() != null && item.getMethod().equalsIgnoreCase(method))
+                    .collect(Collectors.toList());
+        }
+
+        // 3.2 支持最小响应耗时筛选
+        if (queryDTO.getMinCost() != null) {
+            allLogs = allLogs.stream()
+                    .filter(item -> item.getCostTime() != null && item.getCostTime() >= queryDTO.getMinCost())
+                    .collect(Collectors.toList());
+        }
+
+        // 3.3 支持最大响应耗时筛选
+        if (queryDTO.getMaxCost() != null) {
+            allLogs = allLogs.stream()
+                    .filter(item -> item.getCostTime() != null && item.getCostTime() <= queryDTO.getMaxCost())
+                    .collect(Collectors.toList());
+        }
+
         long total = allLogs.size();
 
         // 4. 进行内存滑动窗口截取分页

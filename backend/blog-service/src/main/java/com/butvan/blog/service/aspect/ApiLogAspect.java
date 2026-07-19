@@ -42,7 +42,7 @@ public class ApiLogAspect {
     // 生成内存唯一的自增日志ID，供前端 React 渲染做唯一 key，防止 null 冲突报错
     private static final AtomicLong logIdCounter = new AtomicLong(1);
 
-    // 内存中缓存最新的 100 条接口请求流水明细，支持工作台秒级拉取
+    // 内存中缓存最新的 1000 条接口请求流水明细，支持工作台秒级拉取
     public static final Queue<ApiLog> RECENT_LOGS = new ConcurrentLinkedQueue<>();
     // 内存中缓存最近 100 次 API 响应的耗时数据（毫秒）用于高速响应平均时间计算
     public static final Queue<Long> RECENT_COST_TIMES = new ConcurrentLinkedQueue<>();
@@ -123,7 +123,7 @@ public class ApiLogAspect {
                         RECENT_COST_TIMES.poll();
                     }
                     RECENT_LOGS.offer(apiLog);
-                    while (RECENT_LOGS.size() > 100) {
+                    while (RECENT_LOGS.size() > 1000) {
                         RECENT_LOGS.poll();
                     }
 

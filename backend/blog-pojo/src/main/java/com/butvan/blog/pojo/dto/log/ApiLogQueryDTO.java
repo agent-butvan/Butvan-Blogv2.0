@@ -22,4 +22,19 @@ public class ApiLogQueryDTO {
      * 模糊匹配关键字
      */
     private String keyword;
+
+    /**
+     * 请求方式 (GET, POST等)
+     */
+    private String method;
+
+    /**
+     * 最小响应耗时 (ms)
+     */
+    private Integer minCost;
+
+    /**
+     * 最大响应耗时 (ms)
+     */
+    private Integer maxCost;
 }
