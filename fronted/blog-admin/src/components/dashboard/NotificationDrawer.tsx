@@ -313,7 +313,7 @@ export default function NotificationDrawer({
               <Button
                 size="sm"
                 onClick={handleReadAll}
-                className="text-[12px] h-7 min-w-0 flex items-center gap-1 text-zinc-500 dark:text-zinc-405 hover:text-indigo-600 dark:hover:text-indigo-400 transition-colors px-2"
+                className="text-[12px] h-7 min-w-0 flex items-center gap-1 text-zinc-650 dark:text-zinc-400 hover:text-indigo-600 dark:hover:text-indigo-400 bg-transparent border-none shadow-none transition-colors px-2 hover:bg-zinc-100/80 dark:hover:bg-zinc-850/60"
               >
                 <Check className="w-4 h-4" />
                 全部已读
@@ -433,7 +433,7 @@ export default function NotificationDrawer({
                         isIconOnly
                         onClick={(e) => handleDelete(n.id, e)}
                         isDisabled={actionLoadingMap[n.id]}
-                        className="p-1 min-w-0 w-7 h-7 rounded hover:bg-red-50 dark:hover:bg-red-950/20 text-zinc-400 hover:text-red-500 transition-colors"
+                        className="p-1 min-w-0 w-7 h-7 rounded text-zinc-450 hover:text-red-500 bg-transparent border-none shadow-none hover:bg-red-50 dark:hover:bg-red-950/20 transition-colors"
                       >
                         {actionLoadingMap[n.id] ? (
                           <Loader2 className="w-3.5 h-3.5 animate-spin" />
@@ -455,7 +455,7 @@ export default function NotificationDrawer({
                             handleMarkRead(n.id);
                           }}
                           isDisabled={actionLoadingMap[n.id]}
-                          className="p-1 min-w-0 w-7 h-7 rounded hover:bg-emerald-50 dark:hover:bg-emerald-950/20 text-zinc-400 hover:text-emerald-500 transition-colors mt-2"
+                          className="p-1 min-w-0 w-7 h-7 rounded text-zinc-450 hover:text-emerald-550 bg-transparent border-none shadow-none hover:bg-emerald-50 dark:hover:bg-emerald-950/20 transition-colors mt-2"
                         >
                           <Check className="w-3.5 h-3.5" />
                         </Button>
