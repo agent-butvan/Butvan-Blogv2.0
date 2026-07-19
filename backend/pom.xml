@@ -50,6 +50,12 @@
                 <groupId>cn.hutool</groupId>
                 <version>5.8.36</version>
             </dependency>
+            <!-- Spring Dotenv: 自动加载 .env 文件中的环境变量 -->
+            <dependency>
+                <groupId>me.paulschwarz</groupId>
+                <artifactId>spring-dotenv</artifactId>
+                <version>4.0.0</version>
+            </dependency>
         </dependencies>
     </dependencyManagement>
 
