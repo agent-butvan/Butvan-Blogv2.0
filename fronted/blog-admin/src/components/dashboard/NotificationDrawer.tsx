@@ -4,6 +4,7 @@ import React, { useEffect, useState, useRef } from "react";
 import { X, Check, Trash2, MessageSquare, Heart, Link2, UserPlus, Bell, Loader2 } from "lucide-react";
 import type { Notification } from "@/types/notification";
 import { fetchNotifications, markAsRead, markAllAsRead, deleteNotification } from "@/lib/notification-api";
+import { Card, Button, cn } from "@heroui/react";
 
 const MOCK_NOTIFICATIONS: Notification[] = [
   {
@@ -275,14 +276,16 @@ export default function NotificationDrawer({
           </div>
           <div className="flex items-center gap-3">
             {notifications.some((n) => !n.isRead) && (
-              <button
+              <Button
+                size="sm"
+                variant="light"
                 onClick={handleReadAll}
-                className="text-[12px] flex items-center gap-1 text-zinc-500 dark:text-zinc-400 hover:text-indigo-600 dark:hover:text-indigo-400 transition-colors"
+                className="text-[12px] h-7 min-w-0 flex items-center gap-1 text-zinc-500 dark:text-zinc-405 hover:text-indigo-600 dark:hover:text-indigo-400 transition-colors px-2"
                 title="一键全部已读"
               >
                 <Check className="w-4 h-4" />
                 全部已读
-              </button>
+              </Button>
             )}
             <button
               onClick={onClose}
@@ -305,16 +308,16 @@ export default function NotificationDrawer({
           ) : (
             <>
               {notifications.map((n) => (
-                <div
+                <Card
                   key={n.id}
+                  as="div"
                   onClick={() => handleRedirect(n)}
-                  className={`group relative p-4 rounded-xl border transition-all duration-300 cursor-pointer flex gap-3.5
-                    ${
-                      n.isRead
-                        ? "bg-zinc-50/30 hover:bg-zinc-50/50 dark:bg-zinc-900/10 dark:hover:bg-zinc-900/20 border-zinc-200/30 dark:border-zinc-800/20 text-zinc-500 dark:text-zinc-400"
-                        : "bg-indigo-50/40 hover:bg-indigo-50/60 dark:bg-indigo-950/10 dark:hover:bg-indigo-950/15 border-indigo-100 dark:border-indigo-900/30 text-zinc-850 dark:text-zinc-200 shadow-[0_2px_12px_rgba(99,102,241,0.03)]"
-                    }
-                  `}
+                  className={cn(
+                    "group relative p-4 rounded-xl border transition-all duration-300 cursor-pointer flex flex-row gap-3.5 shadow-none",
+                    n.isRead
+                      ? "bg-zinc-50/30 hover:bg-zinc-50/50 dark:bg-zinc-900/10 dark:hover:bg-zinc-900/20 border-zinc-200/30 dark:border-zinc-800/20 text-zinc-500 dark:text-zinc-450"
+                      : "bg-indigo-50/40 hover:bg-indigo-50/60 dark:bg-indigo-950/10 dark:hover:bg-indigo-950/15 border-indigo-100 dark:border-indigo-900/30 text-zinc-850 dark:text-zinc-200 shadow-[0_2px_12px_rgba(99,102,241,0.03)]"
+                  )}
                 >
                   {/* 未读状态下的左侧装饰条 */}
                   {!n.isRead && (
@@ -348,11 +351,14 @@ export default function NotificationDrawer({
                   </div>
 
                   {/* 右上角快捷删除 */}
-                  <div className="flex flex-col justify-between items-end opacity-0 group-hover:opacity-100 transition-opacity">
-                    <button
+                  <div className="flex flex-col justify-between items-end opacity-0 group-hover:opacity-100 transition-opacity shrink-0">
+                    <Button
+                      size="sm"
+                      isIconOnly
+                      variant="light"
                       onClick={(e) => handleDelete(n.id, e)}
                       disabled={actionLoadingMap[n.id]}
-                      className="p-1 rounded hover:bg-red-50 dark:hover:bg-red-950/20 text-zinc-400 hover:text-red-500 transition-colors"
+                      className="p-1 min-w-0 w-7 h-7 rounded hover:bg-red-50 dark:hover:bg-red-950/20 text-zinc-400 hover:text-red-500 transition-colors"
                       title="删除该通知"
                     >
                       {actionLoadingMap[n.id] ? (
@@ -360,22 +366,25 @@ export default function NotificationDrawer({
                       ) : (
                         <Trash2 className="w-3.5 h-3.5" />
                       )}
-                    </button>
+                    </Button>
                     {!n.isRead && (
-                      <button
+                      <Button
+                        size="sm"
+                        isIconOnly
+                        variant="light"
                         onClick={(e) => {
                           e.stopPropagation();
                           handleMarkRead(n.id);
                         }}
                         disabled={actionLoadingMap[n.id]}
-                        className="p-1 rounded hover:bg-emerald-50 dark:hover:bg-emerald-950/20 text-zinc-400 hover:text-emerald-500 transition-colors mt-2"
+                        className="p-1 min-w-0 w-7 h-7 rounded hover:bg-emerald-50 dark:hover:bg-emerald-950/20 text-zinc-400 hover:text-emerald-500 transition-colors mt-2"
                         title="标为已读"
                       >
                         <Check className="w-3.5 h-3.5" />
-                      </button>
+                      </Button>
                     )}
                   </div>
-                </div>
+                </Card>
               ))}
 
               {/* 加载更多 */}
