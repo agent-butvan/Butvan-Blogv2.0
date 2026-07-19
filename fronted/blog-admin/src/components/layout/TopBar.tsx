@@ -17,7 +17,7 @@ import {
 } from "lucide-react";
 import { getUser, logout as clearAuth } from "@/lib/auth";
 import type { AuthUser } from "@/lib/auth";
-import { cn } from "@heroui/react";
+import { cn, Badge } from "@heroui/react";
 import { toast } from "@/lib/toast";
 import { fetchUnreadCount } from "@/lib/notification-api";
 import NotificationDrawer from "@/components/dashboard/NotificationDrawer";
@@ -290,20 +290,30 @@ export default function TopBar() {
         </button>
 
         {/* 消息通知侧滑微件 */}
-        <div className="relative">
+        {unreadCount > 0 ? (
+          <Badge
+            content={unreadCount > 99 ? "99+" : String(unreadCount)}
+            color="danger"
+            size="sm"
+            className="font-bold border-none"
+          >
+            <button
+              onClick={() => setDrawerOpen(true)}
+              className="p-1.5 rounded-md hover:bg-zinc-100 dark:hover:bg-zinc-800 transition-colors relative cursor-pointer text-indigo-550 dark:text-indigo-400"
+              title="通知中心"
+            >
+              <Bell size={16} className="animate-pulse" />
+            </button>
+          </Badge>
+        ) : (
           <button
             onClick={() => setDrawerOpen(true)}
             className="p-1.5 rounded-md text-zinc-500 hover:bg-zinc-100 dark:hover:bg-zinc-800 hover:text-zinc-800 dark:text-zinc-400 dark:hover:text-zinc-200 transition-colors relative cursor-pointer"
             title="通知中心"
           >
-            <Bell size={16} className={cn(unreadCount > 0 && "animate-pulse text-indigo-500 dark:text-indigo-400")} />
-            {unreadCount > 0 && (
-              <span className="absolute -top-1 -right-1 flex h-4 min-w-4 items-center justify-center rounded-full bg-red-500 px-1 text-[9px] font-bold text-white shadow-lg">
-                {unreadCount > 99 ? "99+" : unreadCount}
-              </span>
-            )}
+            <Bell size={16} />
           </button>
-        </div>
+        )}
 
         {/* 分割线 */}
         <div className="h-4 w-px bg-zinc-200 dark:bg-zinc-800 mx-1.5" />
