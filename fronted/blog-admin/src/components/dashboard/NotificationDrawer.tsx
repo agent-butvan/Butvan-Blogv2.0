@@ -50,6 +50,35 @@ const MOCK_NOTIFICATIONS: Notification[] = [
   }
 ];
 
+/**
+ * 精美骨架屏占位卡片列表组件
+ */
+function NotificationSkeleton() {
+  return (
+    <div className="space-y-3">
+      {[1, 2, 3, 4].map((i) => (
+        <Card
+          key={i}
+          className="p-4 rounded-xl border border-zinc-200/20 dark:border-zinc-800/10 bg-zinc-50/20 dark:bg-zinc-900/5 shadow-none flex flex-row gap-3.5 animate-pulse select-none"
+        >
+          {/* 左侧图标占位 */}
+          <div className="w-8 h-8 rounded-lg bg-zinc-200 dark:bg-zinc-850/30 shrink-0" />
+          
+          {/* 中间文本占位 */}
+          <div className="flex-1 space-y-2">
+            <div className="flex justify-between items-center gap-4">
+              <div className="h-3.5 bg-zinc-200 dark:bg-zinc-800 rounded w-1/3" />
+              <div className="h-2 bg-zinc-200 dark:bg-zinc-850/30 rounded w-1/4" />
+            </div>
+            <div className="h-2.5 bg-zinc-200 dark:bg-zinc-800 rounded w-full" />
+            <div className="h-2.5 bg-zinc-200 dark:bg-zinc-800 rounded w-5/6" />
+          </div>
+        </Card>
+      ))}
+    </div>
+  );
+}
+
 interface NotificationDrawerProps {
   isOpen: boolean;
   onClose: () => void;
@@ -67,8 +96,13 @@ export default function NotificationDrawer({
   const [page, setPage] = useState(1);
   const [hasMore, setHasMore] = useState(true);
   const [actionLoadingMap, setActionLoadingMap] = useState<Record<number, boolean>>({});
+  const [activeTab, setActiveTab] = useState<"all" | "unread">("all");
 
   const drawerRef = useRef<HTMLDivElement>(null);
+
+  const filteredNotifications = activeTab === "all"
+    ? notifications
+    : notifications.filter((n) => !n.isRead);
 
   // 监听 Drawer 开关，开启时自动加载首屏
   useEffect(() => {
@@ -294,31 +328,75 @@ export default function NotificationDrawer({
           </div>
         </div>
 
+        {/* Tab 导航区域 */}
+        <div className="flex border-b border-zinc-200/50 dark:border-zinc-800/40 px-6 bg-zinc-50/20 dark:bg-zinc-900/10 shrink-0">
+          <button
+            onClick={() => setActiveTab("all")}
+            className={cn(
+              "py-3 text-xs font-semibold relative transition-colors focus:outline-none cursor-pointer mr-6",
+              activeTab === "all"
+                ? "text-indigo-650 dark:text-indigo-400 font-bold"
+                : "text-zinc-550 dark:text-zinc-500 hover:text-zinc-800 dark:hover:text-zinc-300"
+            )}
+          >
+            全部通知
+            {activeTab === "all" && (
+              <span className="absolute bottom-0 left-0 right-0 h-[2px] bg-indigo-500 dark:bg-indigo-600 rounded-full" />
+            )}
+          </button>
+          <button
+            onClick={() => setActiveTab("unread")}
+            className={cn(
+              "py-3 text-xs font-semibold relative transition-colors focus:outline-none cursor-pointer flex items-center gap-1.5",
+              activeTab === "unread"
+                ? "text-indigo-650 dark:text-indigo-400 font-bold"
+                : "text-zinc-550 dark:text-zinc-500 hover:text-zinc-800 dark:hover:text-zinc-300"
+            )}
+          >
+            未读通知
+            {notifications.some((n) => !n.isRead) && (
+              <span className="w-1.5 h-1.5 rounded-full bg-red-500 animate-pulse" />
+            )}
+            {activeTab === "unread" && (
+              <span className="absolute bottom-0 left-0 right-0 h-[2px] bg-indigo-500 dark:bg-indigo-600 rounded-full" />
+            )}
+          </button>
+        </div>
+
         {/* 列表滚动区 */}
         <div className="flex-1 overflow-y-auto px-4 py-4 space-y-3 custom-scrollbar">
-          {notifications.length === 0 && !loading ? (
-            <div className="flex flex-col items-center justify-center py-20 text-center space-y-3">
-              <div className="w-12 h-12 rounded-full bg-zinc-50 dark:bg-zinc-900 flex items-center justify-center text-zinc-400 dark:text-zinc-500 border border-zinc-200/50 dark:border-zinc-800/40">
-                <Bell className="w-6 h-6" />
+          {filteredNotifications.length === 0 && !loading ? (
+            <div className="flex flex-col items-center justify-center py-24 text-center space-y-4 animate-[fadeIn_0.2s_ease-out]">
+              <div className="w-14 h-14 rounded-full bg-zinc-50/80 dark:bg-zinc-900/50 flex items-center justify-center text-zinc-400 dark:text-zinc-500 border border-zinc-200/40 dark:border-zinc-800/30 shadow-xs">
+                <Bell className="w-6 h-6 stroke-[1.5]" />
               </div>
-              <p className="text-sm text-zinc-400 dark:text-zinc-500">当前没有收到系统通知</p>
+              <div className="space-y-1.5 px-8">
+                <p className="text-sm font-semibold text-zinc-700 dark:text-zinc-300">
+                  {activeTab === "all" ? "暂无系统通知" : "没有未读通知"}
+                </p>
+                <p className="text-xs text-zinc-400 dark:text-zinc-500 leading-relaxed max-w-[280px] mx-auto">
+                  {activeTab === "all" 
+                    ? "当系统有新评论、点赞或友链申请时，会在此收到通知。" 
+                    : "所有消息处理完毕，去看看其他模块吧。"}
+                </p>
+              </div>
             </div>
           ) : (
             <>
-              {notifications.map((n) => (
+              {filteredNotifications.map((n) => (
                 <Card
                   key={n.id}
                   onClick={() => handleRedirect(n)}
                   className={cn(
-                    "group relative p-4 rounded-xl border transition-all duration-300 cursor-pointer flex flex-row gap-3.5 shadow-none",
+                    "group relative p-4 rounded-xl border transition-all duration-250 cursor-pointer flex flex-row gap-3.5 shadow-none select-none",
                     n.isRead
-                      ? "bg-zinc-50/30 hover:bg-zinc-50/50 dark:bg-zinc-900/10 dark:hover:bg-zinc-900/20 border-zinc-200/30 dark:border-zinc-800/20 text-zinc-500 dark:text-zinc-450"
-                      : "bg-indigo-50/40 hover:bg-indigo-50/60 dark:bg-indigo-950/10 dark:hover:bg-indigo-950/15 border-indigo-100 dark:border-indigo-900/30 text-zinc-850 dark:text-zinc-200 shadow-[0_2px_12px_rgba(99,102,241,0.03)]"
+                      ? "bg-zinc-50/20 hover:bg-zinc-50/50 dark:bg-zinc-900/5 dark:hover:bg-zinc-900/10 border-zinc-200/30 dark:border-zinc-800/10 text-zinc-500 dark:text-zinc-450 hover:-translate-y-0.5 hover:shadow-xs"
+                      : "bg-indigo-50/20 hover:bg-indigo-50/45 dark:bg-indigo-950/5 dark:hover:bg-indigo-950/10 border-indigo-100/60 dark:border-indigo-900/20 text-zinc-850 dark:text-zinc-200 shadow-[0_2px_12px_rgba(99,102,241,0.02)] hover:-translate-y-0.5 hover:shadow-[0_4px_16px_rgba(99,102,241,0.06)]"
                   )}
                 >
                   {/* 未读状态下的左侧装饰条 */}
                   {!n.isRead && (
-                    <div className="absolute left-0 top-3 bottom-3 w-[3px] rounded-r bg-indigo-500 dark:bg-indigo-600" />
+                    <div className="absolute left-0 top-3.5 bottom-3.5 w-[3.5px] rounded-r-md bg-indigo-500 dark:bg-indigo-400" />
                   )}
 
                   {/* 图标 */}
@@ -348,7 +426,7 @@ export default function NotificationDrawer({
                   </div>
 
                   {/* 右上角快捷删除 */}
-                  <div className="flex flex-col justify-between items-end opacity-0 group-hover:opacity-100 transition-opacity shrink-0">
+                  <div className="flex flex-col justify-between items-end opacity-0 translate-x-1.5 group-hover:opacity-100 group-hover:translate-x-0 transition-all duration-200 shrink-0">
                     <Tooltip delay={500}>
                       <Button
                         size="sm"
@@ -406,11 +484,8 @@ export default function NotificationDrawer({
             </>
           )}
 
-          {loading && notifications.length === 0 && (
-            <div className="flex flex-col items-center justify-center py-20 text-indigo-500 dark:text-indigo-400 space-y-2">
-              <Loader2 className="w-8 h-8 animate-spin" />
-              <p className="text-xs text-zinc-400 dark:text-zinc-500">正在获取最新通知列表...</p>
-            </div>
+          {loading && filteredNotifications.length === 0 && (
+            <NotificationSkeleton />
           )}
         </div>
       </div>
