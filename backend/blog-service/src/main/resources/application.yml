@@ -7,9 +7,6 @@ spring:
   
   config:
     import:
-      # 加载 .env 环境变量文件（兼容不同 IDE 工作目录，optional 表示文件不存在时静默跳过）
-      - optional:file:.env[.properties]
-      - optional:file:../../.env[.properties]
       - classpath:application-database.yml
       - classpath:application-routes.yml
       - classpath:application-redis.yml

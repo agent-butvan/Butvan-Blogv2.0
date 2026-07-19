@@ -9,6 +9,7 @@ import org.springframework.data.jpa.repository.config.EnableJpaRepositories;
 import org.springframework.scheduling.annotation.EnableScheduling;
 import java.util.TimeZone;
 
+import com.butvan.blog.common.utils.DotEnvLoader;
 import com.butvan.blog.common.properties.WeiXinProperties;
 import com.butvan.blog.common.properties.StorageProperties;
 import com.butvan.blog.common.properties.SecurityProperties;
@@ -27,6 +28,8 @@ public class BlogApplication {
     }
 
     public static void main(String[] args) {
+        // 加载项目根目录的 .env 文件（本地开发生效，生产环境自动跳过）
+        DotEnvLoader.load();
         SpringApplication.run(BlogApplication.class, args);
     }
 }
