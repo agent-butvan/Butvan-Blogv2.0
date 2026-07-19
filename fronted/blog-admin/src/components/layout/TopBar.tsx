@@ -290,30 +290,32 @@ export default function TopBar() {
         </button>
 
         {/* 消息通知侧滑微件 */}
-        {unreadCount > 0 ? (
-          <Badge
-            content={unreadCount > 99 ? "99+" : String(unreadCount)}
-            color="danger"
-            size="sm"
-            className="font-bold border-none"
-          >
+        <div className="relative flex items-center justify-center">
+          {unreadCount > 0 ? (
+            <Badge
+              content={unreadCount > 99 ? "99+" : String(unreadCount)}
+              color="danger"
+              size="sm"
+              className="font-bold border-none"
+            >
+              <button
+                onClick={() => setDrawerOpen(true)}
+                className="p-1.5 rounded-md hover:bg-zinc-100 dark:hover:bg-zinc-800 transition-colors relative cursor-pointer text-indigo-550 dark:text-indigo-400"
+                title="通知中心"
+              >
+                <Bell size={16} className="animate-pulse" />
+              </button>
+            </Badge>
+          ) : (
             <button
               onClick={() => setDrawerOpen(true)}
-              className="p-1.5 rounded-md hover:bg-zinc-100 dark:hover:bg-zinc-800 transition-colors relative cursor-pointer text-indigo-550 dark:text-indigo-400"
+              className="p-1.5 rounded-md text-zinc-500 hover:bg-zinc-100 dark:hover:bg-zinc-800 hover:text-zinc-800 dark:text-zinc-400 dark:hover:text-zinc-200 transition-colors relative cursor-pointer"
               title="通知中心"
             >
-              <Bell size={16} className="animate-pulse" />
+              <Bell size={16} />
             </button>
-          </Badge>
-        ) : (
-          <button
-            onClick={() => setDrawerOpen(true)}
-            className="p-1.5 rounded-md text-zinc-500 hover:bg-zinc-100 dark:hover:bg-zinc-800 hover:text-zinc-800 dark:text-zinc-400 dark:hover:text-zinc-200 transition-colors relative cursor-pointer"
-            title="通知中心"
-          >
-            <Bell size={16} />
-          </button>
-        )}
+          )}
+        </div>
 
         {/* 分割线 */}
         <div className="h-4 w-px bg-zinc-200 dark:bg-zinc-800 mx-1.5" />
