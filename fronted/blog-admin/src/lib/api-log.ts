@@ -1,6 +1,6 @@
 import apiClient from "./api";
 import type { ApiResponse, PageResult } from "@/types/common";
-import type { ApiLogItem, ApiLogQuery } from "@/types/api-log";
+import type { ApiLogItem, ApiLogQuery, LogArchiveItem } from "@/types/api-log";
 
 /**
  * 分页获取 API 日志列表 (GET /admin/api-logs)

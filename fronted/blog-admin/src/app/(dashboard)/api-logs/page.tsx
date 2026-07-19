@@ -9,7 +9,9 @@ import {
   X,
   AlertTriangle,
   Download,
-  FileArchive
+  FileArchive,
+  Filter,
+  RotateCcw
 } from "lucide-react";
 import { cn, SearchField } from "@heroui/react";
 import {
@@ -28,6 +30,9 @@ export default function ApiLogsPage() {
   const [total, setTotal] = useState(0);
   const [page, setPage] = useState(1);
   const [keyword, setKeyword] = useState("");
+  const [method, setMethod] = useState("");
+  const [minCost, setMinCost] = useState<string>("");
+  const [maxCost, setMaxCost] = useState<string>("");
   const [loading, setLoading] = useState(true);
 
   // 选项卡状态与归档包数据
@@ -100,6 +105,9 @@ export default function ApiLogsPage() {
         page,
         size: pageSize,
         keyword: keyword || undefined,
+        method: method || undefined,
+        minCost: minCost !== "" ? Number(minCost) : undefined,
+        maxCost: maxCost !== "" ? Number(maxCost) : undefined,
       });
       setLogs(data.records || []);
       setTotal(data.total);
@@ -110,7 +118,7 @@ export default function ApiLogsPage() {
     } finally {
       setLoading(false);
     }
-  }, [page, keyword]);
+  }, [page, keyword, method, minCost, maxCost]);
 
   useEffect(() => {
     if (activeTab === "logs") {
@@ -221,19 +229,79 @@ export default function ApiLogsPage() {
 
       {activeTab === "logs" ? (
         <>
-          {/* 搜索控制栏 */}
-          <div className="flex flex-wrap items-center gap-3">
-            <SearchField
-              value={keyword}
-              onChange={(value) => { setKeyword(value); setPage(1); }}
-              className="w-full sm:max-w-xs"
-            >
-              <SearchField.Group>
-                <SearchField.SearchIcon />
-                <SearchField.Input placeholder="检索接口名称、IP、请求地址..." />
-                <SearchField.ClearButton />
-              </SearchField.Group>
-            </SearchField>
+          {/* 搜索与筛选控制栏 */}
+          <div className="flex flex-wrap items-center justify-between gap-3 bg-zinc-50/50 dark:bg-zinc-900/10 p-3.5 rounded-2xl border border-zinc-200/40 dark:border-zinc-800/40 select-none">
+            <div className="flex flex-wrap items-center gap-3 w-full sm:w-auto">
+              <SearchField
+                value={keyword}
+                onChange={(value) => { setKeyword(value); setPage(1); }}
+                className="w-full sm:max-w-xs"
+              >
+                <SearchField.Group>
+                  <SearchField.SearchIcon />
+                  <SearchField.Input placeholder="检索接口名称、IP、请求地址..." />
+                  <SearchField.ClearButton />
+                </SearchField.Group>
+              </SearchField>
+
+              {/* 请求方式筛选 */}
+              <div className="flex h-9 items-center gap-1.5 px-3 rounded-xl border border-zinc-200/60 dark:border-zinc-800 bg-white dark:bg-zinc-950 text-xs text-zinc-650 dark:text-zinc-350">
+                <Filter size={12} className="text-zinc-400 dark:text-zinc-500 shrink-0" />
+                <select
+                  value={method}
+                  onChange={(e) => { setMethod(e.target.value); setPage(1); }}
+                  className="border-none bg-transparent p-0 pr-1 text-xs font-bold text-zinc-700 dark:text-zinc-300 outline-hidden cursor-pointer focus:ring-0 leading-normal"
+                >
+                  <option value="">全部请求方式</option>
+                  <option value="GET">GET</option>
+                  <option value="POST">POST</option>
+                  <option value="PUT">PUT</option>
+                  <option value="DELETE">DELETE</option>
+                </select>
+              </div>
+
+              {/* 耗时区间筛选 */}
+              <div className="flex items-center gap-1.5 text-xs text-zinc-500">
+                <div className="flex h-9 items-center px-3 rounded-xl border border-zinc-200/60 dark:border-zinc-800 bg-white dark:bg-zinc-950 max-w-[100px]">
+                  <input
+                    type="number"
+                    value={minCost}
+                    onChange={(e) => { setMinCost(e.target.value); setPage(1); }}
+                    placeholder="最小耗时"
+                    className="w-full border-none bg-transparent p-0 text-xs font-semibold text-zinc-750 dark:text-zinc-300 outline-hidden focus:ring-0 font-mono"
+                  />
+                  {minCost && <span className="text-[9px] text-zinc-400 dark:text-zinc-500 ml-1">ms</span>}
+                </div>
+                <span className="text-zinc-400">-</span>
+                <div className="flex h-9 items-center px-3 rounded-xl border border-zinc-200/60 dark:border-zinc-800 bg-white dark:bg-zinc-950 max-w-[100px]">
+                  <input
+                    type="number"
+                    value={maxCost}
+                    onChange={(e) => { setMaxCost(e.target.value); setPage(1); }}
+                    placeholder="最大耗时"
+                    className="w-full border-none bg-transparent p-0 text-xs font-semibold text-zinc-755 dark:text-zinc-300 outline-hidden focus:ring-0 font-mono"
+                  />
+                  {maxCost && <span className="text-[9px] text-zinc-400 dark:text-zinc-500 ml-1">ms</span>}
+                </div>
+              </div>
+            </div>
+
+            {/* 重置筛选按钮 */}
+            {(keyword || method || minCost || maxCost) && (
+              <button
+                onClick={() => {
+                  setKeyword("");
+                  setMethod("");
+                  setMinCost("");
+                  setMaxCost("");
+                  setPage(1);
+                }}
+                className="flex items-center gap-1.5 h-9 px-3 rounded-xl text-xs font-bold bg-zinc-100 hover:bg-zinc-200 dark:bg-zinc-850 dark:hover:bg-zinc-800 text-zinc-650 dark:text-zinc-300 border border-zinc-200/60 dark:border-zinc-800 active:scale-95 transition-all cursor-pointer w-full sm:w-auto justify-center"
+              >
+                <RotateCcw size={12} />
+                <span>重置筛选</span>
+              </button>
+            )}
           </div>
 
           {/* 数据日志核心表格 */}

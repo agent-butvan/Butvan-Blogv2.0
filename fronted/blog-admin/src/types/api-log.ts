@@ -18,6 +18,9 @@ export interface ApiLogQuery {
   page?: number;
   size?: number;
   keyword?: string;
+  method?: string;
+  minCost?: number;
+  maxCost?: number;
 }
 
 /**

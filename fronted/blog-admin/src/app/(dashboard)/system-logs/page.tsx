@@ -8,19 +8,66 @@ import {
   Trash2, 
   Search, 
   Loader2, 
-  AlertCircle 
+  AlertCircle,
+  Filter,
+  RotateCcw,
+  X
 } from "lucide-react";
 import { cn } from "@heroui/react";
+
+/**
+ * 文本关键字高亮辅助函数
+ */
+const highlightText = (text: string, search: string, useRegex: boolean) => {
+  if (!search.trim()) return text;
+  try {
+    let regex: RegExp;
+    if (useRegex) {
+      regex = new RegExp(`(${search})`, "gi");
+    } else {
+      const escaped = search.replace(/[-\/\\^$*+?.()|[\]{}]/g, '\\$&');
+      regex = new RegExp(`(${escaped})`, "gi");
+    }
+    const parts = text.split(regex);
+    return (
+      <>
+        {parts.map((part, idx) => 
+          regex.test(part) ? (
+            <mark key={idx} className="bg-yellow-500/35 text-yellow-100 px-0.5 rounded font-semibold font-mono">
+              {part}
+            </mark>
+          ) : (
+            part
+          )
+        )}
+      </>
+    );
+  } catch {
+    return text;
+  }
+};
 
 export default function SystemLogsPage() {
   const [logs, setLogs] = useState<string[]>([]);
   const [wsStatus, setWsStatus] = useState<"connecting" | "open" | "closed">("connecting");
   const [levelFilter, setLevelFilter] = useState<"ALL" | "INFO" | "WARN" | "ERROR" | "DEBUG">("ALL");
   const [keyword, setKeyword] = useState("");
+  const [excludeKeyword, setExcludeKeyword] = useState("");
+  const [threadFilter, setThreadFilter] = useState("");
+  const [classFilter, setClassFilter] = useState("");
+  const [isRegex, setIsRegex] = useState(false);
+  const [exceptionsOnly, setExceptionsOnly] = useState(false);
+  const [highlightKeyword, setHighlightKeyword] = useState(true);
+  const [maxLines, setMaxLines] = useState<number>(500);
   const [isLocked, setIsLocked] = useState(false); // 是否锁定滚动（暂停自动滚底）
   
   const terminalRef = useRef<HTMLDivElement>(null);
   const wsRef = useRef<WebSocket | null>(null);
+  const maxLinesRef = useRef<number>(500);
+
+  useEffect(() => {
+    maxLinesRef.current = maxLines;
+  }, [maxLines]);
 
   // 1. 初始化 WebSocket 日志监听 (连接标识包含 system- 以便后端过滤路由)
   useEffect(() => {
@@ -53,9 +100,11 @@ export default function SystemLogsPage() {
             const rawLine = payload.data;
             setLogs((prev) => {
               const next = [...prev, rawLine];
-              // 内存安全上限裁剪：保留最新的 500 行，防浏览器内存溢出卡死
-              return next.slice(-500);
+              // 内存安全上限裁剪
+              return next.slice(-maxLinesRef.current);
             });
+          } else if (payload.type === "system-log-history" && Array.isArray(payload.data)) {
+            setLogs(payload.data.slice(-maxLinesRef.current));
           }
         } catch {}
       };
@@ -100,6 +149,8 @@ export default function SystemLogsPage() {
     else if (isError) lineClass = "text-rose-400 font-bold";
     else if (isDebug) lineClass = "text-cyan-400";
 
+    const content = highlightKeyword ? highlightText(line, keyword, isRegex) : line;
+
     return (
       <div 
         key={index} 
@@ -111,10 +162,10 @@ export default function SystemLogsPage() {
           isDebug ? "border-cyan-500/30" : "border-zinc-800"
         )}
       >
-        <span className={lineClass}>{line}</span>
+        <span className={lineClass}>{content}</span>
       </div>
     );
-  }, []);
+  }, [keyword, isRegex, highlightKeyword]);
 
   // 4. 对日志进行层级和关键字搜索过滤
   const filteredLogs = logs.filter((line) => {
@@ -123,9 +174,35 @@ export default function SystemLogsPage() {
       const regex = new RegExp(`\\b${levelFilter}\\b`, "i");
       if (!regex.test(line)) return false;
     }
-    // 关键字筛选
+    // 排除关键字筛选
+    if (excludeKeyword.trim()) {
+      if (line.toLowerCase().includes(excludeKeyword.toLowerCase())) return false;
+    }
+    // 线程名称筛选
+    if (threadFilter.trim()) {
+      if (!line.toLowerCase().includes(threadFilter.toLowerCase())) return false;
+    }
+    // 类名/Logger 筛选
+    if (classFilter.trim()) {
+      if (!line.toLowerCase().includes(classFilter.toLowerCase())) return false;
+    }
+    // 仅异常筛选 (包含 Exception/Error/Failed/堆栈信息)
+    if (exceptionsOnly) {
+      const hasException = /exception|error|runtimeexception|failed|nested exception|at\s+[\w\.\$]+\([\w\.\$]+:\d+\)/i.test(line);
+      if (!hasException) return false;
+    }
+    // 关键字/正则筛选
     if (keyword.trim()) {
-      if (!line.toLowerCase().includes(keyword.toLowerCase())) return false;
+      if (isRegex) {
+        try {
+          const regex = new RegExp(keyword, "i");
+          if (!regex.test(line)) return false;
+        } catch {
+          return false;
+        }
+      } else {
+        if (!line.toLowerCase().includes(keyword.toLowerCase())) return false;
+      }
     }
     return true;
   });
@@ -167,70 +244,189 @@ export default function SystemLogsPage() {
         </div>
       </div>
 
-      {/* 控制工具栏区 */}
-      <div className="flex flex-wrap items-center justify-between gap-3 bg-zinc-50 dark:bg-zinc-900/30 p-3 rounded-2xl border border-zinc-200/40 dark:border-zinc-800/40 select-none">
-        <div className="flex flex-wrap items-center gap-2">
-          {/* 日志层级过滤 Pills */}
-          {(["ALL", "INFO", "WARN", "ERROR", "DEBUG"] as const).map((lvl) => (
+      {/* 极客日志控制工具栏 */}
+      <div className="bg-zinc-50 dark:bg-zinc-900/10 p-4 rounded-2xl border border-zinc-200/40 dark:border-zinc-800/40 space-y-3.5 select-none text-xs">
+        {/* 第一行：状态过滤 Pills + 基本操作 */}
+        <div className="flex flex-wrap items-center justify-between gap-3">
+          <div className="flex flex-wrap items-center gap-2">
+            {/* 日志层级过滤 Pills */}
+            {(["ALL", "INFO", "WARN", "ERROR", "DEBUG"] as const).map((lvl) => (
+              <button
+                key={lvl}
+                onClick={() => setLevelFilter(lvl)}
+                className={cn(
+                  "px-3 py-1 rounded-xl text-[10px] font-bold tracking-wider font-mono cursor-pointer transition-all active:scale-95 border",
+                  levelFilter === lvl
+                    ? lvl === "ERROR" ? "bg-rose-500 border-rose-500 text-white" :
+                      lvl === "WARN" ? "bg-amber-500 border-amber-500 text-white" :
+                      lvl === "INFO" ? "bg-emerald-500 border-emerald-500 text-white" :
+                      lvl === "DEBUG" ? "bg-cyan-500 border-cyan-500 text-white" :
+                      "bg-primary border-primary text-white"
+                    : "bg-white dark:bg-zinc-850 text-zinc-500 dark:text-zinc-400 border-zinc-200/60 dark:border-zinc-800 hover:bg-zinc-100 dark:hover:bg-zinc-800"
+                )}
+              >
+                {lvl}
+              </button>
+            ))}
+          </div>
+
+          <div className="flex items-center gap-2.5">
+            {/* 最大展示行数选择 */}
+            <div className="flex h-8 items-center gap-1.5 px-2.5 rounded-xl border border-zinc-200/60 dark:border-zinc-800 bg-white dark:bg-zinc-950 text-[11px] text-zinc-500">
+              <span className="font-medium">上限</span>
+              <select
+                value={maxLines}
+                onChange={(e) => setMaxLines(Number(e.target.value))}
+                className="border-none bg-transparent p-0 pr-1 text-[11px] font-bold text-zinc-700 dark:text-zinc-300 outline-hidden cursor-pointer focus:ring-0 leading-normal font-mono"
+              >
+                <option value={100}>100 行</option>
+                <option value={200}>200 行</option>
+                <option value={500}>500 行</option>
+                <option value={1000}>1000 行</option>
+              </select>
+            </div>
+
+            {/* 实时滚动锁定切换 */}
             <button
-              key={lvl}
-              onClick={() => setLevelFilter(lvl)}
+              onClick={() => setIsLocked(!isLocked)}
               className={cn(
-                "px-3 py-1 rounded-xl text-[10px] font-bold tracking-wider font-mono cursor-pointer transition-all active:scale-95 border",
-                levelFilter === lvl
-                  ? lvl === "ERROR" ? "bg-rose-500 border-rose-500 text-white" :
-                    lvl === "WARN" ? "bg-amber-500 border-amber-500 text-white" :
-                    lvl === "INFO" ? "bg-emerald-500 border-emerald-500 text-white" :
-                    lvl === "DEBUG" ? "bg-cyan-500 border-cyan-500 text-white" :
-                    "bg-primary border-primary text-white"
-                  : "bg-white dark:bg-zinc-850 text-zinc-500 dark:text-zinc-400 border-zinc-200/60 dark:border-zinc-800 hover:bg-zinc-100 dark:hover:bg-zinc-800"
+                "flex items-center gap-1.5 h-8 px-3 rounded-xl text-[11px] font-bold transition-all cursor-pointer border active:scale-95",
+                isLocked
+                  ? "bg-amber-500/10 border-amber-500/20 text-amber-600 hover:bg-amber-500/20"
+                  : "bg-white dark:bg-zinc-850 hover:bg-zinc-100 dark:hover:bg-zinc-800 text-zinc-650 dark:text-zinc-350 border-zinc-200/60 dark:border-zinc-800"
               )}
+              title={isLocked ? "点击开启滚屏追踪" : "点击锁定屏幕滚动，便于仔细审查日志"}
             >
-              {lvl}
+              {isLocked ? <Play size={11} className="animate-pulse" /> : <Pause size={11} />}
+              <span>{isLocked ? "开启滚屏" : "锁定滚屏"}</span>
             </button>
-          ))}
+
+            {/* 清理屏幕 */}
+            <button
+              onClick={() => setLogs([])}
+              className="flex items-center gap-1.5 h-8 px-3 rounded-xl text-[11px] font-bold bg-rose-500/10 hover:bg-rose-500 hover:text-white border border-rose-500/25 text-rose-600 dark:text-rose-400 transition-all cursor-pointer active:scale-95"
+              title="一键清空当前屏幕已捕获日志"
+            >
+              <Trash2 size={11} />
+              <span>清屏</span>
+            </button>
+          </div>
         </div>
 
-        <div className="flex items-center gap-2.5">
-          {/* 实时滚动锁定切换 */}
-          <button
-            onClick={() => setIsLocked(!isLocked)}
-            className={cn(
-              "flex items-center gap-1.5 h-8 px-3 rounded-xl text-xs font-bold transition-all cursor-pointer border active:scale-95",
-              isLocked
-                ? "bg-amber-500/10 border-amber-500/20 text-amber-600 hover:bg-amber-500/20"
-                : "bg-white dark:bg-zinc-850 hover:bg-zinc-100 dark:hover:bg-zinc-800 text-zinc-650 dark:text-zinc-350 border-zinc-200/60 dark:border-zinc-800"
-            )}
-            title={isLocked ? "点击开启滚屏追踪" : "点击锁定屏幕滚动，便于仔细审查日志"}
-          >
-            {isLocked ? <Play size={12} className="animate-pulse" /> : <Pause size={12} />}
-            <span>{isLocked ? "开启滚屏" : "锁定滚屏"}</span>
-          </button>
+        {/* 第二行：高级搜索过滤面板（多列紧凑网格） */}
+        <div className="grid grid-cols-1 sm:grid-cols-2 md:grid-cols-4 gap-2.5">
+          {/* 包含关键字 */}
+          <div className="relative">
+            <span className="absolute inset-y-0 left-3 flex items-center text-zinc-400">
+              <Search size={12} />
+            </span>
+            <input
+              type="text"
+              value={keyword}
+              onChange={(e) => setKeyword(e.target.value)}
+              placeholder="检索包含关键字 (大小写不敏感)..."
+              className="w-full h-8.5 pl-8 pr-3 rounded-xl border border-zinc-200/60 dark:border-zinc-800 bg-white dark:bg-zinc-950 text-[11px] font-medium focus:border-primary focus:ring-1 focus:ring-primary/20 transition-all outline-hidden text-neutral-dark dark:text-zinc-100"
+            />
+          </div>
 
-          {/* 清理屏幕 */}
-          <button
-            onClick={() => setLogs([])}
-            className="flex items-center gap-1.5 h-8 px-3 rounded-xl text-xs font-bold bg-rose-500/10 hover:bg-rose-500 hover:text-white border border-rose-500/25 text-rose-600 dark:text-rose-400 transition-all cursor-pointer active:scale-95"
-            title="一键清空当前屏幕已捕获日志"
-          >
-            <Trash2 size={12} />
-            <span>清屏</span>
-          </button>
+          {/* 排除关键字 */}
+          <div className="relative">
+            <span className="absolute inset-y-0 left-3 flex items-center text-rose-400 dark:text-rose-500/80">
+              <X size={12} />
+            </span>
+            <input
+              type="text"
+              value={excludeKeyword}
+              onChange={(e) => setExcludeKeyword(e.target.value)}
+              placeholder="排除关键字 (忽略含该词日志)..."
+              className="w-full h-8.5 pl-8 pr-3 rounded-xl border border-zinc-200/60 dark:border-zinc-800 bg-white dark:bg-zinc-950 text-[11px] font-medium focus:border-primary focus:ring-1 focus:ring-primary/20 transition-all outline-hidden text-neutral-dark dark:text-zinc-100"
+            />
+          </div>
+
+          {/* 线程名称 */}
+          <div className="relative">
+            <span className="absolute inset-y-0 left-3 flex items-center text-zinc-400 font-mono text-[10px]">
+              [T]
+            </span>
+            <input
+              type="text"
+              value={threadFilter}
+              onChange={(e) => setThreadFilter(e.target.value)}
+              placeholder="按线程过滤 (如 main, task-)..."
+              className="w-full h-8.5 pl-8 pr-3 rounded-xl border border-zinc-200/60 dark:border-zinc-800 bg-white dark:bg-zinc-950 text-[11px] font-medium focus:border-primary focus:ring-1 focus:ring-primary/20 transition-all outline-hidden text-neutral-dark dark:text-zinc-100"
+            />
+          </div>
+
+          {/* 类名包名 */}
+          <div className="relative">
+            <span className="absolute inset-y-0 left-3 flex items-center text-zinc-400 font-mono text-[10px]">
+              L:
+            </span>
+            <input
+              type="text"
+              value={classFilter}
+              onChange={(e) => setClassFilter(e.target.value)}
+              placeholder="Logger/包名 (如 ApiLogAspect)..."
+              className="w-full h-8.5 pl-8 pr-3 rounded-xl border border-zinc-200/60 dark:border-zinc-800 bg-white dark:bg-zinc-950 text-[11px] font-medium focus:border-primary focus:ring-1 focus:ring-primary/20 transition-all outline-hidden text-neutral-dark dark:text-zinc-100"
+            />
+          </div>
         </div>
-      </div>
 
-      {/* 搜索过滤条 */}
-      <div className="relative select-none">
-        <span className="absolute inset-y-0 left-3.5 flex items-center text-zinc-400">
-          <Search size={13} />
-        </span>
-        <input
-          type="text"
-          value={keyword}
-          onChange={(e) => setKeyword(e.target.value)}
-          placeholder="过滤控制台输出关键字 (大小写不敏感)..."
-          className="w-full h-9 pl-9 pr-4 rounded-xl border border-zinc-200/60 dark:border-zinc-800 bg-white dark:bg-zinc-950 text-xs font-medium focus:border-primary focus:ring-1 focus:ring-primary/20 transition-all outline-hidden text-neutral-dark dark:text-zinc-100"
-        />
+        {/* 第三行：条件辅助开关 */}
+        <div className="flex flex-wrap items-center justify-between gap-3 pt-1 border-t border-zinc-200/30 dark:border-zinc-800/30 font-mono">
+          <div className="flex flex-wrap items-center gap-4 text-[10.5px] font-semibold text-zinc-550 dark:text-zinc-400">
+            <label className="flex items-center gap-1.5 cursor-pointer select-none">
+              <input
+                type="checkbox"
+                checked={isRegex}
+                onChange={(e) => setIsRegex(e.target.checked)}
+                className="w-3.5 h-3.5 rounded border-zinc-300 dark:border-zinc-700 text-primary focus:ring-primary"
+              />
+              <span>正则匹配</span>
+            </label>
+
+            <label className="flex items-center gap-1.5 cursor-pointer select-none">
+              <input
+                type="checkbox"
+                checked={highlightKeyword}
+                onChange={(e) => setHighlightKeyword(e.target.checked)}
+                className="w-3.5 h-3.5 rounded border-zinc-300 dark:border-zinc-700 text-primary focus:ring-primary"
+              />
+              <span>匹配高亮</span>
+            </label>
+
+            <label className="flex items-center gap-1.5 cursor-pointer select-none">
+              <input
+                type="checkbox"
+                checked={exceptionsOnly}
+                onChange={(e) => setExceptionsOnly(e.target.checked)}
+                className="w-3.5 h-3.5 rounded border-zinc-300 dark:border-zinc-700 text-primary focus:ring-primary"
+              />
+              <span className="text-rose-500 dark:text-rose-400">只看异常 (Exception)</span>
+            </label>
+          </div>
+
+          {/* 重置高级筛选 */}
+          {(keyword || excludeKeyword || threadFilter || classFilter || levelFilter !== "ALL" || isRegex || !highlightKeyword || exceptionsOnly || maxLines !== 500) && (
+            <button
+              onClick={() => {
+                setKeyword("");
+                setExcludeKeyword("");
+                setThreadFilter("");
+                setClassFilter("");
+                setLevelFilter("ALL");
+                setIsRegex(false);
+                setHighlightKeyword(true);
+                setExceptionsOnly(false);
+                setMaxLines(500);
+              }}
+              className="flex items-center gap-1 h-7 px-2.5 rounded-lg bg-zinc-150/70 hover:bg-zinc-200 dark:bg-zinc-800 dark:hover:bg-zinc-750 text-[10.5px] font-bold text-zinc-650 dark:text-zinc-350 border border-zinc-200/50 dark:border-zinc-800 active:scale-95 transition-all cursor-pointer"
+            >
+              <RotateCcw size={10} />
+              <span>重置高级筛选</span>
+            </button>
+          )}
+        </div>
       </div>
 
       {/* 暗黑极客 Terminal 日志容器 */}
