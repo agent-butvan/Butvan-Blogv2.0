@@ -41,9 +41,15 @@ export default function AccountSummary({ collapsed = false, isMobile = false, on
   const [user, setUser] = useState<AuthUser | null>(null);
 
   useEffect(() => {
-    setTimeout(() => {
+    setUser(getUser());
+
+    const handleUserUpdate = () => {
       setUser(getUser());
-    }, 0);
+    };
+    window.addEventListener("user-update", handleUserUpdate);
+    return () => {
+      window.removeEventListener("user-update", handleUserUpdate);
+    };
   }, []);
 
   /**

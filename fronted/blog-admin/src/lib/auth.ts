@@ -45,6 +45,7 @@ export function getToken(): string | null {
 export function setUser(user: AuthUser): void {
   if (typeof window === "undefined") return;
   localStorage.setItem(USER_KEY, JSON.stringify(user));
+  window.dispatchEvent(new Event("user-update"));
 }
 
 /**
