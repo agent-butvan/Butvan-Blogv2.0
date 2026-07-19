@@ -216,6 +216,8 @@ Butvan Blog2.0/                                    # 📦 项目根目录
 │       │   │   │   ├── TabManager.tsx             #         多标签页签管理器（持久化缓存、页签关闭/切换）
 │       │   │   │   ├── MobileHeader.tsx           #         移动端专属顶栏（Logo、滑动菜单触发、页面标题）
 │       │   │   │   └── MobileRightPanel.tsx       #         移动端右侧操作抽屉面板（用户卡片、主题、全屏、登出）
+│       │   │   ├── dashboard/                     #       仪表盘与消息通知组件
+│       │   │   │   └── NotificationDrawer.tsx     #         系统通知侧滑抽屉组件 (新增)
 │       │   │   ├── editor/                        #       编辑器组件
 │       │   │   │   ├── MarkdownEditor.tsx         #         Markdown 富文本编辑器
 │       │   │   │   ├── InitializedMDXEditor.tsx   #         所见即所得 (WYSIWYG) 客户端编辑器组件
@@ -234,8 +236,9 @@ Butvan Blog2.0/                                    # 📦 项目根目录
 │       │   │   ├── article-api.ts                 #       文章、分类、标签相关的 API 请求统一封装
 │       │   │   ├── comments-api.ts                #       评论、审核、快捷回复相关的 API 请求统一封装
 │       │   │   ├── album-api.ts                   #       相册管理 API（CRUD、照片添加/移除/排序）
-│       │   │   └── user-api.ts                    #       用户管理 API（CRUD、启禁用、重置密码、批量操作）
-│       │   └── types/                             #     📐 TypeScript 类型定义（与 blog-client 共享结构）
+│       │   │   ├── user-api.ts                    #       用户管理 API（CRUD、启禁用、重置密码、批量操作）
+│       │   │   └── notification-api.ts            #       系统消息通知管理 API (新增)
+│       │   └── types/                             #     📐 TypeScript 类型定义（与 blog-client 共享，新增 notification.ts）
 │       ├── next.config.ts
 │       ├── postcss.config.mjs
 │       ├── tsconfig.json
