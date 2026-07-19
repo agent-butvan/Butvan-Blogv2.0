@@ -106,19 +106,19 @@ export default function SidebarWidget() {
   if (loading) {
     return (
       <div
-        className="fixed left-5 top-1/2 -translate-y-1/2 z-40 hidden lg:flex flex-col gap-3.5 bg-white/70 dark:bg-zinc-950/70 p-2 rounded-full border border-zinc-200/50 dark:border-zinc-800/60 backdrop-blur-md shadow-xs select-none"
+        className="fixed left-2 md:left-5 top-1/2 -translate-y-1/2 z-40 flex flex-col gap-2.5 md:gap-3.5 bg-white/70 dark:bg-zinc-950/70 p-1.5 md:p-2 rounded-full border border-zinc-200/50 dark:border-zinc-800/60 backdrop-blur-md shadow-xs select-none"
         aria-label="侧边栏菜单加载中"
       >
         {[1, 2, 3].map((i) => (
           <div
             key={i}
-            className="w-9 h-9 rounded-full bg-zinc-200 dark:bg-zinc-800 animate-pulse"
+            className="w-8 h-8 md:w-9 md:h-9 rounded-full bg-zinc-200 dark:bg-zinc-800 animate-pulse"
             aria-hidden="true"
           />
         ))}
         <Separator className="my-1" />
         <div
-          className="w-9 h-9 rounded-full bg-zinc-200 dark:bg-zinc-800 animate-pulse"
+          className="w-8 h-8 md:w-9 md:h-9 rounded-full bg-zinc-200 dark:bg-zinc-800 animate-pulse"
           aria-hidden="true"
         />
       </div>
@@ -130,7 +130,7 @@ export default function SidebarWidget() {
     return (
       <>
         <div
-          className="fixed left-5 top-1/2 -translate-y-1/2 z-40 hidden lg:flex flex-col gap-3.5 bg-white/70 dark:bg-zinc-950/70 p-2 rounded-full border border-zinc-200/50 dark:border-zinc-800/60 backdrop-blur-md shadow-xs select-none"
+          className="fixed left-2 md:left-5 top-1/2 -translate-y-1/2 z-40 flex flex-col gap-2.5 md:gap-3.5 bg-white/70 dark:bg-zinc-950/70 p-1.5 md:p-2 rounded-full border border-zinc-200/50 dark:border-zinc-800/60 backdrop-blur-md shadow-xs select-none"
           aria-label="侧边栏"
         >
           {user ? (
@@ -140,7 +140,7 @@ export default function SidebarWidget() {
                   type="button"
                   aria-label="查看个人信息"
                   onClick={() => setUserInfoModalOpen(true)}
-                  className="w-9 h-9 flex items-center justify-center rounded-full text-zinc-600 dark:text-zinc-300 hover:bg-zinc-100 dark:hover:bg-zinc-800 transition-colors cursor-pointer"
+                  className="w-8 h-8 md:w-9 md:h-9 flex items-center justify-center rounded-full text-zinc-600 dark:text-zinc-300 hover:bg-zinc-100 dark:hover:bg-zinc-800 transition-colors cursor-pointer"
                 >
                   <Avatar size="sm" className="w-6 h-6">
                     {user.avatarUrl ? (
@@ -163,7 +163,7 @@ export default function SidebarWidget() {
                   type="button"
                   aria-label="登录"
                   onClick={() => setLoginModalOpen(true)}
-                  className="w-9 h-9 flex items-center justify-center rounded-full text-zinc-600 dark:text-zinc-300 hover:bg-zinc-100 dark:hover:bg-zinc-800 transition-colors cursor-pointer"
+                  className="w-8 h-8 md:w-9 md:h-9 flex items-center justify-center rounded-full text-zinc-600 dark:text-zinc-300 hover:bg-zinc-100 dark:hover:bg-zinc-800 transition-colors cursor-pointer"
                 >
                   <User size={15} />
                 </button>
@@ -183,7 +183,7 @@ export default function SidebarWidget() {
     <>
       {/* 左侧菜单栏容器（包含菜单项 + 分隔线 + 登录图标） */}
       <nav
-        className="fixed left-5 top-1/2 -translate-y-1/2 z-40 hidden lg:flex flex-col gap-3.5 bg-white/70 dark:bg-zinc-950/70 p-2 rounded-full border border-zinc-200/50 dark:border-zinc-800/60 backdrop-blur-md shadow-xs select-none"
+        className="fixed left-2 md:left-5 top-1/2 -translate-y-1/2 z-40 flex flex-col gap-2.5 md:gap-3.5 bg-white/70 dark:bg-zinc-950/70 p-1.5 md:p-2 rounded-full border border-zinc-200/50 dark:border-zinc-800/60 backdrop-blur-md shadow-xs select-none"
         aria-label="侧边栏导航"
       >
         {/* 动态菜单项 — 使用 Link 直接渲染避免嵌套交互元素，激活态高亮 */}
@@ -197,7 +197,7 @@ export default function SidebarWidget() {
                   href={item.linkUrl || '#'}
                   aria-label={item.title}
                   aria-current={isActive ? 'page' : undefined}
-                  className={`w-9 h-9 flex items-center justify-center rounded-full transition-colors ${
+                  className={`w-8 h-8 md:w-9 md:h-9 flex items-center justify-center rounded-full transition-colors ${
                     isActive
                       ? 'bg-[#727BBA]/15 text-[#727BBA]'
                       : 'text-zinc-500 dark:text-zinc-400 hover:bg-zinc-100 dark:hover:bg-zinc-800'
@@ -224,7 +224,7 @@ export default function SidebarWidget() {
                 type="button"
                 aria-label="查看个人信息"
                 onClick={() => setUserInfoModalOpen(true)}
-                className="w-9 h-9 flex items-center justify-center rounded-full text-zinc-600 dark:text-zinc-300 hover:bg-zinc-100 dark:hover:bg-zinc-800 transition-colors cursor-pointer"
+                className="w-8 h-8 md:w-9 md:h-9 flex items-center justify-center rounded-full text-zinc-600 dark:text-zinc-300 hover:bg-zinc-100 dark:hover:bg-zinc-800 transition-colors cursor-pointer"
               >
                 <Avatar size="sm" className="w-6 h-6">
                   {user.avatarUrl ? (
@@ -247,7 +247,7 @@ export default function SidebarWidget() {
                 type="button"
                 aria-label="登录"
                 onClick={() => setLoginModalOpen(true)}
-                className="w-9 h-9 flex items-center justify-center rounded-full text-zinc-600 dark:text-zinc-300 hover:bg-zinc-100 dark:hover:bg-zinc-800 transition-colors cursor-pointer"
+                className="w-8 h-8 md:w-9 md:h-9 flex items-center justify-center rounded-full text-zinc-600 dark:text-zinc-300 hover:bg-zinc-100 dark:hover:bg-zinc-800 transition-colors cursor-pointer"
               >
                 <User size={15} />
               </button>
