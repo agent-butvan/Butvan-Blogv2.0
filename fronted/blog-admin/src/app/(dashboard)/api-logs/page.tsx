@@ -229,13 +229,14 @@ export default function ApiLogsPage() {
 
       {activeTab === "logs" ? (
         <>
-          {/* 搜索与筛选控制栏 */}
-          <div className="flex flex-wrap items-center justify-between gap-3 bg-zinc-50/50 dark:bg-zinc-900/10 p-3.5 rounded-2xl border border-zinc-200/40 dark:border-zinc-800/40 select-none">
-            <div className="flex flex-wrap items-center gap-3 w-full sm:w-auto">
+          {/* 搜索与筛选控制栏 - 强制同一行展示 */}
+          <div className="flex flex-wrap lg:flex-nowrap items-center justify-between gap-3 bg-zinc-50/50 dark:bg-zinc-900/10 p-3.5 rounded-2xl border border-zinc-200/40 dark:border-zinc-800/40 select-none w-full">
+            <div className="flex flex-wrap sm:flex-nowrap items-center gap-2.5 w-full lg:w-auto">
+              {/* 搜索输入框 */}
               <SearchField
                 value={keyword}
                 onChange={(value) => { setKeyword(value); setPage(1); }}
-                className="w-full sm:max-w-xs"
+                className="w-full sm:w-64 shrink-0"
               >
                 <SearchField.Group>
                   <SearchField.SearchIcon />
@@ -245,8 +246,8 @@ export default function ApiLogsPage() {
               </SearchField>
 
               {/* 请求方式筛选 */}
-              <div className="flex h-9 items-center gap-1.5 px-3 rounded-xl border border-zinc-200/60 dark:border-zinc-800 bg-white dark:bg-zinc-950 text-xs text-zinc-650 dark:text-zinc-350">
-                <Filter size={12} className="text-zinc-400 dark:text-zinc-500 shrink-0" />
+              <div className="flex h-9 items-center gap-1.5 px-3 rounded-xl border border-zinc-200/60 dark:border-zinc-800 bg-white dark:bg-zinc-950 text-xs text-zinc-650 dark:text-zinc-350 shrink-0">
+                <Filter size={12} className="text-zinc-400 dark:text-zinc-550 shrink-0" />
                 <select
                   value={method}
                   onChange={(e) => { setMethod(e.target.value); setPage(1); }}
@@ -261,8 +262,8 @@ export default function ApiLogsPage() {
               </div>
 
               {/* 耗时区间筛选 */}
-              <div className="flex items-center gap-1.5 text-xs text-zinc-500">
-                <div className="flex h-9 items-center px-3 rounded-xl border border-zinc-200/60 dark:border-zinc-800 bg-white dark:bg-zinc-950 max-w-[100px]">
+              <div className="flex items-center gap-1.5 text-xs text-zinc-500 shrink-0">
+                <div className="flex h-9 items-center px-3 rounded-xl border border-zinc-200/60 dark:border-zinc-800 bg-white dark:bg-zinc-950 max-w-[90px]">
                   <input
                     type="number"
                     value={minCost}
@@ -273,7 +274,7 @@ export default function ApiLogsPage() {
                   {minCost && <span className="text-[9px] text-zinc-400 dark:text-zinc-500 ml-1">ms</span>}
                 </div>
                 <span className="text-zinc-400">-</span>
-                <div className="flex h-9 items-center px-3 rounded-xl border border-zinc-200/60 dark:border-zinc-800 bg-white dark:bg-zinc-950 max-w-[100px]">
+                <div className="flex h-9 items-center px-3 rounded-xl border border-zinc-200/60 dark:border-zinc-800 bg-white dark:bg-zinc-950 max-w-[90px]">
                   <input
                     type="number"
                     value={maxCost}
@@ -296,7 +297,7 @@ export default function ApiLogsPage() {
                   setMaxCost("");
                   setPage(1);
                 }}
-                className="flex items-center gap-1.5 h-9 px-3 rounded-xl text-xs font-bold bg-zinc-100 hover:bg-zinc-200 dark:bg-zinc-850 dark:hover:bg-zinc-800 text-zinc-650 dark:text-zinc-300 border border-zinc-200/60 dark:border-zinc-800 active:scale-95 transition-all cursor-pointer w-full sm:w-auto justify-center"
+                className="flex items-center gap-1.5 h-9 px-3 rounded-xl text-xs font-bold bg-zinc-100 hover:bg-zinc-200 dark:bg-zinc-850 dark:hover:bg-zinc-800 text-zinc-650 dark:text-zinc-300 border border-zinc-200/60 dark:border-zinc-800 active:scale-95 transition-all cursor-pointer w-full sm:w-auto justify-center shrink-0"
               >
                 <RotateCcw size={12} />
                 <span>重置筛选</span>
