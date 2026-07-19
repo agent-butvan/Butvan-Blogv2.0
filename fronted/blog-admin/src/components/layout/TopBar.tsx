@@ -17,7 +17,7 @@ import {
 } from "lucide-react";
 import { getUser, logout as clearAuth } from "@/lib/auth";
 import type { AuthUser } from "@/lib/auth";
-import { cn, Badge } from "@heroui/react";
+import { cn } from "@heroui/react";
 import { toast } from "@/lib/toast";
 import { fetchUnreadCount } from "@/lib/notification-api";
 import NotificationDrawer from "@/components/dashboard/NotificationDrawer";
@@ -39,6 +39,19 @@ const BREADCRUMB_MAP: Record<string, string> = {
   "profile": "个人中心",
   "likes": "点赞管理"
 };
+
+/**
+ * 解析头像地址，兼容后端返回的相对上传路径
+ */
+function resolveAvatarUrl(avatarUrl?: string): string {
+  if (!avatarUrl) return "";
+  if (avatarUrl.startsWith("http://") || avatarUrl.startsWith("https://")) {
+    return avatarUrl;
+  }
+  const apiBase = process.env.NEXT_PUBLIC_API_BASE_URL || "http://localhost:8080/api";
+  const host = apiBase.replace(/\/api$/, "");
+  return avatarUrl.startsWith("/") ? `${host}${avatarUrl}` : avatarUrl;
+}
 
 /**
  * 管理后台顶部导航栏
@@ -67,9 +80,15 @@ export default function TopBar() {
   const bellRef = useRef<HTMLDivElement>(null);
 
   useEffect(() => {
-    setTimeout(() => {
+    setUser(getUser());
+
+    const handleUserUpdate = () => {
       setUser(getUser());
-    }, 0);
+    };
+    window.addEventListener("user-update", handleUserUpdate);
+    return () => {
+      window.removeEventListener("user-update", handleUserUpdate);
+    };
   }, []);
 
   // 加载未读通知数及建立 WebSocket 监听
@@ -229,6 +248,7 @@ export default function TopBar() {
   };
 
   const breadcrumbs = getBreadcrumbs();
+  const avatarUrl = resolveAvatarUrl(user?.avatarUrl);
 
   return (
     <>
@@ -290,31 +310,19 @@ export default function TopBar() {
         </button>
 
         {/* 消息通知侧滑微件 */}
-        <div className="relative flex items-center justify-center">
-          {unreadCount > 0 ? (
-            <Badge
-              content={unreadCount > 99 ? "99+" : String(unreadCount)}
-              color="danger"
-              size="sm"
-              className="font-bold border-none"
-            >
-              <button
-                onClick={() => setDrawerOpen(true)}
-                className="p-1.5 rounded-md hover:bg-zinc-100 dark:hover:bg-zinc-800 transition-colors relative cursor-pointer text-indigo-550 dark:text-indigo-400"
-                title="通知中心"
-              >
-                <Bell size={16} className="animate-pulse" />
-              </button>
-            </Badge>
-          ) : (
-            <button
-              onClick={() => setDrawerOpen(true)}
-              className="p-1.5 rounded-md text-zinc-500 hover:bg-zinc-100 dark:hover:bg-zinc-800 hover:text-zinc-800 dark:text-zinc-400 dark:hover:text-zinc-200 transition-colors relative cursor-pointer"
-              title="通知中心"
-            >
-              <Bell size={16} />
-            </button>
-          )}
+        <div className="relative">
+          <button
+            onClick={() => setDrawerOpen(true)}
+            className="p-1.5 rounded-md text-zinc-500 hover:bg-zinc-100 dark:hover:bg-zinc-800 hover:text-zinc-800 dark:text-zinc-400 dark:hover:text-zinc-200 transition-colors relative cursor-pointer"
+            title="通知中心"
+          >
+            <Bell size={16} className={cn(unreadCount > 0 && "animate-pulse text-indigo-500 dark:text-indigo-400")} />
+            {unreadCount > 0 && (
+              <span className="absolute -top-1 -right-1 flex h-4 min-w-4 items-center justify-center rounded-full bg-red-500 px-1 text-[9px] font-bold text-white shadow-lg">
+                {unreadCount > 99 ? "99+" : unreadCount}
+              </span>
+            )}
+          </button>
         </div>
 
         {/* 分割线 */}
@@ -326,9 +334,14 @@ export default function TopBar() {
             onClick={() => setMenuOpen(!menuOpen)}
             className="flex items-center gap-1.5 rounded-lg px-2 py-1 hover:bg-zinc-100 dark:hover:bg-zinc-800 transition-colors cursor-pointer"
           >
-            <div className="flex h-6 w-6 items-center justify-center rounded-full bg-primary text-[11px] font-bold text-white shadow-xs">
-              {user?.nickname?.[0]?.toUpperCase() || "A"}
-            </div>
+            {avatarUrl ? (
+              // eslint-disable-next-line @next/next/no-img-element
+              <img src={avatarUrl} alt="账号头像" className="h-6 w-6 rounded-full object-cover shrink-0" />
+            ) : (
+              <div className="flex h-6 w-6 items-center justify-center rounded-full bg-primary text-[11px] font-bold text-white shadow-xs">
+                {user?.nickname?.[0]?.toUpperCase() || "A"}
+              </div>
+            )}
             <span className="text-xs font-semibold text-zinc-700 dark:text-zinc-400 hidden sm:inline">
               {user?.nickname || "管理员"}
             </span>
@@ -342,11 +355,21 @@ export default function TopBar() {
           </button>
 
           {menuOpen && (
-            <div className="absolute right-0 top-full mt-1.5 w-44 rounded-xl glass-panel py-1 z-50 animate-[fadeIn_0.12s_ease-out] text-left">
+            <div className="absolute right-0 top-full mt-1.5 w-48 rounded-xl border border-zinc-200/50 dark:border-zinc-800/40 bg-white dark:bg-zinc-950 shadow-xl py-1 z-50 animate-[fadeIn_0.12s_ease-out] text-left">
               {/* 用户元数据 */}
-              <div className="px-3 py-1.5 border-b border-zinc-200/40 dark:border-zinc-800/40">
-                <p className="text-xs font-bold text-zinc-800 dark:text-zinc-250 truncate">{user?.nickname}</p>
-                <p className="text-[10px] text-zinc-400 truncate">{user?.username}</p>
+              <div className="px-3 py-2 border-b border-zinc-200/40 dark:border-zinc-800/40 flex items-center gap-2">
+                {avatarUrl ? (
+                  // eslint-disable-next-line @next/next/no-img-element
+                  <img src={avatarUrl} alt="账号头像" className="h-8 w-8 rounded-full object-cover shrink-0" />
+                ) : (
+                  <div className="flex h-8 w-8 items-center justify-center rounded-full bg-primary text-[12px] font-bold text-white shrink-0">
+                    {user?.nickname?.[0]?.toUpperCase() || "A"}
+                  </div>
+                )}
+                <div className="min-w-0 flex flex-col">
+                  <p className="text-xs font-bold text-zinc-800 dark:text-zinc-200 truncate">{user?.nickname || "管理员"}</p>
+                  <p className="text-[10px] text-zinc-550 truncate">{user?.email || user?.username || "未绑定邮箱"}</p>
+                </div>
               </div>
               
               {/* 功能操作项 */}
