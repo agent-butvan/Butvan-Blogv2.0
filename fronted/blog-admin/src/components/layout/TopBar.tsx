@@ -95,11 +95,11 @@ export default function TopBar() {
   useEffect(() => {
     fetchUnreadCount()
       .then((count) => {
-        setUnreadCount(count > 0 ? count : 3);
+        setUnreadCount(count);
       })
       .catch((err) => {
-        console.error("加载未读通知数失败, 降级使用前端写死未读数:", err);
-        setUnreadCount(3);
+        console.error("加载未读通知数失败:", err);
+        setUnreadCount(0);
       });
 
     if (typeof window === "undefined") return;
