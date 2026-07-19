@@ -313,9 +313,9 @@ export default function NotificationDrawer({
               <Button
                 size="sm"
                 onClick={handleReadAll}
-                className="text-[12px] h-7 min-w-0 flex items-center gap-1 text-zinc-650 dark:text-zinc-400 hover:text-indigo-600 dark:hover:text-indigo-400 bg-transparent border-none shadow-none transition-colors px-2 hover:bg-zinc-100/80 dark:hover:bg-zinc-850/60"
+                className="text-[11px] h-7 min-w-0 flex items-center gap-1 bg-indigo-600 dark:bg-indigo-500 hover:bg-indigo-700 dark:hover:bg-indigo-650 text-white font-semibold rounded-lg shadow-sm hover:shadow-md transition-all px-2.5 active:scale-95 border-none"
               >
-                <Check className="w-4 h-4" />
+                <Check className="w-3.5 h-3.5 stroke-[2.5]" />
                 全部已读
               </Button>
             )}
