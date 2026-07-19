@@ -2,7 +2,8 @@
 
 import React, { useState, useEffect } from 'react'
 import Link from 'next/link'
-import { Menu, X, ChevronDown, ArrowUpRight } from 'lucide-react'
+import * as Icons from 'lucide-react'
+import { Menu, X, ChevronDown, ArrowUpRight, HelpCircle } from 'lucide-react'
 import { fetchNavigations } from '@/lib/profile'
 import { resolveImageUrl } from '@/lib/image-url'
 import { useAuth } from '@/contexts/AuthContext'
@@ -13,7 +14,15 @@ interface NavigationItem {
   id: number
   title: string
   linkUrl?: string
+  icon?: string
   children?: NavigationItem[]
+}
+
+/** 动态匹配 Lucide 图标 */
+const getIconComponent = (iconName?: string): Icons.LucideIcon => {
+  if (!iconName) return HelpCircle
+  const IconComponent = (Icons as Record<string, unknown>)[iconName] as Icons.LucideIcon
+  return IconComponent || HelpCircle
 }
 
 interface NavbarProps {
@@ -33,16 +42,20 @@ const resolveAvatarUrl = (avatarUrl?: string | null): string => {
   */
 export default function Navbar({ profile }: NavbarProps) {
   const [navItems, setNavItems] = useState<NavigationItem[] | null>(null)
+  const [sidebarItems, setSidebarItems] = useState<NavigationItem[] | null>(null)
   const [mobileMenuOpen, setMobileMenuOpen] = useState(false)
   const [loginModalOpen, setLoginModalOpen] = useState(false)
 
   // 全局认证状态
   const { user, logout } = useAuth()
 
-  // 拉取顶部导航菜单
+  // 拉取顶部导航和侧边栏快捷导航菜单
   useEffect(() => {
     fetchNavigations('HEADER').then((data) => {
       setNavItems(data || [])
+    })
+    fetchNavigations('SIDEBAR').then((data) => {
+      setSidebarItems(data || [])
     })
   }, [])
 
@@ -199,6 +212,31 @@ export default function Navbar({ profile }: NavbarProps) {
               )
             })}
           </div>
+
+          {/* 移动端额外的侧边栏快捷导航 (从 SIDEBAR 菜单合并过来) */}
+          {sidebarItems && sidebarItems.length > 0 && (
+            <div className="border-t border-zinc-200 dark:border-zinc-900/60 pt-3.5">
+              <span className="text-xs font-bold text-zinc-400 dark:text-zinc-500 uppercase tracking-widest block mb-2.5">
+                快捷功能
+              </span>
+              <div className="grid grid-cols-2 gap-2">
+                {sidebarItems.map((item) => {
+                  const IconComp = getIconComponent(item.icon)
+                  return (
+                    <Link
+                      key={item.id}
+                      href={item.linkUrl || '#'}
+                      onClick={() => setMobileMenuOpen(false)}
+                      className="flex items-center gap-2 p-2.5 rounded-lg bg-zinc-50 dark:bg-zinc-900/40 hover:bg-zinc-100 dark:hover:bg-zinc-900 transition-colors text-xs font-semibold text-zinc-700 dark:text-zinc-350"
+                    >
+                      <IconComp size={14} className="text-[#727BBA]" />
+                      <span className="truncate">{item.title}</span>
+                    </Link>
+                  )
+                })}
+              </div>
+            </div>
+          )}
 
           {/* 移动端登录/注销入口 */}
           <div className="border-t border-zinc-150 dark:border-zinc-900 pt-3.5 flex items-center justify-between">
