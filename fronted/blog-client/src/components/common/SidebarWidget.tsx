@@ -45,6 +45,8 @@ export default function SidebarWidget() {
   const [userInfoModalOpen, setUserInfoModalOpen] = useState(false)
   // 当前路由路径，用于高亮激活菜单项
   const pathname = usePathname()
+  // 移动端折叠菜单开关状态
+  const [isOpen, setIsOpen] = useState(false)
 
   /**
    * 处理登出
@@ -105,23 +107,29 @@ export default function SidebarWidget() {
   // ---- 骨架屏渲染（数据加载中） ----
   if (loading) {
     return (
-      <div
-        className="fixed left-5 top-1/2 -translate-y-1/2 z-40 hidden lg:flex flex-col gap-3.5 bg-white/70 dark:bg-zinc-950/70 p-2 rounded-full border border-zinc-200/50 dark:border-zinc-800/60 backdrop-blur-md shadow-xs select-none"
-        aria-label="侧边栏菜单加载中"
-      >
-        {[1, 2, 3].map((i) => (
+      <>
+        {/* PC 端加载占位 */}
+        <div
+          className="fixed left-5 top-1/2 -translate-y-1/2 z-40 hidden lg:flex flex-col gap-3.5 bg-white/70 dark:bg-zinc-950/70 p-2 rounded-full border border-zinc-200/50 dark:border-zinc-800/60 backdrop-blur-md shadow-xs select-none"
+          aria-label="侧边栏菜单加载中"
+        >
+          {[1, 2, 3].map((i) => (
+            <div
+              key={i}
+              className="w-9 h-9 rounded-full bg-zinc-200 dark:bg-zinc-800 animate-pulse"
+              aria-hidden="true"
+            />
+          ))}
+          <Separator className="my-1" />
           <div
-            key={i}
             className="w-9 h-9 rounded-full bg-zinc-200 dark:bg-zinc-800 animate-pulse"
             aria-hidden="true"
           />
-        ))}
-        <Separator className="my-1" />
-        <div
-          className="w-9 h-9 rounded-full bg-zinc-200 dark:bg-zinc-800 animate-pulse"
-          aria-hidden="true"
-        />
-      </div>
+        </div>
+
+        {/* 移动端加载占位（仅显示单个圆形骨架，极简且不挡屏幕） */}
+        <div className="fixed left-3 top-1/2 -translate-y-1/2 z-40 lg:hidden w-10 h-10 rounded-full bg-zinc-200/70 dark:bg-zinc-850/60 animate-pulse" />
+      </>
     )
   }
 
@@ -129,6 +137,7 @@ export default function SidebarWidget() {
   if (items.length === 0) {
     return (
       <>
+        {/* PC 端空状态 */}
         <div
           className="fixed left-5 top-1/2 -translate-y-1/2 z-40 hidden lg:flex flex-col gap-3.5 bg-white/70 dark:bg-zinc-950/70 p-2 rounded-full border border-zinc-200/50 dark:border-zinc-800/60 backdrop-blur-md shadow-xs select-none"
           aria-label="侧边栏"
@@ -174,6 +183,37 @@ export default function SidebarWidget() {
             </Tooltip>
           )}
         </div>
+
+        {/* 移动端空状态 (仅展示单个圆形登录/头像按钮，绝对不挡屏幕) */}
+        <div className="fixed left-3 top-1/2 -translate-y-1/2 z-40 lg:hidden">
+          {user ? (
+            <button
+              type="button"
+              aria-label="查看个人信息"
+              onClick={() => setUserInfoModalOpen(true)}
+              className="w-10 h-10 flex items-center justify-center rounded-full bg-white/90 dark:bg-zinc-950/90 border border-zinc-200/60 dark:border-zinc-800/85 shadow-md backdrop-blur-md cursor-pointer active:scale-95 transition-transform"
+            >
+              <Avatar size="sm" className="w-6 h-6">
+                {user.avatarUrl ? (
+                  <Avatar.Image src={resolveAvatarUrl(user.avatarUrl)} alt="User avatar" />
+                ) : null}
+                <Avatar.Fallback className="text-[10px] font-bold bg-[#727BBA]/15 text-[#727BBA] flex items-center justify-center">
+                  {(user.nickname || '?').charAt(0).toUpperCase()}
+                </Avatar.Fallback>
+              </Avatar>
+            </button>
+          ) : (
+            <button
+              type="button"
+              aria-label="登录"
+              onClick={() => setLoginModalOpen(true)}
+              className="w-10 h-10 flex items-center justify-center rounded-full bg-white/90 dark:bg-zinc-950/90 border border-zinc-200/60 dark:border-zinc-800/85 shadow-md text-zinc-650 dark:text-zinc-355 backdrop-blur-md cursor-pointer active:scale-95 transition-transform"
+            >
+              <User size={16} />
+            </button>
+          )}
+        </div>
+
         <LoginModal isOpen={loginModalOpen} onClose={() => setLoginModalOpen(false)} />
       </>
     )
@@ -181,7 +221,21 @@ export default function SidebarWidget() {
 
   return (
     <>
-      {/* 左侧菜单栏容器（包含菜单项 + 分隔线 + 登录图标） */}
+      {/* 注入一个 CSS fadeInLeft 动画定义，供移动端侧边栏展开时使用，实现精美流畅的阻尼动画 */}
+      <style dangerouslySetInnerHTML={{ __html: `
+        @keyframes fadeInLeft {
+          from {
+            opacity: 0;
+            transform: translateY(-50%) translateX(-12px);
+          }
+          to {
+            opacity: 1;
+            transform: translateY(-50%) translateX(0);
+          }
+        }
+      ` }} />
+
+      {/* PC 端：侧边菜单栏容器（始终展开） */}
       <nav
         className="fixed left-5 top-1/2 -translate-y-1/2 z-40 hidden lg:flex flex-col gap-3.5 bg-white/70 dark:bg-zinc-950/70 p-2 rounded-full border border-zinc-200/50 dark:border-zinc-800/60 backdrop-blur-md shadow-xs select-none"
         aria-label="侧边栏导航"
@@ -258,6 +312,83 @@ export default function SidebarWidget() {
           </Tooltip>
         )}
       </nav>
+
+      {/* 移动端：自适应折叠菜单栏（仅在 lg 以下屏幕显示，只占用一个圆形按钮的空间，永不挡屏） */}
+      <div className="fixed left-3 top-1/2 -translate-y-1/2 z-45 lg:hidden flex flex-col items-center select-none">
+        {/* 开关触发按钮 */}
+        <button
+          type="button"
+          onClick={() => setIsOpen(!isOpen)}
+          aria-label={isOpen ? "关闭菜单" : "打开菜单"}
+          className="w-10 h-10 flex items-center justify-center rounded-full bg-white/90 dark:bg-zinc-950/90 border border-zinc-200/60 dark:border-zinc-800/85 shadow-md text-zinc-650 dark:text-zinc-300 backdrop-blur-md active:scale-95 transition-all cursor-pointer"
+        >
+          {isOpen ? <Icons.X size={18} /> : <Icons.Menu size={18} />}
+        </button>
+
+        {/* 展开的悬浮快捷菜单面板 */}
+        {isOpen && (
+          <div
+            style={{ animation: 'fadeInLeft 0.22s cubic-bezier(0.16, 1, 0.3, 1) forwards' }}
+            className="absolute left-13 top-1/2 flex flex-col gap-2.5 bg-white/95 dark:bg-zinc-950/95 p-2 rounded-2xl border border-zinc-200/60 dark:border-zinc-800/85 shadow-xl backdrop-blur-md min-w-[48px] items-center z-50"
+          >
+            {items.map((item) => {
+              const IconComp = getIconComponent(item.icon)
+              const isActive = !!(item.linkUrl && pathname === item.linkUrl)
+              return (
+                <Link
+                  key={item.id}
+                  href={item.linkUrl || '#'}
+                  onClick={() => setIsOpen(false)}
+                  aria-label={item.title}
+                  className={`w-9 h-9 flex items-center justify-center rounded-full transition-colors ${
+                    isActive
+                      ? 'bg-[#727BBA]/15 text-[#727BBA]'
+                      : 'text-zinc-500 dark:text-zinc-400 hover:bg-zinc-100 dark:hover:bg-zinc-800'
+                  }`}
+                >
+                  <IconComp size={16} />
+                </Link>
+              )
+            })}
+
+            <Separator className="my-0.5 w-4/5" />
+
+            {/* 登录/个人信息按钮 */}
+            {user ? (
+              <button
+                type="button"
+                aria-label="查看个人信息"
+                onClick={() => {
+                  setUserInfoModalOpen(true);
+                  setIsOpen(false);
+                }}
+                className="w-9 h-9 flex items-center justify-center rounded-full text-zinc-600 dark:text-zinc-300 hover:bg-zinc-100 dark:hover:bg-zinc-800 transition-colors cursor-pointer"
+              >
+                <Avatar size="sm" className="w-6 h-6">
+                  {user.avatarUrl ? (
+                    <Avatar.Image src={resolveAvatarUrl(user.avatarUrl)} alt="User avatar" />
+                  ) : null}
+                  <Avatar.Fallback className="text-[10px] font-bold bg-[#727BBA]/15 text-[#727BBA] flex items-center justify-center">
+                    {(user.nickname || '?').charAt(0).toUpperCase()}
+                  </Avatar.Fallback>
+                </Avatar>
+              </button>
+            ) : (
+              <button
+                type="button"
+                aria-label="登录"
+                onClick={() => {
+                  setLoginModalOpen(true);
+                  setIsOpen(false);
+                }}
+                className="w-9 h-9 flex items-center justify-center rounded-full text-zinc-600 dark:text-zinc-300 hover:bg-zinc-100 dark:hover:bg-zinc-800 transition-colors cursor-pointer"
+              >
+                <User size={16} />
+              </button>
+            )}
+          </div>
+        )}
+      </div>
 
       {/* 登录弹窗 */}
       <LoginModal isOpen={loginModalOpen} onClose={() => setLoginModalOpen(false)} />
