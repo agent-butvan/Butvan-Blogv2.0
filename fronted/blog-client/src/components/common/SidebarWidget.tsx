@@ -127,8 +127,8 @@ export default function SidebarWidget() {
           />
         </div>
 
-        {/* 移动端加载占位（仅显示单个圆形骨架，极简且不挡屏幕） */}
-        <div className="fixed left-3 top-1/2 -translate-y-1/2 z-40 lg:hidden w-10 h-10 rounded-full bg-zinc-200/70 dark:bg-zinc-850/60 animate-pulse" />
+        {/* 移动端加载占位（放置在左上角，极简且不挡屏幕） */}
+        <div className="fixed left-4 top-3 z-40 lg:hidden w-10 h-10 rounded-full bg-zinc-200/70 dark:bg-zinc-850/60 animate-pulse" />
       </>
     )
   }
@@ -184,8 +184,8 @@ export default function SidebarWidget() {
           )}
         </div>
 
-        {/* 移动端空状态 (仅展示单个圆形登录/头像按钮，绝对不挡屏幕) */}
-        <div className="fixed left-3 top-1/2 -translate-y-1/2 z-40 lg:hidden">
+        {/* 移动端空状态 (仅展示单个圆形登录/头像按钮，放置在左上角，绝对不挡屏幕) */}
+        <div className="fixed left-4 top-3 z-40 lg:hidden">
           {user ? (
             <button
               type="button"
@@ -221,16 +221,16 @@ export default function SidebarWidget() {
 
   return (
     <>
-      {/* 注入一个 CSS fadeInLeft 动画定义，供移动端侧边栏展开时使用，实现精美流畅的阻尼动画 */}
+      {/* 注入一个 CSS slideDown 动画定义，供移动端侧边栏从上而下展开时使用 */}
       <style dangerouslySetInnerHTML={{ __html: `
-        @keyframes fadeInLeft {
+        @keyframes slideDown {
           from {
             opacity: 0;
-            transform: translateY(-50%) translateX(-12px);
+            transform: scaleY(0.7) translateY(-20px);
           }
           to {
             opacity: 1;
-            transform: translateY(-50%) translateX(0);
+            transform: scaleY(1) translateY(0);
           }
         }
       ` }} />
@@ -313,8 +313,8 @@ export default function SidebarWidget() {
         )}
       </nav>
 
-      {/* 移动端：自适应折叠菜单栏（仅在 lg 以下屏幕显示，只占用一个圆形按钮的空间，永不挡屏） */}
-      <div className="fixed left-3 top-1/2 -translate-y-1/2 z-45 lg:hidden flex flex-col items-center select-none">
+      {/* 移动端：自适应折叠菜单栏（仅在 lg 以下屏幕显示，只占用一个圆形按钮的空间，永不挡屏，垂直方向向下抽出展开） */}
+      <div className="fixed left-4 top-3 z-45 lg:hidden flex flex-col items-center select-none">
         {/* 开关触发按钮 */}
         <button
           type="button"
@@ -328,8 +328,11 @@ export default function SidebarWidget() {
         {/* 展开的悬浮快捷菜单面板 */}
         {isOpen && (
           <div
-            style={{ animation: 'fadeInLeft 0.22s cubic-bezier(0.16, 1, 0.3, 1) forwards' }}
-            className="absolute left-13 top-1/2 flex flex-col gap-2.5 bg-white/95 dark:bg-zinc-950/95 p-2 rounded-2xl border border-zinc-200/60 dark:border-zinc-800/85 shadow-xl backdrop-blur-md min-w-[48px] items-center z-50"
+            style={{ 
+              animation: 'slideDown 0.25s cubic-bezier(0.16, 1, 0.3, 1) forwards',
+              transformOrigin: 'top center'
+            }}
+            className="absolute left-0 top-12 flex flex-col gap-2.5 bg-white/95 dark:bg-zinc-950/95 p-2 rounded-2xl border border-zinc-200/60 dark:border-zinc-800/85 shadow-xl backdrop-blur-md min-w-[40px] items-center z-50"
           >
             {items.map((item) => {
               const IconComp = getIconComponent(item.icon)
