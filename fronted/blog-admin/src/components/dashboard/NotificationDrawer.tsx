@@ -4,7 +4,7 @@ import React, { useEffect, useState, useRef } from "react";
 import { X, Check, Trash2, MessageSquare, Heart, Link2, UserPlus, Bell, Loader2 } from "lucide-react";
 import type { Notification } from "@/types/notification";
 import { fetchNotifications, markAsRead, markAllAsRead, deleteNotification } from "@/lib/notification-api";
-import { Card, Button, cn } from "@heroui/react";
+import { Card, Button, cn, Tooltip } from "@heroui/react";
 
 const MOCK_NOTIFICATIONS: Notification[] = [
   {
@@ -278,10 +278,8 @@ export default function NotificationDrawer({
             {notifications.some((n) => !n.isRead) && (
               <Button
                 size="sm"
-                variant="light"
                 onClick={handleReadAll}
                 className="text-[12px] h-7 min-w-0 flex items-center gap-1 text-zinc-500 dark:text-zinc-405 hover:text-indigo-600 dark:hover:text-indigo-400 transition-colors px-2"
-                title="一键全部已读"
               >
                 <Check className="w-4 h-4" />
                 全部已读
@@ -310,7 +308,6 @@ export default function NotificationDrawer({
               {notifications.map((n) => (
                 <Card
                   key={n.id}
-                  as="div"
                   onClick={() => handleRedirect(n)}
                   className={cn(
                     "group relative p-4 rounded-xl border transition-all duration-300 cursor-pointer flex flex-row gap-3.5 shadow-none",
@@ -352,36 +349,42 @@ export default function NotificationDrawer({
 
                   {/* 右上角快捷删除 */}
                   <div className="flex flex-col justify-between items-end opacity-0 group-hover:opacity-100 transition-opacity shrink-0">
-                    <Button
-                      size="sm"
-                      isIconOnly
-                      variant="light"
-                      onClick={(e) => handleDelete(n.id, e)}
-                      disabled={actionLoadingMap[n.id]}
-                      className="p-1 min-w-0 w-7 h-7 rounded hover:bg-red-50 dark:hover:bg-red-950/20 text-zinc-400 hover:text-red-500 transition-colors"
-                      title="删除该通知"
-                    >
-                      {actionLoadingMap[n.id] ? (
-                        <Loader2 className="w-3.5 h-3.5 animate-spin" />
-                      ) : (
-                        <Trash2 className="w-3.5 h-3.5" />
-                      )}
-                    </Button>
-                    {!n.isRead && (
+                    <Tooltip delay={500}>
                       <Button
                         size="sm"
                         isIconOnly
-                        variant="light"
-                        onClick={(e) => {
-                          e.stopPropagation();
-                          handleMarkRead(n.id);
-                        }}
-                        disabled={actionLoadingMap[n.id]}
-                        className="p-1 min-w-0 w-7 h-7 rounded hover:bg-emerald-50 dark:hover:bg-emerald-950/20 text-zinc-400 hover:text-emerald-500 transition-colors mt-2"
-                        title="标为已读"
+                        onClick={(e) => handleDelete(n.id, e)}
+                        isDisabled={actionLoadingMap[n.id]}
+                        className="p-1 min-w-0 w-7 h-7 rounded hover:bg-red-50 dark:hover:bg-red-950/20 text-zinc-400 hover:text-red-500 transition-colors"
                       >
-                        <Check className="w-3.5 h-3.5" />
+                        {actionLoadingMap[n.id] ? (
+                          <Loader2 className="w-3.5 h-3.5 animate-spin" />
+                        ) : (
+                          <Trash2 className="w-3.5 h-3.5" />
+                        )}
                       </Button>
+                      <Tooltip.Content>
+                        <p>删除该通知</p>
+                      </Tooltip.Content>
+                    </Tooltip>
+                    {!n.isRead && (
+                      <Tooltip delay={500}>
+                        <Button
+                          size="sm"
+                          isIconOnly
+                          onClick={(e) => {
+                            e.stopPropagation();
+                            handleMarkRead(n.id);
+                          }}
+                          isDisabled={actionLoadingMap[n.id]}
+                          className="p-1 min-w-0 w-7 h-7 rounded hover:bg-emerald-50 dark:hover:bg-emerald-950/20 text-zinc-400 hover:text-emerald-500 transition-colors mt-2"
+                        >
+                          <Check className="w-3.5 h-3.5" />
+                        </Button>
+                        <Tooltip.Content>
+                          <p>标为已读</p>
+                        </Tooltip.Content>
+                      </Tooltip>
                     )}
                   </div>
                 </Card>
