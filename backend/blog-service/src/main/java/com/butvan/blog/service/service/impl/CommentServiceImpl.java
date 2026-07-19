@@ -22,6 +22,7 @@ import com.butvan.blog.service.repository.CommentRepository;
 import com.butvan.blog.service.service.CommentService;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
+import org.springframework.context.ApplicationEventPublisher;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 import java.security.MessageDigest;
@@ -42,6 +43,7 @@ public class CommentServiceImpl implements CommentService {
     private final ArticleRepository articleRepository;
     private final UserRepository userRepository;
     private final CommentBanRepository commentBanRepository;
+    private final ApplicationEventPublisher eventPublisher;
 
     @Override
     public List<CommentVO> listCommentsByArticleId(Long articleId, String viewerName, String viewerEmail) {
@@ -234,6 +236,23 @@ public class CommentServiceImpl implements CommentService {
         }
 
         boolean isAuthor = (saved.getIsAuthor() != null && saved.getIsAuthor()) || (saved.getUser() != null && "ADMIN".equalsIgnoreCase(saved.getUser().getRole()));
+
+        // 若不是管理员发布的评论，则触发事件通知
+        if (!isAuthor) {
+            String excerpt = saved.getContent();
+            if (excerpt.length() > 50) {
+                excerpt = excerpt.substring(0, 47) + "...";
+            }
+            eventPublisher.publishEvent(new com.butvan.blog.service.event.NotificationEvents.CommentCreatedEvent(
+                    this,
+                    getDisplayNickname(saved.getUser(), saved.getVisitorName()),
+                    articleId,
+                    article.getTitle(),
+                    excerpt,
+                    saved.getId()
+            ));
+        }
+
         return CommentVO.builder()
                 .id(saved.getId())
                 .articleId(saved.getArticle().getId())

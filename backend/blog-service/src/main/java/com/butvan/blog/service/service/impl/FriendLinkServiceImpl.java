@@ -8,6 +8,7 @@ import com.butvan.blog.service.repository.FriendLinkRepository;
 import com.butvan.blog.service.service.FriendLinkService;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
+import org.springframework.context.ApplicationEventPublisher;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 
@@ -24,6 +25,7 @@ import java.util.stream.Collectors;
 public class FriendLinkServiceImpl implements FriendLinkService {
 
     private final FriendLinkRepository friendLinkRepository;
+    private final ApplicationEventPublisher eventPublisher;
 
     @Override
     public List<FriendLinkVO> getApprovedFriendLinks() {
@@ -59,6 +61,15 @@ public class FriendLinkServiceImpl implements FriendLinkService {
                 .build();
         friendLinkRepository.save(friendLink);
         log.info("友链申请成功，等待审核");
+
+        // 发布友链申请创建的业务事件以触系统通知告警
+        eventPublisher.publishEvent(new com.butvan.blog.service.event.NotificationEvents.FriendLinkAppliedEvent(
+                this,
+                friendLink.getName(), // 申请者名称/站点名称
+                friendLink.getName(),
+                friendLink.getUrl(),
+                friendLink.getId()
+        ));
     }
 
     @Override

@@ -192,4 +192,25 @@ public class WebSocketServer {
             }
         });
     }
+
+    /**
+     * 向所有后台管理端客户端广播系统实时通知消息
+     * @param message 广播消息文本
+     */
+    public void broadcastNotification(String message) {
+        sessionMap.forEach((id, session) -> {
+            // 过滤：只有管理端连接，才进行推送
+            if (id != null && (id.startsWith("admin-") || id.contains("dashboard") || id.contains("system"))) {
+                if (session != null && session.isOpen()) {
+                    try {
+                        synchronized (session) {
+                            session.getBasicRemote().sendText(message);
+                        }
+                    } catch (IOException e) {
+                        log.error("广播发送 ws 系统通知消息失败，客户端 id: [{}], 报错信息: [{}]", id, e.getMessage());
+                    }
+                }
+            }
+        });
+    }
 }

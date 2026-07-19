@@ -36,6 +36,7 @@ import org.springframework.mail.javamail.JavaMailSender;
 import org.springframework.mail.javamail.MimeMessageHelper;
 import jakarta.mail.internet.MimeMessage;
 import cn.hutool.core.util.RandomUtil;
+import org.springframework.context.ApplicationEventPublisher;
 import org.springframework.beans.factory.annotation.Value;
 import java.util.concurrent.TimeUnit;
 
@@ -54,6 +55,7 @@ public class AuthServiceImpl implements AuthService {
     private final RedisUtils redisUtils;
     private final JavaMailSender mailSender;
     private final SiteConfigService siteConfigService;
+    private final ApplicationEventPublisher eventPublisher;
 
     @Value("${spring.mail.username:}")
     private String mailFrom;
@@ -105,6 +107,13 @@ public class AuthServiceImpl implements AuthService {
 
         userRepository.save(user);
         log.info("用户 [{}] 成功注册入库，分配角色: {}", user.getUsername(), user.getRole());
+
+        // 发布新用户注册的事件以触发系统通知中心告警
+        eventPublisher.publishEvent(new com.butvan.blog.service.event.NotificationEvents.UserRegisteredEvent(
+                this,
+                user.getUsername(),
+                user.getId()
+        ));
     }
 
     /**

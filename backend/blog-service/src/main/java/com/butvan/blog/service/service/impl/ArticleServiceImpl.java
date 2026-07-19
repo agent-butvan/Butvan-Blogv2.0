@@ -29,6 +29,7 @@ import org.springframework.data.domain.PageRequest;
 import org.springframework.data.domain.Pageable;
 import org.springframework.data.domain.Sort;
 import org.springframework.data.jpa.domain.Specification;
+import org.springframework.context.ApplicationEventPublisher;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 import org.springframework.util.StringUtils;
@@ -50,6 +51,7 @@ public class ArticleServiceImpl implements ArticleService {
     private final UserRepository userRepository;
     private final ArticleLikeRepository articleLikeRepository;
     private final DailyStatsRepository dailyStatsRepository;
+    private final ApplicationEventPublisher eventPublisher;
 
     @Override
     public PageResult pageArticles(ArticleQueryDTO queryDTO) {
@@ -457,6 +459,22 @@ public class ArticleServiceImpl implements ArticleService {
             article.setLikeCount(currentLikes + 1);
             articleRepository.save(article);
             log.info("文章点赞成功，当前最新点赞数: {}", article.getLikeCount());
+
+            // 发布新增点赞的业务事件通知
+            String senderName = "游客";
+            if (userId != null) {
+                User user = userRepository.findById(userId).orElse(null);
+                if (user != null) {
+                    senderName = user.getNickname() != null && !user.getNickname().trim().isEmpty() 
+                            ? user.getNickname() : user.getUsername();
+                }
+            }
+            eventPublisher.publishEvent(new com.butvan.blog.service.event.NotificationEvents.LikeCreatedEvent(
+                    this,
+                    senderName,
+                    id,
+                    article.getTitle()
+            ));
         }
         
         return article.getLikeCount();
