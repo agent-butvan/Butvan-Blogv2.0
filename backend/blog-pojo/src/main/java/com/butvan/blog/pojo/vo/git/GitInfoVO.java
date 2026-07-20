@@ -29,4 +29,9 @@ public class GitInfoVO {
      * 最近的提交记录列表
      */
     private List<GitCommitVO> commits;
+
+    /**
+     * 是否是离线降级状态 (如生产环境不带 git 版本库时)
+     */
+    private Boolean isOffline;
 }

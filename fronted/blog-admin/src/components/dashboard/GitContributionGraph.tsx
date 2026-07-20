@@ -39,6 +39,15 @@ export default function GitContributionGraph() {
   // 计算本月总提交次数
   const totalCommits = activities.reduce((acc, curr) => acc + curr.count, 0);
 
+  // 点击日期格子触发全局事件联动唤起 Git 监视器并带上过滤日期
+  const handleDayClick = (date: string) => {
+    window.dispatchEvent(
+      new CustomEvent("open-git-modal", {
+        detail: { date }
+      })
+    );
+  };
+
   // 根据提交次数获取对应的颜色等级 (LeetCode 绿墙色系)
   const getColorClass = (count: number) => {
     if (count === 0) return "bg-zinc-100 dark:bg-zinc-850 hover:bg-zinc-200 dark:hover:bg-zinc-800 text-zinc-400 dark:text-zinc-650 border border-zinc-200/20 dark:border-zinc-800/40";
@@ -96,6 +105,7 @@ export default function GitContributionGraph() {
               return (
                 <Tooltip key={item.date} delay={0}>
                   <div
+                    onClick={() => handleDayClick(item.date)}
                     className={cn(
                       "aspect-square h-8 w-8 flex items-center justify-center rounded-lg text-[10px] font-mono font-bold transition-all duration-200 cursor-pointer select-none active:scale-95",
                       getColorClass(item.count)

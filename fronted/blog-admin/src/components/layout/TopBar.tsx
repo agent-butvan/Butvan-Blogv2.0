@@ -76,10 +76,29 @@ export default function TopBar() {
   const [unreadCount, setUnreadCount] = useState(0);
   const [drawerOpen, setDrawerOpen] = useState(false);
   const [gitInfoOpen, setGitInfoOpen] = useState(false);
+  const [gitInitialBranch, setGitInitialBranch] = useState("");
+  const [gitInitialDate, setGitInitialDate] = useState("");
   const wsRef = useRef<WebSocket | null>(null);
   
   const menuRef = useRef<HTMLDivElement>(null);
   const bellRef = useRef<HTMLDivElement>(null);
+
+  // 监听全局事件以联动打开 Git 监视器
+  useEffect(() => {
+    const handleOpenGitModal = (e: Event) => {
+      const customEvent = e as CustomEvent;
+      if (customEvent.detail) {
+        setGitInitialDate(customEvent.detail.date || "");
+        setGitInitialBranch(customEvent.detail.branch || "");
+      }
+      setGitInfoOpen(true);
+    };
+
+    window.addEventListener("open-git-modal", handleOpenGitModal);
+    return () => {
+      window.removeEventListener("open-git-modal", handleOpenGitModal);
+    };
+  }, []);
 
   useEffect(() => {
     setUser(getUser());
@@ -394,7 +413,16 @@ export default function TopBar() {
 
       </header>
       <NotificationDrawer isOpen={drawerOpen} onClose={() => setDrawerOpen(false)} onUnreadChange={handleUnreadChange} />
-      <GitInfoModal open={gitInfoOpen} onClose={() => setGitInfoOpen(false)} />
+      <GitInfoModal 
+        open={gitInfoOpen} 
+        onClose={() => {
+          setGitInfoOpen(false);
+          setGitInitialDate("");
+          setGitInitialBranch("");
+        }}
+        initialBranch={gitInitialBranch}
+        initialDate={gitInitialDate}
+      />
     </>
   );
 }
