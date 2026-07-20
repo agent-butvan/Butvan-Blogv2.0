@@ -8,6 +8,7 @@ import com.butvan.blog.pojo.vo.dbsync.ForeignKeyDepVO;
 import com.butvan.blog.pojo.vo.dbsync.TableDataOverviewVO;
 
 import java.util.List;
+import java.util.Map;
 
 /**
  * 数据库多维比对与数据同步服务层
@@ -71,22 +72,22 @@ public interface DbSyncService {
     void syncSchema(String tableName, String sql);
 
     /**
-     * 将本地库中的指定记录同步写入到线上库中 (支持 INSERT/UPDATE)
+     * 将本地库中的指定记录同步写入到线上库中 (支持 INSERT/UPDATE，兼容复合主键)
      *
      * @param tableName 表名
      * @param opType 操作类型，'INSERT' / 'UPDATE'
-     * @param ids 待同步的主键 ID 列表
+     * @param keys 主键值列表，每个元素为 {列名: 值} 的 Map
      */
-    void syncData(String tableName, String opType, List<Long> ids);
+    void syncData(String tableName, String opType, List<Map<String, Object>> keys);
 
     /**
-     * 预览数据同步时缺失的外键依赖记录（不执行任何写入）
+     * 预览数据同步时缺失的外键依赖记录（不执行任何写入，兼容复合主键）
      *
      * @param tableName 表名
-     * @param ids 待同步的主键 ID 列表
+     * @param keys 主键值列表，每个元素为 {列名: 值} 的 Map
      * @return 线上库中缺失的外键依赖记录列表，空列表表示无依赖缺失
      */
-    List<ForeignKeyDepVO> previewForeignKeyDependencies(String tableName, List<Long> ids);
+    List<ForeignKeyDepVO> previewForeignKeyDependencies(String tableName, List<Map<String, Object>> keys);
 
     /**
      * 根据日志 ID 回退指定的同步动作

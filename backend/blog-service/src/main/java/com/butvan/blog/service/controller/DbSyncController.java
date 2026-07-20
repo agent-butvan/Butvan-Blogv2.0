@@ -13,6 +13,7 @@ import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
 import org.springframework.web.bind.annotation.*;
 
+import java.util.LinkedHashMap;
 import java.util.List;
 import java.util.Map;
 import java.util.stream.Collectors;
@@ -108,37 +109,54 @@ public class DbSyncController {
     }
 
     /**
-     * 预览数据同步时缺失的外键依赖（不执行任何写入）
+     * 预览数据同步时缺失的外键依赖（不执行任何写入，支持复合主键）
      */
     @PostMapping("/sync/data/preview-fk")
     @TrackApi("预览外键依赖")
     public Result<List<ForeignKeyDepVO>> previewForeignKeyDependencies(@RequestBody Map<String, Object> payload) {
         String tableName = (String) payload.get("tableName");
-        @SuppressWarnings("unchecked")
-        List<Number> idNums = (List<Number>) payload.get("ids");
-        List<Long> ids = idNums.stream().map(Number::longValue).collect(Collectors.toList());
 
-        log.info("API 预览外键依赖, 表名: {}, 记录数: {}", tableName, ids.size());
-        List<ForeignKeyDepVO> deps = dbSyncService.previewForeignKeyDependencies(tableName, ids);
+        List<Map<String, Object>> keys = parseKeysPayload(payload);
+
+        log.info("API 预览外键依赖, 表名: {}, 记录数: {}", tableName, keys.size());
+        List<ForeignKeyDepVO> deps = dbSyncService.previewForeignKeyDependencies(tableName, keys);
         return Result.success(deps);
     }
 
     /**
-     * 执行本地记录同步至线上 (DML)
+     * 执行本地记录同步至线上 (DML，支持复合主键)
      */
     @PostMapping("/sync/data")
     @TrackApi("执行记录数据同步")
     public Result<String> syncData(@RequestBody Map<String, Object> payload) {
         String tableName = (String) payload.get("tableName");
         String opType = (String) payload.get("opType");
-        
-        @SuppressWarnings("unchecked")
-        List<Number> idNums = (List<Number>) payload.get("ids");
-        List<Long> ids = idNums.stream().map(Number::longValue).collect(Collectors.toList());
 
-        log.info("API 执行记录数据同步, 表名: {}, 类型: {}, 同步行数: {}", tableName, opType, ids.size());
-        dbSyncService.syncData(tableName, opType, ids);
+        List<Map<String, Object>> keys = parseKeysPayload(payload);
+
+        log.info("API 执行记录数据同步, 表名: {}, 类型: {}, 同步行数: {}", tableName, opType, keys.size());
+        dbSyncService.syncData(tableName, opType, keys);
         return Result.success("数据同步成功");
+    }
+
+    /**
+     * 解析请求体中的主键参数，兼容新格式 keys 和旧格式 ids
+     */
+    @SuppressWarnings("unchecked")
+    private List<Map<String, Object>> parseKeysPayload(Map<String, Object> payload) {
+        if (payload.containsKey("keys")) {
+            return (List<Map<String, Object>>) payload.get("keys");
+        }
+        // 兼容旧格式 ids（单主键场景）
+        List<Number> idNums = (List<Number>) payload.get("ids");
+        if (idNums != null) {
+            return idNums.stream().map(id -> {
+                Map<String, Object> m = new LinkedHashMap<>();
+                m.put("id", id.longValue());
+                return m;
+            }).collect(Collectors.toList());
+        }
+        return List.of();
     }
 
     /**

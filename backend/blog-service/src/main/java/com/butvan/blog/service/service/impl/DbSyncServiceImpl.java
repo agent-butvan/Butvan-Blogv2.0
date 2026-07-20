@@ -444,9 +444,9 @@ public class DbSyncServiceImpl implements DbSyncService {
 
     @Override
     @Transactional
-    public void syncData(String tableName, String opType, List<Long> ids) {
-        log.info("执行数据同步至线上: 表={}, 类型={}, 记录数={}", tableName, opType, ids.size());
-        if (ids.isEmpty()) return;
+    public void syncData(String tableName, String opType, List<Map<String, Object>> keys) {
+        log.info("执行数据同步至线上: 表={}, 类型={}, 记录数={}", tableName, opType, keys.size());
+        if (keys.isEmpty()) return;
 
         DbConnectionConfig localConfig = configRepository.findByConnName("local_dev")
                 .orElseThrow(() -> new IllegalArgumentException("未配置本地开发库 [local_dev] 连接信息"));
@@ -462,14 +462,8 @@ public class DbSyncServiceImpl implements DbSyncService {
             throw new IllegalArgumentException("表 [" + tableName + "] 未检测到主键列，暂不支持数据同步");
         }
 
-        // 将传入的 ids 转换为主键值 Map 列表（兼容单主键场景）
-        List<Map<String, Object>> keyList = ids.stream()
-                .map(id -> {
-                    Map<String, Object> m = new LinkedHashMap<>();
-                    m.put(pkColumns.get(0), id);
-                    return m;
-                })
-                .collect(Collectors.toList());
+        // keys 已经是 {col: value} 格式，直接使用
+        List<Map<String, Object>> keyList = keys;
 
         // 从本地查询源数据行
         List<Map<String, Object>> rows = queryFullRowsByKeys(localTemplate, tableName, pkColumns, keyList);
@@ -519,8 +513,8 @@ public class DbSyncServiceImpl implements DbSyncService {
     }
 
     @Override
-    public List<ForeignKeyDepVO> previewForeignKeyDependencies(String tableName, List<Long> ids) {
-        if (ids.isEmpty()) return new ArrayList<>();
+    public List<ForeignKeyDepVO> previewForeignKeyDependencies(String tableName, List<Map<String, Object>> keys) {
+        if (keys.isEmpty()) return new ArrayList<>();
 
         DbConnectionConfig localConfig = configRepository.findByConnName("local_dev")
                 .orElseThrow(() -> new IllegalArgumentException("未配置本地开发库 [local_dev] 连接信息"));
@@ -533,13 +527,8 @@ public class DbSyncServiceImpl implements DbSyncService {
         List<String> pkColumns = queryPrimaryKeyColumns(localTemplate, tableName);
         if (pkColumns.isEmpty()) return new ArrayList<>();
 
-        List<Map<String, Object>> keyList = ids.stream()
-                .map(id -> {
-                    Map<String, Object> m = new LinkedHashMap<>();
-                    m.put(pkColumns.get(0), id);
-                    return m;
-                })
-                .collect(Collectors.toList());
+        // keys 已经是 {col: value} 格式，直接使用
+        List<Map<String, Object>> keyList = keys;
 
         List<Map<String, Object>> rows = queryFullRowsByKeys(localTemplate, tableName, pkColumns, keyList);
         List<ForeignKeyDepVO> missingDeps = new ArrayList<>();

@@ -123,7 +123,7 @@ export default function DbSyncPage() {
   // FK 依赖确认弹窗 State
   const [isFkConfirmOpen, setIsFkConfirmOpen] = useState(false);
   const [fkDeps, setFkDeps] = useState<ForeignKeyDep[]>([]);
-  const [pendingSyncOp, setPendingSyncOp] = useState<{ opType: "INSERT" | "UPDATE"; ids: number[] } | null>(null);
+  const [pendingSyncOp, setPendingSyncOp] = useState<{ opType: "INSERT" | "UPDATE"; keys: Record<string, any>[] } | null>(null);
   const [checkingFk, setCheckingFk] = useState(false);
 
   // 全局加载提示
@@ -134,9 +134,31 @@ export default function DbSyncPage() {
     setTimeout(() => setToastMsg(null), 3000);
   };
 
-  /** 获取行数据的唯一标识，兼容复合主键表（无id字段） */
+  /**
+   * 获取行数据的唯一标识（字符串形式，用于 checkbox state）
+   * - 单主键（有 id 列）：返回 "5"
+   * - 复合主键（无 id 列）：返回 "col1::val1::col2::val2" 编码列名
+   */
   const getRowKey = (row: Record<string, any>, index: number): string => {
-    return row.id != null ? String(row.id) : `__idx_${index}`;
+    if (row.id != null) return String(row.id);
+    const pkCols = Object.keys(row).filter(k => k.endsWith('_id'));
+    if (pkCols.length >= 2) {
+      return pkCols.map(col => `${col}::${row[col]}`).join('::');
+    }
+    return `__idx_${index}`;
+  };
+
+  /** 将 getRowKey 生成的字符串解析回 {col: value} 格式，用于 API 请求 */
+  const parseRowKey = (key: string): Record<string, any> => {
+    if (key.startsWith('__idx_')) return {};
+    if (!key.includes('::')) return { id: Number(key) };
+    const parts = key.split('::');
+    const result: Record<string, any> = {};
+    for (let i = 0; i < parts.length; i += 2) {
+      const val = parts[i + 1];
+      result[parts[i]] = isNaN(Number(val)) ? val : Number(val);
+    }
+    return result;
   };
 
   // ================== 初始化加载配置 ==================
@@ -300,11 +322,16 @@ export default function DbSyncPage() {
   };
 
   const handleSyncData = async (opType: "INSERT" | "UPDATE") => {
-    const ids = (opType === "INSERT" ? selectedInsertIds : selectedUpdateIds)
-      .map(k => Number(k))
-      .filter(n => !isNaN(n));
-    if (ids.length === 0) {
+    const selectedKeys = opType === "INSERT" ? selectedInsertIds : selectedUpdateIds;
+    if (selectedKeys.length === 0) {
       showToast("请勾选需要同步的数据行", "error");
+      return;
+    }
+
+    // 将字符串 key 解析为 {col: value} 格式
+    const keys = selectedKeys.map(k => parseRowKey(k)).filter(k => Object.keys(k).length > 0);
+    if (keys.length === 0) {
+      showToast("无法解析选中行的主键信息", "error");
       return;
     }
 
@@ -313,19 +340,17 @@ export default function DbSyncPage() {
     try {
       const fkRes = await apiClient.post<ApiResponse<ForeignKeyDep[]>>("/admin/db/sync/data/preview-fk", {
         tableName: selectedTable,
-        ids
+        keys
       });
       const deps = fkRes.data?.data ?? [];
       if (deps.length > 0) {
-        // 存在缺失的 FK 依赖，弹出确认窗口
         setFkDeps(deps);
-        setPendingSyncOp({ opType, ids });
+        setPendingSyncOp({ opType, keys });
         setIsFkConfirmOpen(true);
         setCheckingFk(false);
         return;
       }
-      // 无依赖缺失，直接执行同步
-      await executeSyncData(opType, ids);
+      await executeSyncData(opType, keys);
     } catch (err: any) {
       showToast(err?.response?.data?.message || "外键依赖检测失败", "error");
     } finally {
@@ -337,22 +362,22 @@ export default function DbSyncPage() {
   const confirmSync = async () => {
     if (!pendingSyncOp) return;
     setIsFkConfirmOpen(false);
-    await executeSyncData(pendingSyncOp.opType, pendingSyncOp.ids);
+    await executeSyncData(pendingSyncOp.opType, pendingSyncOp.keys);
     setPendingSyncOp(null);
     setFkDeps([]);
   };
 
-  /** 执行数据同步的核心逻辑 */
-  const executeSyncData = async (opType: "INSERT" | "UPDATE", ids: number[]) => {
+  /** 执行数据同步的核心逻辑（使用 keys 格式兼容复合主键） */
+  const executeSyncData = async (opType: "INSERT" | "UPDATE", keys: Record<string, any>[]) => {
     setSyncingData(true);
     try {
       const res = await apiClient.post<ApiResponse<String>>("/admin/db/sync/data", {
         tableName: selectedTable,
         opType,
-        ids
+        keys
       });
       if (res.data?.code === 200) {
-        showToast(`成功同步 ${ids.length} 条记录至线上！`, "success");
+        showToast(`成功同步 ${keys.length} 条记录至线上！`, "success");
         handleDrilldownDetail(selectedTable);
         handleCompareOverview(true);
       } else {
