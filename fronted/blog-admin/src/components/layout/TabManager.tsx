@@ -25,6 +25,7 @@ const PATH_TITLE_MAP: Record<string, string> = {
   "/navigation": "导航管理",
   "/pages": "单页管理",
   "/likes": "点赞管理",
+  "/db-sync": "数据库同步",
 };
 
 /**
