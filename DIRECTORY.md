@@ -16,12 +16,9 @@ Butvan Blog2.0/                                    # 📦 项目根目录
 ├── .github/                                       # ⚙️ GitHub 自动化配置目录
 │   └── workflows/
 │       └── deploy.yml                             #   GitHub Actions 自动化部署流水线
-├── bin/                                           # 🛠️ 系统运维与开发辅助脚本工具目录 (新增)
-│   └── reset-db.sh                                #   本地开发数据库一键重置脚本 (清理并重建 PG 库)
 ├── .graphifyignore                                # 🔍 Graphify 本地提取忽略规则配置（剔除文档/媒体文件以实现免 LLM 提取）
 │
 ├── .agents/                                       # 🤖 智能体辅助开发配置
-
 │   ├── rules/
 │   │   └── graphify.md                            #   Graphify 关联规则配置（指导 IDE 优先查询知识图谱）
 │   └── workflows/
@@ -343,9 +340,7 @@ Butvan Blog2.0/                                    # 📦 项目根目录
             │   │   ├── BlogApplication.java        #       🚀 Spring Boot 启动类（多包扫描 + JPA 审计启用）
             │   │   ├── config/                     #       服务层配置
             │   │   │   ├── CorsConfig.java         #         CORS 跨域配置（允许前端 dev 端口）
-            │   │   │   ├── SwaggerConfig.java      #         Swagger/OpenAPI 文档配置
-            │   │   │   └── DatabaseSeeder.java     #         开发测试种子数据自动注入器 (新增)
-
+            │   │   │   └── SwaggerConfig.java      #         Swagger/OpenAPI 文档配置
             │   │   ├── storage/                    #       文件存储实现层（策略模式）
             │   │   │   ├── LocalFileStorageService.java  #   本地磁盘存储实现
             │   │   │   └── MinioFileStorageService.java  #   MinIO 对象存储实现
@@ -448,12 +443,10 @@ Butvan Blog2.0/                                    # 📦 项目根目录
             │       ├── application-mail.yml        #         Mail 邮件发送 SMTP 服务器配置文件（发信账号及密钥）
             │       ├── logback-spring.xml          #         Logback 全局及 API 专用滚动归档日志配置文件 (新增)
             │       └── db/
-            │           ├── dev-seeds.sql           #         开发环境 Mock 种子测试数据 (新增)
             │           └── migration/              #         Flyway 数据库表结构变更同步迁移脚本目录 (新增)
             │               ├── V202607171000__drop_api_log.sql  # 物理表下线清理脚本
             │               ├── V202607171042__add_system_log_menu.sql  # 系统控制台实时日志菜单安全插入脚本
             │               └── V202607191835__add_daily_stats_uv.sql  # 每日流量表 blog_daily_stats 添加 uv_count 字段迁移脚本
-
             └── test/
                 └── java/com/butvan/blog/service/   #       🧪 单元测试与集成测试
 ```
