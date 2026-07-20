@@ -4,6 +4,8 @@ import com.butvan.blog.pojo.entity.DbSyncLog;
 import com.butvan.blog.pojo.vo.dbsync.DataDiffVO;
 import com.butvan.blog.pojo.vo.dbsync.DbConnectionConfigVO;
 import com.butvan.blog.pojo.vo.dbsync.SchemaDiffVO;
+import com.butvan.blog.pojo.vo.dbsync.ForeignKeyDepVO;
+import com.butvan.blog.pojo.vo.dbsync.TableDataOverviewVO;
 
 import java.util.List;
 
@@ -46,6 +48,13 @@ public interface DbSyncService {
     List<SchemaDiffVO> compareSchema();
 
     /**
+     * 一键全量对比本地开发库与线上部署库的所有物理表的数据记录差异
+     *
+     * @return 每一个物理表的数据对比概览列表
+     */
+    List<TableDataOverviewVO> compareDataOverview();
+
+    /**
      * 对比指定数据表的内容记录差异 (DML)
      *
      * @param tableName 表名，如 'article'
@@ -69,6 +78,15 @@ public interface DbSyncService {
      * @param ids 待同步的主键 ID 列表
      */
     void syncData(String tableName, String opType, List<Long> ids);
+
+    /**
+     * 预览数据同步时缺失的外键依赖记录（不执行任何写入）
+     *
+     * @param tableName 表名
+     * @param ids 待同步的主键 ID 列表
+     * @return 线上库中缺失的外键依赖记录列表，空列表表示无依赖缺失
+     */
+    List<ForeignKeyDepVO> previewForeignKeyDependencies(String tableName, List<Long> ids);
 
     /**
      * 根据日志 ID 回退指定的同步动作

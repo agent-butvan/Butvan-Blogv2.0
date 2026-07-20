@@ -4,7 +4,9 @@ import com.butvan.blog.common.result.Result;
 import com.butvan.blog.pojo.entity.DbSyncLog;
 import com.butvan.blog.pojo.vo.dbsync.DataDiffVO;
 import com.butvan.blog.pojo.vo.dbsync.DbConnectionConfigVO;
+import com.butvan.blog.pojo.vo.dbsync.ForeignKeyDepVO;
 import com.butvan.blog.pojo.vo.dbsync.SchemaDiffVO;
+import com.butvan.blog.pojo.vo.dbsync.TableDataOverviewVO;
 import com.butvan.blog.service.annotation.TrackApi;
 import com.butvan.blog.service.service.DbSyncService;
 import lombok.RequiredArgsConstructor;
@@ -71,6 +73,17 @@ public class DbSyncController {
     }
 
     /**
+     * 一键全表数据差异对比概览
+     */
+    @GetMapping("/compare/data/overview")
+    @TrackApi("全表数据对比")
+    public Result<List<TableDataOverviewVO>> compareDataOverview() {
+        log.info("API 触发全表数据库记录对比请求");
+        List<TableDataOverviewVO> overview = dbSyncService.compareDataOverview();
+        return Result.success(overview);
+    }
+
+    /**
      * 执行特定表的数据差异对比
      */
     @GetMapping("/compare/data")
@@ -92,6 +105,22 @@ public class DbSyncController {
         log.info("API 执行结构同步, 表名: {}", tableName);
         dbSyncService.syncSchema(tableName, sql);
         return Result.success("结构同步成功");
+    }
+
+    /**
+     * 预览数据同步时缺失的外键依赖（不执行任何写入）
+     */
+    @PostMapping("/sync/data/preview-fk")
+    @TrackApi("预览外键依赖")
+    public Result<List<ForeignKeyDepVO>> previewForeignKeyDependencies(@RequestBody Map<String, Object> payload) {
+        String tableName = (String) payload.get("tableName");
+        @SuppressWarnings("unchecked")
+        List<Number> idNums = (List<Number>) payload.get("ids");
+        List<Long> ids = idNums.stream().map(Number::longValue).collect(Collectors.toList());
+
+        log.info("API 预览外键依赖, 表名: {}, 记录数: {}", tableName, ids.size());
+        List<ForeignKeyDepVO> deps = dbSyncService.previewForeignKeyDependencies(tableName, ids);
+        return Result.success(deps);
     }
 
     /**

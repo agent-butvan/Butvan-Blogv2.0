@@ -6,6 +6,7 @@ import com.butvan.blog.pojo.entity.DbSyncLog;
 import com.butvan.blog.pojo.vo.dbsync.DataDiffVO;
 import com.butvan.blog.pojo.vo.dbsync.DbConnectionConfigVO;
 import com.butvan.blog.pojo.vo.dbsync.SchemaDiffVO;
+import com.butvan.blog.pojo.vo.dbsync.ForeignKeyDepVO;
 import com.butvan.blog.pojo.vo.dbsync.TableDataOverviewVO;
 import com.butvan.blog.service.config.DbConnectionManager;
 import com.butvan.blog.service.repository.DbConnectionConfigRepository;
@@ -514,6 +515,82 @@ public class DbSyncServiceImpl implements DbSyncService {
                     .operator("admin")
                     .status("SUCCESS")
                     .build());
+        }
+    }
+
+    @Override
+    public List<ForeignKeyDepVO> previewForeignKeyDependencies(String tableName, List<Long> ids) {
+        if (ids.isEmpty()) return new ArrayList<>();
+
+        DbConnectionConfig localConfig = configRepository.findByConnName("local_dev")
+                .orElseThrow(() -> new IllegalArgumentException("未配置本地开发库 [local_dev] 连接信息"));
+        DbConnectionConfig onlineConfig = configRepository.findByConnName("online_prod")
+                .orElseThrow(() -> new IllegalArgumentException("未配置线上部署库 [online_prod] 连接信息"));
+
+        JdbcTemplate localTemplate = new JdbcTemplate(connectionManager.getDataSource(localConfig));
+        JdbcTemplate onlineTemplate = new JdbcTemplate(connectionManager.getDataSource(onlineConfig));
+
+        List<String> pkColumns = queryPrimaryKeyColumns(localTemplate, tableName);
+        if (pkColumns.isEmpty()) return new ArrayList<>();
+
+        List<Map<String, Object>> keyList = ids.stream()
+                .map(id -> {
+                    Map<String, Object> m = new LinkedHashMap<>();
+                    m.put(pkColumns.get(0), id);
+                    return m;
+                })
+                .collect(Collectors.toList());
+
+        List<Map<String, Object>> rows = queryFullRowsByKeys(localTemplate, tableName, pkColumns, keyList);
+        List<ForeignKeyDepVO> missingDeps = new ArrayList<>();
+        Set<String> visited = new HashSet<>();
+
+        for (Map<String, Object> row : rows) {
+            collectMissingForeignKeyDeps(localTemplate, onlineTemplate, tableName, row, missingDeps, visited, 0);
+        }
+        return missingDeps;
+    }
+
+    /**
+     * 递归收集线上库缺失的外键依赖记录（只读检测，不执行写入）
+     */
+    private void collectMissingForeignKeyDeps(JdbcTemplate localTemplate, JdbcTemplate onlineTemplate,
+                                               String tableName, Map<String, Object> row,
+                                               List<ForeignKeyDepVO> missingDeps, Set<String> visited, int depth) {
+        if (depth > 5) return;
+
+        List<ForeignKeyInfo> fks = queryForeignKeyConstraints(localTemplate, tableName);
+
+        for (ForeignKeyInfo fk : fks) {
+            Object fkValue = row.get(fk.columnName());
+            if (fkValue == null) continue;
+
+            String visitKey = fk.referencedTable() + "::" + fkValue;
+            if (visited.contains(visitKey)) continue;
+            visited.add(visitKey);
+
+            String checkSql = String.format("SELECT COUNT(*) FROM \"%s\" WHERE \"%s\" = %s",
+                    fk.referencedTable(), fk.referencedColumn(), formatSqlValue(fkValue));
+            Integer count = onlineTemplate.queryForObject(checkSql, Integer.class);
+            if (count != null && count > 0) continue;
+
+            String displayText = String.format("%s.%s = %s", fk.referencedTable(), fk.referencedColumn(), fkValue);
+            missingDeps.add(ForeignKeyDepVO.builder()
+                    .columnName(fk.columnName())
+                    .referencedTable(fk.referencedTable())
+                    .referencedColumn(fk.referencedColumn())
+                    .referencedValue(String.valueOf(fkValue))
+                    .displayText(displayText)
+                    .build());
+
+            // 递归检测更上层依赖
+            String refQuery = String.format("SELECT * FROM \"%s\" WHERE \"%s\" = %s",
+                    fk.referencedTable(), fk.referencedColumn(), formatSqlValue(fkValue));
+            List<Map<String, Object>> refRows = localTemplate.queryForList(refQuery);
+            if (!refRows.isEmpty()) {
+                collectMissingForeignKeyDeps(localTemplate, onlineTemplate, fk.referencedTable(), refRows.get(0),
+                        missingDeps, visited, depth + 1);
+            }
         }
     }
 

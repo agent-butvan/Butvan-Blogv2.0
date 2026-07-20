@@ -75,6 +75,14 @@ interface SyncLog {
   createdAt: string;
 }
 
+interface ForeignKeyDep {
+  columnName: string;
+  referencedTable: string;
+  referencedColumn: string;
+  referencedValue: string;
+  displayText: string;
+}
+
 export default function DbSyncPage() {
   const [activeTab, setActiveTab] = useState<"config" | "schema" | "data" | "history">("config");
 
@@ -111,6 +119,12 @@ export default function DbSyncPage() {
 
   // 数据差异详情弹窗 State
   const [isDetailOpen, setIsDetailOpen] = useState(false);
+
+  // FK 依赖确认弹窗 State
+  const [isFkConfirmOpen, setIsFkConfirmOpen] = useState(false);
+  const [fkDeps, setFkDeps] = useState<ForeignKeyDep[]>([]);
+  const [pendingSyncOp, setPendingSyncOp] = useState<{ opType: "INSERT" | "UPDATE"; ids: number[] } | null>(null);
+  const [checkingFk, setCheckingFk] = useState(false);
 
   // 全局加载提示
   const [toastMsg, setToastMsg] = useState<{ type: "success" | "error" | "info"; text: string } | null>(null);
@@ -294,6 +308,42 @@ export default function DbSyncPage() {
       return;
     }
 
+    // 先预览外键依赖
+    setCheckingFk(true);
+    try {
+      const fkRes = await apiClient.post<ApiResponse<ForeignKeyDep[]>>("/admin/db/sync/data/preview-fk", {
+        tableName: selectedTable,
+        ids
+      });
+      const deps = fkRes.data?.data ?? [];
+      if (deps.length > 0) {
+        // 存在缺失的 FK 依赖，弹出确认窗口
+        setFkDeps(deps);
+        setPendingSyncOp({ opType, ids });
+        setIsFkConfirmOpen(true);
+        setCheckingFk(false);
+        return;
+      }
+      // 无依赖缺失，直接执行同步
+      await executeSyncData(opType, ids);
+    } catch (err: any) {
+      showToast(err?.response?.data?.message || "外键依赖检测失败", "error");
+    } finally {
+      setCheckingFk(false);
+    }
+  };
+
+  /** 用户确认后执行实际的数据同步 */
+  const confirmSync = async () => {
+    if (!pendingSyncOp) return;
+    setIsFkConfirmOpen(false);
+    await executeSyncData(pendingSyncOp.opType, pendingSyncOp.ids);
+    setPendingSyncOp(null);
+    setFkDeps([]);
+  };
+
+  /** 执行数据同步的核心逻辑 */
+  const executeSyncData = async (opType: "INSERT" | "UPDATE", ids: number[]) => {
     setSyncingData(true);
     try {
       const res = await apiClient.post<ApiResponse<String>>("/admin/db/sync/data", {
@@ -303,8 +353,8 @@ export default function DbSyncPage() {
       });
       if (res.data?.code === 200) {
         showToast(`成功同步 ${ids.length} 条记录至线上！`, "success");
-        handleDrilldownDetail(selectedTable); // 刷新当前表的细节
-        handleCompareOverview(true);         // 静默刷新全量表的统计行数
+        handleDrilldownDetail(selectedTable);
+        handleCompareOverview(true);
       } else {
         showToast("同步数据发生异常", "error");
       }
@@ -366,13 +416,16 @@ export default function DbSyncPage() {
       {/* 全局自定义 Toast */}
       {toastMsg && (
         <div className={cn(
-          "fixed top-4 right-4 z-50 px-4.5 py-3 rounded-xl border shadow-xl flex items-center gap-2 animate-slide-in select-none text-xs font-semibold max-w-sm transition-all",
-          toastMsg.type === "success" && "bg-emerald-500/10 border-emerald-500/20 text-emerald-600 dark:text-emerald-400",
-          toastMsg.type === "error" && "bg-rose-500/10 border-rose-500/20 text-rose-600 dark:text-rose-400",
-          toastMsg.type === "info" && "bg-indigo-500/10 border-indigo-500/20 text-indigo-600 dark:text-indigo-400"
+          "fixed top-5 left-1/2 -translate-x-1/2 z-[9999] px-5 py-3 rounded-2xl border shadow-2xl flex items-center gap-2.5 select-none text-xs font-semibold max-w-lg transition-all animate-slide-in backdrop-blur-sm",
+          toastMsg.type === "success" && "bg-emerald-50/95 dark:bg-emerald-950/95 border-emerald-200 dark:border-emerald-800 text-emerald-700 dark:text-emerald-300",
+          toastMsg.type === "error" && "bg-rose-50/95 dark:bg-rose-950/95 border-rose-200 dark:border-rose-800 text-rose-700 dark:text-rose-300",
+          toastMsg.type === "info" && "bg-indigo-50/95 dark:bg-indigo-950/95 border-indigo-200 dark:border-indigo-800 text-indigo-700 dark:text-indigo-300"
         )}>
-          {toastMsg.type === "success" ? <CheckCircle2 size={14} className="shrink-0" /> : <AlertTriangle size={14} className="shrink-0" />}
+          {toastMsg.type === "success" ? <CheckCircle2 size={15} className="shrink-0" /> : <AlertTriangle size={15} className="shrink-0" />}
           <span>{toastMsg.text}</span>
+          <button onClick={() => setToastMsg(null)} className="ml-1 p-0.5 rounded-md hover:bg-black/5 dark:hover:bg-white/10 transition-all cursor-pointer">
+            <XCircle size={13} className="opacity-60" />
+          </button>
         </div>
       )}
 
@@ -1039,6 +1092,69 @@ export default function DbSyncPage() {
               </Modal.Body>
               <Modal.Footer>
                 <button slot="close" className="h-8.5 px-4.5 bg-zinc-100 dark:bg-zinc-800 border border-zinc-200/60 dark:border-zinc-700/60 text-zinc-700 dark:text-zinc-300 text-xs font-bold rounded-xl active:scale-95 transition-all cursor-pointer">关闭</button>
+              </Modal.Footer>
+            </Modal.Dialog>
+          </Modal.Container>
+        </Modal.Backdrop>
+      </Modal>
+
+      {/* ================== 外键依赖确认弹窗 ================== */}
+      <Modal>
+        <Modal.Backdrop
+          isOpen={isFkConfirmOpen}
+          onOpenChange={setIsFkConfirmOpen}
+          variant="blur"
+        >
+          <Modal.Container size="md">
+            <Modal.Dialog>
+              <Modal.CloseTrigger />
+              <Modal.Header>
+                <Modal.Heading>
+                  <span className="flex items-center gap-2 text-amber-600 dark:text-amber-400">
+                    <AlertTriangle size={16} />
+                    外键依赖检测
+                  </span>
+                </Modal.Heading>
+              </Modal.Header>
+              <Modal.Body className="p-5 space-y-4">
+                <p className="text-xs text-zinc-600 dark:text-zinc-400 leading-relaxed">
+                  检测到以下 <strong className="text-zinc-800 dark:text-zinc-200">{fkDeps.length}</strong> 条外键依赖记录在线上库中缺失，同步时将自动从本地级联导入这些父表记录：
+                </p>
+                <div className="border border-zinc-200/60 dark:border-zinc-800 rounded-xl overflow-hidden">
+                  <table className="w-full border-collapse text-left text-xs">
+                    <thead>
+                      <tr className="bg-zinc-50 dark:bg-zinc-850/40 text-[10px] font-bold text-zinc-450 uppercase tracking-wider border-b border-zinc-200/60 dark:border-zinc-800 select-none">
+                        <th className="p-3">父表名</th>
+                        <th className="p-3">关联条件</th>
+                      </tr>
+                    </thead>
+                    <tbody className="divide-y divide-zinc-200/40 dark:divide-zinc-800/60">
+                      {fkDeps.map((dep, idx) => (
+                        <tr key={idx} className="text-zinc-600 dark:text-zinc-400">
+                          <td className="p-3 font-mono font-bold text-zinc-700 dark:text-zinc-300">{dep.referencedTable}</td>
+                          <td className="p-3 font-mono text-[10.5px]">{dep.displayText}</td>
+                        </tr>
+                      ))}
+                    </tbody>
+                  </table>
+                </div>
+                <p className="text-[10px] text-zinc-400 leading-relaxed">
+                  确认后系统将自动先导入上述父表记录，再同步当前表数据。若取消则不执行任何操作。
+                </p>
+              </Modal.Body>
+              <Modal.Footer className="flex justify-end gap-2">
+                <button
+                  slot="close"
+                  className="h-8.5 px-4.5 bg-zinc-100 dark:bg-zinc-800 border border-zinc-200/60 dark:border-zinc-700/60 text-zinc-700 dark:text-zinc-300 text-xs font-bold rounded-xl active:scale-95 transition-all cursor-pointer"
+                >取消</button>
+                <button
+                  onClick={confirmSync}
+                  disabled={syncingData}
+                  className="h-8.5 px-4.5 bg-primary text-white text-xs font-bold rounded-xl active:scale-95 transition-all flex items-center gap-1.5 cursor-pointer disabled:opacity-50 shadow-2xs"
+                >
+                  {syncingData && <RefreshCw size={12} className="animate-spin" />}
+                  确认并同步
+                </button>
               </Modal.Footer>
             </Modal.Dialog>
           </Modal.Container>
