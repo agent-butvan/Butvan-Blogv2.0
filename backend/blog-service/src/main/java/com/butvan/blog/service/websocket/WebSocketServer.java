@@ -14,6 +14,10 @@ import java.util.Map;
 import java.util.Queue;
 import java.util.concurrent.ConcurrentHashMap;
 import java.util.concurrent.ConcurrentLinkedQueue;
+import java.util.concurrent.ExecutorService;
+import java.util.concurrent.LinkedBlockingQueue;
+import java.util.concurrent.ThreadPoolExecutor;
+import java.util.concurrent.TimeUnit;
 
 @Slf4j
 @Component
@@ -32,6 +36,21 @@ public class WebSocketServer {
      */
     private final static Queue<String> systemLogQueue = new ConcurrentLinkedQueue<>();
     private final static int MAX_SYSTEM_LOGS = 1000;
+
+    /**
+     * 异步日志发送线程池，限制最大排队日志任务数为 2000，超出时自动丢弃最老的任务，防止 OOM
+     */
+    private final static ExecutorService logExecutor = new ThreadPoolExecutor(
+            1, 1,
+            0L, TimeUnit.MILLISECONDS,
+            new LinkedBlockingQueue<>(2000),
+            runnable -> {
+                Thread t = new Thread(runnable, "system-log-pusher");
+                t.setDaemon(true);
+                return t;
+            },
+            new ThreadPoolExecutor.DiscardOldestPolicy()
+    );
 
 
     /**
@@ -173,22 +192,29 @@ public class WebSocketServer {
             }
         }
 
-        JSONObject json = new JSONObject();
-        json.set("type", "system-log");
-        json.set("data", formattedLog);
-        String text = json.toString();
+        // 提交到异步线程池进行广播，避免阻塞打印日志的业务线程
+        logExecutor.submit(() -> {
+            try {
+                JSONObject json = new JSONObject();
+                json.set("type", "system-log");
+                json.set("data", formattedLog);
+                String text = json.toString();
 
-        sessionMap.forEach((id, session) -> {
-            if (id != null && (id.startsWith("system-") || id.contains("console"))) {
-                if (session != null && session.isOpen()) {
-                    try {
-                        synchronized (session) {
-                            session.getBasicRemote().sendText(text);
+                sessionMap.forEach((id, session) -> {
+                    if (id != null && (id.startsWith("system-") || id.contains("console"))) {
+                        if (session != null && session.isOpen()) {
+                            try {
+                                synchronized (session) {
+                                    session.getBasicRemote().sendText(text);
+                                }
+                            } catch (Exception e) {
+                                // 静默处理，防止再次打印触发死循环
+                            }
                         }
-                    } catch (IOException e) {
-                        // 静默处理，防止再次打印触发死循环
                     }
-                }
+                });
+            } catch (Exception e) {
+                // 异步发送中的异常也需要静默处理，避免死循环
             }
         });
     }
