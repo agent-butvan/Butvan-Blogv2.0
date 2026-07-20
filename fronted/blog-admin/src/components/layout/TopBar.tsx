@@ -21,6 +21,7 @@ import { cn } from "@heroui/react";
 import { toast } from "@/lib/toast";
 import { fetchUnreadCount } from "@/lib/notification-api";
 import NotificationDrawer from "@/components/dashboard/NotificationDrawer";
+import GitInfoModal from "./GitInfoModal";
 
 const BREADCRUMB_MAP: Record<string, string> = {
   "articles": "文章管理",
@@ -74,6 +75,7 @@ export default function TopBar() {
   const [isFullscreen, setIsFullscreen] = useState(false);
   const [unreadCount, setUnreadCount] = useState(0);
   const [drawerOpen, setDrawerOpen] = useState(false);
+  const [gitInfoOpen, setGitInfoOpen] = useState(false);
   const wsRef = useRef<WebSocket | null>(null);
   
   const menuRef = useRef<HTMLDivElement>(null);
@@ -280,16 +282,14 @@ export default function TopBar() {
       {/* 右侧：高度密集型功能操作组 */}
       <div className="flex items-center gap-1">
         
-        {/* GitHub 外部跳转 */}
-        <a
-          href="https://github.com"
-          target="_blank"
-          rel="noopener noreferrer"
+        {/* Git 信息查看 */}
+        <button
+          onClick={() => setGitInfoOpen(true)}
           className="p-1.5 rounded-md text-zinc-500 hover:bg-zinc-100 dark:hover:bg-zinc-800 hover:text-zinc-800 dark:text-zinc-400 dark:hover:text-zinc-200 transition-colors cursor-pointer"
-          title="项目代码库"
+          title="查看 Git 提交历史与分支"
         >
           <GitBranch size={16} />
-        </a>
+        </button>
 
         {/* 全屏切换 */}
         <button
@@ -394,6 +394,7 @@ export default function TopBar() {
 
       </header>
       <NotificationDrawer isOpen={drawerOpen} onClose={() => setDrawerOpen(false)} onUnreadChange={handleUnreadChange} />
+      <GitInfoModal open={gitInfoOpen} onClose={() => setGitInfoOpen(false)} />
     </>
   );
 }
