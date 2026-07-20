@@ -22,3 +22,32 @@ CREATE TABLE "public"."db_sync_log" (
 );
 
 CREATE INDEX idx_db_sync_log_table ON "public"."db_sync_log" ("table_name");
+
+-- 3. 新增数据库同步菜单项，属于系统管理(22)二级菜单
+INSERT INTO "public"."blog_navigation" (
+  "title", 
+  "parent_id", 
+  "link_type", 
+  "link_target_id", 
+  "link_url", 
+  "icon", 
+  "position", 
+  "sort_order", 
+  "is_visible", 
+  "is_open_new_tab", 
+  "created_at", 
+  "updated_at"
+) VALUES (
+  '数据库同步', 
+  22, 
+  'PAGE', 
+  NULL, 
+  '/db-sync', 
+  'DatabaseBackup', 
+  'ADMIN_SIDEBAR', 
+  20, 
+  't', 
+  'f', 
+  CURRENT_TIMESTAMP, 
+  CURRENT_TIMESTAMP
+);
