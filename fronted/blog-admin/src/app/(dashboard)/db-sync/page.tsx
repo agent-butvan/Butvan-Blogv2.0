@@ -15,11 +15,13 @@ import {
   Copy, 
   AlertTriangle,
   RotateCcw,
-  ListFilter
+  ListFilter,
+  Layers,
+  ArrowRightLeft
 } from "lucide-react";
 import apiClient from "@/lib/api";
 import type { ApiResponse } from "@/types/common";
-import { cn } from "@heroui/react";
+import { cn, Modal } from "@heroui/react";
 
 // ================== 前端数据接口声明 ==================
 interface ConnectionConfig {
@@ -43,6 +45,16 @@ interface SchemaDiff {
   description: string;
   fieldDiffs: FieldDiff[];
   sqlSync: string;
+}
+
+interface TableDataOverview {
+  tableName: string;
+  existsInOnline: boolean;
+  localCount: number;
+  onlineCount: number;
+  toInsertCount: number;
+  toUpdateCount: number;
+  remoteOnlyCount: number;
 }
 
 interface DataDiff {
@@ -80,12 +92,16 @@ export default function DbSyncPage() {
   const [expandedTable, setExpandedTable] = useState<string | null>(null);
   const [syncingSchema, setSyncingSchema] = useState<Record<string, boolean>>({});
 
-  // ================== 3. 数据对比 State ==================
+  // ================== 3. 全量数据对比 State ==================
+  const [overviewList, setOverviewList] = useState<TableDataOverview[]>([]);
+  const [loadingOverview, setLoadingOverview] = useState(false);
+
+  // ================== 3.1 单表差异下钻 State ==================
   const [selectedTable, setSelectedTable] = useState("blog_article");
   const [dataDiff, setDataDiff] = useState<DataDiff | null>(null);
   const [loadingData, setLoadingData] = useState(false);
-  const [selectedInsertIds, setSelectedInsertIds] = useState<number[]>([]);
-  const [selectedUpdateIds, setSelectedUpdateIds] = useState<number[]>([]);
+  const [selectedInsertIds, setSelectedInsertIds] = useState<string[]>([]);
+  const [selectedUpdateIds, setSelectedUpdateIds] = useState<string[]>([]);
   const [syncingData, setSyncingData] = useState(false);
 
   // ================== 4. 操作日志 State ==================
@@ -93,12 +109,20 @@ export default function DbSyncPage() {
   const [loadingLogs, setLoadingLogs] = useState(false);
   const [rollingLogId, setRollingLogId] = useState<number | null>(null);
 
+  // 数据差异详情弹窗 State
+  const [isDetailOpen, setIsDetailOpen] = useState(false);
+
   // 全局加载提示
   const [toastMsg, setToastMsg] = useState<{ type: "success" | "error" | "info"; text: string } | null>(null);
 
   const showToast = (text: string, type: "success" | "error" | "info" = "success") => {
     setToastMsg({ text, type });
     setTimeout(() => setToastMsg(null), 3000);
+  };
+
+  /** 获取行数据的唯一标识，兼容复合主键表（无id字段） */
+  const getRowKey = (row: Record<string, any>, index: number): string => {
+    return row.id != null ? String(row.id) : `__idx_${index}`;
   };
 
   // ================== 初始化加载配置 ==================
@@ -185,7 +209,7 @@ export default function DbSyncPage() {
         if (res.data.data.length === 0) {
           showToast("两端表结构完全一致！无需同步 DDL", "success");
         } else {
-          showToast(`检测到 ${res.data.data.length} 个结构存在差异的表`, "info");
+          showToast("检测到表结构存在差异，请查看详情", "info");
         }
       }
     } catch (err: any) {
@@ -202,6 +226,10 @@ export default function DbSyncPage() {
       if (res.data?.code === 200) {
         showToast(`表 ${tableName} 结构成功同步至线上！`, "success");
         setSchemaDiffs(prev => prev.filter(item => item.tableName !== tableName));
+        // 如果当前正在展示全量概览，重新拉取一次以刷新建表状态
+        if (overviewList.length > 0) {
+          handleCompareOverview(true);
+        }
       } else {
         showToast("结构同步失败", "error");
       }
@@ -212,32 +240,55 @@ export default function DbSyncPage() {
     }
   };
 
-  // ================== 3. 数据对比逻辑 ==================
-  const handleCompareData = async () => {
+  // ================== 3. 全量数据对比逻辑 ==================
+  const handleCompareOverview = async (silent = false) => {
+    if (!silent) {
+      setLoadingOverview(true);
+      setOverviewList([]);
+      setDataDiff(null);
+    }
+    try {
+      const res = await apiClient.get<ApiResponse<TableDataOverview[]>>("/admin/db/compare/data/overview");
+      if (res.data?.data) {
+        setOverviewList(res.data.data);
+        if (!silent) {
+          showToast("全表数据对比就绪，请点击表查看明细", "success");
+        }
+      }
+    } catch (err: any) {
+      showToast(err?.response?.data?.message || "全量对比发生异常", "error");
+    } finally {
+      if (!silent) {
+        setLoadingOverview(false);
+      }
+    }
+  };
+
+  // ================== 3.1 单表数据差异下钻查询 ==================
+  const handleDrilldownDetail = async (tableName: string) => {
+    setSelectedTable(tableName);
     setLoadingData(true);
     setDataDiff(null);
     setSelectedInsertIds([]);
     setSelectedUpdateIds([]);
     try {
-      const res = await apiClient.get<ApiResponse<DataDiff>>(`/admin/db/compare/data?tableName=${selectedTable}`);
+      const res = await apiClient.get<ApiResponse<DataDiff>>(`/admin/db/compare/data?tableName=${tableName}`);
       if (res.data?.data) {
         setDataDiff(res.data.data);
-        const { toInsert, toUpdate, remoteOnly } = res.data.data;
-        if (toInsert.length === 0 && toUpdate.length === 0 && remoteOnly.length === 0) {
-          showToast(`表 [${selectedTable}] 在两端数据内容完全一致`, "success");
-        } else {
-          showToast(`比对完成：本地多 ${toInsert.length} 条，更新 ${toUpdate.length} 条，线上多 ${remoteOnly.length} 条`, "info");
-        }
+        setIsDetailOpen(true);
+        showToast(`已加载表 [${tableName}] 数据差异详情`, "info");
       }
     } catch (err: any) {
-      showToast(err?.response?.data?.message || "对比数据记录发生异常", "error");
+      showToast(err?.response?.data?.message || "加载表记录明细失败", "error");
     } finally {
       setLoadingData(false);
     }
   };
 
   const handleSyncData = async (opType: "INSERT" | "UPDATE") => {
-    const ids = opType === "INSERT" ? selectedInsertIds : selectedUpdateIds;
+    const ids = (opType === "INSERT" ? selectedInsertIds : selectedUpdateIds)
+      .map(k => Number(k))
+      .filter(n => !isNaN(n));
     if (ids.length === 0) {
       showToast("请勾选需要同步的数据行", "error");
       return;
@@ -245,14 +296,15 @@ export default function DbSyncPage() {
 
     setSyncingData(true);
     try {
-      const res = await apiClient.post<ApiResponse<string>>("/admin/db/sync/data", {
+      const res = await apiClient.post<ApiResponse<String>>("/admin/db/sync/data", {
         tableName: selectedTable,
         opType,
         ids
       });
       if (res.data?.code === 200) {
         showToast(`成功同步 ${ids.length} 条记录至线上！`, "success");
-        handleCompareData(); // 重新比对刷新
+        handleDrilldownDetail(selectedTable); // 刷新当前表的细节
+        handleCompareOverview(true);         // 静默刷新全量表的统计行数
       } else {
         showToast("同步数据发生异常", "error");
       }
@@ -295,6 +347,9 @@ export default function DbSyncPage() {
       if (res.data?.code === 200) {
         showToast("回退动作成功执行，线上已被还原！", "success");
         loadLogs(); // 重新加载日志
+        if (overviewList.length > 0) {
+          handleCompareOverview(true); // 刷新全量计数
+        }
       } else {
         showToast("回退失败", "error");
       }
@@ -586,7 +641,7 @@ export default function DbSyncPage() {
 
                         {/* SQL 同步预览区 */}
                         <div className="flex flex-col gap-2">
-                          <div className="flex items-center justify-between text-[10px] text-zinc-400 font-bold select-none">
+                          <div className="flex items-center justify-between text-[10px] text-zinc-450 font-bold select-none">
                             <span>RECOMMENDED SYNC DDL / 推荐同步 SQL 预览</span>
                             <button
                               onClick={() => {
@@ -631,249 +686,132 @@ export default function DbSyncPage() {
 
       {/* ================== Tab 3: 数据记录比对 (Data Compare) ================== */}
       {activeTab === "data" && (
-        <div className="bg-white dark:bg-zinc-900 border border-zinc-200/50 dark:border-zinc-850 p-5 rounded-2xl shadow-3xs flex flex-col gap-4 text-left">
+        <div className="bg-white dark:bg-zinc-900 border border-zinc-200/50 dark:border-zinc-850 p-5 rounded-2xl shadow-3xs flex flex-col gap-5 text-left">
           
-          {/* 选择数据表比对栏 */}
+          {/* 标题及一键全表对比控制栏 */}
           <div className="flex flex-col md:flex-row md:items-center justify-between gap-3 border-b border-zinc-100 dark:border-zinc-800/80 pb-3 select-none">
-            <div className="flex items-center gap-3">
+            <div className="flex items-center gap-2">
               <span className="w-1.5 h-3.5 bg-indigo-500 rounded-full" />
               <h3 className="text-xs font-bold text-zinc-800 dark:text-zinc-200">数据记录比对</h3>
-              
-              <select
-                value={selectedTable}
-                onChange={(e) => {
-                  setSelectedTable(e.target.value);
-                  setDataDiff(null);
-                }}
-                className="h-8 px-2 bg-zinc-50 dark:bg-zinc-850 border border-zinc-200/80 dark:border-zinc-800 rounded-xl text-xs font-mono font-bold text-zinc-700 dark:text-zinc-350 outline-hidden cursor-pointer"
-              >
-                <option value="blog_article">blog_article (文章数据表)</option>
-                <option value="blog_category">blog_category (分类表)</option>
-                <option value="blog_tag">blog_tag (标签表)</option>
-                <option value="blog_friend_link">blog_friend_link (友情链接表)</option>
-                <option value="blog_note">blog_note (手记表)</option>
-              </select>
             </div>
             
             <button
-              onClick={handleCompareData}
-              disabled={loadingData}
-              className="h-8 px-4 bg-primary text-white text-xs font-bold rounded-xl active:scale-95 transition-all flex items-center gap-1.5 cursor-pointer disabled:opacity-50"
+              onClick={() => handleCompareOverview(false)}
+              disabled={loadingOverview}
+              className="h-8.5 px-4.5 bg-primary text-white text-xs font-bold rounded-xl active:scale-95 transition-all flex items-center gap-1.5 cursor-pointer disabled:opacity-50 shadow-2xs"
             >
-              <RefreshCw size={12} className={cn(loadingData && "animate-spin")} />
-              开始比对数据
+              <RefreshCw size={12} className={cn(loadingOverview && "animate-spin")} />
+              一键全量对比所有表数据
             </button>
           </div>
 
-          {loadingData ? (
+          {/* 3.1 全表比对概览表格展示 */}
+          {loadingOverview ? (
             <div className="flex flex-col items-center justify-center py-20 text-zinc-400 gap-2 font-mono text-[11px]">
               <RefreshCw className="animate-spin text-primary" size={24} />
-              <span>COMPARING RECORDSNAPSHOTS...</span>
+              <span>SCANNING AND COMPARING ALL DATA TABLES...</span>
             </div>
-          ) : dataDiff ? (
-            <div className="grid grid-cols-1 gap-6">
-              
-              {/* 🟢 1. 本地新增数据 (To Insert) */}
-              <div className="border border-zinc-200/60 dark:border-zinc-800 rounded-2xl overflow-hidden shadow-3xs">
-                <div className="px-4 py-3.5 bg-emerald-500/5 dark:bg-emerald-500/2 border-b border-zinc-200/60 dark:border-zinc-800/80 flex items-center justify-between select-none">
-                  <h4 className="text-xs font-bold text-emerald-600 dark:text-emerald-400 flex items-center gap-2">
-                    <span className="w-2 h-2 rounded-full bg-emerald-500" />
-                    本地新增记录 ({dataDiff.toInsert.length} 条)
-                  </h4>
-                  {dataDiff.toInsert.length > 0 && (
-                    <button
-                      onClick={() => handleSyncData("INSERT")}
-                      disabled={syncingData}
-                      className="h-7 px-3 bg-emerald-500 text-white text-[10.5px] font-bold rounded-lg active:scale-95 transition-all flex items-center gap-1 cursor-pointer"
-                    >
-                      {syncingData && <RefreshCw size={10} className="animate-spin" />}
-                      导入选中到线上
-                    </button>
-                  )}
-                </div>
-
-                {dataDiff.toInsert.length > 0 ? (
-                  <div className="overflow-x-auto max-h-[300px] overflow-y-auto">
-                    <table className="w-full border-collapse text-left text-xs">
-                      <thead>
-                        <tr className="bg-zinc-50 dark:bg-zinc-850/40 text-[10px] font-bold text-zinc-450 uppercase tracking-wider border-b border-zinc-200/60 dark:border-zinc-800 select-none">
-                          <th className="p-3 w-10 text-center">
-                            <input 
-                              type="checkbox"
-                              checked={selectedInsertIds.length === dataDiff.toInsert.length}
-                              onChange={(e) => {
-                                if (e.target.checked) {
-                                  setSelectedInsertIds(dataDiff.toInsert.map(row => row.id));
-                                } else {
-                                  setSelectedInsertIds([]);
-                                }
+          ) : overviewList.length > 0 ? (
+            <div className="flex flex-col gap-4">
+              <h4 className="text-[10px] font-bold text-zinc-400 uppercase tracking-widest select-none">
+                物理数据表比对概览 (PHYSICAL TABLES OVERVIEW)
+              </h4>
+              <div className="overflow-x-auto rounded-xl border border-zinc-200/60 dark:border-zinc-800">
+                <table className="w-full border-collapse text-left text-xs">
+                  <thead>
+                    <tr className="bg-zinc-50 dark:bg-zinc-850/50 text-[10px] font-bold text-zinc-450 uppercase tracking-wider border-b border-zinc-200/60 dark:border-zinc-800 select-none">
+                      <th className="p-3">物理数据表名称</th>
+                      <th className="p-3">线上建表状态</th>
+                      <th className="p-3 text-center">本地行数</th>
+                      <th className="p-3 text-center">线上行数</th>
+                      <th className="p-3 text-center text-emerald-500">待导入 (Insert)</th>
+                      <th className="p-3 text-center text-amber-500">待更新 (Update)</th>
+                      <th className="p-3 text-center text-zinc-400">线上特有</th>
+                      <th className="p-3 text-center">操作</th>
+                    </tr>
+                  </thead>
+                  <tbody className="divide-y divide-zinc-200/40 dark:divide-zinc-800/60">
+                    {overviewList.map((row) => (
+                      <tr 
+                        key={row.tableName} 
+                        className={cn(
+                          "hover:bg-zinc-50/20 dark:hover:bg-zinc-950/10 text-zinc-650 dark:text-zinc-400 transition-colors",
+                          selectedTable === row.tableName && dataDiff && "bg-primary/5 hover:bg-primary/8 dark:bg-primary/5"
+                        )}
+                      >
+                        <td className="p-3 font-mono font-bold text-zinc-850 dark:text-zinc-350">{row.tableName}</td>
+                        <td className="p-3">
+                          {row.existsInOnline ? (
+                            <span className="text-[9px] font-bold text-emerald-600 dark:text-emerald-400 bg-emerald-500/10 px-2 py-0.5 rounded-md">
+                              线上已建表
+                            </span>
+                          ) : (
+                            <span className="text-[9px] font-bold text-rose-600 dark:text-rose-400 bg-rose-500/10 px-2 py-0.5 rounded-md flex items-center gap-0.5 select-none w-fit">
+                              <AlertTriangle size={9} />
+                              线上未建表，需要同步
+                            </span>
+                          )}
+                        </td>
+                        <td className="p-3 text-center font-mono font-semibold">{row.localCount}</td>
+                        <td className="p-3 text-center font-mono">{row.existsInOnline ? row.onlineCount : "-"}</td>
+                        <td className="p-3 text-center font-mono font-extrabold text-emerald-500">
+                          {row.existsInOnline ? (row.toInsertCount > 0 ? `+${row.toInsertCount}` : 0) : "-"}
+                        </td>
+                        <td className="p-3 text-center font-mono font-extrabold text-amber-500">
+                          {row.existsInOnline ? (row.toUpdateCount > 0 ? `~${row.toUpdateCount}` : 0) : "-"}
+                        </td>
+                        <td className="p-3 text-center font-mono text-zinc-400">
+                          {row.existsInOnline ? row.remoteOnlyCount : "-"}
+                        </td>
+                        <td className="p-3 text-center">
+                          {row.existsInOnline ? (
+                            <button
+                              onClick={() => handleDrilldownDetail(row.tableName)}
+                              disabled={loadingData && selectedTable === row.tableName}
+                              className={cn(
+                                "px-2.5 py-1 text-[10px] font-bold rounded-lg transition-all active:scale-95 cursor-pointer flex items-center justify-center gap-1 mx-auto",
+                                selectedTable === row.tableName && dataDiff
+                                  ? "bg-primary text-white shadow-2xs"
+                                  : "bg-primary/10 text-primary hover:bg-primary/20"
+                              )}
+                            >
+                              {loadingData && selectedTable === row.tableName && <RefreshCw size={9} className="animate-spin" />}
+                              对比明细 (Diff)
+                            </button>
+                          ) : (
+                            <button
+                              onClick={() => {
+                                setActiveTab("schema");
+                                handleCompareSchema();
                               }}
-                              className="rounded border-zinc-300 text-primary focus:ring-primary/20"
-                            />
-                          </th>
-                          <th className="p-3 font-mono">ID</th>
-                          <th className="p-3">名称/标题/关键字段</th>
-                          <th className="p-3">更多属性元数据</th>
-                        </tr>
-                      </thead>
-                      <tbody className="divide-y divide-zinc-200/40 dark:divide-zinc-800/60">
-                        {dataDiff.toInsert.map((row) => (
-                          <tr key={row.id} className="hover:bg-zinc-50/30 dark:hover:bg-zinc-950/10 text-zinc-600 dark:text-zinc-400">
-                            <td className="p-3 text-center">
-                              <input 
-                                type="checkbox"
-                                checked={selectedInsertIds.includes(row.id)}
-                                onChange={(e) => {
-                                  if (e.target.checked) {
-                                    setSelectedInsertIds(prev => [...prev, row.id]);
-                                  } else {
-                                    setSelectedInsertIds(prev => prev.filter(id => id !== row.id));
-                                  }
-                                }}
-                                className="rounded border-zinc-300 text-primary focus:ring-primary/20"
-                              />
-                            </td>
-                            <td className="p-3 font-mono font-bold text-zinc-700 dark:text-zinc-350">{row.id}</td>
-                            <td className="p-3 font-medium text-zinc-800 dark:text-zinc-200">
-                              {row.title || row.name || row.slug || JSON.stringify(row).substring(0, 50)}
-                            </td>
-                            <td className="p-3 text-[10.5px] font-mono text-zinc-400 dark:text-zinc-550 max-w-[300px] truncate">
-                              {Object.entries(row)
-                                .filter(([k]) => k !== "id" && k !== "title" && k !== "name" && k !== "content")
-                                .map(([k, v]) => `${k}:${v}`)
-                                .join(" | ")}
-                            </td>
-                          </tr>
-                        ))}
-                      </tbody>
-                    </table>
-                  </div>
-                ) : (
-                  <div className="text-center py-10 text-zinc-400 font-mono text-[10.5px] select-none">
-                    没有本地特有的新增记录
-                  </div>
-                )}
+                              className="px-2.5 py-1 bg-rose-500/10 text-rose-600 hover:bg-rose-500/20 text-[10px] font-bold rounded-lg transition-all active:scale-95 cursor-pointer mx-auto flex items-center gap-0.5"
+                            >
+                              <Play size={9} />
+                              去同步结构
+                            </button>
+                          )}
+                        </td>
+                      </tr>
+                    ))}
+                  </tbody>
+                </table>
               </div>
-
-              {/* 🟡 2. 本地修改数据 (To Update) */}
-              <div className="border border-zinc-200/60 dark:border-zinc-800 rounded-2xl overflow-hidden shadow-3xs">
-                <div className="px-4 py-3.5 bg-amber-500/5 dark:bg-amber-500/2 border-b border-zinc-200/60 dark:border-zinc-800/80 flex items-center justify-between select-none">
-                  <h4 className="text-xs font-bold text-amber-600 dark:text-amber-400 flex items-center gap-2">
-                    <span className="w-2 h-2 rounded-full bg-amber-500" />
-                    本地更新记录 ({dataDiff.toUpdate.length} 条，本地版本较新)
-                  </h4>
-                  {dataDiff.toUpdate.length > 0 && (
-                    <button
-                      onClick={() => handleSyncData("UPDATE")}
-                      disabled={syncingData}
-                      className="h-7 px-3 bg-amber-500 text-white text-[10.5px] font-bold rounded-lg active:scale-95 transition-all flex items-center gap-1 cursor-pointer"
-                    >
-                      {syncingData && <RefreshCw size={10} className="animate-spin" />}
-                      同步更新到线上
-                    </button>
-                  )}
-                </div>
-
-                {dataDiff.toUpdate.length > 0 ? (
-                  <div className="overflow-x-auto max-h-[300px] overflow-y-auto">
-                    <table className="w-full border-collapse text-left text-xs">
-                      <thead>
-                        <tr className="bg-zinc-50 dark:bg-zinc-850/40 text-[10px] font-bold text-zinc-450 uppercase tracking-wider border-b border-zinc-200/60 dark:border-zinc-800 select-none">
-                          <th className="p-3 w-10 text-center">
-                            <input 
-                              type="checkbox"
-                              checked={selectedUpdateIds.length === dataDiff.toUpdate.length}
-                              onChange={(e) => {
-                                if (e.target.checked) {
-                                  setSelectedUpdateIds(dataDiff.toUpdate.map(row => row.id));
-                                } else {
-                                  setSelectedUpdateIds([]);
-                                }
-                              }}
-                              className="rounded border-zinc-300 text-primary focus:ring-primary/20"
-                            />
-                          </th>
-                          <th className="p-3 font-mono">ID</th>
-                          <th className="p-3">名称/标题</th>
-                          <th className="p-3">本地最后更新</th>
-                        </tr>
-                      </thead>
-                      <tbody className="divide-y divide-zinc-200/40 dark:divide-zinc-800/60">
-                        {dataDiff.toUpdate.map((row) => (
-                          <tr key={row.id} className="hover:bg-zinc-50/30 dark:hover:bg-zinc-950/10 text-zinc-600 dark:text-zinc-400">
-                            <td className="p-3 text-center">
-                              <input 
-                                type="checkbox"
-                                checked={selectedUpdateIds.includes(row.id)}
-                                onChange={(e) => {
-                                  if (e.target.checked) {
-                                    setSelectedUpdateIds(prev => [...prev, row.id]);
-                                  } else {
-                                    setSelectedUpdateIds(prev => prev.filter(id => id !== row.id));
-                                  }
-                                }}
-                                className="rounded border-zinc-300 text-primary focus:ring-primary/20"
-                              />
-                            </td>
-                            <td className="p-3 font-mono font-bold text-zinc-700 dark:text-zinc-350">{row.id}</td>
-                            <td className="p-3 font-medium text-zinc-800 dark:text-zinc-200">{row.title || row.name || row.slug}</td>
-                            <td className="p-3 font-mono text-[10.5px] text-amber-500 font-bold">{row.updated_at || "N/A"}</td>
-                          </tr>
-                        ))}
-                      </tbody>
-                    </table>
-                  </div>
-                ) : (
-                  <div className="text-center py-10 text-zinc-400 font-mono text-[10.5px] select-none">
-                    没有本地更新的差异记录
-                  </div>
-                )}
-              </div>
-
-              {/* 🔴 3. 线上特有数据 (Remote Only) */}
-              <div className="border border-zinc-200/60 dark:border-zinc-800 rounded-2xl overflow-hidden shadow-3xs">
-                <div className="px-4 py-3.5 bg-rose-500/5 dark:bg-rose-500/2 border-b border-zinc-200/60 dark:border-zinc-800/80 flex items-center justify-between select-none">
-                  <h4 className="text-xs font-bold text-rose-600 dark:text-rose-400 flex items-center gap-2">
-                    <span className="w-2 h-2 rounded-full bg-rose-500" />
-                    线上多出数据 ({dataDiff.remoteOnly.length} 条，本地缺少)
-                  </h4>
-                  <span className="text-[10px] text-zinc-400">仅用于感知，不可直接在线上撤销</span>
-                </div>
-
-                {dataDiff.remoteOnly.length > 0 ? (
-                  <div className="overflow-x-auto max-h-[300px] overflow-y-auto">
-                    <table className="w-full border-collapse text-left text-xs">
-                      <thead>
-                        <tr className="bg-zinc-50 dark:bg-zinc-850/40 text-[10px] font-bold text-zinc-450 uppercase tracking-wider border-b border-zinc-200/60 dark:border-zinc-800 select-none">
-                          <th className="p-3 font-mono">ID</th>
-                          <th className="p-3">名称/标题</th>
-                          <th className="p-3">线上更新时间</th>
-                        </tr>
-                      </thead>
-                      <tbody className="divide-y divide-zinc-200/40 dark:divide-zinc-800/60">
-                        {dataDiff.remoteOnly.map((row) => (
-                          <tr key={row.id} className="hover:bg-zinc-50/30 dark:hover:bg-zinc-950/10 text-zinc-650 dark:text-zinc-450">
-                            <td className="p-3 font-mono font-bold">{row.id}</td>
-                            <td className="p-3 font-medium">{row.title || row.name || row.slug}</td>
-                            <td className="p-3 font-mono text-[10.5px]">{row.updated_at || "N/A"}</td>
-                          </tr>
-                        ))}
-                      </tbody>
-                    </table>
-                  </div>
-                ) : (
-                  <div className="text-center py-10 text-zinc-400 font-mono text-[10.5px] select-none">
-                    线上生产库无特有记录
-                  </div>
-                )}
-              </div>
-
             </div>
           ) : (
-            <div className="text-center py-20 text-zinc-400 font-mono text-xs select-none">
-              PLEASE CLICK COMPARISON TO QUERY DATA DIFFERENCES
+            <div className="text-center py-10 text-zinc-400 font-mono text-xs select-none">
+              点击上方按钮一键开启全量物理数据表比对概览
             </div>
           )}
+
+          {/* 3.2 加载指示器（详情在弹窗中展示） */}
+          {loadingData && (
+            <div className="flex flex-col items-center justify-center py-10 text-zinc-400 gap-2 border-t border-zinc-150 dark:border-zinc-800/80 pt-6">
+              <RefreshCw className="animate-spin text-primary" size={20} />
+              <span className="text-[10px] font-mono">LOADING DETAIL METADATA FOR [{selectedTable}]...</span>
+            </div>
+          )}
+
+
         </div>
       )}
 
@@ -915,7 +853,7 @@ export default function DbSyncPage() {
                 </thead>
                 <tbody className="divide-y divide-zinc-200/40 dark:divide-zinc-800/60">
                   {logs.map((logItem) => (
-                    <tr key={logItem.id} className="hover:bg-zinc-50/20 dark:hover:bg-zinc-950/10 text-zinc-650 dark:text-zinc-450">
+                    <tr key={logItem.id} className="hover:bg-zinc-50/20 dark:hover:bg-zinc-950/10 text-zinc-655 dark:text-zinc-450">
                       <td className="p-3 font-mono font-bold text-zinc-700 dark:text-zinc-350">#{logItem.id}</td>
                       <td className="p-3">
                         <span className={cn(
@@ -969,6 +907,143 @@ export default function DbSyncPage() {
           )}
         </div>
       )}
+
+      {/* ================== 数据差异详情弹窗 ================== */}
+      <Modal>
+        <Modal.Backdrop
+          isOpen={isDetailOpen}
+          onOpenChange={setIsDetailOpen}
+          variant="blur"
+        >
+          <Modal.Container size="full" scroll="inside">
+            <Modal.Dialog>
+              <Modal.CloseTrigger />
+              <Modal.Header>
+                <Modal.Heading>
+                  数据差异明细 — <span className="font-mono text-primary">{dataDiff?.tableName}</span>
+                </Modal.Heading>
+              </Modal.Header>
+              <Modal.Body className="p-5 space-y-5">
+                {dataDiff && (
+                  <>
+                    <div className="flex items-center gap-2 text-xs font-bold text-zinc-700 dark:text-zinc-300 bg-primary/5 border border-primary/10 px-4.5 py-2.5 rounded-xl select-none">
+                      <ArrowRightLeft size={13} className="text-primary shrink-0" />
+                      <span>正在查阅数据表 <strong className="font-mono text-primary font-extrabold">{dataDiff.tableName}</strong> 的两端行记录 Diff 明细：</span>
+                    </div>
+                    <div className="grid grid-cols-1 gap-6">
+                      {/* 🟢 本地新增 */}
+                      <div className="border border-zinc-200/60 dark:border-zinc-800 rounded-2xl overflow-hidden shadow-3xs">
+                        <div className="px-4 py-3.5 bg-emerald-500/5 dark:bg-emerald-500/2 border-b border-zinc-200/60 dark:border-zinc-800/80 flex items-center justify-between select-none">
+                          <h4 className="text-xs font-bold text-emerald-600 dark:text-emerald-400 flex items-center gap-2">
+                            <span className="w-2 h-2 rounded-full bg-emerald-500" />
+                            本地新增记录 ({dataDiff.toInsert.length} 条)
+                          </h4>
+                          {dataDiff.toInsert.length > 0 && (
+                            <button onClick={() => handleSyncData("INSERT")} disabled={syncingData} className="h-7 px-3 bg-emerald-500 text-white text-[10.5px] font-bold rounded-lg active:scale-95 transition-all flex items-center gap-1 cursor-pointer">
+                              {syncingData && <RefreshCw size={10} className="animate-spin" />}导入选中到线上
+                            </button>
+                          )}
+                        </div>
+                        {dataDiff.toInsert.length > 0 ? (
+                          <div className="overflow-x-auto max-h-[300px] overflow-y-auto">
+                            <table className="w-full border-collapse text-left text-xs">
+                              <thead>
+                                <tr className="bg-zinc-50 dark:bg-zinc-850/40 text-[10px] font-bold text-zinc-450 uppercase tracking-wider border-b border-zinc-200/60 dark:border-zinc-800 select-none">
+                                  <th className="p-3 w-10 text-center"><input type="checkbox" checked={selectedInsertIds.length === dataDiff.toInsert.length && dataDiff.toInsert.length > 0} onChange={(e) => { if (e.target.checked) { setSelectedInsertIds(dataDiff.toInsert.map((r, i) => getRowKey(r, i))); } else { setSelectedInsertIds([]); } }} className="rounded border-zinc-300 text-primary focus:ring-primary/20" /></th>
+                                  <th className="p-3 font-mono">ID</th><th className="p-3">名称/标题/关键字段</th><th className="p-3">更多属性元数据</th>
+                                </tr>
+                              </thead>
+                              <tbody className="divide-y divide-zinc-200/40 dark:divide-zinc-800/60">
+                                {dataDiff.toInsert.map((row, index) => { const rk = getRowKey(row, index); return (
+                                  <tr key={rk} className="hover:bg-zinc-50/30 dark:hover:bg-zinc-950/10 text-zinc-600 dark:text-zinc-400">
+                                    <td className="p-3 text-center"><input type="checkbox" checked={selectedInsertIds.includes(rk)} onChange={(e) => { if (e.target.checked) { setSelectedInsertIds(p => [...p, rk]); } else { setSelectedInsertIds(p => p.filter(k => k !== rk)); } }} className="rounded border-zinc-300 text-primary focus:ring-primary/20" /></td>
+                                    <td className="p-3 font-mono font-bold text-zinc-700 dark:text-zinc-350">{row.id ?? "-"}</td>
+                                    <td className="p-3 font-medium text-zinc-800 dark:text-zinc-200">{row.title || row.name || row.slug || JSON.stringify(row).substring(0, 50)}</td>
+                                    <td className="p-3 text-[10.5px] font-mono text-zinc-400 dark:text-zinc-555 max-w-[300px] truncate">{Object.entries(row).filter(([k]) => k !== "id" && k !== "title" && k !== "name" && k !== "content").map(([k, v]) => `${k}:${v}`).join(" | ")}</td>
+                                  </tr>
+                                ); })}
+                              </tbody>
+                            </table>
+                          </div>
+                        ) : <div className="text-center py-10 text-zinc-400 font-mono text-[10.5px] select-none">没有本地特有的新增记录</div>}
+                      </div>
+                      {/* 🟡 本地修改 */}
+                      <div className="border border-zinc-200/60 dark:border-zinc-800 rounded-2xl overflow-hidden shadow-3xs">
+                        <div className="px-4 py-3.5 bg-amber-500/5 dark:bg-amber-500/2 border-b border-zinc-200/60 dark:border-zinc-800/80 flex items-center justify-between select-none">
+                          <h4 className="text-xs font-bold text-amber-600 dark:text-amber-400 flex items-center gap-2">
+                            <span className="w-2 h-2 rounded-full bg-amber-500" />
+                            本地更新记录 ({dataDiff.toUpdate.length} 条，本地版本较新)
+                          </h4>
+                          {dataDiff.toUpdate.length > 0 && (
+                            <button onClick={() => handleSyncData("UPDATE")} disabled={syncingData} className="h-7 px-3 bg-amber-500 text-white text-[10.5px] font-bold rounded-lg active:scale-95 transition-all flex items-center gap-1 cursor-pointer">
+                              {syncingData && <RefreshCw size={10} className="animate-spin" />}同步更新到线上
+                            </button>
+                          )}
+                        </div>
+                        {dataDiff.toUpdate.length > 0 ? (
+                          <div className="overflow-x-auto max-h-[300px] overflow-y-auto">
+                            <table className="w-full border-collapse text-left text-xs">
+                              <thead>
+                                <tr className="bg-zinc-50 dark:bg-zinc-850/40 text-[10px] font-bold text-zinc-450 uppercase tracking-wider border-b border-zinc-200/60 dark:border-zinc-800 select-none">
+                                  <th className="p-3 w-10 text-center"><input type="checkbox" checked={selectedUpdateIds.length === dataDiff.toUpdate.length && dataDiff.toUpdate.length > 0} onChange={(e) => { if (e.target.checked) { setSelectedUpdateIds(dataDiff.toUpdate.map((r, i) => getRowKey(r, i))); } else { setSelectedUpdateIds([]); } }} className="rounded border-zinc-300 text-primary focus:ring-primary/20" /></th>
+                                  <th className="p-3 font-mono">ID</th><th className="p-3">名称/标题</th><th className="p-3">本地最后更新</th>
+                                </tr>
+                              </thead>
+                              <tbody className="divide-y divide-zinc-200/40 dark:divide-zinc-800/60">
+                                {dataDiff.toUpdate.map((row, index) => { const rk = getRowKey(row, index); return (
+                                  <tr key={rk} className="hover:bg-zinc-50/30 dark:hover:bg-zinc-950/10 text-zinc-650 dark:text-zinc-400">
+                                    <td className="p-3 text-center"><input type="checkbox" checked={selectedUpdateIds.includes(rk)} onChange={(e) => { if (e.target.checked) { setSelectedUpdateIds(p => [...p, rk]); } else { setSelectedUpdateIds(p => p.filter(k => k !== rk)); } }} className="rounded border-zinc-300 text-primary focus:ring-primary/20" /></td>
+                                    <td className="p-3 font-mono font-bold text-zinc-700 dark:text-zinc-350">{row.id ?? "-"}</td>
+                                    <td className="p-3 font-medium text-zinc-800 dark:text-zinc-200">{row.title || row.name || row.slug}</td>
+                                    <td className="p-3 font-mono text-[10.5px] text-amber-500 font-bold">{row.updated_at || "N/A"}</td>
+                                  </tr>
+                                ); })}
+                              </tbody>
+                            </table>
+                          </div>
+                        ) : <div className="text-center py-10 text-zinc-400 font-mono text-[10.5px] select-none">没有本地更新的差异记录</div>}
+                      </div>
+                      {/* 🔴 线上特有 */}
+                      <div className="border border-zinc-200/60 dark:border-zinc-800 rounded-2xl overflow-hidden shadow-3xs">
+                        <div className="px-4 py-3.5 bg-rose-500/5 dark:bg-rose-500/2 border-b border-zinc-200/60 dark:border-zinc-800/80 flex items-center justify-between select-none">
+                          <h4 className="text-xs font-bold text-rose-600 dark:text-rose-400 flex items-center gap-2">
+                            <span className="w-2 h-2 rounded-full bg-rose-500" />
+                            线上多出数据 ({dataDiff.remoteOnly.length} 条，本地缺少)
+                          </h4>
+                          <span className="text-[10px] text-zinc-400">仅用于感知，不可直接在线上撤销</span>
+                        </div>
+                        {dataDiff.remoteOnly.length > 0 ? (
+                          <div className="overflow-x-auto max-h-[300px] overflow-y-auto">
+                            <table className="w-full border-collapse text-left text-xs">
+                              <thead>
+                                <tr className="bg-zinc-50 dark:bg-zinc-850/40 text-[10px] font-bold text-zinc-450 uppercase tracking-wider border-b border-zinc-200/60 dark:border-zinc-800 select-none">
+                                  <th className="p-3 font-mono">ID</th><th className="p-3">名称/标题</th><th className="p-3">线上更新时间</th>
+                                </tr>
+                              </thead>
+                              <tbody className="divide-y divide-zinc-200/40 dark:divide-zinc-800/60">
+                                {dataDiff.remoteOnly.map((row, index) => (
+                                  <tr key={getRowKey(row, index)} className="hover:bg-zinc-50/30 dark:hover:bg-zinc-950/10 text-zinc-650 dark:text-zinc-450">
+                                    <td className="p-3 font-mono font-bold">{row.id ?? "-"}</td>
+                                    <td className="p-3 font-medium">{row.title || row.name || row.slug}</td>
+                                    <td className="p-3 font-mono text-[10.5px]">{row.updated_at || "N/A"}</td>
+                                  </tr>
+                                ))}
+                              </tbody>
+                            </table>
+                          </div>
+                        ) : <div className="text-center py-10 text-zinc-400 font-mono text-[10.5px] select-none">线上生产库无特有记录</div>}
+                      </div>
+                    </div>
+                  </>
+                )}
+              </Modal.Body>
+              <Modal.Footer>
+                <button slot="close" className="h-8.5 px-4.5 bg-zinc-100 dark:bg-zinc-800 border border-zinc-200/60 dark:border-zinc-700/60 text-zinc-700 dark:text-zinc-300 text-xs font-bold rounded-xl active:scale-95 transition-all cursor-pointer">关闭</button>
+              </Modal.Footer>
+            </Modal.Dialog>
+          </Modal.Container>
+        </Modal.Backdrop>
+      </Modal>
 
     </div>
   );
