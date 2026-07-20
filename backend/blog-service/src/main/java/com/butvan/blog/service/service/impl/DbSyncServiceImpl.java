@@ -481,7 +481,8 @@ public class DbSyncServiceImpl implements DbSyncService {
             String pkWhere = buildPkWhereClause(pkColumns, row);
 
             if ("INSERT".equalsIgnoreCase(opType)) {
-                // 1. 新增同步
+                // 1. 新增同步：先级联确保外键依赖记录已存在
+                ensureForeignKeyDependencies(localTemplate, onlineTemplate, tableName, row, 0, new HashSet<>());
                 sqlSync = buildInsertSql(tableName, row);
                 sqlRollback = String.format("DELETE FROM \"%s\" WHERE %s;", tableName, pkWhere);
 
@@ -492,7 +493,8 @@ public class DbSyncServiceImpl implements DbSyncService {
                 List<Map<String, Object>> oldRows = queryFullRowsByKeys(onlineTemplate, tableName, pkColumns,
                         Collections.singletonList(extractKeyValues(pkColumns, row)));
                 if (oldRows.isEmpty()) {
-                    // 线上没有，退化为新增
+                    // 线上没有，退化为新增：先级联确保外键依赖
+                    ensureForeignKeyDependencies(localTemplate, onlineTemplate, tableName, row, 0, new HashSet<>());
                     sqlSync = buildInsertSql(tableName, row);
                     sqlRollback = String.format("DELETE FROM \"%s\" WHERE %s;", tableName, pkWhere);
                 } else {
@@ -565,6 +567,92 @@ public class DbSyncServiceImpl implements DbSyncService {
                 "  AND tc.table_name = ? " +
                 "ORDER BY kcu.ordinal_position";
         return jdbcTemplate.queryForList(sql, String.class, tableName);
+    }
+
+    /** 外键约束信息 */
+    private record ForeignKeyInfo(String columnName, String referencedTable, String referencedColumn) {}
+
+    /**
+     * 查询指定表的所有外键约束（列名、引用表名、引用列名）
+     */
+    private List<ForeignKeyInfo> queryForeignKeyConstraints(JdbcTemplate jdbcTemplate, String tableName) {
+        String sql = "SELECT kcu.column_name, ccu.table_name AS referenced_table, ccu.column_name AS referenced_column " +
+                "FROM information_schema.table_constraints tc " +
+                "JOIN information_schema.key_column_usage kcu " +
+                "  ON tc.constraint_name = kcu.constraint_name " +
+                "  AND tc.table_schema = kcu.table_schema " +
+                "JOIN information_schema.constraint_column_usage ccu " +
+                "  ON ccu.constraint_name = tc.constraint_name " +
+                "  AND ccu.table_schema = tc.table_schema " +
+                "WHERE tc.constraint_type = 'FOREIGN KEY' " +
+                "  AND tc.table_schema = 'public' " +
+                "  AND tc.table_name = ?";
+        return jdbcTemplate.query(sql, (rs, rowNum) -> new ForeignKeyInfo(
+                rs.getString("column_name"),
+                rs.getString("referenced_table"),
+                rs.getString("referenced_column")
+        ), tableName);
+    }
+
+    /**
+     * 递归确保外键依赖记录在线上库已存在，缺失时自动从本地级联同步
+     * @param depth 当前递归深度，最大 5 层防止循环引用
+     * @param visited 已处理的「表名::主键值」集合，防止重复同步
+     */
+    private void ensureForeignKeyDependencies(JdbcTemplate localTemplate, JdbcTemplate onlineTemplate,
+                                              String tableName, Map<String, Object> row,
+                                              int depth, Set<String> visited) {
+        if (depth > 5) return;
+
+        List<ForeignKeyInfo> fks = queryForeignKeyConstraints(localTemplate, tableName);
+
+        for (ForeignKeyInfo fk : fks) {
+            Object fkValue = row.get(fk.columnName());
+            if (fkValue == null) continue;
+
+            String visitKey = fk.referencedTable() + "::" + fkValue;
+            if (visited.contains(visitKey)) continue;
+            visited.add(visitKey);
+
+            // 检查线上是否已存在该引用记录
+            String checkSql = String.format("SELECT COUNT(*) FROM \"%s\" WHERE \"%s\" = %s",
+                    fk.referencedTable(), fk.referencedColumn(), formatSqlValue(fkValue));
+            Integer count = onlineTemplate.queryForObject(checkSql, Integer.class);
+            if (count != null && count > 0) continue;
+
+            // 从本地查询该引用记录
+            String refQuery = String.format("SELECT * FROM \"%s\" WHERE \"%s\" = %s",
+                    fk.referencedTable(), fk.referencedColumn(), formatSqlValue(fkValue));
+            List<Map<String, Object>> refRows = localTemplate.queryForList(refQuery);
+            if (refRows.isEmpty()) continue;
+
+            Map<String, Object> refRow = refRows.get(0);
+
+            // 递归处理该引用记录的更上层依赖
+            ensureForeignKeyDependencies(localTemplate, onlineTemplate, fk.referencedTable(), refRow, depth + 1, visited);
+
+            // 级联插入该引用记录到线上（使用 ON CONFLICT DO NOTHING 防止已存在时报错）
+            String insertSql = buildInsertSql(fk.referencedTable(), refRow)
+                    .replaceFirst(";$", " ON CONFLICT DO NOTHING;");
+            String rollbackSql = String.format("DELETE FROM \"%s\" WHERE \"%s\" = %s;",
+                    fk.referencedTable(), fk.referencedColumn(), formatSqlValue(fkValue));
+
+            try {
+                onlineTemplate.execute(insertSql);
+                logRepository.save(DbSyncLog.builder()
+                        .opType("DATA")
+                        .tableName(fk.referencedTable())
+                        .sqlSync(insertSql)
+                        .sqlRollback(rollbackSql)
+                        .operator("admin")
+                        .status("SUCCESS")
+                        .build());
+                log.info("级联同步外键依赖: 表={}, {}={}, 引用自 {}.{}",
+                        fk.referencedTable(), fk.referencedColumn(), fkValue, tableName, fk.columnName());
+            } catch (Exception e) {
+                log.warn("级联同步外键依赖失败: 表={}, 原因: {}", fk.referencedTable(), e.getMessage());
+            }
+        }
     }
 
     /**
