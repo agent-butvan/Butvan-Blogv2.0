@@ -211,6 +211,17 @@ public class DbSyncServiceImpl implements DbSyncService {
         JdbcTemplate localTemplate = new JdbcTemplate(connectionManager.getDataSource(localConfig));
         JdbcTemplate onlineTemplate = new JdbcTemplate(connectionManager.getDataSource(onlineConfig));
 
+        // 校验表是否存在，防止抛出 BadSqlGrammarException 导致接口报 500
+        List<String> localTables = queryTables(localTemplate);
+        List<String> onlineTables = queryTables(onlineTemplate);
+        
+        if (!localTables.contains(tableName)) {
+            throw new IllegalArgumentException("本地开发库中不存在表 [" + tableName + "]");
+        }
+        if (!onlineTables.contains(tableName)) {
+            throw new IllegalArgumentException("线上部署库中不存在表 [" + tableName + "]，请先在【结构对比】中执行同步建表！");
+        }
+
         // 1. 分别查询两边的主键与更新时间快照
         boolean hasUpdatedAt = checkColumnExists(localTemplate, tableName, "updated_at");
         String sqlQuery = hasUpdatedAt 

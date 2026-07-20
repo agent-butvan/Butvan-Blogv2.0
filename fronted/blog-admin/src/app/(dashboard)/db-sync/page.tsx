@@ -81,7 +81,7 @@ export default function DbSyncPage() {
   const [syncingSchema, setSyncingSchema] = useState<Record<string, boolean>>({});
 
   // ================== 3. 数据对比 State ==================
-  const [selectedTable, setSelectedTable] = useState("article");
+  const [selectedTable, setSelectedTable] = useState("blog_article");
   const [dataDiff, setDataDiff] = useState<DataDiff | null>(null);
   const [loadingData, setLoadingData] = useState(false);
   const [selectedInsertIds, setSelectedInsertIds] = useState<number[]>([]);
@@ -647,11 +647,11 @@ export default function DbSyncPage() {
                 }}
                 className="h-8 px-2 bg-zinc-50 dark:bg-zinc-850 border border-zinc-200/80 dark:border-zinc-800 rounded-xl text-xs font-mono font-bold text-zinc-700 dark:text-zinc-350 outline-hidden cursor-pointer"
               >
-                <option value="article">article (文章数据表)</option>
-                <option value="category">category (分类表)</option>
-                <option value="tag">tag (标签表)</option>
-                <option value="friend_link">friend_link (友情链接表)</option>
-                <option value="note">note (手记表)</option>
+                <option value="blog_article">blog_article (文章数据表)</option>
+                <option value="blog_category">blog_category (分类表)</option>
+                <option value="blog_tag">blog_tag (标签表)</option>
+                <option value="blog_friend_link">blog_friend_link (友情链接表)</option>
+                <option value="blog_note">blog_note (手记表)</option>
               </select>
             </div>
             
