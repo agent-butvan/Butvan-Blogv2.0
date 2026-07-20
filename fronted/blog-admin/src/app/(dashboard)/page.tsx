@@ -142,69 +142,54 @@ export default function DashboardPage() {
     }
   }, []);
 
-  // 绑定快捷键，支持 W/E/C/M/S 快速导航
+  // 拉取主仪表盘指标 (定时轮询以实现实时更新)
   useEffect(() => {
-    const handleKeyDown = (e: KeyboardEvent) => {
-      const activeEl = document.activeElement;
-      if (activeEl && (activeEl.tagName === "INPUT" || activeEl.tagName === "TEXTAREA" || activeEl.getAttribute("contenteditable") === "true")) {
-        return;
-      }
-      const key = e.key.toLowerCase();
-      switch (key) {
-        case "w":
-          router.push("/articles/new");
-          break;
-        case "e":
-          router.push("/scenes");
-          break;
-        case "c":
-          router.push("/comments");
-          break;
-        case "m":
-          router.push("/media");
-          break;
-        case "s":
-          router.push("/settings");
-          break;
-      }
-    };
-    window.addEventListener("keydown", handleKeyDown);
-    return () => window.removeEventListener("keydown", handleKeyDown);
-  }, [router]);
+    let timerId: NodeJS.Timeout;
+    let isMounted = true;
+    let activeController: AbortController | null = null;
 
-  // 拉取主仪表盘指标
-  useEffect(() => {
-    const controller = new AbortController();
-    
-    apiClient
-      .get<ApiResponse<DashboardStats>>("/admin/dashboard", {
-        signal: controller.signal
-      })
-      .then((res) => {
-        if (res.data?.data) {
-          setStats(res.data.data);
-        }
-      })
-      .catch((err) => {
-        if (err.name === 'CanceledError' || err.message === 'canceled') {
-          return;
-        }
-        console.error('获取工作台数据失败:', err);
-        setStats({
-          articleCount: 0,
-          commentCount: 0,
-          totalViews: 0,
-          noteCount: 0
+    const fetchDashboardStats = () => {
+      // 如果有正在进行的请求，先取消它
+      if (activeController) {
+        activeController.abort();
+      }
+      
+      activeController = new AbortController();
+      
+      apiClient
+        .get<ApiResponse<DashboardStats>>("/admin/dashboard", {
+          signal: activeController.signal
+        })
+        .then((res) => {
+          if (isMounted && res.data?.data) {
+            setStats(res.data.data);
+          }
+        })
+        .catch((err) => {
+          if (err.name === 'CanceledError' || err.message === 'canceled') {
+            return;
+          }
+          console.error('定时获取工作台数据失败:', err);
+        })
+        .finally(() => {
+          if (isMounted) {
+            setLoading(false);
+          }
         });
-      })
-      .finally(() => {
-        if (!controller.signal.aborted) {
-          setLoading(false);
-        }
-      });
+    };
+
+    // 首次立即加载
+    fetchDashboardStats();
+
+    // 开启 5 秒短轮询实时刷新流量、系统健康、服务连接状态指标
+    timerId = setInterval(fetchDashboardStats, 5000);
 
     return () => {
-      controller.abort();
+      isMounted = false;
+      if (activeController) {
+        activeController.abort();
+      }
+      clearInterval(timerId);
     };
   }, []);
 
