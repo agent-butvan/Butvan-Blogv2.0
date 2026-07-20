@@ -6,6 +6,7 @@ import com.butvan.blog.pojo.entity.DbSyncLog;
 import com.butvan.blog.pojo.vo.dbsync.DataDiffVO;
 import com.butvan.blog.pojo.vo.dbsync.DbConnectionConfigVO;
 import com.butvan.blog.pojo.vo.dbsync.SchemaDiffVO;
+import com.butvan.blog.pojo.vo.dbsync.TableDataOverviewVO;
 import com.butvan.blog.service.config.DbConnectionManager;
 import com.butvan.blog.service.repository.DbConnectionConfigRepository;
 import com.butvan.blog.service.repository.DbSyncLogRepository;
@@ -200,6 +201,125 @@ public class DbSyncServiceImpl implements DbSyncService {
     }
 
     @Override
+    public List<TableDataOverviewVO> compareDataOverview() {
+        log.info("一键全量对比本地开发库与线上部署库的所有物理表记录数与差集数量");
+        
+        DbConnectionConfig localConfig = configRepository.findByConnName("local_dev")
+                .orElseThrow(() -> new IllegalArgumentException("未配置本地开发库 [local_dev] 连接信息"));
+        DbConnectionConfig onlineConfig = configRepository.findByConnName("online_prod")
+                .orElseThrow(() -> new IllegalArgumentException("未配置线上部署库 [online_prod] 连接信息"));
+
+        JdbcTemplate localTemplate = new JdbcTemplate(connectionManager.getDataSource(localConfig));
+        JdbcTemplate onlineTemplate = new JdbcTemplate(connectionManager.getDataSource(onlineConfig));
+
+        // 1. 查询两边物理表清单
+        List<String> localTables = queryTables(localTemplate).stream()
+                // 排除系统表与日志配置表，保持业务表焦点
+                .filter(t -> !t.equals("flyway_schema_history") && !t.equals("db_sync_log") && !t.equals("db_connection_config"))
+                .sorted()
+                .collect(Collectors.toList());
+        List<String> onlineTables = queryTables(onlineTemplate);
+
+        List<TableDataOverviewVO> overviewList = new ArrayList<>();
+
+        for (String table : localTables) {
+            // 2. 判定线上是否存在该表
+            boolean exists = onlineTables.contains(table);
+            
+            // 查询本地数据量
+            Integer localCount = localTemplate.queryForObject(String.format("SELECT COUNT(*) FROM \"%s\"", table), Integer.class);
+            if (localCount == null) localCount = 0;
+
+            if (!exists) {
+                // 线上缺失此表
+                overviewList.add(TableDataOverviewVO.builder()
+                        .tableName(table)
+                        .existsInOnline(false)
+                        .localCount(localCount)
+                        .onlineCount(0)
+                        .toInsertCount(localCount)
+                        .toUpdateCount(0)
+                        .remoteOnlyCount(0)
+                        .build());
+                continue;
+            }
+
+            // 3. 线上表存在，执行行级快照比对
+            Integer onlineCount = onlineTemplate.queryForObject(String.format("SELECT COUNT(*) FROM \"%s\"", table), Integer.class);
+            if (onlineCount == null) onlineCount = 0;
+
+            // 动态检测主键列，兼容复合主键与无id关联表
+            List<String> pkColumns = queryPrimaryKeyColumns(localTemplate, table);
+            if (pkColumns.isEmpty()) {
+                // 无主键表跳过差集比对，仅展示记录数
+                log.warn("表 [{}] 未检测到主键列，跳过行级差集比对", table);
+                overviewList.add(TableDataOverviewVO.builder()
+                        .tableName(table)
+                        .existsInOnline(true)
+                        .localCount(localCount)
+                        .onlineCount(onlineCount)
+                        .toInsertCount(null)
+                        .toUpdateCount(null)
+                        .remoteOnlyCount(null)
+                        .build());
+                continue;
+            }
+
+            boolean hasUpdatedAt = checkColumnExists(localTemplate, table, "updated_at");
+
+            // 构建 SELECT 列清单：主键列 + 可选的 updated_at
+            String pkSelectCols = String.join(", ", pkColumns.stream().map(c -> "\"" + c + "\"").collect(Collectors.toList()));
+            String sqlQuery = hasUpdatedAt
+                    ? String.format("SELECT %s, updated_at FROM \"%s\"", pkSelectCols, table)
+                    : String.format("SELECT %s FROM \"%s\"", pkSelectCols, table);
+
+            List<Map<String, Object>> localSnapshot = localTemplate.queryForList(sqlQuery);
+            List<Map<String, Object>> onlineSnapshot = onlineTemplate.queryForList(sqlQuery);
+
+            Map<String, Timestamp> localMap = buildSnapshotMap(localSnapshot, pkColumns, hasUpdatedAt);
+            Map<String, Timestamp> onlineMap = buildSnapshotMap(onlineSnapshot, pkColumns, hasUpdatedAt);
+
+            int toInsertCount = 0;
+            int toUpdateCount = 0;
+            int remoteOnlyCount = 0;
+
+            for (Map.Entry<String, Timestamp> localEntry : localMap.entrySet()) {
+                String key = localEntry.getKey();
+                Timestamp localTs = localEntry.getValue();
+
+                if (!onlineMap.containsKey(key)) {
+                    toInsertCount++;
+                } else {
+                    if (hasUpdatedAt) {
+                        Timestamp onlineTs = onlineMap.get(key);
+                        if (onlineTs == null || (localTs != null && localTs.after(onlineTs))) {
+                            toUpdateCount++;
+                        }
+                    }
+                }
+            }
+
+            for (String onlineKey : onlineMap.keySet()) {
+                if (!localMap.containsKey(onlineKey)) {
+                    remoteOnlyCount++;
+                }
+            }
+
+            overviewList.add(TableDataOverviewVO.builder()
+                    .tableName(table)
+                    .existsInOnline(true)
+                    .localCount(localCount)
+                    .onlineCount(onlineCount)
+                    .toInsertCount(toInsertCount)
+                    .toUpdateCount(toUpdateCount)
+                    .remoteOnlyCount(remoteOnlyCount)
+                    .build());
+        }
+
+        return overviewList;
+    }
+
+    @Override
     public DataDiffVO compareData(String tableName) {
         log.info("开始对比数据表内容记录差异: {}", tableName);
         
@@ -222,62 +342,59 @@ public class DbSyncServiceImpl implements DbSyncService {
             throw new IllegalArgumentException("线上部署库中不存在表 [" + tableName + "]，请先在【结构对比】中执行同步建表！");
         }
 
+        // 动态检测主键列
+        List<String> pkColumns = queryPrimaryKeyColumns(localTemplate, tableName);
+        if (pkColumns.isEmpty()) {
+            throw new IllegalArgumentException("表 [" + tableName + "] 未检测到主键列，暂不支持行级差集比对");
+        }
+
         // 1. 分别查询两边的主键与更新时间快照
         boolean hasUpdatedAt = checkColumnExists(localTemplate, tableName, "updated_at");
-        String sqlQuery = hasUpdatedAt 
-                ? String.format("SELECT id, updated_at FROM \"%s\" ORDER BY id", tableName)
-                : String.format("SELECT id FROM \"%s\" ORDER BY id", tableName);
+        String pkSelectCols = String.join(", ", pkColumns.stream().map(c -> "\"" + c + "\"").collect(Collectors.toList()));
+        String orderByCols = pkColumns.stream().map(c -> "\"" + c + "\"").collect(Collectors.joining(", "));
+        String sqlQuery = hasUpdatedAt
+                ? String.format("SELECT %s, updated_at FROM \"%s\" ORDER BY %s", pkSelectCols, tableName, orderByCols)
+                : String.format("SELECT %s FROM \"%s\" ORDER BY %s", pkSelectCols, tableName, orderByCols);
 
         List<Map<String, Object>> localSnapshot = localTemplate.queryForList(sqlQuery);
         List<Map<String, Object>> onlineSnapshot = onlineTemplate.queryForList(sqlQuery);
 
-        Map<Long, Timestamp> localMap = new HashMap<>();
-        for (Map<String, Object> row : localSnapshot) {
-            Long id = ((Number) row.get("id")).longValue();
-            Timestamp ts = hasUpdatedAt ? (Timestamp) row.get("updated_at") : null;
-            localMap.put(id, ts);
-        }
+        Map<String, Timestamp> localMap = buildSnapshotMap(localSnapshot, pkColumns, hasUpdatedAt);
+        Map<String, Timestamp> onlineMap = buildSnapshotMap(onlineSnapshot, pkColumns, hasUpdatedAt);
 
-        Map<Long, Timestamp> onlineMap = new HashMap<>();
-        for (Map<String, Object> row : onlineSnapshot) {
-            Long id = ((Number) row.get("id")).longValue();
-            Timestamp ts = hasUpdatedAt ? (Timestamp) row.get("updated_at") : null;
-            onlineMap.put(id, ts);
-        }
-
-        // 计算差集
-        List<Long> insertIds = new ArrayList<>();
-        List<Long> updateIds = new ArrayList<>();
-        List<Long> remoteOnlyIds = new ArrayList<>();
+        // 计算差集 - 存储复合主键值列表
+        List<Map<String, Object>> insertKeys = new ArrayList<>();
+        List<Map<String, Object>> updateKeys = new ArrayList<>();
+        List<Map<String, Object>> remoteOnlyKeys = new ArrayList<>();
 
         // 本地多的 (To Insert) 和不一致的 (To Update)
-        for (Map.Entry<Long, Timestamp> localEntry : localMap.entrySet()) {
-            Long id = localEntry.getKey();
+        for (Map.Entry<String, Timestamp> localEntry : localMap.entrySet()) {
+            String compositeKey = localEntry.getKey();
             Timestamp localTs = localEntry.getValue();
 
-            if (!onlineMap.containsKey(id)) {
-                insertIds.add(id);
+            if (!onlineMap.containsKey(compositeKey)) {
+                insertKeys.add(parseCompositeKey(compositeKey, pkColumns));
             } else {
                 if (hasUpdatedAt) {
-                    Timestamp onlineTs = onlineMap.get(id);
+                    Timestamp onlineTs = onlineMap.get(compositeKey);
                     if (onlineTs == null || (localTs != null && localTs.after(onlineTs))) {
-                        updateIds.add(id);
+                        updateKeys.add(parseCompositeKey(compositeKey, pkColumns));
                     }
                 }
             }
         }
 
         // 线上多的 (Remote Only)
-        for (Long onlineId : onlineMap.keySet()) {
-            if (!localMap.containsKey(onlineId)) {
-                remoteOnlyIds.add(onlineId);
+        for (String onlineKey : onlineMap.keySet()) {
+            if (!localMap.containsKey(onlineKey)) {
+                remoteOnlyKeys.add(parseCompositeKey(onlineKey, pkColumns));
             }
         }
 
         // 2. 根据主键列表拉取全量详细信息
-        List<Map<String, Object>> toInsertList = queryFullRowsByIds(localTemplate, tableName, insertIds);
-        List<Map<String, Object>> toUpdateList = queryFullRowsByIds(localTemplate, tableName, updateIds);
-        List<Map<String, Object>> remoteOnlyList = queryFullRowsByIds(onlineTemplate, tableName, remoteOnlyIds);
+        List<Map<String, Object>> toInsertList = queryFullRowsByKeys(localTemplate, tableName, pkColumns, insertKeys);
+        List<Map<String, Object>> toUpdateList = queryFullRowsByKeys(localTemplate, tableName, pkColumns, updateKeys);
+        List<Map<String, Object>> remoteOnlyList = queryFullRowsByKeys(onlineTemplate, tableName, pkColumns, remoteOnlyKeys);
 
         // 格式化处理，把时间戳等特殊对象转成 String 方便前端展示
         formatRows(toInsertList);
@@ -338,31 +455,49 @@ public class DbSyncServiceImpl implements DbSyncService {
         JdbcTemplate localTemplate = new JdbcTemplate(connectionManager.getDataSource(localConfig));
         JdbcTemplate onlineTemplate = new JdbcTemplate(connectionManager.getDataSource(onlineConfig));
 
+        // 动态检测主键列
+        List<String> pkColumns = queryPrimaryKeyColumns(localTemplate, tableName);
+        if (pkColumns.isEmpty()) {
+            throw new IllegalArgumentException("表 [" + tableName + "] 未检测到主键列，暂不支持数据同步");
+        }
+
+        // 将传入的 ids 转换为主键值 Map 列表（兼容单主键场景）
+        List<Map<String, Object>> keyList = ids.stream()
+                .map(id -> {
+                    Map<String, Object> m = new LinkedHashMap<>();
+                    m.put(pkColumns.get(0), id);
+                    return m;
+                })
+                .collect(Collectors.toList());
+
         // 从本地查询源数据行
-        List<Map<String, Object>> rows = queryFullRowsByIds(localTemplate, tableName, ids);
+        List<Map<String, Object>> rows = queryFullRowsByKeys(localTemplate, tableName, pkColumns, keyList);
 
         for (Map<String, Object> row : rows) {
-            Long id = ((Number) row.get("id")).longValue();
             String sqlSync;
             String sqlRollback;
+
+            // 构建主键 WHERE 条件
+            String pkWhere = buildPkWhereClause(pkColumns, row);
 
             if ("INSERT".equalsIgnoreCase(opType)) {
                 // 1. 新增同步
                 sqlSync = buildInsertSql(tableName, row);
-                sqlRollback = String.format("DELETE FROM \"%s\" WHERE id = %d;", tableName, id);
+                sqlRollback = String.format("DELETE FROM \"%s\" WHERE %s;", tableName, pkWhere);
 
                 onlineTemplate.execute(sqlSync);
 
             } else {
                 // 2. 更新同步 (覆盖前先查询线上老数据快照以便回退)
-                List<Map<String, Object>> oldRows = queryFullRowsByIds(onlineTemplate, tableName, Collections.singletonList(id));
+                List<Map<String, Object>> oldRows = queryFullRowsByKeys(onlineTemplate, tableName, pkColumns,
+                        Collections.singletonList(extractKeyValues(pkColumns, row)));
                 if (oldRows.isEmpty()) {
                     // 线上没有，退化为新增
                     sqlSync = buildInsertSql(tableName, row);
-                    sqlRollback = String.format("DELETE FROM \"%s\" WHERE id = %d;", tableName, id);
+                    sqlRollback = String.format("DELETE FROM \"%s\" WHERE %s;", tableName, pkWhere);
                 } else {
-                    sqlSync = buildUpdateSql(tableName, row);
-                    sqlRollback = buildUpdateSql(tableName, oldRows.get(0));
+                    sqlSync = buildUpdateSql(tableName, row, pkColumns);
+                    sqlRollback = buildUpdateSql(tableName, oldRows.get(0), pkColumns);
                 }
 
                 onlineTemplate.execute(sqlSync);
@@ -415,6 +550,80 @@ public class DbSyncServiceImpl implements DbSyncService {
 
     // ================== 辅助私有工具方法 ==================
 
+    /**
+     * 查询指定表的所有主键列名（按序号排序）
+     * 支持单主键和复合主键，若无主键则返回空列表
+     */
+    private List<String> queryPrimaryKeyColumns(JdbcTemplate jdbcTemplate, String tableName) {
+        String sql = "SELECT kcu.column_name " +
+                "FROM information_schema.table_constraints tc " +
+                "JOIN information_schema.key_column_usage kcu " +
+                "  ON tc.constraint_name = kcu.constraint_name " +
+                "  AND tc.table_schema = kcu.table_schema " +
+                "WHERE tc.constraint_type = 'PRIMARY KEY' " +
+                "  AND tc.table_schema = 'public' " +
+                "  AND tc.table_name = ? " +
+                "ORDER BY kcu.ordinal_position";
+        return jdbcTemplate.queryForList(sql, String.class, tableName);
+    }
+
+    /**
+     * 将快照行列表转换为 Map<复合主键字符串, 时间戳> 用于差集比对
+     * 单主键时 key = "123"，复合主键时 key = "123::456"
+     */
+    private Map<String, Timestamp> buildSnapshotMap(List<Map<String, Object>> snapshot,
+                                                     List<String> pkColumns,
+                                                     boolean hasUpdatedAt) {
+        Map<String, Timestamp> map = new LinkedHashMap<>();
+        for (Map<String, Object> row : snapshot) {
+            String compositeKey = buildCompositeKey(row, pkColumns);
+            Timestamp ts = hasUpdatedAt ? (Timestamp) row.get("updated_at") : null;
+            map.put(compositeKey, ts);
+        }
+        return map;
+    }
+
+    /**
+     * 根据主键列列表从行数据中构建复合键字符串
+     */
+    private String buildCompositeKey(Map<String, Object> row, List<String> pkColumns) {
+        return pkColumns.stream()
+                .map(col -> String.valueOf(row.get(col)))
+                .collect(Collectors.joining("::"));
+    }
+
+    /**
+     * 将复合键字符串解析回 Map<列名, 值> 形式
+     */
+    private Map<String, Object> parseCompositeKey(String compositeKey, List<String> pkColumns) {
+        String[] parts = compositeKey.split("::", -1);
+        Map<String, Object> keyMap = new LinkedHashMap<>();
+        for (int i = 0; i < pkColumns.size() && i < parts.length; i++) {
+            keyMap.put(pkColumns.get(i), parts[i]);
+        }
+        return keyMap;
+    }
+
+    /**
+     * 从行数据中提取指定主键列的值组成 Map
+     */
+    private Map<String, Object> extractKeyValues(List<String> pkColumns, Map<String, Object> row) {
+        Map<String, Object> keyMap = new LinkedHashMap<>();
+        for (String col : pkColumns) {
+            keyMap.put(col, row.get(col));
+        }
+        return keyMap;
+    }
+
+    /**
+     * 构建主键 WHERE 子句，如 "id = 123" 或 "article_id = 1 AND tag_id = 2"
+     */
+    private String buildPkWhereClause(List<String> pkColumns, Map<String, Object> row) {
+        return pkColumns.stream()
+                .map(col -> String.format("\"%s\" = %s", col, formatSqlValue(row.get(col))))
+                .collect(Collectors.joining(" AND "));
+    }
+
     private List<String> queryTables(JdbcTemplate jdbcTemplate) {
         String sql = "SELECT table_name FROM information_schema.tables WHERE table_schema = 'public'";
         return jdbcTemplate.queryForList(sql, String.class);
@@ -435,12 +644,37 @@ public class DbSyncServiceImpl implements DbSyncService {
         return count != null && count > 0;
     }
 
-    private List<Map<String, Object>> queryFullRowsByIds(JdbcTemplate jdbcTemplate, String tableName, List<Long> ids) {
-        if (ids.isEmpty()) return new ArrayList<>();
-        
-        // 构造 In 子句
-        String idListStr = ids.stream().map(String::valueOf).collect(Collectors.joining(","));
-        String sql = String.format("SELECT * FROM \"%s\" WHERE id IN (%s) ORDER BY id", tableName, idListStr);
+    /**
+     * 根据主键列与主键值列表查询完整行数据
+     * 支持单主键和复合主键
+     */
+    private List<Map<String, Object>> queryFullRowsByKeys(JdbcTemplate jdbcTemplate, String tableName,
+                                                           List<String> pkColumns, List<Map<String, Object>> keyList) {
+        if (keyList.isEmpty()) return new ArrayList<>();
+
+        // 单主键场景使用 IN 子句优化查询
+        if (pkColumns.size() == 1) {
+            String pkCol = pkColumns.get(0);
+            List<Object> values = keyList.stream()
+                    .map(k -> k.get(pkCol))
+                    .collect(Collectors.toList());
+            String placeholders = values.stream().map(v -> formatSqlValue(v)).collect(Collectors.joining(","));
+            String sql = String.format("SELECT * FROM \"%s\" WHERE \"%s\" IN (%s) ORDER BY \"%s\"",
+                    tableName, pkCol, placeholders, pkCol);
+            return jdbcTemplate.queryForList(sql);
+        }
+
+        // 复合主键场景：使用 OR 组合条件
+        List<String> conditions = new ArrayList<>();
+        for (Map<String, Object> key : keyList) {
+            String cond = pkColumns.stream()
+                    .map(col -> String.format("\"%s\" = %s", col, formatSqlValue(key.get(col))))
+                    .collect(Collectors.joining(" AND "));
+            conditions.add("(" + cond + ")");
+        }
+        String orderByCols = pkColumns.stream().map(c -> "\"" + c + "\"").collect(Collectors.joining(", "));
+        String sql = String.format("SELECT * FROM \"%s\" WHERE %s ORDER BY %s",
+                tableName, String.join(" OR ", conditions), orderByCols);
         return jdbcTemplate.queryForList(sql);
     }
 
@@ -459,6 +693,15 @@ public class DbSyncServiceImpl implements DbSyncService {
         sql.append(String.format("CREATE TABLE \"public\".\"%s\" (\n", tableName));
         
         List<String> colDefs = new ArrayList<>();
+        // 收集主键列名（约定：列名为 id 或以 _id 结尾的关联字段视为主键候选）
+        List<String> pkCandidates = new ArrayList<>();
+        for (Map<String, Object> col : columns) {
+            String colName = (String) col.get("column_name");
+            if ("id".equalsIgnoreCase(colName)) {
+                pkCandidates.add(colName);
+            }
+        }
+
         for (Map<String, Object> col : columns) {
             String colName = (String) col.get("column_name");
             String dataType = (String) col.get("data_type");
@@ -478,8 +721,8 @@ public class DbSyncServiceImpl implements DbSyncService {
                 colDef.append(" DEFAULT ").append(defVal);
             }
             
-            // 如果是 id 主键，追加主键申明 (这里根据约定直接设置 id)
-            if ("id".equalsIgnoreCase(colName)) {
+            // 如果是 id 主键，追加主键申明
+            if ("id".equalsIgnoreCase(colName) && pkCandidates.size() == 1) {
                 colDef.append(" PRIMARY KEY");
             }
 
@@ -507,13 +750,16 @@ public class DbSyncServiceImpl implements DbSyncService {
         return String.format("INSERT INTO \"%s\" (%s) VALUES (%s);", tableName, cols, vals);
     }
 
-    private String buildUpdateSql(String tableName, Map<String, Object> row) {
+    /**
+     * 构建 UPDATE SQL，使用动态主键列作为 WHERE 条件
+     */
+    private String buildUpdateSql(String tableName, Map<String, Object> row, List<String> pkColumns) {
         StringBuilder sets = new StringBuilder();
-        Object idVal = row.get("id");
+        Set<String> pkSet = new HashSet<>(pkColumns);
 
         for (Map.Entry<String, Object> entry : row.entrySet()) {
             String colName = entry.getKey();
-            if ("id".equalsIgnoreCase(colName)) {
+            if (pkSet.contains(colName)) {
                 continue;
             }
             if (sets.length() > 0) {
@@ -522,7 +768,8 @@ public class DbSyncServiceImpl implements DbSyncService {
             sets.append("\"").append(colName).append("\" = ").append(formatSqlValue(entry.getValue()));
         }
 
-        return String.format("UPDATE \"%s\" SET %s WHERE id = %s;", tableName, sets, formatSqlValue(idVal));
+        String whereClause = buildPkWhereClause(pkColumns, row);
+        return String.format("UPDATE \"%s\" SET %s WHERE %s;", tableName, sets, whereClause);
     }
 
     private String buildRollbackDdl(String tableName, String sqlSync) {
