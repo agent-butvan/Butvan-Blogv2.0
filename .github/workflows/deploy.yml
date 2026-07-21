@@ -39,6 +39,7 @@ jobs:
           context: ./fronted/blog-admin
           file: ./fronted/blog-admin/Dockerfile
           push: true
+          no-cache: true
           tags: crpi-46o5657v3drrpfcl.cn-hangzhou.personal.cr.aliyuncs.com/butvan/blog-admin:latest
 
       # 3. 构建并推送博客前台前端镜像
@@ -48,6 +49,7 @@ jobs:
           context: ./fronted/blog-client
           file: ./fronted/blog-client/Dockerfile
           push: true
+          no-cache: true
           tags: crpi-46o5657v3drrpfcl.cn-hangzhou.personal.cr.aliyuncs.com/butvan/blog-client:latest
 
   deploy:
