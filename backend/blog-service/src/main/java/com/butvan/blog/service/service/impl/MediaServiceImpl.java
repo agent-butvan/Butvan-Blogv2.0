@@ -1,5 +1,7 @@
 package com.butvan.blog.service.service.impl;
 
+import com.butvan.blog.common.utils.ByteArrayMultipartFile;
+import com.butvan.blog.common.utils.HeicConverterUtil;
 import com.butvan.blog.common.exception.BusinessException;
 import com.butvan.blog.common.result.PageResult;
 import com.butvan.blog.common.properties.StorageProperties;
@@ -45,7 +47,7 @@ public class MediaServiceImpl implements MediaService {
     private final StorageProperties storageProperties;
     private final HttpServletRequest request;
 
-    private static final List<String> IMAGE_EXTENSIONS = Arrays.asList("jpg", "jpeg", "png", "gif", "webp", "bmp");
+    private static final List<String> IMAGE_EXTENSIONS = Arrays.asList("jpg", "jpeg", "png", "gif", "webp", "bmp", "heic", "heif");
 
     @Override
     @Transactional
@@ -53,6 +55,9 @@ public class MediaServiceImpl implements MediaService {
         if (file.isEmpty()) {
             throw new BusinessException("上传的文件不能为空");
         }
+
+        // 0. HEIC/HEIF 格式自动转换为 JPEG（浏览器及 MinIO 不原生支持 HEIC）
+        file = convertHeicToJpeg(file);
 
         // 1. 获取原文件名及文件后缀
         String originalFilename = file.getOriginalFilename();
@@ -161,6 +166,9 @@ public class MediaServiceImpl implements MediaService {
         if (file.isEmpty()) {
             throw new BusinessException("上传的文件不能为空");
         }
+
+        // 0. HEIC/HEIF 格式自动转换为 JPEG（浏览器及 MinIO 不原生支持 HEIC）
+        file = convertHeicToJpeg(file);
 
         // 1. 获取原文件名及文件后缀
         String originalFilename = file.getOriginalFilename();
@@ -316,5 +324,45 @@ public class MediaServiceImpl implements MediaService {
             ip = request.getRemoteAddr();
         }
         return ip != null && ip.contains(",") ? ip.split(",")[0].trim() : ip;
+    }
+
+    /**
+     * HEIC/HEIF 格式自动转换为 JPEG
+     * <p>
+     * 浏览器及 MinIO 控制台不原生支持 HEIC/HEIF 格式，
+     * 通过系统命令行工具（macOS: sips / Linux: heif-convert）转为 JPEG 存储。
+     * </p>
+     *
+     * @param file 上传的原始文件
+     * @return 转换后的 JPEG MultipartFile，非 HEIC 格式时原样返回
+     */
+    private MultipartFile convertHeicToJpeg(MultipartFile file) {
+        String originalFilename = file.getOriginalFilename();
+        if (originalFilename == null) {
+            return file;
+        }
+
+        String extension = "";
+        int dotIndex = originalFilename.lastIndexOf('.');
+        if (dotIndex > 0) {
+            extension = originalFilename.substring(dotIndex + 1).toLowerCase();
+        }
+
+        if (!HeicConverterUtil.isHeicFormat(extension)) {
+            return file;
+        }
+
+        log.info("检测到 HEIC/HEIF 格式文件，正在转换为 JPEG: {}", originalFilename);
+
+        try {
+            byte[] heicBytes = file.getBytes();
+            byte[] jpegBytes = HeicConverterUtil.convertToJpeg(heicBytes);
+
+            String newFilename = originalFilename.substring(0, dotIndex) + ".jpg";
+            return new ByteArrayMultipartFile(newFilename, newFilename, "image/jpeg", jpegBytes);
+        } catch (IOException e) {
+            log.error("HEIC/HEIF 转换为 JPEG 失败", e);
+            throw new BusinessException("HEIC/HEIF 文件转换失败: " + e.getMessage());
+        }
     }
 }
