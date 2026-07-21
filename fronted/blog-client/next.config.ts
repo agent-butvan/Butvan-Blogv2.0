@@ -41,7 +41,13 @@ const nextConfig: NextConfig = {
         port: backendPort,
         pathname: "/uploads/**",
       },
-      // MinIO 对象存储预签名 URL（生产环境图片直接由 MinIO 提供）
+      // MinIO 对象存储（生产环境 HTTPS 自定义域名）
+      {
+        protocol: "https",
+        hostname: "minio.server.butvan.top",
+        pathname: "/blog2/**",
+      },
+      // MinIO 对象存储（开发环境 IP 直连）
       {
         protocol: "http",
         hostname: "47.102.205.85",

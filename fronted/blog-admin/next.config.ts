@@ -39,6 +39,23 @@ const nextConfig: NextConfig = {
       },
     ];
   },
+  images: {
+    remotePatterns: [
+      // MinIO 对象存储（生产环境 HTTPS 自定义域名）
+      {
+        protocol: "https",
+        hostname: "minio.server.butvan.top",
+        pathname: "/blog2/**",
+      },
+      // MinIO 对象存储（开发环境 IP 直连）
+      {
+        protocol: "http",
+        hostname: "47.102.205.85",
+        port: "19000",
+        pathname: "/blog2/**",
+      },
+    ],
+  },
 };
 
 export default nextConfig;
