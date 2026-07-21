@@ -7,6 +7,7 @@ spring:
   
   config:
     import:
+      - optional:file:../../.env[.properties]
       - classpath:application-database.yml
       - classpath:application-routes.yml
       - classpath:application-redis.yml
