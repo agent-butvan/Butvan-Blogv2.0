@@ -237,7 +237,8 @@ Butvan Blog2.0/                                    # 📦 项目根目录
 │       │   │   ├── comments-api.ts                #       评论、审核、快捷回复相关的 API 请求统一封装
 │       │   │   ├── album-api.ts                   #       相册管理 API（CRUD、照片添加/移除/排序）
 │       │   │   ├── user-api.ts                    #       用户管理 API（CRUD、启禁用、重置密码、批量操作）
-│       │   │   └── notification-api.ts            #       系统消息通知管理 API (新增)
+│       │   │   ├── notification-api.ts            #       系统消息通知管理 API (新增)
+│       │   │   └── websocket-url.ts               #       WebSocket URL 智能解析与构建工具库 (新增)
 │       │   └── types/                             #     📐 TypeScript 类型定义（与 blog-client 共享，新增 notification.ts）
 │       ├── next.config.ts
 │       ├── postcss.config.mjs
