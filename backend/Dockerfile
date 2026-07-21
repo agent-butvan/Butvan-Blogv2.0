@@ -25,6 +25,9 @@ RUN mvn clean package -DskipTests
 FROM eclipse-temurin:21-jre-alpine
 WORKDIR /app
 
+# 安装 HEIC/HEIF 图片格式转换工具（heif-convert）
+RUN apk add --no-cache libheif-tools
+
 # 拷贝编译完成的可运行包
 COPY --from=builder /app/blog-service/target/blog-service-*.jar app.jar
 
