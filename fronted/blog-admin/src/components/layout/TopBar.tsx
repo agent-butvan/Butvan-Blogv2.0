@@ -131,7 +131,11 @@ export default function TopBar() {
     const wsBase = isLocal ? 'ws://localhost:8080' : `${protocol === 'https:' ? 'wss' : 'ws'}://${host}`;
     const url = `${wsBase}/ws/admin-topbar-${Math.random().toString(36).substring(2, 9)}`;
 
+    let isDestroyed = false;
+    let reconnectTimer: NodeJS.Timeout | null = null;
+
     const connectWs = () => {
+      if (isDestroyed) return;
       const ws = new WebSocket(url);
       wsRef.current = ws;
 
@@ -154,19 +158,31 @@ export default function TopBar() {
       };
 
       ws.onclose = () => {
-        setTimeout(() => {
-          if (wsRef.current?.readyState === WebSocket.CLOSED) {
-            connectWs();
-          }
-        }, 5000);
+        if (!isDestroyed) {
+          reconnectTimer = setTimeout(() => {
+            if (!isDestroyed && wsRef.current?.readyState === WebSocket.CLOSED) {
+              connectWs();
+            }
+          }, 5000);
+        }
       };
     };
 
     connectWs();
 
     return () => {
+      isDestroyed = true;
+      if (reconnectTimer) clearTimeout(reconnectTimer);
       if (wsRef.current) {
-        wsRef.current.close();
+        const ws = wsRef.current;
+        ws.onclose = null;
+        ws.onerror = null;
+        if (ws.readyState === WebSocket.CONNECTING) {
+          ws.onopen = () => ws.close();
+        } else if (ws.readyState === WebSocket.OPEN) {
+          ws.close();
+        }
+        wsRef.current = null;
       }
     };
   }, []);

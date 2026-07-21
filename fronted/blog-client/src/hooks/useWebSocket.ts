@@ -84,8 +84,15 @@ export function useWebSocket(): UseWebSocketReturn {
     if (wsRef.current) {
       // 先标记为 closed 再关闭，避免 onClose 重复触发状态变更
       setStatus('closed')
-      wsRef.current.close()
+      const ws = wsRef.current
       wsRef.current = null
+      ws.onclose = null
+      ws.onerror = null
+      if (ws.readyState === WebSocket.CONNECTING) {
+        ws.onopen = () => ws.close()
+      } else if (ws.readyState === WebSocket.OPEN) {
+        ws.close()
+      }
     }
   }, [])
 
