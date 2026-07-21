@@ -18,6 +18,7 @@ import { cn } from "@heroui/react";
 import TrafficTrendChart from "@/components/dashboard/TrafficTrendChart";
 import type { ApiLogItem } from "@/types/api-log";
 import GitContributionGraph from "@/components/dashboard/GitContributionGraph";
+import { buildWsUrl } from "@/lib/websocket-url";
 
 /** 仪表盘统计数据 */
 interface DashboardStats {
@@ -232,11 +233,7 @@ export default function DashboardPage() {
 
     if (typeof window === "undefined") return;
 
-    // 建立 WS 连接：生产环境使用当前页面域名（nginx 反向代理 /ws → 后端），开发环境直连 localhost:8080
-    const { hostname, protocol, host } = window.location;
-    const isLocal = hostname === 'localhost' || hostname === '127.0.0.1';
-    const wsBase = isLocal ? 'ws://localhost:8080' : `${protocol === 'https:' ? 'wss' : 'ws'}://${host}`;
-    const url = `${wsBase}/ws/admin-dashboard-${Math.random().toString(36).substring(2, 9)}`;
+    const url = buildWsUrl(`admin-dashboard-${Math.random().toString(36).substring(2, 9)}`);
 
     let isDestroyed = false;
     let reconnectTimer: NodeJS.Timeout | null = null;

@@ -14,6 +14,7 @@ import {
   X
 } from "lucide-react";
 import { cn } from "@heroui/react";
+import { buildWsUrl } from "@/lib/websocket-url";
 
 /**
  * 文本关键字高亮辅助函数
@@ -73,11 +74,7 @@ export default function SystemLogsPage() {
   useEffect(() => {
     if (typeof window === "undefined") return;
 
-    // 生产环境使用当前页面域名（nginx 反向代理 /ws → 后端），开发环境直连 localhost:8080
-    const { hostname, protocol, host } = window.location;
-    const isLocal = hostname === 'localhost' || hostname === '127.0.0.1';
-    const wsBase = isLocal ? 'ws://localhost:8080' : `${protocol === 'https:' ? 'wss' : 'ws'}://${host}`;
-    const url = `${wsBase}/ws/system-console-${Math.random().toString(36).substring(2, 9)}`;
+    const url = buildWsUrl(`system-console-${Math.random().toString(36).substring(2, 9)}`);
 
     let isDestroyed = false;
     let reconnectTimer: NodeJS.Timeout | null = null;

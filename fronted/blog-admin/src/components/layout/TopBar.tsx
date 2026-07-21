@@ -20,6 +20,7 @@ import type { AuthUser } from "@/lib/auth";
 import { cn } from "@heroui/react";
 import { toast } from "@/lib/toast";
 import { fetchUnreadCount } from "@/lib/notification-api";
+import { buildWsUrl } from "@/lib/websocket-url";
 import NotificationDrawer from "@/components/dashboard/NotificationDrawer";
 import GitInfoModal from "./GitInfoModal";
 
@@ -125,11 +126,7 @@ export default function TopBar() {
 
     if (typeof window === "undefined") return;
 
-    // 生产环境使用当前页面域名（nginx 反向代理 /ws → 后端），开发环境直连 localhost:8080
-    const { hostname, protocol, host } = window.location;
-    const isLocal = hostname === 'localhost' || hostname === '127.0.0.1';
-    const wsBase = isLocal ? 'ws://localhost:8080' : `${protocol === 'https:' ? 'wss' : 'ws'}://${host}`;
-    const url = `${wsBase}/ws/admin-topbar-${Math.random().toString(36).substring(2, 9)}`;
+    const url = buildWsUrl(`admin-topbar-${Math.random().toString(36).substring(2, 9)}`);
 
     let isDestroyed = false;
     let reconnectTimer: NodeJS.Timeout | null = null;

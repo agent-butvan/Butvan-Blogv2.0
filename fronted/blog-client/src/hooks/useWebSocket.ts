@@ -31,25 +31,34 @@ interface UseWebSocketReturn {
   send: (message: string) => void
 }
 
-/**
- * 构建 WebSocket 连接地址
- *
- * WebSocket 协议不走 Next.js rewrites 代理，需要浏览器直连后端。
- * 生产环境始终使用 window.location.host（配合 nginx 反向代理 /ws → 后端），
- * 开发环境直连 localhost:8080。
- */
 function buildWsUrl(wsId: string): string {
-  // 1. 生产环境：始终使用当前页面域名（nginx 负责将 /ws 转发到后端）
-  if (typeof window !== 'undefined') {
-    const { hostname, protocol, host } = window.location
-    const wsProto = protocol === 'https:' ? 'wss' : 'ws'
-    // 非本地环境：直接使用当前域名，不带任何硬编码端口
-    if (hostname !== 'localhost' && hostname !== '127.0.0.1') {
-      return `${wsProto}://${host}/ws/${wsId}`
-    }
+  // 1. 优先读取显式环境变量 (process.env.NEXT_PUBLIC_WS_URL)
+  const envWsUrl = process.env.NEXT_PUBLIC_WS_URL
+  if (envWsUrl && envWsUrl.trim() !== '') {
+    const cleanBase = envWsUrl.replace(/\/$/, '')
+    const cleanId = wsId.startsWith('/') ? wsId : `/${wsId}`
+    return `${cleanBase}${cleanId.startsWith('/ws/') ? cleanId : `/ws${cleanId}`}`
   }
 
-  // 2. 开发环境兜底：直连 localhost:8080
+  if (typeof window !== 'undefined') {
+    const { hostname, protocol, host } = window.location
+    const isHttps = protocol === 'https:'
+    const wsProto = isHttps ? 'wss' : 'ws'
+    const cleanId = wsId.startsWith('/') ? wsId : `/${wsId}`
+    const path = cleanId.startsWith('/ws/') ? cleanId : `/ws${cleanId}`
+
+    // 2. 本地纯 HTTP 开发模式 (http://localhost:3000 或 http://127.0.0.1:3000)
+    if (!isHttps && (hostname === 'localhost' || hostname === '127.0.0.1')) {
+      return `ws://localhost:8080${path}`
+    }
+
+    // 3. 线上生产环境或 HTTPS 环境：
+    // 强制剥离地址中误加的 :8080 端口（生产环境下 Nginx 监听 443/80 标准端口，负责将 /ws/ 代理到容器内 8080 端口）
+    const cleanHost = host.replace(/:8080$/, '')
+    return `${wsProto}://${cleanHost}${path}`
+  }
+
+  // 服务端渲染兜底
   return `ws://localhost:8080/ws/${wsId}`
 }
 
