@@ -47,7 +47,18 @@ function buildWsUrl(wsId: string): string {
     return `${formattedBase}${wsId}`
   }
 
-  // 2. 如果配置了完整的后端 URL（非相对路径），从中提取 host
+  // 2. 生产环境：使用当前页面的 hostname（浏览器自动推断域名+端口）
+  if (typeof window !== 'undefined') {
+    const { hostname, protocol, host } = window.location
+    const wsProto = protocol === 'https:' ? 'wss' : 'ws'
+
+    // 非本地环境：使用当前页面域名（配合反向代理将 /ws 转发到后端）
+    if (hostname !== 'localhost' && hostname !== '127.0.0.1') {
+      return `${wsProto}://${host}/ws/${wsId}`
+    }
+  }
+
+  // 3. 如果配置了完整的后端 URL（非相对路径），从中提取 host
   const apiBase = process.env.NEXT_PUBLIC_API_BASE_URL
   if (apiBase && apiBase.startsWith('http')) {
     const host = apiBase.replace(/\/api\/?$/, '').replace(/\/$/, '')
@@ -55,18 +66,7 @@ function buildWsUrl(wsId: string): string {
     return `${wsProto}://${new URL(host).host}/ws/${wsId}`
   }
 
-  // 3. 判断运行环境
-  if (typeof window !== 'undefined') {
-    const { hostname, protocol } = window.location
-    const wsProto = protocol === 'https:' ? 'wss' : 'ws'
-
-    // 生产环境：使用当前页面的 hostname + 后端 8080 端口
-    if (hostname !== 'localhost' && hostname !== '127.0.0.1') {
-      return `${wsProto}://${hostname}:8080/ws/${wsId}`
-    }
-  }
-
-  // 4. 开发环境兜底：直连 localhost:8080
+  // 4. 开发环境兑底：直连 localhost:8080
   const backendUrl = process.env.NEXT_PUBLIC_BACKEND_URL || 'http://localhost:8080'
   const protocol = backendUrl.startsWith('https') ? 'wss' : 'ws'
   try {
