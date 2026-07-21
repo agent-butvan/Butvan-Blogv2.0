@@ -41,7 +41,7 @@ function buildWsUrl(wsId: string): string {
   }
 
   if (typeof window !== 'undefined') {
-    const { hostname, protocol, host } = window.location
+    const { hostname, protocol } = window.location
     const isHttps = protocol === 'https:'
     const wsProto = isHttps ? 'wss' : 'ws'
     const cleanId = wsId.startsWith('/') ? wsId : `/${wsId}`
@@ -53,9 +53,8 @@ function buildWsUrl(wsId: string): string {
     }
 
     // 3. 线上生产环境或 HTTPS 环境：
-    // 强制剥离地址中误加的 :8080 端口（生产环境下 Nginx 监听 443/80 标准端口，负责将 /ws/ 代理到容器内 8080 端口）
-    const cleanHost = host.replace(/:8080$/, '')
-    return `${wsProto}://${cleanHost}${path}`
+    // 使用纯域名 hostname（绝对无端口混入），配合 Nginx 同源反代 /ws/
+    return `${wsProto}://${hostname}${path}`
   }
 
   // 服务端渲染兜底
