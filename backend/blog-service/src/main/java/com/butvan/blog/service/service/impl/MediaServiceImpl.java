@@ -1,5 +1,6 @@
 package com.butvan.blog.service.service.impl;
 
+import com.butvan.blog.common.utils.ByteArrayMultipartFile;
 import com.butvan.blog.common.exception.BusinessException;
 import com.butvan.blog.common.result.PageResult;
 import com.butvan.blog.common.properties.StorageProperties;
@@ -19,6 +20,11 @@ import org.springframework.data.domain.Pageable;
 import org.springframework.data.domain.Sort;
 import org.springframework.data.jpa.domain.Specification;
 
+import javax.imageio.ImageIO;
+import java.awt.Graphics2D;
+import java.awt.Color;
+import java.awt.image.BufferedImage;
+import java.io.ByteArrayOutputStream;
 import java.io.IOException;
 import java.time.LocalDate;
 import java.time.format.DateTimeFormatter;
@@ -45,7 +51,7 @@ public class MediaServiceImpl implements MediaService {
     private final StorageProperties storageProperties;
     private final HttpServletRequest request;
 
-    private static final List<String> IMAGE_EXTENSIONS = Arrays.asList("jpg", "jpeg", "png", "gif", "webp", "bmp");
+    private static final List<String> IMAGE_EXTENSIONS = Arrays.asList("jpg", "jpeg", "png", "gif", "webp", "bmp", "heic", "heif");
 
     @Override
     @Transactional
@@ -53,6 +59,9 @@ public class MediaServiceImpl implements MediaService {
         if (file.isEmpty()) {
             throw new BusinessException("上传的文件不能为空");
         }
+
+        // 0. HEIC/HEIF 格式自动转换为 JPEG（浏览器及 MinIO 不原生支持 HEIC）
+        file = convertHeicToJpeg(file);
 
         // 1. 获取原文件名及文件后缀
         String originalFilename = file.getOriginalFilename();
@@ -161,6 +170,9 @@ public class MediaServiceImpl implements MediaService {
         if (file.isEmpty()) {
             throw new BusinessException("上传的文件不能为空");
         }
+
+        // 0. HEIC/HEIF 格式自动转换为 JPEG（浏览器及 MinIO 不原生支持 HEIC）
+        file = convertHeicToJpeg(file);
 
         // 1. 获取原文件名及文件后缀
         String originalFilename = file.getOriginalFilename();
@@ -316,5 +328,68 @@ public class MediaServiceImpl implements MediaService {
             ip = request.getRemoteAddr();
         }
         return ip != null && ip.contains(",") ? ip.split(",")[0].trim() : ip;
+    }
+
+    /**
+     * HEIC/HEIF 格式自动转换为 JPEG
+     * <p>
+     * 浏览器及 MinIO 控制台不原生支持 HEIC/HEIF 格式，
+     * 通过 NightMonkeys ImageIO 插件读取 HEIC 数据，再转为 JPEG 存储。
+     * 若原图包含 Alpha 透明通道，会先合成白色背景以避免 JPEG 偏色。
+     * </p>
+     *
+     * @param file 上传的原始文件
+     * @return 转换后的 JPEG MultipartFile，非 HEIC 格式时原样返回
+     */
+    private MultipartFile convertHeicToJpeg(MultipartFile file) {
+        String originalFilename = file.getOriginalFilename();
+        if (originalFilename == null) {
+            return file;
+        }
+
+        String extension = "";
+        int dotIndex = originalFilename.lastIndexOf('.');
+        if (dotIndex > 0) {
+            extension = originalFilename.substring(dotIndex + 1).toLowerCase();
+        }
+
+        if (!extension.equals("heic") && !extension.equals("heif")) {
+            return file;
+        }
+
+        log.info("检测到 HEIC/HEIF 格式文件，正在转换为 JPEG: {}", originalFilename);
+
+        try {
+            BufferedImage sourceImage = ImageIO.read(file.getInputStream());
+            if (sourceImage == null) {
+                throw new BusinessException("无法解析 HEIC/HEIF 图片，文件可能已损坏");
+            }
+
+            // HEIC 可能包含 Alpha 通道，JPEG 不支持透明，需合成白色背景
+            BufferedImage rgbImage;
+            if (sourceImage.getColorModel().hasAlpha()) {
+                rgbImage = new BufferedImage(sourceImage.getWidth(), sourceImage.getHeight(), BufferedImage.TYPE_INT_RGB);
+                Graphics2D g2d = rgbImage.createGraphics();
+                g2d.setColor(Color.WHITE);
+                g2d.fillRect(0, 0, sourceImage.getWidth(), sourceImage.getHeight());
+                g2d.drawImage(sourceImage, 0, 0, null);
+                g2d.dispose();
+            } else {
+                rgbImage = sourceImage;
+            }
+
+            ByteArrayOutputStream baos = new ByteArrayOutputStream();
+            ImageIO.write(rgbImage, "jpg", baos);
+            byte[] bytes = baos.toByteArray();
+
+            String newFilename = originalFilename.substring(0, dotIndex) + ".jpg";
+            log.info("HEIC/HEIF 转换 JPEG 完成，原始大小: {} bytes，转换后: {} bytes", file.getSize(), bytes.length);
+            return new ByteArrayMultipartFile(newFilename, newFilename, "image/jpeg", bytes);
+        } catch (BusinessException e) {
+            throw e;
+        } catch (IOException e) {
+            log.error("HEIC/HEIF 转换为 JPEG 失败", e);
+            throw new BusinessException("文件转换失败: " + e.getMessage());
+        }
     }
 }
