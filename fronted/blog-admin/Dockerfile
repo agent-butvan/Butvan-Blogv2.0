@@ -16,6 +16,10 @@ COPY --from=deps /app/node_modules ./node_modules
 COPY . .
 # 构建时注入后端地址，让 Next.js rewrites 代理目标指向 Docker 内网的后端服务
 ENV BACKEND_URL=http://blog-service:8080
+# 清空 NEXT_PUBLIC_* 变量，避免硬编码 localhost；运行时由浏览器 window.location.host 自动推断
+ENV NEXT_PUBLIC_BACKEND_URL=""
+ENV NEXT_PUBLIC_API_BASE_URL=""
+ENV NEXT_PUBLIC_WS_BASE_URL=""
 RUN npm install -g pnpm@9 && pnpm build
 
 # -----------------
