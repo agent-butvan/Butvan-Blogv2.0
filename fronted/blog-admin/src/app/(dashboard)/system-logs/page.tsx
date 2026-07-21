@@ -74,10 +74,11 @@ export default function SystemLogsPage() {
     if (typeof window === "undefined") return;
 
     const wsProto = window.location.protocol === 'https:' ? 'wss' : 'ws';
-    const backendUrl = process.env.NEXT_PUBLIC_BACKEND_URL || 'http://localhost:8080';
+    const backendUrl = process.env.NEXT_PUBLIC_BACKEND_URL ?? '';
     let url = "";
     
     try {
+      if (!backendUrl) throw new Error('use window.location.host');
       const parsed = new URL(backendUrl);
       url = `${wsProto}://${parsed.host}/ws/system-console-${Math.random().toString(36).substring(2, 9)}`;
     } catch {

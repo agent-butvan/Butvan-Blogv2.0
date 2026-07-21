@@ -13,4 +13,4 @@ storage:
     # 是否为公共只读桶（默认为 true，若设为 false 则为私有桶，使用7天预签名URL访问）
     public-read: true
     # 自定义域名（可配置为 CDN 加速域名，留空则默认使用 endpoint 拼接）
-    custom-domain: 
+    custom-domain: ${STORAGE_MINIO_CUSTOM_DOMAIN:}
