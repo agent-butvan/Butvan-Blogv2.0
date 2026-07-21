@@ -67,9 +67,9 @@ public class MinioFileStorageService implements FileStorageService {
             // 公共桶返回直连的永久 URL
             String domain = cfg.getCustomDomain();
             if (org.springframework.util.StringUtils.hasText(domain)) {
-                // 使用自定义域名（例如：https://cdn.butvan.com/AVATAR/20260715/uuid.png）
+                // 使用自定义域名（例如：https://cdn.butvan.com/blog2/AVATAR/20260715/uuid.png）
                 String base = domain.endsWith("/") ? domain : domain + "/";
-                return base + objectName;
+                return base + cfg.getBucket() + "/" + objectName;
             } else {
                 // 使用默认端点拼接（例如：http://127.0.0.1:9000/butvan-blog/AVATAR/20260715/uuid.png）
                 String endpoint = cfg.getEndpoint();

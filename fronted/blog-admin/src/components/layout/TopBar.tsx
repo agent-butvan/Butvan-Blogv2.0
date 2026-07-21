@@ -125,16 +125,11 @@ export default function TopBar() {
 
     if (typeof window === "undefined") return;
 
-    const wsProto = window.location.protocol === 'https:' ? 'wss' : 'ws';
-    const backendUrl = process.env.NEXT_PUBLIC_BACKEND_URL ?? '';
-    let url = "";
-    try {
-      if (!backendUrl) throw new Error('use window.location.host');
-      const parsed = new URL(backendUrl);
-      url = `${wsProto}://${parsed.host}/ws/admin-topbar-${Math.random().toString(36).substring(2, 9)}`;
-    } catch {
-      url = `${wsProto}://${window.location.host}/ws/admin-topbar-${Math.random().toString(36).substring(2, 9)}`;
-    }
+    // 生产环境使用当前页面域名（nginx 反向代理 /ws → 后端），开发环境直连 localhost:8080
+    const { hostname, protocol, host } = window.location;
+    const isLocal = hostname === 'localhost' || hostname === '127.0.0.1';
+    const wsBase = isLocal ? 'ws://localhost:8080' : `${protocol === 'https:' ? 'wss' : 'ws'}://${host}`;
+    const url = `${wsBase}/ws/admin-topbar-${Math.random().toString(36).substring(2, 9)}`;
 
     const connectWs = () => {
       const ws = new WebSocket(url);

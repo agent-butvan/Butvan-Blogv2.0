@@ -14,6 +14,8 @@ FROM node:20-alpine AS builder
 WORKDIR /app
 COPY --from=deps /app/node_modules ./node_modules
 COPY . .
+# 删除本地开发环境变量文件，避免 Next.js 构建时将 localhost 地址固化到客户端 JS
+RUN rm -f .env.local .env.dev .env.sealos
 # 构建时注入后端地址，让 Next.js rewrites 代理目标指向 Docker 内网的后端服务
 ENV BACKEND_URL=http://blog-service:8080
 # 清空 NEXT_PUBLIC_* 变量，避免硬编码 localhost；运行时由浏览器 window.location.host 自动推断

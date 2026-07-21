@@ -35,46 +35,22 @@ interface UseWebSocketReturn {
  * 构建 WebSocket 连接地址
  *
  * WebSocket 协议不走 Next.js rewrites 代理，需要浏览器直连后端。
- * - 优先使用 NEXT_PUBLIC_WS_BASE_URL 显式配置
- * - 开发环境直连 localhost:8080
- * - 生产环境使用当前页面的 hostname + 后端端口（8080）
+ * 生产环境始终使用 window.location.host（配合 nginx 反向代理 /ws → 后端），
+ * 开发环境直连 localhost:8080。
  */
 function buildWsUrl(wsId: string): string {
-  // 1. 优先使用显式配置的 WebSocket 基地址
-  const wsBase = process.env.NEXT_PUBLIC_WS_BASE_URL
-  if (wsBase) {
-    const formattedBase = wsBase.endsWith('/') ? wsBase : `${wsBase}/`
-    return `${formattedBase}${wsId}`
-  }
-
-  // 2. 生产环境：使用当前页面的 hostname（浏览器自动推断域名+端口）
+  // 1. 生产环境：始终使用当前页面域名（nginx 负责将 /ws 转发到后端）
   if (typeof window !== 'undefined') {
     const { hostname, protocol, host } = window.location
     const wsProto = protocol === 'https:' ? 'wss' : 'ws'
-
-    // 非本地环境：使用当前页面域名（配合反向代理将 /ws 转发到后端）
+    // 非本地环境：直接使用当前域名，不带任何硬编码端口
     if (hostname !== 'localhost' && hostname !== '127.0.0.1') {
       return `${wsProto}://${host}/ws/${wsId}`
     }
   }
 
-  // 3. 如果配置了完整的后端 URL（非相对路径），从中提取 host
-  const apiBase = process.env.NEXT_PUBLIC_API_BASE_URL
-  if (apiBase && apiBase.startsWith('http')) {
-    const host = apiBase.replace(/\/api\/?$/, '').replace(/\/$/, '')
-    const wsProto = host.startsWith('https') ? 'wss' : 'ws'
-    return `${wsProto}://${new URL(host).host}/ws/${wsId}`
-  }
-
-  // 4. 开发环境兑底：直连 localhost:8080
-  const backendUrl = process.env.NEXT_PUBLIC_BACKEND_URL || 'http://localhost:8080'
-  const protocol = backendUrl.startsWith('https') ? 'wss' : 'ws'
-  try {
-    const url = new URL(backendUrl)
-    return `${protocol}://${url.host}/ws/${wsId}`
-  } catch {
-    return `ws://localhost:8080/ws/${wsId}`
-  }
+  // 2. 开发环境兜底：直连 localhost:8080
+  return `ws://localhost:8080/ws/${wsId}`
 }
 
 /**
