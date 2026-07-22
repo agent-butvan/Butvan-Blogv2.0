@@ -91,7 +91,8 @@ export default function Footer() {
   const links = profile?.socialLinks || {}
   const footerTitle = links.footerTitle || (profile?.nickname ? `${profile.nickname}'s Blog.` : "Butvan's Blog.")
   const footerSubtitle = links.footerSubtitle || "总之岁月漫长，然而值得等待"
-  const footerIcp = links.footerIcp || "湘ICP备2023033970号-1"
+  // 若未设置备案号，则置空不展现（仅在明确配置 footerIcp 时展示）
+  const footerIcp = links.footerIcp?.trim() || ""
   
   const currentYear = new Date().getFullYear()
   const startYear = links.footerStartDate ? links.footerStartDate.substring(0, 4) : '2022'
