@@ -710,16 +710,46 @@ h6 {
 }
 
 /* 行内代码样式 */
-.comment-content-prose code:not(pre code) {
-  font-family: monospace;
-  font-size: 0.85em;
-  background-color: rgba(9, 9, 11, 0.05);
-  color: #e11d48;
-  padding: 0.1rem 0.25rem;
-  border-radius: 4px;
+
+/* ============================================================================
+ * 暗色模式后台全局白线与刺眼边框消弭系统
+ * 解决在黑色背景下，zinc-100/zinc-200 以及无透明度 zinc-800 呈现的硬白线条问题
+ * ============================================================================ */
+:root.dark hr,
+:root.dark [class*="border-zinc-100"],
+:root.dark [class*="border-zinc-150"],
+:root.dark [class*="border-zinc-200"] {
+  border-color: rgba(255, 255, 255, 0.07) !important;
 }
-.dark .comment-content-prose code:not(pre code) {
-  background-color: rgba(250, 250, 250, 0.08);
-  color: #f43f5e;
+
+:root.dark [class*="border-t-zinc-100"],
+:root.dark [class*="border-t-zinc-150"],
+:root.dark [class*="border-t-zinc-200"] {
+  border-top-color: rgba(255, 255, 255, 0.07) !important;
 }
+
+:root.dark [class*="border-b-zinc-100"],
+:root.dark [class*="border-b-zinc-150"],
+:root.dark [class*="border-b-zinc-200"] {
+  border-bottom-color: rgba(255, 255, 255, 0.07) !important;
+}
+
+:root.dark [class*="border-l-zinc-100"],
+:root.dark [class*="border-l-zinc-150"],
+:root.dark [class*="border-l-zinc-200"] {
+  border-left-color: rgba(255, 255, 255, 0.07) !important;
+}
+
+:root.dark [class*="border-r-zinc-100"],
+:root.dark [class*="border-r-zinc-150"],
+:root.dark [class*="border-r-zinc-200"] {
+  border-right-color: rgba(255, 255, 255, 0.07) !important;
+}
+
+:root.dark [class*="border-zinc-800"],
+:root.dark [class*="border-zinc-850"],
+:root.dark [class*="border-zinc-900"] {
+  border-color: rgba(255, 255, 255, 0.06) !important;
+}
+
 

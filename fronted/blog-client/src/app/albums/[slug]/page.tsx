@@ -6,6 +6,7 @@ import { useParams } from 'next/navigation'
 import { ArrowLeft, Camera } from 'lucide-react'
 import Navbar from '@/components/common/Navbar'
 import SidebarWidget from '@/components/common/SidebarWidget'
+import Footer from '@/components/common/Footer'
 import AlbumHero from '@/components/album/AlbumHero'
 import PhotoLightbox from '@/components/album/PhotoLightbox'
 import { AlbumDetailSkeleton } from '@/components/album/AlbumSkeleton'
@@ -175,12 +176,8 @@ export default function AlbumDetailPage() {
         />
       )}
 
-      {/* Footer */}
-      <footer className="py-8 text-center border-t border-zinc-200/40 dark:border-zinc-900/50">
-        <span className="text-xs text-zinc-400 dark:text-zinc-500">
-          2026 Butvan Blog
-        </span>
-      </footer>
+      {/* 全站统一页脚 */}
+      <Footer />
     </div>
   )
 }

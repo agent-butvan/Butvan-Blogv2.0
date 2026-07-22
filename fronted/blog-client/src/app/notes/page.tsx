@@ -25,6 +25,7 @@ import {
 import { Spinner } from '@heroui/react'
 import Navbar from '@/components/common/Navbar'
 import SidebarWidget from '@/components/common/SidebarWidget'
+import Footer from '@/components/common/Footer'
 import { fetchPublicNotes } from '@/lib/note-api'
 import { fetchProfile } from '@/lib/profile'
 import { resolveImageUrl } from '@/lib/image-url'
@@ -585,6 +586,9 @@ export default function NotesFragmentsPage() {
           </>
         )}
       </section>
+      
+      {/* 全站统一页脚 */}
+      <Footer />
     </main>
   )
 }

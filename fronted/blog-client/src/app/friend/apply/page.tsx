@@ -19,6 +19,7 @@ import {
 } from 'lucide-react'
 import Navbar from '@/components/common/Navbar'
 import SidebarWidget from '@/components/common/SidebarWidget'
+import Footer from '@/components/common/Footer'
 import { toast, Avatar, Button, Spinner, Tooltip, cn } from '@heroui/react'
 import { fetchProfile } from '@/lib/profile'
 import { applyFriendLink, uploadPublicImage, fetchWebMeta } from '@/lib/friend-api'
@@ -715,13 +716,8 @@ export default function FriendApplyPage() {
         </div>
       </section>
 
-      {/* Footer：与友链目录页统一 */}
-      <footer className="py-6 text-center border-t border-zinc-200/50 dark:border-zinc-900/60">
-        <div className="flex items-center justify-center gap-1.5 text-zinc-400 dark:text-zinc-500 text-xs">
-          <ArrowLeft size={10} />
-          <span>2026 Butvan Blog. All rights reserved.</span>
-        </div>
-      </footer>
+      {/* 全站统一页脚 */}
+      <Footer />
     </div>
   )
 }

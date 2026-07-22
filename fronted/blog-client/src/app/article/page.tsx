@@ -22,6 +22,7 @@ import Image from 'next/image'
 import { resolveImageUrl, API_BASE } from '@/lib/image-url'
 import Navbar from '@/components/common/Navbar'
 import SidebarWidget from '@/components/common/SidebarWidget'
+import Footer from '@/components/common/Footer'
 import { fetchProfile } from '@/lib/profile'
 import type { ProfileVO } from '@/types/profile'
 import gsap from 'gsap'
@@ -583,6 +584,9 @@ export default function ArticleListPage() {
           </div>
         )}
       </section>
+      
+      {/* 全站统一页脚 */}
+      <Footer />
     </main>
   )
 }

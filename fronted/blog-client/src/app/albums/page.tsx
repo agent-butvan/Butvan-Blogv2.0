@@ -4,6 +4,7 @@ import React, { useState, useEffect, useRef, useCallback } from 'react'
 import { Camera, Loader2 } from 'lucide-react'
 import Navbar from '@/components/common/Navbar'
 import SidebarWidget from '@/components/common/SidebarWidget'
+import Footer from '@/components/common/Footer'
 import PhotoLightbox from '@/components/album/PhotoLightbox'
 import { fetchPublicPhotos } from '@/lib/album-api'
 import { fetchProfile } from '@/lib/profile'
@@ -269,6 +270,9 @@ export default function AlbumsPage() {
           onNavigate={setLightboxIndex}
         />
       )}
+
+      {/* 全站统一页脚 */}
+      <Footer />
     </div>
   )
 }

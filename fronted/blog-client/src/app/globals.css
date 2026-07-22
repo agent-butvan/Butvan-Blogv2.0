@@ -539,17 +539,49 @@ h1, h2, h3, h4, h5, h6 {
   }
 }
 
-@media (prefers-reduced-motion: reduce) {
-  .friend-entry,
-  .friend-entry::before {
-    transition: none;
-  }
-  .friend-page-enter {
-    animation: none;
-    opacity: 1;
-    transform: translateY(0);
-  }
+
+/* ============================================================================
+ * 暗色模式无缝全站白线消除与微透明柔和边框覆盖系统
+ * 解决浅色 border (zinc-100 / zinc-200 / zinc-300 / white / transparent)
+ * 在深色黑底下显现出的刺眼白线问题
+ * ============================================================================ */
+.dark hr,
+.dark [class*="border-zinc-100"],
+.dark [class*="border-zinc-150"],
+.dark [class*="border-zinc-200"] {
+  border-color: rgba(255, 255, 255, 0.08) !important;
 }
+
+.dark [class*="border-t-zinc-100"],
+.dark [class*="border-t-zinc-150"],
+.dark [class*="border-t-zinc-200"] {
+  border-top-color: rgba(255, 255, 255, 0.08) !important;
+}
+
+.dark [class*="border-b-zinc-100"],
+.dark [class*="border-b-zinc-150"],
+.dark [class*="border-b-zinc-200"] {
+  border-bottom-color: rgba(255, 255, 255, 0.08) !important;
+}
+
+.dark [class*="border-l-zinc-100"],
+.dark [class*="border-l-zinc-150"],
+.dark [class*="border-l-zinc-200"] {
+  border-left-color: rgba(255, 255, 255, 0.08) !important;
+}
+
+.dark [class*="border-r-zinc-100"],
+.dark [class*="border-r-zinc-150"],
+.dark [class*="border-r-zinc-200"] {
+  border-right-color: rgba(255, 255, 255, 0.08) !important;
+}
+
+.dark [class*="border-zinc-800"],
+.dark [class*="border-zinc-850"],
+.dark [class*="border-zinc-900"] {
+  border-color: rgba(255, 255, 255, 0.06) !important;
+}
+
 
 
 
