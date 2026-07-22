@@ -541,119 +541,15 @@ h1, h2, h3, h4, h5, h6 {
 
 
 /* ============================================================================
- * 暗色模式大厂级 Visual Excellence 字体高对比度与无缝白线消除系统
- * 强力覆盖组件内声明的 dark:text-zinc-* 确保所有文本达到高清视效
- * 消弭所有由浅色 border / shadow / bg 引起的硬框线
+ * 强制前台页面全天候 100% 保持明亮模式 (Force Light Mode Only)
+ * 彻底切断任何暗色深底黑化的可能性，确保页面始终维持极致高雅的浅色白灰调
  * ============================================================================ */
+:root,
 :root.dark,
-.dark {
-  color-scheme: dark;
-}
-
-/* 1. 全局文本对比度强力提升 (涵盖普通选择器与 Tailwind 转义选择器) */
-.dark .text-zinc-400,
-.dark .text-zinc-450,
-.dark .text-zinc-500,
-.dark .text-zinc-600,
-:root.dark [class*="dark:text-zinc-400"],
-:root.dark [class*="dark:text-zinc-450"],
-:root.dark [class*="dark:text-zinc-500"],
-:root.dark [class*="dark:text-zinc-600"],
-.dark [class*="dark:text-zinc-400"],
-.dark [class*="dark:text-zinc-450"],
-.dark [class*="dark:text-zinc-500"],
-.dark [class*="dark:text-zinc-600"] {
-  color: #e4e4e7 !important; /* 提升至高清亮灰色 (zinc-200) */
-}
-
-.dark .text-zinc-300,
-.dark .text-zinc-350,
-:root.dark [class*="dark:text-zinc-300"],
-:root.dark [class*="dark:text-zinc-350"],
-.dark [class*="dark:text-zinc-300"],
-.dark [class*="dark:text-zinc-350"] {
-  color: #f4f4f5 !important; /* 提升至亮白灰色 (zinc-100) */
-}
-
-.dark .text-zinc-700,
-.dark .text-zinc-800,
-.dark .text-zinc-900,
-:root.dark [class*="dark:text-zinc-700"],
-:root.dark [class*="dark:text-zinc-800"],
-:root.dark [class*="dark:text-zinc-900"],
-.dark [class*="dark:text-zinc-700"],
-.dark [class*="dark:text-zinc-800"],
-.dark [class*="dark:text-zinc-900"] {
-  color: #ffffff !important; /* 标题纯白 */
-}
-
-.dark [class*="placeholder:text-zinc-"],
-.dark [class*="dark:placeholder:text-zinc-"] {
-  color: #a1a1aa !important;
-}
-
-/* 2. 消弭硬朗线框框与异色背景 */
-.dark hr,
-.dark [class*="border-zinc-100"],
-.dark [class*="border-zinc-150"],
-.dark [class*="border-zinc-200"],
-.dark [class*="border-zinc-300"] {
-  border-color: rgba(255, 255, 255, 0.08) !important;
-}
-
-.dark [class*="border-t-zinc-100"],
-.dark [class*="border-t-zinc-150"],
-.dark [class*="border-t-zinc-200"],
-.dark [class*="border-t-zinc-300"] {
-  border-top-color: rgba(255, 255, 255, 0.08) !important;
-}
-
-.dark [class*="border-b-zinc-100"],
-.dark [class*="border-b-zinc-150"],
-.dark [class*="border-b-zinc-200"],
-.dark [class*="border-b-zinc-300"] {
-  border-bottom-color: rgba(255, 255, 255, 0.08) !important;
-}
-
-.dark [class*="border-l-zinc-100"],
-.dark [class*="border-l-zinc-150"],
-.dark [class*="border-l-zinc-200"],
-.dark [class*="border-l-zinc-300"] {
-  border-left-color: rgba(255, 255, 255, 0.08) !important;
-}
-
-.dark [class*="border-r-zinc-100"],
-.dark [class*="border-r-zinc-150"],
-.dark [class*="border-r-zinc-200"],
-.dark [class*="border-r-zinc-300"] {
-  border-right-color: rgba(255, 255, 255, 0.08) !important;
-}
-
-.dark [class*="border-zinc-700"],
-.dark [class*="border-zinc-800"],
-.dark [class*="border-zinc-850"],
-.dark [class*="border-zinc-900"] {
-  border-color: rgba(255, 255, 255, 0.06) !important;
-}
-
-/* 3. 暗色模式下修护浅灰色亮背景框（消除硬浅灰暗暗卡片框框） */
-.dark .bg-zinc-50,
-.dark .bg-zinc-100,
-.dark .bg-zinc-150,
-.dark [class*="bg-zinc-50/"],
-.dark [class*="bg-zinc-100/"],
-.dark [class*="bg-zinc-150/"] {
-  background-color: rgba(24, 24, 27, 0.5) !important;
-}
-
-/* 4. 阴影修正：防止暗色模式下投影变成突兀白圈 */
-.dark .shadow-xs,
-.dark .shadow-sm,
-.dark .shadow-md,
-.dark .shadow-lg,
-.dark .shadow-xl,
-.dark .shadow-2xl {
-  box-shadow: 0 10px 30px rgba(0, 0, 0, 0.5) !important;
+.dark,
+html,
+body {
+  color-scheme: light !important;
 }
 
 
