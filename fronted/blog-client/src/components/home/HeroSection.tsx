@@ -248,7 +248,7 @@ export default function HeroSection({ profile, loading }: HeroSectionProps) {
             href={githubUrl}
             target="_blank"
             rel="noopener noreferrer"
-            className="social-link-item flex items-center gap-2 text-zinc-700 dark:text-zinc-200 hover:text-primary dark:hover:text-primary text-base md:text-[17px] font-heading font-bold tracking-wide transition-colors group opacity-0"
+            className="social-link-item flex items-center gap-2 text-zinc-700 dark:text-zinc-200 hover:text-primary dark:hover:text-primary text-base md:text-[17px] font-heading font-medium tracking-wide transition-colors group opacity-0"
           >
             <GitFork className="w-4.5 h-4.5 text-[#727BBA] group-hover:scale-110 transition-transform" />
             GitHub
@@ -257,7 +257,7 @@ export default function HeroSection({ profile, loading }: HeroSectionProps) {
           {/* Email Link */}
           <a
             href={emailUrl}
-            className="social-link-item flex items-center gap-2 text-zinc-700 dark:text-zinc-200 hover:text-primary dark:hover:text-primary text-base md:text-[17px] font-heading font-bold tracking-wide transition-colors group opacity-0"
+            className="social-link-item flex items-center gap-2 text-zinc-700 dark:text-zinc-200 hover:text-primary dark:hover:text-primary text-base md:text-[17px] font-heading font-medium tracking-wide transition-colors group opacity-0"
           >
             <Mail className="w-4.5 h-4.5 text-[#727BBA] group-hover:scale-110 transition-transform" />
             Email
@@ -268,7 +268,7 @@ export default function HeroSection({ profile, loading }: HeroSectionProps) {
             href={rssUrl}
             target="_blank"
             rel="noopener noreferrer"
-            className="social-link-item flex items-center gap-2 text-zinc-700 dark:text-zinc-200 hover:text-primary dark:hover:text-primary text-base md:text-[17px] font-heading font-bold tracking-wide transition-colors group opacity-0"
+            className="social-link-item flex items-center gap-2 text-zinc-700 dark:text-zinc-200 hover:text-primary dark:hover:text-primary text-base md:text-[17px] font-heading font-medium tracking-wide transition-colors group opacity-0"
           >
             <Rss className="w-4.5 h-4.5 text-[#727BBA] group-hover:scale-110 transition-transform" />
             RSS

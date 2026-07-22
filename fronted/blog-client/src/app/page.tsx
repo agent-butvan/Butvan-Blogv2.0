@@ -153,13 +153,15 @@ export default function HomePage() {
       {/* 隐藏夜店流体动画背景以匹配图片极简灰白风格 */}
       {/* <FluidBackground /> */}
 
-      {/* Layer 2: 首屏 — 个人信息（完美契合参考图的极简左右+上下组合排版） */}
-      <section className="relative w-full min-h-[calc(100vh-4rem)] flex items-center justify-center px-6 md:px-16 lg:px-24">
-        <HeroSection profile={profile} loading={loading} />
+      {/* Layer 2: 首屏 — 个人信息（独立占满 100vh 视口空间，确保 Footer 不置于首屏） */}
+      <section className="relative w-full min-h-screen flex flex-col justify-between items-center px-6 md:px-16 lg:px-24 pt-20 pb-10">
+        <div className="w-full flex-1 flex items-center justify-center">
+          <HeroSection profile={profile} loading={loading} />
+        </div>
 
         {!loading && (
-          <div className="scroll-indicator absolute bottom-8 left-1/2 -translate-x-1/2 z-20 flex flex-col items-center gap-1 opacity-0 text-zinc-400 dark:text-zinc-500 select-none">
-            <span className="text-[9px] font-heading font-semibold tracking-widest text-zinc-400 dark:text-zinc-600 uppercase">
+          <div className="scroll-indicator pb-4 flex flex-col items-center gap-1 opacity-0 text-zinc-400 dark:text-zinc-500 select-none">
+            <span className="text-[9px] font-heading font-medium tracking-widest text-zinc-400 dark:text-zinc-600 uppercase">
               SCROLL DOWN TO VIEW ARTICLES
             </span>
             <span className="text-xs font-light animate-bounce mt-1.5">↓</span>
