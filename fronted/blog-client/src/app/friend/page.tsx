@@ -72,6 +72,15 @@ export default function FriendPage() {
     return groups
   }, [friends])
 
+  // 提取域名
+  const extractDomain = (url: string) => {
+    try {
+      return new URL(url).hostname.replace(/^www\./, '')
+    } catch {
+      return url
+    }
+  }
+
   // 分类筛选
   const handleCategoryClick = (category: string | null) => {
     setSelectedCategory(category === selectedCategory ? null : category)
@@ -84,17 +93,19 @@ export default function FriendPage() {
     : categoryOrder.filter((c) => groupedFriends[c]?.length > 0)
 
   return (
-    <div className="min-h-screen flex flex-col bg-transparent font-body text-zinc-900 dark:text-zinc-50 transition-colors">
-      <Navbar profile={profile} />
+    <div className="min-h-screen flex flex-col justify-between bg-transparent font-body text-zinc-900 dark:text-zinc-50 transition-colors">
+      {/* 100vh 独立正文视口隔离层（确保首屏纯净绝无 Footer 露出） */}
+      <div className="w-full flex-1 flex flex-col items-center min-h-screen pb-16">
+        <Navbar profile={profile} />
 
-      {/* 左侧悬浮侧挂导航 */}
-      <SidebarWidget />
+        {/* 左侧悬浮侧挂导航 */}
+        <SidebarWidget />
 
-      {/* 页头 —— 简洁居中排版 */}
-      <header
-        className="w-full max-w-3xl mx-auto px-4 pt-16 pb-6 text-center transition-opacity duration-500"
-        style={{ opacity: visible ? 1 : 0 }}
-      >
+        {/* 页头 —— 简洁居中排版 */}
+        <header
+          className="w-full max-w-3xl mx-auto px-4 pt-16 pb-6 text-center transition-opacity duration-500"
+          style={{ opacity: visible ? 1 : 0 }}
+        >
         <div className="flex items-center justify-center gap-3">
           <Users size={17} className="text-[#727BBA]/70" />
           <h1 className="text-xl md:text-2xl font-heading font-bold text-zinc-900 dark:text-zinc-50 tracking-tight">
@@ -104,7 +115,10 @@ export default function FriendPage() {
             ·
           </span>
           <span className="text-sm text-zinc-500 dark:text-zinc-400 font-heading">
-            朋友们 {friends.length}
+            朋友们
+          </span>
+          <span className="text-xs font-mono text-zinc-400 dark:text-zinc-500 translate-y-px">
+            {friends.length}
           </span>
         </div>
       </header>
@@ -142,81 +156,100 @@ export default function FriendPage() {
         </div>
       </nav>
 
-      {/* 主体友链区与规则说明 (底部留出 pb-40 充足空隙，确保 Footer 不挤在首屏) */}
-      <section
-        className="w-full max-w-5xl mx-auto px-6 pb-40 flex-1 flex flex-col transition-opacity duration-500 delay-200"
-        style={{ opacity: visible ? 1 : 0 }}
-      >
-        {/* 加载态 */}
-        {loading && (
-          <div className="py-20 flex items-center justify-center">
-            <Spinner size="lg" color="accent" />
+      {/* 主内容区 */}
+      <section className="flex-1 flex flex-col w-full max-w-5xl mx-auto px-4 pb-10" aria-label="友链列表">
+        {loading ? (
+          /* 加载态 */
+          <div className="min-h-[24rem] flex items-center justify-center">
+            <div className="flex flex-col items-center gap-3">
+              <Spinner size="md" />
+              <span className="text-xs text-zinc-400 dark:text-zinc-500">加载中...</span>
+            </div>
           </div>
-        )}
-
-        {/* 空状态 */}
-        {!loading && friends.length === 0 && (
-          <div className="py-20 text-center text-xs text-zinc-400 dark:text-zinc-500 font-mono">
-            暂无相关友链
+        ) : friends.length === 0 ? (
+          /* 空状态 */
+          <div className="flex-1 min-h-[24rem] flex items-center justify-center">
+            <p className="text-sm font-heading text-zinc-400 dark:text-zinc-500">
+              暂无友链
+            </p>
           </div>
-        )}
-
-        {/* 友链分类展示 */}
-        {!loading && friends.length > 0 && (
-          <div className="space-y-12">
+        ) : (
+          <div
+            className="friend-page-enter"
+            style={{ opacity: visible ? undefined : 0 }}
+          >
             {orderedCategories.map((catKey) => {
-              const catFriends = groupedFriends[catKey] || []
-              if (catFriends.length === 0) return null
-              const catMeta = FRIEND_CATEGORIES.find((c) => c.value === catKey)
+              const catFriends = groupedFriends[catKey]
+              if (!catFriends?.length) return null
+              const catLabel = CATEGORY_LABEL_MAP[catKey] || catKey
 
               return (
-                <section key={catKey} aria-labelledby={`cat-${catKey}`}>
+                <section key={catKey} className="mb-16 last:mb-0">
+                  {/* 分类水印 —— 超大字号、极低透明度品牌色，作为章节视觉锚点 */}
                   <h2
-                    id={`cat-${catKey}`}
-                    className="text-2xl font-bold text-zinc-200/40 dark:text-zinc-800/80 mb-6 font-heading select-none"
+                    className="text-[clamp(2rem,5vw,3.5rem)] font-heading font-bold leading-none tracking-[-0.02em] text-[#727BBA]/[0.06] dark:text-[#727BBA]/[0.08] mb-8 select-none pointer-events-none"
+                    aria-hidden="true"
                   >
-                    {catMeta?.label || catKey}
+                    {catLabel}
                   </h2>
 
-                  <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-4">
+                  {/* 友链卡片网格 */}
+                  <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4">
                     {catFriends.map((friend) => {
-                      const linkProps = friend.url.startsWith('http')
-                        ? { target: '_blank', rel: 'noopener noreferrer' }
-                        : {}
                       const avatarUrl = resolveImageUrl(friend.avatarUrl || '')
+                      const domain = extractDomain(friend.url)
 
                       return (
                         <a
                           key={friend.id}
                           href={friend.url}
-                          {...linkProps}
-                          className="group relative p-4 rounded-xl border border-zinc-200/50 dark:border-zinc-800/60 bg-white/40 dark:bg-zinc-900/30 hover:border-zinc-300 dark:hover:border-zinc-700 hover:bg-white/80 dark:hover:bg-zinc-900/60 transition-all duration-300 flex items-start gap-3.5"
+                          target="_blank"
+                          rel="noopener noreferrer"
+                          className="group relative flex flex-col p-5 rounded-xl border border-zinc-200/60 bg-white/40 dark:border-zinc-800 dark:bg-zinc-900/40 backdrop-blur-sm transition-all duration-500 hover:border-[#727BBA]/40 hover:shadow-[8px_8px_0px_rgba(114,123,186,0.08)] dark:hover:shadow-[8px_8px_0px_rgba(114,123,186,0.03)] overflow-hidden cursor-pointer"
                         >
-                          <div className="relative w-10 h-10 rounded-full overflow-hidden shrink-0 border border-zinc-200/40 dark:border-zinc-800 bg-zinc-100 dark:bg-zinc-800 flex items-center justify-center">
-                            {avatarUrl ? (
-                              <img
-                                src={avatarUrl}
-                                alt={friend.name}
-                                className="w-full h-full object-cover group-hover:scale-110 transition-transform duration-300"
-                              />
-                            ) : (
-                              <span className="text-xs font-bold text-zinc-400">
-                                {friend.name.charAt(0)}
-                              </span>
-                            )}
+                          {/* 右上角渐变光晕 */}
+                          <div className="absolute top-0 right-0 w-16 h-16 bg-gradient-to-bl from-[#727BBA]/5 to-transparent opacity-0 group-hover:opacity-100 transition-opacity duration-700"></div>
+
+                          {/* 右上角外链图标 */}
+                          <div className="absolute top-4 right-4 opacity-0 group-hover:opacity-100 translate-x-1 -translate-y-1 group-hover:translate-x-0 group-hover:translate-y-0 transition-all duration-300 text-[#727BBA]">
+                            <ArrowUpRight size={14} />
                           </div>
 
-                          <div className="flex-1 min-w-0">
-                            <div className="flex items-center gap-1.5">
-                              <span className="text-xs font-bold text-zinc-800 dark:text-zinc-200 truncate group-hover:text-[#727BBA] transition-colors">
-                                {friend.name}
-                              </span>
+                          {/* 头像 + 信息 */}
+                          <div className="flex items-center gap-4 mb-4 relative z-10">
+                            {/* 圆形头像 */}
+                            <div className="w-13 h-13 rounded-full bg-zinc-50 dark:bg-zinc-950 flex-shrink-0 border border-zinc-200/80 dark:border-zinc-700/80 group-hover:border-[#727BBA]/40 transition-all duration-500 overflow-hidden ring-4 ring-transparent group-hover:ring-[#727BBA]/5">
+                              {avatarUrl ? (
+                                <img
+                                  src={avatarUrl}
+                                  alt={`${friend.name} 的头像`}
+                                  className="w-full h-full object-cover grayscale-[0.4] group-hover:grayscale-0 group-hover:scale-110 transition-all duration-700 ease-out"
+                                  loading="lazy"
+                                />
+                              ) : (
+                                <div className="w-full h-full flex items-center justify-center text-xs font-bold text-zinc-400 uppercase select-none">
+                                  {friend.name.charAt(0)}
+                                </div>
+                              )}
                             </div>
 
-                            <p className="text-[11px] text-zinc-400 dark:text-zinc-500 line-clamp-2 mt-1 leading-relaxed">
-                              {friend.description || '暂无描述'}
-                            </p>
+                            {/* 名称 + 分类标签 */}
+                            <div className="min-w-0">
+                              <h3 className="font-bold text-zinc-900 dark:text-zinc-100 text-sm tracking-wide truncate group-hover:text-[#727BBA] transition-colors">
+                                {friend.name}
+                              </h3>
+                              <div className="mt-0.5 flex items-center gap-2">
+                                <span className="text-[9px] text-zinc-400 dark:text-zinc-500 font-mono uppercase tracking-widest">
+                                  {catLabel}
+                                </span>
+                              </div>
+                            </div>
                           </div>
+
+                          {/* 描述 */}
+                          <p className="text-[13px] text-zinc-500 dark:text-zinc-400 leading-relaxed line-clamp-2 h-10 relative z-10">
+                            {friend.description || domain}
+                          </p>
                         </a>
                       )
                     })}
@@ -227,26 +260,26 @@ export default function FriendPage() {
           </div>
         )}
 
-        {/* 友链说明 + 申请入口 —— 极简硬朗无圆角无阴影风格 */}
-        <div className="mt-20">
-          <div className="p-8 rounded-none border border-dashed border-zinc-300 dark:border-zinc-700 bg-zinc-50/40 dark:bg-zinc-900/40 max-w-2xl mx-auto w-full">
+        {/* 友链说明 + 申请入口 —— 参考 grtsinry43.com 设计 */}
+        <div className="mt-auto pt-16">
+          <div className="p-8 rounded-xl border border-dashed border-zinc-200/70 bg-zinc-50/40 dark:border-zinc-700/60 dark:bg-zinc-900/30 max-w-2xl mx-auto w-full">
             {/* 标题 */}
-            <h2 className="text-sm font-bold text-zinc-800 dark:text-zinc-100 uppercase tracking-widest mb-6 font-mono text-center">
+            <h2 className="text-sm font-bold text-zinc-800 dark:text-zinc-200 uppercase tracking-widest mb-6 font-mono text-center">
               友链说明
             </h2>
 
             {/* 规则列表 */}
-            <ul className="text-xs text-zinc-700 dark:text-zinc-200 font-medium space-y-3.5">
+            <ul className="text-xs text-zinc-500 dark:text-zinc-400 space-y-3">
               <li className="flex gap-2">
-                <span className="text-[#727BBA] shrink-0">•</span>
+                <span className="text-[#727BBA]/60 shrink-0">•</span>
                 <span>优先考虑经常更新、内容优质的技术博客或生活记录。</span>
               </li>
               <li className="flex gap-2">
-                <span className="text-[#727BBA] shrink-0">•</span>
+                <span className="text-[#727BBA]/60 shrink-0">•</span>
                 <span>站点需支持 HTTPS，排版整洁，无大量广告或误导性内容。</span>
               </li>
               <li className="flex gap-2">
-                <span className="text-[#727BBA] shrink-0">•</span>
+                <span className="text-[#727BBA]/60 shrink-0">•</span>
                 <span>申请前请先在贵站添加本站链接，这将视作一种友好的相互确认。</span>
               </li>
             </ul>
@@ -255,7 +288,7 @@ export default function FriendPage() {
             <div className="mt-10 flex justify-center">
               <Link
                 href="/friend/apply"
-                className="flex items-center gap-2 px-5 py-2.5 bg-zinc-900 dark:bg-zinc-100 text-white dark:text-zinc-900 rounded-none hover:bg-[#09B38A] dark:hover:bg-[#09B38A] dark:hover:text-white transition-all duration-300 font-bold text-xs group"
+                className="flex items-center gap-2 px-4 py-2 bg-zinc-800 dark:bg-zinc-200 text-white dark:text-zinc-900 rounded-lg hover:bg-[#09B38A] dark:hover:bg-[#09B38A] dark:hover:text-white transition-all duration-300 font-bold text-[11px] shadow-sm group"
               >
                 <Plus size={14} className="group-hover:rotate-90 transition-transform duration-300" />
                 申请加入
@@ -264,8 +297,9 @@ export default function FriendPage() {
           </div>
         </div>
       </section>
+      </div>
 
-      {/* 放置于 100vh 视口之外的底部统一页脚 */}
+      {/* 全站统一页脚 (放置在 100vh 视口之外的最下方) */}
       <Footer />
     </div>
   )
