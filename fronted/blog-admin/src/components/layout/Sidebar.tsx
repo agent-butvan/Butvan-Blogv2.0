@@ -124,7 +124,6 @@ export default function Sidebar({ isMobile = false, isOpen = false, onClose }: S
       <div className="flex h-[52px] items-center justify-between px-3 border-b border-zinc-200/50 dark:border-zinc-800/40 shrink-0 bg-white dark:bg-zinc-950">
         {(!collapsed || isMobile) && (
           <div className="flex items-center gap-2 animate-[fadeIn_0.15s_ease-out]">
-            <span className="font-heading font-extrabold text-[10px] bg-primary text-white w-5 h-5 rounded-md flex items-center justify-center tracking-tighter">VB</span>
             <span className="font-heading font-bold text-xs text-zinc-800 dark:text-zinc-200 whitespace-nowrap tracking-wider">
               可梵控制台
             </span>
