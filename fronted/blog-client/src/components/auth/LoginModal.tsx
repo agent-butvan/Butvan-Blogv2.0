@@ -214,14 +214,14 @@ export default function LoginModal({ isOpen, onClose }: LoginModalProps) {
     if (lastMessage.code === 500) {
       setQrStatus('error')
       setWechatMsg(lastMessage.message || '登录异常，请重试')
-      toast.danger(lastMessage.message || '登录异常，请重试', { timeout: 0 })
+      toast.danger(lastMessage.message || '登录异常，请重试')
       return
     }
 
     // 扫码事件：用户已扫描二维码
     if (lastMessage.event === 'weixin' && lastMessage.code === 200 && lastMessage.message.includes('扫描')) {
       setQrStatus('scanned')
-      toast.info(lastMessage.message, { timeout: 3000 })
+      toast.info(lastMessage.message)
       if (expiryTimerRef.current) {
         clearInterval(expiryTimerRef.current)
         expiryTimerRef.current = null
@@ -232,7 +232,7 @@ export default function LoginModal({ isOpen, onClose }: LoginModalProps) {
 
     // 登录成功事件（已有用户扫码登录）
     if (lastMessage.event === 'weixin' && lastMessage.code === 200 && lastMessage.message.includes('登录成功')) {
-      toast.success(lastMessage.message, { timeout: 0 })
+      toast.success(lastMessage.message)
       wechatQRCache = null // 登录成功，清除缓存
       handleWechatLoginSuccess(lastMessage.data)
       return
@@ -240,7 +240,7 @@ export default function LoginModal({ isOpen, onClose }: LoginModalProps) {
 
     // 注册成功事件（新用户首次注册）
     if (lastMessage.event === 'login' && lastMessage.code === 200) {
-      toast.success(lastMessage.message, { timeout: 0 })
+      toast.success(lastMessage.message)
       wechatQRCache = null // 注册成功，清除缓存
       handleWechatLoginSuccess(lastMessage.data)
       return
@@ -251,7 +251,6 @@ export default function LoginModal({ isOpen, onClose }: LoginModalProps) {
    * 微信扫码登录/注册成功后，交换 Token 并完成登录
    */
   const handleWechatLoginSuccess = async (data?: Record<string, unknown>) => {
-    setQrStatus('logging')
     setWechatMsg('')
     try {
       let loggedUser: { nickname: string; avatarUrl?: string | null; username?: string | null; email?: string | null } | null = null
