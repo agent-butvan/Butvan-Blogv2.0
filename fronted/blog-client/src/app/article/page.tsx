@@ -254,7 +254,7 @@ export default function ArticleListPage() {
   }
 
   return (
-    <main className="relative min-h-[calc(100vh+250px)] w-full bg-transparent text-zinc-900 dark:text-zinc-50 font-body selection:bg-[#727BBA]/20 transition-colors duration-200 flex flex-col justify-between items-center">
+    <main className="relative min-h-screen w-full bg-transparent text-zinc-900 dark:text-zinc-50 font-body selection:bg-[#727BBA]/20 transition-colors duration-200 flex flex-col items-center">
       {/* 顶部动态主导航栏 */}
       <Navbar profile={profile} />
 
@@ -262,7 +262,7 @@ export default function ArticleListPage() {
       <SidebarWidget />
 
       {/* 顶部极简居中人文页头 */}
-      <header className="relative w-full max-w-5xl px-4 pt-20 pb-8 text-center flex flex-col items-center select-none">
+      <header className="relative w-full max-w-5xl px-4 pt-16 pb-6 text-center flex flex-col items-center select-none">
         <div className="relative flex flex-col items-center">
           <span className="animate-header-item opacity-0 absolute -top-4 -right-10 [writing-mode:vertical-rl] text-[9px] font-serif font-bold text-[#727BBA]/60 dark:text-[#727BBA]/50 tracking-[0.3em] uppercase border-r border-[#727BBA]/20 pr-1 h-10">
             ARCHIVE
@@ -293,8 +293,8 @@ export default function ArticleListPage() {
         </div>
       </header>
 
-      {/* 主体筛选区与文章列表 (保证充盈 100vh 视口空间) */}
-      <section className="w-full max-w-5xl px-6 py-8 flex-1 min-h-[calc(100vh-14rem)] flex flex-col justify-between">
+      {/* 主体筛选区与文章列表 (紧凑流式排列，避免被推送至最底部) */}
+      <section className="w-full max-w-5xl px-6 pt-4 pb-32 flex-1 flex flex-col gap-8">
         
         {/* 1. 高级过滤器 (分类 & 标签) - 极简人文字标流设计 */}
         <div className="flex flex-col gap-6 py-6 px-4 border-b border-zinc-200/50 dark:border-zinc-800/40 text-left w-full max-w-3xl mx-auto">
