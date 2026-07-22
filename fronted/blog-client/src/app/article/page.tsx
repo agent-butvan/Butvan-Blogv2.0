@@ -254,7 +254,7 @@ export default function ArticleListPage() {
   }
 
   return (
-    <main className="relative min-h-screen w-full bg-transparent text-zinc-900 dark:text-zinc-50 font-body selection:bg-[#727BBA]/20 transition-colors duration-200 flex flex-col items-center">
+    <main className="relative min-h-[calc(100vh+250px)] w-full bg-transparent text-zinc-900 dark:text-zinc-50 font-body selection:bg-[#727BBA]/20 transition-colors duration-200 flex flex-col justify-between items-center">
       {/* 顶部动态主导航栏 */}
       <Navbar profile={profile} />
 
@@ -262,7 +262,7 @@ export default function ArticleListPage() {
       <SidebarWidget />
 
       {/* 顶部极简居中人文页头 */}
-      <header className="relative w-full max-w-5xl px-4 pt-16 pb-8 text-center flex flex-col items-center select-none">
+      <header className="relative w-full max-w-5xl px-4 pt-20 pb-8 text-center flex flex-col items-center select-none">
         <div className="relative flex flex-col items-center">
           <span className="animate-header-item opacity-0 absolute -top-4 -right-10 [writing-mode:vertical-rl] text-[9px] font-serif font-bold text-[#727BBA]/60 dark:text-[#727BBA]/50 tracking-[0.3em] uppercase border-r border-[#727BBA]/20 pr-1 h-10">
             ARCHIVE
@@ -280,21 +280,21 @@ export default function ArticleListPage() {
           </div>
         </div>
 
-        <p className="animate-header-item opacity-0 mt-5 font-serif italic text-sm md:text-base text-[#727BBA] dark:text-[#727BBA]/90 tracking-wide font-medium">
+        <p className="animate-header-item opacity-0 mt-5 font-serif italic text-sm md:text-base text-[#727BBA] dark:text-[#8E97D5] tracking-wide font-medium">
           文字是思考的锚点
         </p>
 
         <div className="animate-header-item opacity-0 mt-4 flex items-start gap-2 max-w-lg mx-auto">
           <span className="text-[#727BBA]/40 font-serif text-lg leading-none">“</span>
-          <p className="text-[13px] leading-relaxed text-zinc-500 dark:text-zinc-400 font-serif text-center italic">
+          <p className="text-[13px] leading-relaxed text-zinc-700 dark:text-zinc-200 font-serif text-center italic font-medium">
             按时间顺序排布的思考、笔记与技术沉淀。在这里，你可以找到所有历史文章的快照。
           </p>
           <span className="text-[#727BBA]/40 font-serif text-lg leading-none self-end">”</span>
         </div>
       </header>
 
-      {/* 主体筛选区与文章列表 */}
-      <section className="w-full max-w-5xl px-6 py-8 flex flex-col gap-8">
+      {/* 主体筛选区与文章列表 (保证充盈 100vh 视口空间) */}
+      <section className="w-full max-w-5xl px-6 py-8 flex-1 min-h-[calc(100vh-14rem)] flex flex-col justify-between">
         
         {/* 1. 高级过滤器 (分类 & 标签) - 极简人文字标流设计 */}
         <div className="flex flex-col gap-6 py-6 px-4 border-b border-zinc-200/50 dark:border-zinc-800/40 text-left w-full max-w-3xl mx-auto">
@@ -468,12 +468,12 @@ export default function ArticleListPage() {
                       </h2>
 
                       {/* 描述摘要 */}
-                      <p className="text-zinc-500 dark:text-zinc-400 text-xs sm:text-sm leading-relaxed line-clamp-2">
+                      <p className="text-zinc-700 dark:text-zinc-200 text-xs sm:text-sm leading-relaxed line-clamp-2 font-serif font-medium">
                         {article.summary || '暂无摘要'}
                       </p>
 
                       {/* 元数据行 */}
-                      <div className="mt-1 flex flex-wrap items-center gap-x-4 gap-y-1.5 text-[11px] sm:text-xs text-zinc-500 dark:text-zinc-400 font-mono sm:gap-x-6">
+                      <div className="mt-1 flex flex-wrap items-center gap-x-4 gap-y-1.5 text-[11px] sm:text-xs text-zinc-600 dark:text-zinc-300 font-mono sm:gap-x-6">
                         {/* 日期 */}
                         <div className="flex items-center gap-1.5">
                           <Calendar size={13} strokeWidth={1.5} />

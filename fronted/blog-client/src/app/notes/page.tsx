@@ -268,7 +268,7 @@ export default function NotesFragmentsPage() {
         </div>
 
         {/* 副标题 */}
-        <p className="animate-header-item opacity-0 mt-5 font-serif text-xs md:text-sm text-zinc-400 dark:text-zinc-500 tracking-[0.2em]">
+        <p className="animate-header-item opacity-0 mt-5 font-serif text-xs md:text-sm text-zinc-600 dark:text-zinc-200 font-medium tracking-[0.2em]">
           每一行代码，都是一次对时间的装帧
         </p>
 
@@ -278,21 +278,27 @@ export default function NotesFragmentsPage() {
           <div className="w-10 h-px bg-[#727BBA]/15" />
           <div className="w-1 h-1 rounded-full bg-[#727BBA]/30" />
         </div>
-      </header>
 
-      {/* ========== 心情筛选器 ========== */}
-      <section className="w-full max-w-5xl px-6 pb-8">
-        <div className="animate-header-item opacity-0 flex flex-wrap items-center justify-center gap-x-4 gap-y-2 select-none pb-6 border-b border-zinc-200/30 dark:border-zinc-800/30">
-          <span className="text-[10px] font-heading font-bold tracking-wider text-zinc-400 dark:text-zinc-500 uppercase mr-2">
+        {/* 心境筛选器 */}
+        <div className="animate-header-item opacity-0 mt-8 flex flex-wrap items-center justify-center gap-2 md:gap-3 text-xs select-none">
+          <span className="text-[11px] font-heading font-medium text-zinc-600 dark:text-zinc-300 mr-1">
             心境
           </span>
-          {MOOD_FILTER_OPTIONS.map((opt) => {
-            const Icon = opt.icon
+          <button
+            onClick={() => { setMoodFilter(''); setPage(1) }}
+            className={`px-3 py-1 rounded-full font-heading text-[11px] transition-all cursor-pointer ${
+              moodFilter === ''
+                ? 'bg-[#727BBA] text-white font-bold shadow-md shadow-[#727BBA]/20'
+                : 'bg-zinc-100/80 dark:bg-zinc-900/60 text-zinc-700 dark:text-zinc-200 hover:bg-zinc-200 dark:hover:bg-zinc-800'
+            }`}
+          >
+            全部
+          </button>
+          {Object.entries(MOOD_ICONS).map(([key, cfg]) => {
+            const IconComp = cfg.icon
+            const isSelected = moodFilter === key
             return (
               <button
-                key={opt.value || 'all'}
-                onClick={() => { setMoodFilter(opt.value); setPage(1) }}
-                className={`inline-flex items-center gap-1.5 px-3 py-2 rounded-full text-xs font-medium transition-colors duration-150 cursor-pointer min-h-[44px] ${
                   moodFilter === opt.value
                     ? 'text-[#727BBA] font-bold'
                     : 'text-zinc-500 hover:text-zinc-800 dark:text-zinc-400 dark:hover:text-zinc-100'

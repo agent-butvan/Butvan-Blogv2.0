@@ -162,9 +162,9 @@ export default function AlbumsPage() {
 
       {/* ========== 背景装饰层 ========== */}
       <div className="fixed inset-0 z-[-1] pointer-events-none overflow-hidden" style={{ perspective: '1000px' }}>
-        {/* 巨型视差文字 */}
+        {/* 巨型视差文字 (低调幽暗微透，绝不抢戏) */}
         <span
-          className="absolute text-[60vw] font-extrabold text-zinc-100 dark:text-zinc-900 whitespace-nowrap leading-none select-none"
+          className="absolute text-[60vw] font-extrabold text-zinc-200/40 dark:text-white/[0.015] whitespace-nowrap leading-none select-none pointer-events-none"
           style={{
             top: '10%',
             left: '-10%',
@@ -175,11 +175,11 @@ export default function AlbumsPage() {
           butvan
         </span>
         <span
-          className="absolute text-[60vw] font-extrabold whitespace-nowrap leading-none select-none"
+          className="absolute text-[60vw] font-extrabold whitespace-nowrap leading-none select-none pointer-events-none"
           style={{
             bottom: '5%',
             right: '-5%',
-            color: 'rgba(61, 193, 211, 0.04)',
+            color: 'rgba(61, 193, 211, 0.015)',
             transform: `translateX(${bgOffset2}px) translateZ(-200px)`,
             transition: 'transform 0.1s linear',
           }}
@@ -189,10 +189,10 @@ export default function AlbumsPage() {
 
         {/* 透视网格线 */}
         <div
-          className="absolute inset-0 opacity-[0.06] dark:opacity-[0.03]"
+          className="absolute inset-0 opacity-[0.04] dark:opacity-[0.02]"
           style={{
             backgroundImage:
-              'linear-gradient(rgba(255, 255, 255, 0.1) 1px, transparent 1px), linear-gradient(90deg, rgba(255, 255, 255, 0.1) 1px, transparent 1px)',
+              'linear-gradient(rgba(255, 255, 255, 0.08) 1px, transparent 1px), linear-gradient(90deg, rgba(255, 255, 255, 0.08) 1px, transparent 1px)',
             backgroundSize: '50px 50px',
             transform: 'rotateX(60deg)',
           }}
@@ -214,16 +214,16 @@ export default function AlbumsPage() {
         </div>
       )}
 
-      {/* ========== 空状态 ========== */}
+      {/* ========== 空状态 (保证首屏纯净绝无 Footer，向下滚动后始现) ========== */}
       {!loading && clusters.length === 0 && (
-        <div className="min-h-screen flex flex-col justify-between pt-32 relative z-20">
-          <div className="flex-1 flex flex-col items-center justify-center">
-            <div className="flex flex-col items-center gap-4 p-10 rounded-3xl bg-white/40 dark:bg-zinc-900/40 border border-zinc-200/50 dark:border-white/10 shadow-xl backdrop-blur-md">
-              <Camera size={32} className="text-zinc-400 dark:text-zinc-500" />
-              <p className="text-sm font-heading font-medium text-zinc-600 dark:text-zinc-300">暂无相册照片，敬请期待</p>
+        <div className="min-h-[calc(100vh+250px)] flex flex-col justify-between w-full relative z-20">
+          <div className="flex-1 min-h-screen flex flex-col items-center justify-center pt-24 pb-12">
+            <div className="flex flex-col items-center gap-4 p-10 rounded-3xl bg-white/40 dark:bg-zinc-900/60 border border-zinc-200/50 dark:border-white/10 shadow-2xl backdrop-blur-md">
+              <Camera size={32} className="text-[#3dc1d3]" />
+              <p className="text-sm font-heading font-bold text-zinc-800 dark:text-zinc-100">暂无相册照片，敬请期待</p>
             </div>
           </div>
-          {/* 空状态下页脚在页面最底部 */}
+          {/* 首屏 100vh 视口之外的底部页脚 */}
           <Footer />
         </div>
       )}

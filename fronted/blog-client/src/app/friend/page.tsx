@@ -93,7 +93,7 @@ export default function FriendPage() {
     : categoryOrder.filter((c) => groupedFriends[c]?.length > 0)
 
   return (
-    <div className="min-h-screen flex flex-col bg-transparent font-body text-zinc-900 dark:text-zinc-50 transition-colors">
+    <div className="min-h-[calc(100vh+200px)] flex flex-col justify-between bg-transparent font-body text-zinc-900 dark:text-zinc-50 transition-colors">
       <Navbar profile={profile} />
 
       {/* 左侧悬浮侧挂导航 */}
@@ -258,26 +258,26 @@ export default function FriendPage() {
           </div>
         )}
 
-        {/* 友链说明 + 申请入口 —— 参考 grtsinry43.com 设计 */}
+        {/* 友链说明 + 申请入口 —— 高质感透明黑金风格 */}
         <div className="mt-auto pt-16">
-          <div className="p-8 rounded-xl border border-dashed border-zinc-200/70 bg-zinc-50/40 dark:border-zinc-700/60 dark:bg-zinc-900/30 max-w-2xl mx-auto w-full">
+          <div className="p-8 rounded-2xl border border-dashed border-zinc-200/70 bg-zinc-50/40 dark:border-white/10 dark:bg-zinc-900/60 backdrop-blur-md max-w-2xl mx-auto w-full shadow-lg">
             {/* 标题 */}
-            <h2 className="text-sm font-bold text-zinc-800 dark:text-zinc-200 uppercase tracking-widest mb-6 font-mono text-center">
+            <h2 className="text-sm font-bold text-zinc-800 dark:text-zinc-100 uppercase tracking-widest mb-6 font-mono text-center">
               友链说明
             </h2>
 
             {/* 规则列表 */}
-            <ul className="text-xs text-zinc-500 dark:text-zinc-400 space-y-3">
+            <ul className="text-xs text-zinc-700 dark:text-zinc-200 font-medium space-y-3.5">
               <li className="flex gap-2">
-                <span className="text-[#727BBA]/60 shrink-0">•</span>
+                <span className="text-[#727BBA] shrink-0">•</span>
                 <span>优先考虑经常更新、内容优质的技术博客或生活记录。</span>
               </li>
               <li className="flex gap-2">
-                <span className="text-[#727BBA]/60 shrink-0">•</span>
+                <span className="text-[#727BBA] shrink-0">•</span>
                 <span>站点需支持 HTTPS，排版整洁，无大量广告或误导性内容。</span>
               </li>
               <li className="flex gap-2">
-                <span className="text-[#727BBA]/60 shrink-0">•</span>
+                <span className="text-[#727BBA] shrink-0">•</span>
                 <span>申请前请先在贵站添加本站链接，这将视作一种友好的相互确认。</span>
               </li>
             </ul>
@@ -286,7 +286,7 @@ export default function FriendPage() {
             <div className="mt-10 flex justify-center">
               <Link
                 href="/friend/apply"
-                className="flex items-center gap-2 px-4 py-2 bg-zinc-800 dark:bg-zinc-200 text-white dark:text-zinc-900 rounded-lg hover:bg-[#09B38A] dark:hover:bg-[#09B38A] dark:hover:text-white transition-all duration-300 font-bold text-[11px] shadow-sm group"
+                className="flex items-center gap-2 px-5 py-2.5 bg-zinc-900 dark:bg-zinc-100 text-white dark:text-zinc-900 rounded-xl hover:bg-[#09B38A] dark:hover:bg-[#09B38A] dark:hover:text-white transition-all duration-300 font-bold text-xs shadow-md group"
               >
                 <Plus size={14} className="group-hover:rotate-90 transition-transform duration-300" />
                 申请加入
@@ -296,7 +296,7 @@ export default function FriendPage() {
         </div>
       </section>
 
-      {/* 全站统一页脚 */}
+      {/* 放置于 100vh 视口之外的底部统一页脚 */}
       <Footer />
     </div>
   )

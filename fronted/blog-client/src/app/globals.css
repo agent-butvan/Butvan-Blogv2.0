@@ -542,39 +542,57 @@ h1, h2, h3, h4, h5, h6 {
 
 /* ============================================================================
  * 暗色模式大厂级 Visual Excellence 字体高对比度与无缝白线消除系统
- * 解决暗色模式下 text-zinc-400/500/600 字色过于晦暗看不清的问题 (满足 WCAG AAA 对比度)
- * 消弭所有由浅色 border / shadow 引起的外框白线
+ * 强力覆盖组件内声明的 dark:text-zinc-* 确保所有文本达到高清视效
+ * 消弭所有由浅色 border / shadow / bg 引起的硬框线
  * ============================================================================ */
 :root.dark,
 .dark {
   color-scheme: dark;
 }
 
-/* 1. 文本颜色大幅提升可读性，消弭晦暗 */
+/* 1. 全局文本对比度强力提升 (涵盖普通选择器与 Tailwind 转义选择器) */
 .dark .text-zinc-400,
 .dark .text-zinc-450,
 .dark .text-zinc-500,
-.dark .text-zinc-600 {
-  color: #e4e4e7 !important; /* 提升至亮灰色 (zinc-200)，确保高清可读 */
+.dark .text-zinc-600,
+:root.dark [class*="dark:text-zinc-400"],
+:root.dark [class*="dark:text-zinc-450"],
+:root.dark [class*="dark:text-zinc-500"],
+:root.dark [class*="dark:text-zinc-600"],
+.dark [class*="dark:text-zinc-400"],
+.dark [class*="dark:text-zinc-450"],
+.dark [class*="dark:text-zinc-500"],
+.dark [class*="dark:text-zinc-600"] {
+  color: #e4e4e7 !important; /* 提升至高清亮灰色 (zinc-200) */
 }
 
 .dark .text-zinc-300,
-.dark .text-zinc-350 {
-  color: #f4f4f5 !important; /* 提升至超亮白灰色 (zinc-100) */
+.dark .text-zinc-350,
+:root.dark [class*="dark:text-zinc-300"],
+:root.dark [class*="dark:text-zinc-350"],
+.dark [class*="dark:text-zinc-300"],
+.dark [class*="dark:text-zinc-350"] {
+  color: #f4f4f5 !important; /* 提升至亮白灰色 (zinc-100) */
 }
 
 .dark .text-zinc-700,
 .dark .text-zinc-800,
-.dark .text-zinc-900 {
-  color: #ffffff !important; /* 核心大标题直接纯白 */
+.dark .text-zinc-900,
+:root.dark [class*="dark:text-zinc-700"],
+:root.dark [class*="dark:text-zinc-800"],
+:root.dark [class*="dark:text-zinc-900"],
+.dark [class*="dark:text-zinc-700"],
+.dark [class*="dark:text-zinc-800"],
+.dark [class*="dark:text-zinc-900"] {
+  color: #ffffff !important; /* 标题纯白 */
 }
 
-.dark .placeholder\:text-zinc-350::placeholder,
-.dark .placeholder\:text-zinc-650::placeholder {
-  color: #a1a1aa !important; /* 占位符清晰可读 */
+.dark [class*="placeholder:text-zinc-"],
+.dark [class*="dark:placeholder:text-zinc-"] {
+  color: #a1a1aa !important;
 }
 
-/* 2. 彻底消弭刺眼的硬白线条与框框，替换为哑光幽暗微透描边 */
+/* 2. 消弭硬朗线框框与异色背景 */
 .dark hr,
 .dark [class*="border-zinc-100"],
 .dark [class*="border-zinc-150"],
@@ -618,7 +636,17 @@ h1, h2, h3, h4, h5, h6 {
   border-color: rgba(255, 255, 255, 0.06) !important;
 }
 
-/* 3. 盒阴影修正：防止浅色 drop-shadow 变成白晕框框 */
+/* 3. 暗色模式下修护浅灰色亮背景框（消除硬浅灰暗暗卡片框框） */
+.dark .bg-zinc-50,
+.dark .bg-zinc-100,
+.dark .bg-zinc-150,
+.dark [class*="bg-zinc-50/"],
+.dark [class*="bg-zinc-100/"],
+.dark [class*="bg-zinc-150/"] {
+  background-color: rgba(24, 24, 27, 0.5) !important;
+}
+
+/* 4. 阴影修正：防止暗色模式下投影变成突兀白圈 */
 .dark .shadow-xs,
 .dark .shadow-sm,
 .dark .shadow-md,
