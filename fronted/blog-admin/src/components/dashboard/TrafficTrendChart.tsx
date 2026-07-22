@@ -86,7 +86,7 @@ export default function TrafficTrendChart({ data = [], loading = false }: Traffi
         <ResponsiveContainer width="100%" height="100%">
           <AreaChart
             data={data}
-            margin={{ top: 5, right: 10, left: -25, bottom: 0 }}
+            margin={{ top: 5, right: -25, left: -25, bottom: 0 }}
           >
             <defs>
               {/* NextUI 蓝色渐变 (PV) */}
@@ -119,13 +119,25 @@ export default function TrafficTrendChart({ data = [], loading = false }: Traffi
               dy={8}
             />
 
-            {/* Y 轴配置 */}
+            {/* 左侧 Y 轴配置 (PV) */}
             <YAxis
+              yAxisId="left"
               axisLine={false}
               tickLine={false}
               tick={{ fill: "currentColor", fontSize: 9, fontFamily: "monospace" }}
               className="text-zinc-400 dark:text-zinc-550"
               dx={-5}
+            />
+
+            {/* 右侧 Y 轴配置 (UV) */}
+            <YAxis
+              yAxisId="right"
+              orientation="right"
+              axisLine={false}
+              tickLine={false}
+              tick={{ fill: "currentColor", fontSize: 9, fontFamily: "monospace" }}
+              className="text-zinc-400 dark:text-zinc-550"
+              dx={5}
             />
 
             {/* Tooltip 悬停浮层 */}
@@ -134,8 +146,9 @@ export default function TrafficTrendChart({ data = [], loading = false }: Traffi
               cursor={{ stroke: "rgba(0, 112, 243, 0.15)", strokeWidth: 1.5 }}
             />
 
-            {/* PV 蓝色面积线 */}
+            {/* PV 蓝色面积线 (绑定左轴) */}
             <Area
+              yAxisId="left"
               type="monotone"
               dataKey="pv"
               stroke="#0070F3"
@@ -149,8 +162,9 @@ export default function TrafficTrendChart({ data = [], loading = false }: Traffi
               }}
             />
             
-            {/* UV 紫色面积线 */}
+            {/* UV 紫色面积线 (绑定右轴) */}
             <Area
+              yAxisId="right"
               type="monotone"
               dataKey="uv"
               stroke="#7928CA"
