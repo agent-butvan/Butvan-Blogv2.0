@@ -56,11 +56,15 @@ public class MediaController {
      * @param file 上传的图片文件
      * @return 统一格式 Result，携带相对路径 /uploads/filename.ext
      */
-    @TrackApi("【公开】上传图片（用于友链头像等无需登录的场景）")
+    @TrackApi("【公开】上传图片（用于友链头像等前台公开场景）")
     @PostMapping("/public/upload/image")
-    public Result<String> uploadPublicImage(@RequestParam("file") MultipartFile file) {
-        log.info("公开接口上传图片，原始文件名: {}, 大小: {} 字节", 
-                file.getOriginalFilename(), file.getSize());
+    public Result<String> uploadPublicImage(
+            @RequestParam("file") MultipartFile file,
+            @RequestParam(value = "sourceType", required = false, defaultValue = "FRIEND") String sourceType,
+            @RequestParam(value = "sourceDetail", required = false, defaultValue = "前台公开上传图片") String sourceDetail
+    ) {
+        log.info("公开接口上传图片，原始文件名: {}, 大小: {} 字节, 归档分类: {}", 
+                file.getOriginalFilename(), file.getSize(), sourceType);
         
         // 验证文件类型
         String contentType = file.getContentType();
@@ -74,9 +78,9 @@ public class MediaController {
         }
         
         try {
-            // 复用现有上传逻辑，但不记录到数据库（因为无用户ID）
-            String relativePath = mediaService.uploadFileWithoutDb(file);
-            return Result.success(relativePath);
+            // 统一调用 mediaService.uploadFile 登记到 blog_media 表中并进行分类归档
+            Media media = mediaService.uploadFile(file, sourceType, null, sourceDetail);
+            return Result.success(media.getFileUrl());
         } catch (Exception e) {
             log.error("公开上传图片失败", e);
             return Result.error("上传失败: " + e.getMessage());

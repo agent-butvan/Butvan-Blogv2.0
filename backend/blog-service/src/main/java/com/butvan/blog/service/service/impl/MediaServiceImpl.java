@@ -12,6 +12,10 @@ import com.butvan.blog.service.repository.MediaRepository;
 import com.butvan.blog.service.service.MediaService;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
+import com.butvan.blog.pojo.entity.User;
+import com.butvan.blog.service.repository.UserRepository;
+import org.springframework.security.core.Authentication;
+import org.springframework.security.core.context.SecurityContextHolder;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 import org.springframework.web.multipart.MultipartFile;
@@ -43,6 +47,7 @@ import jakarta.servlet.http.HttpServletRequest;
 public class MediaServiceImpl implements MediaService {
 
     private final MediaRepository mediaRepository;
+    private final UserRepository userRepository;
     private final FileStorageService fileStorageService;
     private final StorageProperties storageProperties;
     private final HttpServletRequest request;
@@ -74,9 +79,10 @@ public class MediaServiceImpl implements MediaService {
         // 2. 计算文件的 SHA-256 哈希值用于去重及秒传
         String sha256 = calculateSha256(file);
 
-        // 3. 获取客户端 IP 和 User-Agent
+        // 3. 获取客户端 IP、User-Agent 及当前登录用户 ID
         String ip = getClientIp(request);
         String ua = request != null ? request.getHeader("User-Agent") : "UNKNOWN";
+        Long uploaderId = getCurrentUserId();
 
         // 4. 判断是否触发秒传
         List<Media> existingMedias = mediaRepository.findByFileHash(sha256);
@@ -96,6 +102,7 @@ public class MediaServiceImpl implements MediaService {
                     .width(existingMedia.getWidth())
                     .height(existingMedia.getHeight())
                     .altText(existingMedia.getAltText())
+                    .uploaderId(uploaderId)
                     .sourceType(org.springframework.util.StringUtils.hasText(sourceType) ? sourceType : "MANUAL")
                     .sourceId(sourceId)
                     .sourceDetail(sourceDetail)
@@ -143,6 +150,7 @@ public class MediaServiceImpl implements MediaService {
                 .mimeType(file.getContentType())
                 .fileSize(file.getSize())
                 .bucketName(bucketName)
+                .uploaderId(uploaderId)
                 .sourceType(category)
                 .sourceId(sourceId)
                 .sourceDetail(sourceDetail)
@@ -364,5 +372,25 @@ public class MediaServiceImpl implements MediaService {
             log.error("HEIC/HEIF 转换为 JPEG 失败", e);
             throw new BusinessException("HEIC/HEIF 文件转换失败: " + e.getMessage());
         }
+    }
+
+    /**
+     * 从当前 Spring Security 上下文中解析登录用户的 ID
+     *
+     * @return 登录用户的唯一 ID，非登录/解析失败时返回 null
+     */
+    private Long getCurrentUserId() {
+        try {
+            Authentication auth = SecurityContextHolder.getContext().getAuthentication();
+            if (auth != null && auth.isAuthenticated() && !"anonymousUser".equals(auth.getPrincipal())) {
+                String username = auth.getName();
+                if (org.springframework.util.StringUtils.hasText(username)) {
+                    return userRepository.findByUsername(username).map(User::getId).orElse(null);
+                }
+            }
+        } catch (Exception e) {
+            log.debug("解析当前上传用户 ID 失败", e);
+        }
+        return null;
     }
 }
