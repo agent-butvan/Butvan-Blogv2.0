@@ -189,10 +189,10 @@ export default function AlbumsPage() {
 
         {/* 透视网格线 */}
         <div
-          className="absolute inset-0 opacity-[0.12] dark:opacity-[0.06]"
+          className="absolute inset-0 opacity-[0.06] dark:opacity-[0.03]"
           style={{
             backgroundImage:
-              'linear-gradient(#e5e5e5 1px, transparent 1px), linear-gradient(90deg, #e5e5e5 1px, transparent 1px)',
+              'linear-gradient(rgba(255, 255, 255, 0.1) 1px, transparent 1px), linear-gradient(90deg, rgba(255, 255, 255, 0.1) 1px, transparent 1px)',
             backgroundSize: '50px 50px',
             transform: 'rotateX(60deg)',
           }}
@@ -200,7 +200,7 @@ export default function AlbumsPage() {
       </div>
 
       {/* ========== 极简页头 ========== */}
-      <header className="fixed top-10 left-10 z-50 select-none mix-blend-difference">
+      <header className="fixed top-10 left-10 z-30 select-none mix-blend-difference pointer-events-none">
         <div className="w-5 h-0.5 bg-[#3dc1d3]" />
         <p className="text-[0.6rem] tracking-[3px] mt-2.5 text-white/70 font-heading">
           VOLUME. {new Date().getFullYear()}
@@ -209,18 +209,22 @@ export default function AlbumsPage() {
 
       {/* ========== 加载态 ========== */}
       {loading && (
-        <div className="fixed inset-0 z-50 flex items-center justify-center bg-white dark:bg-zinc-950">
-          <Loader2 size={24} className="animate-spin text-zinc-300 dark:text-zinc-600" />
+        <div className="fixed inset-0 z-50 flex items-center justify-center bg-white/90 dark:bg-zinc-950/90 backdrop-blur-sm">
+          <Loader2 size={24} className="animate-spin text-zinc-400 dark:text-zinc-500" />
         </div>
       )}
 
       {/* ========== 空状态 ========== */}
       {!loading && clusters.length === 0 && (
-        <div className="fixed inset-0 z-50 flex items-center justify-center">
-          <div className="flex flex-col items-center gap-4 p-12 rounded-2xl backdrop-blur-md bg-white/5 dark:bg-zinc-900/10 border border-zinc-200/30 dark:border-zinc-800/30">
-            <Camera size={24} className="text-zinc-400" />
-            <p className="text-sm font-heading text-zinc-400 dark:text-zinc-500">暂无照片，敬请期待</p>
+        <div className="min-h-screen flex flex-col justify-between pt-32 relative z-20">
+          <div className="flex-1 flex flex-col items-center justify-center">
+            <div className="flex flex-col items-center gap-4 p-10 rounded-3xl bg-white/40 dark:bg-zinc-900/40 border border-zinc-200/50 dark:border-white/10 shadow-xl backdrop-blur-md">
+              <Camera size={32} className="text-zinc-400 dark:text-zinc-500" />
+              <p className="text-sm font-heading font-medium text-zinc-600 dark:text-zinc-300">暂无相册照片，敬请期待</p>
+            </div>
           </div>
+          {/* 空状态下页脚在页面最底部 */}
+          <Footer />
         </div>
       )}
 
@@ -229,7 +233,7 @@ export default function AlbumsPage() {
         <>
           <div
             ref={scrollWrapperRef}
-            className="relative"
+            className="relative z-10"
             style={{ height: `${scrollHeight}vh` }}
           >
             <div
@@ -258,6 +262,11 @@ export default function AlbumsPage() {
 
           {/* ========== 底部刻度尺 ========== */}
           <Ruler clustersCount={clusters.length} />
+
+          {/* 横滚结束后的底部统一页脚 */}
+          <div className="relative z-20 bg-background border-t border-zinc-200/40 dark:border-white/10">
+            <Footer />
+          </div>
         </>
       )}
 
@@ -270,9 +279,6 @@ export default function AlbumsPage() {
           onNavigate={setLightboxIndex}
         />
       )}
-
-      {/* 全站统一页脚 */}
-      <Footer />
     </div>
   )
 }

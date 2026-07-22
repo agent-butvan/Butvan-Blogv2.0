@@ -541,45 +541,91 @@ h1, h2, h3, h4, h5, h6 {
 
 
 /* ============================================================================
- * 暗色模式无缝全站白线消除与微透明柔和边框覆盖系统
- * 解决浅色 border (zinc-100 / zinc-200 / zinc-300 / white / transparent)
- * 在深色黑底下显现出的刺眼白线问题
+ * 暗色模式大厂级 Visual Excellence 字体高对比度与无缝白线消除系统
+ * 解决暗色模式下 text-zinc-400/500/600 字色过于晦暗看不清的问题 (满足 WCAG AAA 对比度)
+ * 消弭所有由浅色 border / shadow 引起的外框白线
  * ============================================================================ */
+:root.dark,
+.dark {
+  color-scheme: dark;
+}
+
+/* 1. 文本颜色大幅提升可读性，消弭晦暗 */
+.dark .text-zinc-400,
+.dark .text-zinc-450,
+.dark .text-zinc-500,
+.dark .text-zinc-600 {
+  color: #e4e4e7 !important; /* 提升至亮灰色 (zinc-200)，确保高清可读 */
+}
+
+.dark .text-zinc-300,
+.dark .text-zinc-350 {
+  color: #f4f4f5 !important; /* 提升至超亮白灰色 (zinc-100) */
+}
+
+.dark .text-zinc-700,
+.dark .text-zinc-800,
+.dark .text-zinc-900 {
+  color: #ffffff !important; /* 核心大标题直接纯白 */
+}
+
+.dark .placeholder\:text-zinc-350::placeholder,
+.dark .placeholder\:text-zinc-650::placeholder {
+  color: #a1a1aa !important; /* 占位符清晰可读 */
+}
+
+/* 2. 彻底消弭刺眼的硬白线条与框框，替换为哑光幽暗微透描边 */
 .dark hr,
 .dark [class*="border-zinc-100"],
 .dark [class*="border-zinc-150"],
-.dark [class*="border-zinc-200"] {
+.dark [class*="border-zinc-200"],
+.dark [class*="border-zinc-300"] {
   border-color: rgba(255, 255, 255, 0.08) !important;
 }
 
 .dark [class*="border-t-zinc-100"],
 .dark [class*="border-t-zinc-150"],
-.dark [class*="border-t-zinc-200"] {
+.dark [class*="border-t-zinc-200"],
+.dark [class*="border-t-zinc-300"] {
   border-top-color: rgba(255, 255, 255, 0.08) !important;
 }
 
 .dark [class*="border-b-zinc-100"],
 .dark [class*="border-b-zinc-150"],
-.dark [class*="border-b-zinc-200"] {
+.dark [class*="border-b-zinc-200"],
+.dark [class*="border-b-zinc-300"] {
   border-bottom-color: rgba(255, 255, 255, 0.08) !important;
 }
 
 .dark [class*="border-l-zinc-100"],
 .dark [class*="border-l-zinc-150"],
-.dark [class*="border-l-zinc-200"] {
+.dark [class*="border-l-zinc-200"],
+.dark [class*="border-l-zinc-300"] {
   border-left-color: rgba(255, 255, 255, 0.08) !important;
 }
 
 .dark [class*="border-r-zinc-100"],
 .dark [class*="border-r-zinc-150"],
-.dark [class*="border-r-zinc-200"] {
+.dark [class*="border-r-zinc-200"],
+.dark [class*="border-r-zinc-300"] {
   border-right-color: rgba(255, 255, 255, 0.08) !important;
 }
 
+.dark [class*="border-zinc-700"],
 .dark [class*="border-zinc-800"],
 .dark [class*="border-zinc-850"],
 .dark [class*="border-zinc-900"] {
   border-color: rgba(255, 255, 255, 0.06) !important;
+}
+
+/* 3. 盒阴影修正：防止浅色 drop-shadow 变成白晕框框 */
+.dark .shadow-xs,
+.dark .shadow-sm,
+.dark .shadow-md,
+.dark .shadow-lg,
+.dark .shadow-xl,
+.dark .shadow-2xl {
+  box-shadow: 0 10px 30px rgba(0, 0, 0, 0.5) !important;
 }
 
 
