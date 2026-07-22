@@ -96,6 +96,7 @@ export default function Footer() {
   
   const currentYear = new Date().getFullYear()
   const startYear = links.footerStartDate ? links.footerStartDate.substring(0, 4) : '2022'
+  const githubUrl = links.github || "https://github.com/18755120710"
 
   return (
     <footer className="w-full bg-transparent border-t border-zinc-200/50 dark:border-white/10 transition-colors py-12 px-6 md:px-16 lg:px-24 text-left font-body text-zinc-600 dark:text-zinc-400 select-none">
@@ -106,19 +107,21 @@ export default function Footer() {
           
           {/* 1 ~ 3 栏：根据后台 FOOTER 位置导航动态拉取 */}
           {navItems.length > 0 ? (
-            navItems.map((item) => (
-              <div key={item.id} className="flex flex-col gap-4">
+            navItems.map((col) => (
+              <div key={col.id} className="flex flex-col gap-4">
                 <div className="flex items-center gap-2">
-                  <span className="w-1 h-3.5 bg-primary rounded-full shrink-0" />
-                  <span className="text-xs font-heading font-bold text-zinc-800 dark:text-zinc-200 tracking-wide">
-                    {item.title} &gt;
-                  </span>
+                  <span className="w-1 h-3.5 bg-[#09B38A] rounded-full shrink-0" />
+                  <h3 className="text-xs font-heading font-bold text-zinc-800 dark:text-zinc-200 tracking-wide">
+                    {col.title}
+                  </h3>
                 </div>
                 <ul className="flex flex-col gap-2.5 pl-3">
-                  {item.children && item.children.map((child) => (
+                  {col.children?.map((child) => (
                     <li key={child.id}>
                       <a
-                        href={child.linkUrl || '#'}
+                        href={child.linkUrl}
+                        target={child.linkUrl?.startsWith('http') ? '_blank' : undefined}
+                        rel={child.linkUrl?.startsWith('http') ? 'noreferrer' : undefined}
                         className="text-xs text-zinc-500 hover:text-primary dark:text-zinc-400 dark:hover:text-primary transition-colors cursor-pointer"
                       >
                         {child.title}
@@ -139,8 +142,8 @@ export default function Footer() {
                   </span>
                 </div>
                 <ul className="flex flex-col gap-2.5 pl-3">
-                  <li><a href="/friend" className="text-xs text-zinc-500 dark:text-zinc-400 hover:text-primary transition-colors">关于我</a></li>
-                  <li><a href="/article" className="text-xs text-zinc-500 dark:text-zinc-400 hover:text-primary transition-colors">本站历史</a></li>
+                  <li><a href={githubUrl} target="_blank" rel="noreferrer" className="text-xs text-zinc-500 dark:text-zinc-400 hover:text-primary transition-colors">关于我</a></li>
+                  <li><a href={githubUrl} target="_blank" rel="noreferrer" className="text-xs text-zinc-500 dark:text-zinc-400 hover:text-primary transition-colors">本站历史</a></li>
                   <li><a href="https://github.com/18755120710/Butvan-Blogv2.0" target="_blank" rel="noreferrer" className="text-xs text-zinc-500 dark:text-zinc-400 hover:text-primary transition-colors">关于此项目</a></li>
                 </ul>
               </div>
@@ -168,8 +171,8 @@ export default function Footer() {
                 </div>
                 <ul className="flex flex-col gap-2.5 pl-3">
                   <li><a href="/friend/apply" className="text-xs text-zinc-500 dark:text-zinc-400 hover:text-primary transition-colors">申请友链</a></li>
-                  <li><a href="mailto:wj5395@outlook.com" className="text-xs text-zinc-500 dark:text-zinc-400 hover:text-primary transition-colors">发送邮件</a></li>
-                  <li><a href="https://github.com/18755120710" target="_blank" rel="noreferrer" className="text-xs text-zinc-500 dark:text-zinc-400 hover:text-primary transition-colors">GitHub 主页</a></li>
+                  <li><a href={`mailto:${links.email || 'wj5395@outlook.com'}`} className="text-xs text-zinc-500 dark:text-zinc-400 hover:text-primary transition-colors">发送邮件</a></li>
+                  <li><a href={githubUrl} target="_blank" rel="noreferrer" className="text-xs text-zinc-500 dark:text-zinc-400 hover:text-primary transition-colors">GitHub 主页</a></li>
                 </ul>
               </div>
             </>
