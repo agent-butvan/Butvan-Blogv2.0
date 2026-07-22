@@ -410,91 +410,93 @@ export default function AlbumsPage() {
       </div>
 
       {/* ==== 创建/编辑相册弹窗 ==== */}
-      <Modal.Backdrop isOpen={showFormModal} onOpenChange={setShowFormModal}>
-        <Modal.Container>
-          <Modal.Dialog className="sm:max-w-md">
-            <Modal.CloseTrigger />
-            <Modal.Header>
-              <Modal.Heading className="text-sm font-bold text-zinc-900 dark:text-zinc-150">
-                {editingAlbum ? "编辑相册" : "新建相册"}
-              </Modal.Heading>
-            </Modal.Header>
-            <Modal.Body className="flex flex-col gap-4">
-              {/* 标题 */}
-              <div className="flex flex-col gap-1.5">
-                <label className="text-[10px] font-bold text-zinc-400 uppercase tracking-wide">相册标题</label>
-                <Input
-                  value={formTitle}
-                  onChange={(e) => setFormTitle(e.target.value)}
-                  placeholder="例如：2024 日本之旅"
-                  className="w-full"
-                />
-              </div>
+      <Modal isOpen={showFormModal} onOpenChange={setShowFormModal}>
+        <Modal.Backdrop>
+          <Modal.Container>
+            <Modal.Dialog className="sm:max-w-md">
+              <Modal.CloseTrigger />
+              <Modal.Header>
+                <Modal.Heading className="text-sm font-bold text-zinc-900 dark:text-zinc-150">
+                  {editingAlbum ? "编辑相册" : "新建相册"}
+                </Modal.Heading>
+              </Modal.Header>
+              <Modal.Body className="flex flex-col gap-4">
+                {/* 标题 */}
+                <div className="flex flex-col gap-1.5">
+                  <label className="text-[10px] font-bold text-zinc-400 uppercase tracking-wide">相册标题</label>
+                  <Input
+                    value={formTitle}
+                    onChange={(e) => setFormTitle(e.target.value)}
+                    placeholder="例如：2024 日本之旅"
+                    className="w-full"
+                  />
+                </div>
 
-              {/* Slug */}
-              <div className="flex flex-col gap-1.5">
-                <label className="text-[10px] font-bold text-zinc-400 uppercase tracking-wide">URL 标识（可选）</label>
-                <Input
-                  value={formSlug}
-                  onChange={(e) => setFormSlug(e.target.value)}
-                  placeholder="留空则自动生成"
-                  className="w-full font-mono"
-                />
-              </div>
+                {/* Slug */}
+                <div className="flex flex-col gap-1.5">
+                  <label className="text-[10px] font-bold text-zinc-400 uppercase tracking-wide">URL 标识（可选）</label>
+                  <Input
+                    value={formSlug}
+                    onChange={(e) => setFormSlug(e.target.value)}
+                    placeholder="留空则自动生成"
+                    className="w-full font-mono"
+                  />
+                </div>
 
-              {/* 描述 */}
-              <div className="flex flex-col gap-1.5">
-                <label className="text-[10px] font-bold text-zinc-400 uppercase tracking-wide">描述（可选）</label>
-                <TextArea
-                  value={formDesc}
-                  onChange={(e) => setFormDesc(e.target.value)}
-                  rows={2}
-                  placeholder="相册简介..."
-                  className="w-full"
-                />
-              </div>
+                {/* 描述 */}
+                <div className="flex flex-col gap-1.5">
+                  <label className="text-[10px] font-bold text-zinc-400 uppercase tracking-wide">描述（可选）</label>
+                  <TextArea
+                    value={formDesc}
+                    onChange={(e) => setFormDesc(e.target.value)}
+                    rows={2}
+                    placeholder="相册简介..."
+                    className="w-full"
+                  />
+                </div>
 
-              {/* 状态 */}
-              <div className="flex flex-col gap-1.5">
-                <Label className="text-[10px] font-bold text-zinc-400 uppercase tracking-wide">状态</Label>
-                <Select
-                  selectedKey={formStatus}
-                  onSelectionChange={(key) => setFormStatus(key as string)}
-                  className="w-full"
-                  placeholder="选择状态"
-                >
-                  <Select.Trigger>
-                    <Select.Value />
-                    <Select.Indicator />
-                  </Select.Trigger>
-                  <Select.Popover>
-                    <ListBox>
-                      <ListBox.Item id="DRAFT" textValue="草稿">
-                        草稿
-                        <ListBox.ItemIndicator />
-                      </ListBox.Item>
-                      <ListBox.Item id="PUBLISHED" textValue="已发布">
-                        已发布
-                        <ListBox.ItemIndicator />
-                      </ListBox.Item>
-                    </ListBox>
-                  </Select.Popover>
-                </Select>
-              </div>
-            </Modal.Body>
-            <Modal.Footer>
-              <Button size="sm" variant="ghost" slot="close"
-                className="h-9 px-4 rounded-lg text-xs font-bold">
-                取消
-              </Button>
-              <Button size="sm" onPress={submitForm} isDisabled={formSubmitting || !formTitle.trim()}
-                className="h-9 px-5 rounded-lg bg-primary text-white text-xs font-bold disabled:opacity-50">
-                {formSubmitting ? <Loader2 size={12} className="animate-spin" /> : (editingAlbum ? "保存" : "创建")}
-              </Button>
-            </Modal.Footer>
-          </Modal.Dialog>
-        </Modal.Container>
-      </Modal.Backdrop>
+                {/* 状态 */}
+                <div className="flex flex-col gap-1.5">
+                  <Label className="text-[10px] font-bold text-zinc-400 uppercase tracking-wide">状态</Label>
+                  <Select
+                    selectedKey={formStatus}
+                    onSelectionChange={(key) => setFormStatus(key as string)}
+                    className="w-full"
+                    placeholder="选择状态"
+                  >
+                    <Select.Trigger>
+                      <Select.Value />
+                      <Select.Indicator />
+                    </Select.Trigger>
+                    <Select.Popover>
+                      <ListBox>
+                        <ListBox.Item id="DRAFT" textValue="草稿">
+                          草稿
+                          <ListBox.ItemIndicator />
+                        </ListBox.Item>
+                        <ListBox.Item id="PUBLISHED" textValue="已发布">
+                          已发布
+                          <ListBox.ItemIndicator />
+                        </ListBox.Item>
+                      </ListBox>
+                    </Select.Popover>
+                  </Select>
+                </div>
+              </Modal.Body>
+              <Modal.Footer>
+                <Button size="sm" variant="ghost" slot="close"
+                  className="h-9 px-4 rounded-lg text-xs font-bold">
+                  取消
+                </Button>
+                <Button size="sm" onPress={submitForm} isDisabled={formSubmitting || !formTitle.trim()}
+                  className="h-9 px-5 rounded-lg bg-primary text-white text-xs font-bold disabled:opacity-50">
+                  {formSubmitting ? <Loader2 size={12} className="animate-spin" /> : (editingAlbum ? "保存" : "创建")}
+                </Button>
+              </Modal.Footer>
+            </Modal.Dialog>
+          </Modal.Container>
+        </Modal.Backdrop>
+      </Modal>
 
       {/* ==== 隐藏的文件上传 input ==== */}
       <input

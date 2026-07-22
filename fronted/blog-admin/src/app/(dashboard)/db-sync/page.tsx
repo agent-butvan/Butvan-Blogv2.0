@@ -987,12 +987,8 @@ export default function DbSyncPage() {
       )}
 
       {/* ================== 数据差异详情弹窗 ================== */}
-      <Modal>
-        <Modal.Backdrop
-          isOpen={isDetailOpen}
-          onOpenChange={setIsDetailOpen}
-          variant="blur"
-        >
+      <Modal isOpen={isDetailOpen} onOpenChange={setIsDetailOpen}>
+        <Modal.Backdrop variant="blur">
           <Modal.Container size="full" scroll="inside">
             <Modal.Dialog>
               <Modal.CloseTrigger />
@@ -1124,12 +1120,8 @@ export default function DbSyncPage() {
       </Modal>
 
       {/* ================== 外键依赖确认弹窗 ================== */}
-      <Modal>
-        <Modal.Backdrop
-          isOpen={isFkConfirmOpen}
-          onOpenChange={setIsFkConfirmOpen}
-          variant="blur"
-        >
+      <Modal isOpen={isFkConfirmOpen} onOpenChange={setIsFkConfirmOpen}>
+        <Modal.Backdrop variant="blur">
           <Modal.Container size="md">
             <Modal.Dialog>
               <Modal.CloseTrigger />

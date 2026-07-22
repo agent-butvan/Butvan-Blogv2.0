@@ -29,6 +29,8 @@ import java.util.Map;
 import java.util.HashMap;
 import java.util.UUID;
 
+import com.butvan.blog.pojo.entity.Media;
+import com.butvan.blog.service.service.MediaService;
 import com.butvan.blog.common.utils.EmailUtils;
 import com.butvan.blog.service.service.SiteConfigService;
 import com.butvan.blog.pojo.vo.site.SiteConfigVO;
@@ -52,6 +54,7 @@ public class AuthServiceImpl implements AuthService {
     private final PasswordEncoder passwordEncoder;
     private final JwtUtil jwtUtil;
     private final FileStorageService fileStorageService;
+    private final MediaService mediaService;
     private final RedisUtils redisUtils;
     private final JavaMailSender mailSender;
     private final SiteConfigService siteConfigService;
@@ -414,9 +417,8 @@ public class AuthServiceImpl implements AuthService {
         String objectName = "avatars/" + UUID.randomUUID().toString() + extension;
 
         try {
-            // 6. 删除旧头像（如果存在）
+            // 5. 删除旧头像（如果存在物理文件）
             if (user.getAvatarUrl() != null && !user.getAvatarUrl().isEmpty()) {
-                // 从 URL 中提取 objectName
                 String oldObjectName = extractObjectNameFromUrl(user.getAvatarUrl());
                 if (oldObjectName != null) {
                     fileStorageService.delete(oldObjectName);
@@ -424,11 +426,12 @@ public class AuthServiceImpl implements AuthService {
                 }
             }
 
-            // 7. 上传新头像
-            String accessUrl = fileStorageService.upload(file, objectName, "USER_AVATAR", contentType);
-            log.info("用户 [{}] 头像上传成功: {}", username, accessUrl);
+            // 6. 上传新头像并写入媒体内容管理表（分类归档为 USER_AVATAR）
+            Media media = mediaService.uploadFile(file, "USER_AVATAR", user.getId(), "用户[" + username + "]更换头像");
+            String accessUrl = media.getFileUrl();
+            log.info("用户 [{}] 头像上传成功并录入媒体库: mediaId={}, url={}", username, media.getId(), accessUrl);
 
-            // 8. 更新数据库中的头像 URL
+            // 7. 更新数据库中用户的头像 URL
             user.setAvatarUrl(accessUrl);
             User savedUser = userRepository.save(user);
 

@@ -66,12 +66,9 @@ export default function AlbumsPage() {
       setProfile(profileData)
 
       const photos = photoData?.records || []
-      console.log('[Albums] 加载照片:', photos.length, '张')
-
       setAllPhotos(photos)
       setTotal(photos.length)
       const groups = groupByDay(photos)
-      console.log('[Albums] 分组后簇数量:', groups.length)
       setClusters(groups)
 
       setLightboxPhotos(photos.map(p => ({
