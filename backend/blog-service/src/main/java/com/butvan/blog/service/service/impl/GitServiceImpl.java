@@ -4,9 +4,17 @@ import com.butvan.blog.pojo.vo.git.GitActivityVO;
 import com.butvan.blog.pojo.vo.git.GitCommitVO;
 import com.butvan.blog.pojo.vo.git.GitInfoVO;
 import com.butvan.blog.service.service.GitService;
+import com.fasterxml.jackson.databind.JsonNode;
+import com.fasterxml.jackson.databind.ObjectMapper;
 import lombok.extern.slf4j.Slf4j;
+import org.springframework.beans.factory.annotation.Value;
 import org.springframework.core.io.ClassPathResource;
+import org.springframework.http.HttpEntity;
+import org.springframework.http.HttpHeaders;
+import org.springframework.http.HttpMethod;
+import org.springframework.http.ResponseEntity;
 import org.springframework.stereotype.Service;
+import org.springframework.web.client.RestTemplate;
 
 import java.io.BufferedReader;
 import java.io.File;
@@ -21,28 +29,50 @@ import java.util.Map;
 
 /**
  * Git 详细信息服务实现类
- * 具备线上环境自适应、打包期 Classpath 固化提取及离线 Mock 三重降级保护机制，确保生产环境 100% 稳定且可感知真实版本历史
+ * 具备【本地动态 .git】->【GitHub REST API 实时】->【打包期 Classpath 固化】->【离线 Mock 演示】四重降级防御机制
  */
 @Service
 @Slf4j
 public class GitServiceImpl implements GitService {
 
+    @Value("${blog.github.enabled:true}")
+    private boolean githubEnabled;
+
+    @Value("${blog.github.owner:18755120710}")
+    private String githubOwner;
+
+    @Value("${blog.github.repo:Butvan-Blogv2.0}")
+    private String githubRepo;
+
+    @Value("${blog.github.token:}")
+    private String githubToken;
+
+    private final RestTemplate restTemplate = new RestTemplate();
+    private final ObjectMapper objectMapper = new ObjectMapper();
+
     @Override
     public GitInfoVO getGitInfo(String branch) {
-        // 1. 本地动态探查：如果本地具有 .git 目录且 system git 可用，直接运行 git 命令获取最新提交
+        // 1. 本地动态探查：如果本地具有 .git 目录且 system git 可用（本地开发环境）
         if (isGitAvailable()) {
             return getLiveGitInfo(branch);
         }
 
-        // 2. 线上固化探查：尝试从 Jar 包 classpath 读取打包期固化的 git-history.txt
+        // 2. GitHub REST API 探查：在线模式下尝试从 GitHub 远程拉取最新提交与分支
+        GitInfoVO gitHubGitInfo = getGitInfoFromGitHub(branch);
+        if (gitHubGitInfo != null) {
+            log.info("成功从 GitHub REST API 实时装载仓库最新提交历史 (owner={}, repo={})", githubOwner, githubRepo);
+            return gitHubGitInfo;
+        }
+
+        // 3. 线上固化探查：尝试从 Jar 包 classpath 读取打包期固化的 git-history.txt
         GitInfoVO classpathGitInfo = getGitInfoFromClasspath(branch);
         if (classpathGitInfo != null) {
-            log.info("侦测到线上编译固化的 Git 提交日志 (classpath:git-history.txt)，已装载线上真实历史信息");
+            log.info("侦测到线上编译固化的 Git 提交日志 (classpath:git-history.txt)，已装载线上固化历史信息");
             return classpathGitInfo;
         }
 
-        // 3. 兜底离线模式：既无 .git 环境也无预先编译的日志资源，切入 Mock 降级
-        log.warn("当前运行环境未侦测到 .git 仓库或 git 命令行，且无 classpath 资源文件，已自动切换为【离线 Mock 模式】");
+        // 4. 兜底离线模式：既无 .git 环境、也无法访问 GitHub API，且无 classpath 资源文件，切入 Mock 降级
+        log.warn("当前运行环境未侦测到 .git 仓库、GitHub API 或 Classpath 资源，已自动切换为【离线 Mock 模式】");
         return getOfflineGitInfo(branch);
     }
 
@@ -52,12 +82,165 @@ public class GitServiceImpl implements GitService {
             return getLiveGitActivity(branch);
         }
 
+        List<GitActivityVO> gitHubActivity = getGitActivityFromGitHub(branch);
+        if (gitHubActivity != null) {
+            return gitHubActivity;
+        }
+
         List<GitActivityVO> classpathActivity = getGitActivityFromClasspath();
         if (classpathActivity != null) {
             return classpathActivity;
         }
 
         return getOfflineGitActivity(branch);
+    }
+
+    /**
+     * 实时从 GitHub REST API 获取最新提交与分支列表（线上在线模式）
+     */
+    private GitInfoVO getGitInfoFromGitHub(String branch) {
+        if (!githubEnabled || githubOwner == null || githubOwner.trim().isEmpty() || githubRepo == null || githubRepo.trim().isEmpty()) {
+            return null;
+        }
+
+        try {
+            // 1. 请求 GitHub 仓库分支列表
+            String branchUrl = String.format("https://api.github.com/repos/%s/%s/branches", githubOwner, githubRepo);
+            String branchJson = executeGitHubRequest(branchUrl);
+            List<String> branches = new ArrayList<>();
+            if (branchJson != null) {
+                JsonNode branchArray = objectMapper.readTree(branchJson);
+                if (branchArray.isArray()) {
+                    for (JsonNode node : branchArray) {
+                        if (node.has("name")) {
+                            branches.add(node.get("name").asText());
+                        }
+                    }
+                }
+            }
+            if (branches.isEmpty()) {
+                branches.add("main");
+            }
+
+            String targetBranch = branch;
+            if (targetBranch == null || targetBranch.trim().isEmpty() || "HEAD".equalsIgnoreCase(targetBranch)) {
+                targetBranch = branches.contains("main") ? "main" : branches.get(0);
+            }
+
+            // 2. 请求 GitHub 仓库指定分支的 Commit 列表
+            String commitUrl = String.format("https://api.github.com/repos/%s/%s/commits?sha=%s&per_page=100", githubOwner, githubRepo, targetBranch);
+            String commitJson = executeGitHubRequest(commitUrl);
+            if (commitJson == null) {
+                return null;
+            }
+
+            List<GitCommitVO> commits = parseGitHubCommits(commitJson);
+            if (commits.isEmpty()) {
+                return null;
+            }
+
+            return GitInfoVO.builder()
+                    .currentBranch(targetBranch)
+                    .branches(branches)
+                    .commits(commits)
+                    .isOffline(false)
+                    .build();
+
+        } catch (Exception e) {
+            log.warn("调用 GitHub REST API 获取 Git 信息失败或受限: {}", e.getMessage());
+            return null;
+        }
+    }
+
+    /**
+     * 实时从 GitHub REST API 获取当月提交活跃度（线上在线模式）
+     */
+    private List<GitActivityVO> getGitActivityFromGitHub(String branch) {
+        GitInfoVO gitInfo = getGitInfoFromGitHub(branch);
+        if (gitInfo == null || gitInfo.getCommits() == null) {
+            return null;
+        }
+
+        LocalDate now = LocalDate.now();
+        String currentMonthPrefix = String.format("%04d-%02d-", now.getYear(), now.getMonthValue());
+
+        List<String> dates = new ArrayList<>();
+        for (GitCommitVO commit : gitInfo.getCommits()) {
+            if (commit.getDate() != null && commit.getDate().length() >= 10) {
+                String dayStr = commit.getDate().substring(0, 10);
+                if (dayStr.startsWith(currentMonthPrefix)) {
+                    dates.add(dayStr);
+                }
+            }
+        }
+
+        return buildActivityListFromDates(dates, now);
+    }
+
+    /**
+     * 执行底层 GitHub HTTP GET 请求
+     */
+    private String executeGitHubRequest(String url) {
+        try {
+            HttpHeaders headers = new HttpHeaders();
+            headers.set("User-Agent", "Butvan-Blog-App");
+            headers.set("Accept", "application/vnd.github.v3+json");
+            if (githubToken != null && !githubToken.trim().isEmpty()) {
+                headers.set("Authorization", "token " + githubToken.trim());
+            }
+
+            HttpEntity<Void> entity = new HttpEntity<>(headers);
+            ResponseEntity<String> response = restTemplate.exchange(url, HttpMethod.GET, entity, String.class);
+            if (response.getStatusCode().is2xxSuccessful()) {
+                return response.getBody();
+            }
+        } catch (Exception e) {
+            log.debug("GitHub API 请求失败 [{}]: {}", url, e.getMessage());
+        }
+        return null;
+    }
+
+    /**
+     * 解析 GitHub API 返回的 JSON 提交数组
+     */
+    private List<GitCommitVO> parseGitHubCommits(String json) {
+        List<GitCommitVO> commits = new ArrayList<>();
+        try {
+            JsonNode root = objectMapper.readTree(json);
+            if (root.isArray()) {
+                for (JsonNode item : root) {
+                    String fullSha = item.path("sha").asText("");
+                    String shortHash = fullSha.length() >= 7 ? fullSha.substring(0, 7) : fullSha;
+                    
+                    JsonNode commitNode = item.path("commit");
+                    String message = commitNode.path("message").asText("").split("\n")[0];
+                    
+                    JsonNode authorNode = commitNode.path("author");
+                    String author = authorNode.path("name").asText("unknown");
+                    String rawDate = authorNode.path("date").asText("");
+                    
+                    String formattedDate = rawDate;
+                    if (rawDate.contains("T")) {
+                        formattedDate = rawDate.replace("T", " ").replace("Z", "");
+                        if (formattedDate.length() > 19) {
+                            formattedDate = formattedDate.substring(0, 19);
+                        }
+                    }
+
+                    if (!shortHash.isEmpty()) {
+                        commits.add(GitCommitVO.builder()
+                                .hash(shortHash)
+                                .author(author)
+                                .date(formattedDate)
+                                .message(message)
+                                .build());
+                    }
+                }
+            }
+        } catch (Exception e) {
+            log.warn("解析 GitHub Commit JSON 失败: {}", e.getMessage());
+        }
+        return commits;
     }
 
     /**
