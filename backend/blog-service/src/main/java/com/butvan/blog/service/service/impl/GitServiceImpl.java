@@ -12,6 +12,7 @@ import org.springframework.http.HttpEntity;
 import org.springframework.http.HttpHeaders;
 import org.springframework.http.HttpMethod;
 import org.springframework.http.ResponseEntity;
+import org.springframework.http.client.SimpleClientHttpRequestFactory;
 import org.springframework.stereotype.Service;
 import org.springframework.web.client.RestTemplate;
 
@@ -27,7 +28,7 @@ import java.util.Map;
 
 /**
  * Git 详细信息服务实现类
- * 双重纯净机制：【优先】GitHub REST API 实时拉取 -> 【备选】本地物理 .git 命令行
+ * 具备【本地物理 .git 毫秒级提取】与【线上 GitHub API 带 2 秒硬超时保护】的双重纯净机制
  */
 @Service
 @Slf4j
@@ -45,25 +46,32 @@ public class GitServiceImpl implements GitService {
     @Value("${blog.github.token:}")
     private String githubToken;
 
-    private final RestTemplate restTemplate = new RestTemplate();
+    private final RestTemplate restTemplate;
     private final ObjectMapper objectMapper = new ObjectMapper();
+
+    public GitServiceImpl() {
+        // 配置 2 秒连接与读取硬超时，防止外网 GitHub 连接卡死拖垮整体接口
+        SimpleClientHttpRequestFactory factory = new SimpleClientHttpRequestFactory();
+        factory.setConnectTimeout(2000);
+        factory.setReadTimeout(2000);
+        this.restTemplate = new RestTemplate(factory);
+    }
 
     @Override
     public GitInfoVO getGitInfo(String branch) {
-        // 1. 优先：尝试从 GitHub REST API 实时获取远程最新提交与分支列表
+        // 1. 本地探查：若处于本地开发环境（存在物理 .git 目录），优先执行本地 git 命令（0.01 秒极速完成，零网络开销）
+        if (isGitAvailable()) {
+            return getLiveGitInfo(branch);
+        }
+
+        // 2. 线上探查：线上部署环境（无 .git 目录），调用 GitHub REST API（带 2 秒超时保护）
         GitInfoVO gitHubGitInfo = getGitInfoFromGitHub(branch);
         if (gitHubGitInfo != null) {
             log.info("【Git服务】成功从 GitHub API 实时装载仓库最新提交历史 (owner={}, repo={})", githubOwner, githubRepo);
             return gitHubGitInfo;
         }
 
-        // 2. 备选：尝试从本地物理 .git 目录和命令行获取
-        if (isGitAvailable()) {
-            log.info("【Git服务】已降级切换为从本地物理 .git 仓库提取版本信息");
-            return getLiveGitInfo(branch);
-        }
-
-        // 3. 若均无法获取，返回干净的空结构（无任何硬编码 Mock 数据）
+        // 3. 若均无法获取，返回干净的安全空结构（无任何硬编码 Mock 数据）
         log.warn("【Git服务】无法从 GitHub API 或本地 .git 仓库获取版本信息");
         String current = (branch != null && !branch.trim().isEmpty() && !"HEAD".equalsIgnoreCase(branch)) ? branch : "main";
         List<String> branches = new ArrayList<>();
@@ -78,15 +86,15 @@ public class GitServiceImpl implements GitService {
 
     @Override
     public List<GitActivityVO> getGitActivity(String branch) {
-        // 1. 优先：尝试从 GitHub REST API 实时获取计算当月提交活跃度
+        // 1. 本地探查：若处于本地开发环境（存在物理 .git 目录），优先本地计算
+        if (isGitAvailable()) {
+            return getLiveGitActivity(branch);
+        }
+
+        // 2. 线上探查：线上部署环境，调用 GitHub REST API 计算当月提交活跃度
         List<GitActivityVO> gitHubActivity = getGitActivityFromGitHub(branch);
         if (gitHubActivity != null) {
             return gitHubActivity;
-        }
-
-        // 2. 备选：尝试从本地物理 .git 命令行计算
-        if (isGitAvailable()) {
-            return getLiveGitActivity(branch);
         }
 
         // 3. 若均无法获取，返回空计数的当月日期列表
@@ -155,7 +163,7 @@ public class GitServiceImpl implements GitService {
                     .build();
 
         } catch (Exception e) {
-            log.warn("调用 GitHub REST API 获取 Git 信息失败或受限: {}", e.getMessage());
+            log.warn("调用 GitHub REST API 获取 Git 信息失败或超时: {}", e.getMessage());
             return null;
         }
     }
@@ -186,7 +194,7 @@ public class GitServiceImpl implements GitService {
     }
 
     /**
-     * 执行底层 GitHub HTTP GET 请求
+     * 执行底层 GitHub HTTP GET 请求（带 2 秒超时拦截）
      */
     private String executeGitHubRequest(String url) {
         try {
@@ -203,7 +211,7 @@ public class GitServiceImpl implements GitService {
                 return response.getBody();
             }
         } catch (Exception e) {
-            log.debug("GitHub API 请求失败 [{}]: {}", url, e.getMessage());
+            log.debug("GitHub API 请求连接失败或超时 [{}]: {}", url, e.getMessage());
         }
         return null;
     }
