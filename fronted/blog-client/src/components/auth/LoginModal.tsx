@@ -254,15 +254,16 @@ export default function LoginModal({ isOpen, onClose }: LoginModalProps) {
     setQrStatus('logging')
     setWechatMsg('')
     try {
+      let loggedUser: { nickname: string; avatarUrl?: string | null; username?: string | null; email?: string | null } | null = null
       const exchangeCode = data?.exchangeCode as string | undefined
       if (exchangeCode) {
         const { user } = await wechatExchange(exchangeCode)
-        authLogin({
+        loggedUser = {
           nickname: user.nickname || user.email || '用户',
           avatarUrl: user.avatarUrl || null,
           username: user.username || null,
           email: user.email || null,
-        })
+        }
       } else {
         const res = await fetch(`${API_BASE}/auth/check`, {
           method: 'GET',
@@ -272,21 +273,21 @@ export default function LoginModal({ isOpen, onClose }: LoginModalProps) {
           const json = await res.json()
           if (json?.code === 200 && json.data) {
             const d = json.data
-            authLogin({
+            loggedUser = {
               nickname: d.nickname || d.email || '用户',
               avatarUrl: d.avatarUrl || null,
               username: d.username || null,
               email: d.email || null,
-            })
+            }
           }
         }
       }
       wsSend('close')
       setTimeout(() => wsDisconnect(), 300)
-      // 使用 requestAnimationFrame 延迟关闭，避免 Modal transition abort
-      requestAnimationFrame(() => {
-        setTimeout(() => onClose(), 50)
-      })
+      onClose()
+      if (loggedUser) {
+        authLogin(loggedUser)
+      }
     } catch (err) {
       console.error('[微信登录] Token 交换失败:', err)
       setQrStatus('error')
@@ -367,12 +368,12 @@ export default function LoginModal({ isOpen, onClose }: LoginModalProps) {
     setLoginError('')
     try {
       const { user } = await loginByEmailCode(emailInput.trim(), codeInput.trim())
-      authLogin({
+      const loggedUser = {
         nickname: user.nickname || user.email || '用户',
         avatarUrl: user.avatarUrl || null,
         username: user.username || null,
         email: user.email || null,
-      })
+      }
       if (countdownTimerRef.current) {
         clearInterval(countdownTimerRef.current)
         countdownTimerRef.current = null
@@ -381,10 +382,8 @@ export default function LoginModal({ isOpen, onClose }: LoginModalProps) {
         clearInterval(codeExpiryTimerRef.current)
         codeExpiryTimerRef.current = null
       }
-      // 使用 requestAnimationFrame 延迟关闭，避免 Modal transition abort
-      requestAnimationFrame(() => {
-        setTimeout(() => onClose(), 50)
-      })
+      onClose()
+      authLogin(loggedUser)
     } catch (err) {
       setLoginError(err instanceof AppError ? err.message : '网络连接失败，请稍后重试')
     } finally {
@@ -404,11 +403,8 @@ export default function LoginModal({ isOpen, onClose }: LoginModalProps) {
   // ===================== 渲染 =====================
 
   return (
-    <Modal>
-      <Modal.Backdrop
-        isOpen={isOpen}
-        onOpenChange={(open) => { if (!open) onClose() }}
-      >
+    <Modal isOpen={isOpen} onOpenChange={(open) => { if (!open) onClose() }}>
+      <Modal.Backdrop>
         <Modal.Container className="items-center">
           <Modal.Dialog className="relative sm:max-w-[420px] bg-gradient-to-b from-[#FAFBFF] to-[#F2F3FA] dark:from-[#181B2E] dark:to-[#141625] shadow-2xl shadow-[#727BBA]/10 dark:shadow-black/30 rounded-xl p-0 overflow-hidden border border-[#C4C8E6]/30 dark:border-[#727BBA]/15">
             <Modal.CloseTrigger />

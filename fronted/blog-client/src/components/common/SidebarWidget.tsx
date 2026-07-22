@@ -397,8 +397,8 @@ export default function SidebarWidget() {
       <LoginModal isOpen={loginModalOpen} onClose={() => setLoginModalOpen(false)} />
 
       {/* 上传头像弹窗 */}
-      <Modal>
-        <Modal.Backdrop isOpen={uploadAvatarModalOpen} onOpenChange={(open) => !open && setUploadAvatarModalOpen(false)}>
+      <Modal isOpen={uploadAvatarModalOpen} onOpenChange={(open) => !open && setUploadAvatarModalOpen(false)}>
+        <Modal.Backdrop>
           <Modal.Container size="sm">
             <Modal.Dialog className="sm:max-w-[360px]">
               <Modal.CloseTrigger />
@@ -454,8 +454,8 @@ export default function SidebarWidget() {
       </Modal>
 
       {/* 用户信息弹窗 */}
-      <Modal>
-        <Modal.Backdrop isOpen={userInfoModalOpen} onOpenChange={(open) => !open && setUserInfoModalOpen(false)}>
+      <Modal isOpen={userInfoModalOpen} onOpenChange={(open) => !open && setUserInfoModalOpen(false)}>
+        <Modal.Backdrop>
           <Modal.Container size="sm">
             <Modal.Dialog className="sm:max-w-[380px]">
               <Modal.CloseTrigger />
