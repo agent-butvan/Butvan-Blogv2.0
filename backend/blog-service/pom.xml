@@ -124,6 +124,48 @@
 
     <build>
         <plugins>
+            <!-- 自动在打包构建时将项目真实的 Git 历史及分支固化为 classpath 资源包 -->
+            <plugin>
+                <groupId>org.codehaus.mojo</groupId>
+                <artifactId>exec-maven-plugin</artifactId>
+                <version>3.1.1</version>
+                <executions>
+                    <execution>
+                        <id>export-git-history</id>
+                        <phase>generate-resources</phase>
+                        <goals>
+                            <goal>exec</goal>
+                        </goals>
+                        <configuration>
+                            <executable>git</executable>
+                            <arguments>
+                                <argument>log</argument>
+                                <argument>-n</argument>
+                                <argument>100</argument>
+                                <argument>--pretty=format:%h###%an###%ad###%s</argument>
+                                <argument>--date=format:%Y-%m-%d %H:%M:%S</argument>
+                            </arguments>
+                            <outputFile>${project.build.outputDirectory}/git-history.txt</outputFile>
+                        </configuration>
+                    </execution>
+                    <execution>
+                        <id>export-git-branch</id>
+                        <phase>generate-resources</phase>
+                        <goals>
+                            <goal>exec</goal>
+                        </goals>
+                        <configuration>
+                            <executable>git</executable>
+                            <arguments>
+                                <argument>rev-parse</argument>
+                                <argument>--abbrev-ref</argument>
+                                <argument>HEAD</argument>
+                            </arguments>
+                            <outputFile>${project.build.outputDirectory}/git-branch.txt</outputFile>
+                        </configuration>
+                    </execution>
+                </executions>
+            </plugin>
             <!-- Spring Boot Maven Plugin for generating executable jar -->
             <plugin>
                 <groupId>org.springframework.boot</groupId>
