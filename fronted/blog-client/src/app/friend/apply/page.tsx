@@ -303,14 +303,16 @@ export default function FriendApplyPage() {
 
   // 表单主视图
   return (
-    <div className="min-h-screen bg-transparent font-body text-zinc-900 dark:text-zinc-50 transition-colors">
-      <Navbar profile={profile} />
+    <div className="min-h-screen flex flex-col justify-between bg-transparent font-body text-zinc-900 dark:text-zinc-50 transition-colors">
+      {/* 100vh 独立正文视口隔离层（确保首屏纯净绝无 Footer 露出） */}
+      <div className="w-full flex-1 flex flex-col items-center min-h-screen pb-16">
+        <Navbar profile={profile} />
 
-      {/* 左侧悬浮侧挂导航 */}
-      <SidebarWidget />
+        {/* 左侧悬浮侧挂导航 */}
+        <SidebarWidget />
 
-      {/* Hero 区域：与友链目录页统一节奏 */}
-      <section className="apply-hero pt-16 md:pt-20 pb-5 px-4">
+        {/* Hero 区域：与友链目录页统一节奏 */}
+        <section className="apply-hero pt-16 md:pt-20 pb-5 px-4 w-full">
         <div className="max-w-5xl mx-auto">
           <Link
             href="/friend"
@@ -715,8 +717,9 @@ export default function FriendApplyPage() {
           </aside>
         </div>
       </section>
+      </div>
 
-      {/* 全站统一页脚 */}
+      {/* 全站统一页脚 (放置在 100vh 视口之外的最下方) */}
       <Footer />
     </div>
   )
