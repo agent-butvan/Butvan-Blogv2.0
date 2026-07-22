@@ -103,8 +103,9 @@ public class NoteServiceImpl implements NoteService {
     }
 
     @Override
+    @Transactional
     public NoteDetailVO getNoteDetail(String idOrSlug) {
-        log.info("获取手记详情，标识: {}", idOrSlug);
+        log.info("获取手记详情并增加浏览量，标识: {}", idOrSlug);
         Note note = null;
         try {
             Long id = Long.parseLong(idOrSlug);
@@ -126,6 +127,12 @@ public class NoteServiceImpl implements NoteService {
         if (note == null) {
             throw new BusinessException("手记不存在或已被删除");
         }
+
+        // 增加阅读/浏览次数并持久化
+        long currentViews = note.getViewCount() == null ? 0L : note.getViewCount();
+        note.setViewCount(currentViews + 1);
+        noteRepository.save(note);
+
         return toDetailVO(note);
     }
 

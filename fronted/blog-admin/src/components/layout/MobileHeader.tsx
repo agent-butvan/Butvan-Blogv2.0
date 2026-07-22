@@ -43,10 +43,10 @@ const getPageTitle = (pathname: string): string => {
 };
 
 /**
- * 移动端专属头部导航栏
- * - 高度紧致 h-[52px]，减少垂直空间占用
- * - 左侧：VB Logo 触发左侧菜单滑动
- * - 中间：当前页面中文标题，极佳的认知导航
+ * 移动端专属微型顶部导航栏组件
+ * 采用大厂移动端无缝沉浸式体验：
+ * - 左侧：标准菜单图标触发左侧菜单滑动
+ * - 中间：当前页面动态标题
  * - 右侧：汉堡按钮触发右侧操作盘滑动
  */
 export default function MobileHeader({ onToggleLeft, onToggleRight }: MobileHeaderProps) {
@@ -55,13 +55,13 @@ export default function MobileHeader({ onToggleLeft, onToggleRight }: MobileHead
 
   return (
     <header className="flex h-[52px] items-center justify-between px-4 z-20 select-none shrink-0 glass-panel rounded-xl">
-      {/* 左侧：微缩 VB Logo 标志区，点击展开左侧滑菜单 */}
+      {/* 左侧：菜单按钮，点击展开左侧滑菜单 */}
       <button
         onClick={onToggleLeft}
-        className="flex h-8 w-8 items-center justify-center rounded-lg bg-primary text-white text-[11px] font-heading font-extrabold shadow-sm active:scale-95 transition-transform cursor-pointer"
+        className="flex h-8 w-8 items-center justify-center rounded-lg bg-primary text-white shadow-sm active:scale-95 transition-transform cursor-pointer"
         aria-label="展开导航菜单"
       >
-        VB
+        <Menu size={16} />
       </button>
 
       {/* 中间：当前页面标题 */}

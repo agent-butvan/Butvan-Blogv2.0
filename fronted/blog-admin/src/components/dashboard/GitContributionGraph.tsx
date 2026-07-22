@@ -4,7 +4,7 @@ import { useState, useEffect } from "react";
 import { Loader2, GitPullRequest, HelpCircle } from "lucide-react";
 import apiClient from "@/lib/api";
 import type { ApiResponse } from "@/types/common";
-import { cn, Tooltip } from "@heroui/react";
+import { cn, Tooltip, Select, ListBox } from "@heroui/react";
 
 interface GitActivity {
   date: string;
@@ -16,11 +16,41 @@ export default function GitContributionGraph() {
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
 
-  const loadActivity = async () => {
+  // 动态生成包含建站初期(2026-06)至今的近 12 个月份选项
+  const getMonthOptions = () => {
+    const options: string[] = [];
+    const now = new Date();
+    const currentYear = now.getFullYear();
+    const currentMonth = now.getMonth() + 1;
+
+    // 从当前月反向往前推 12 个月
+    for (let i = 0; i < 12; i++) {
+      let y = currentYear;
+      let m = currentMonth - i;
+      while (m <= 0) {
+        m += 12;
+        y -= 1;
+      }
+      // 如果早于项目诞生前(2026年6月前)，可停止生成
+      if (y < 2026 || (y === 2026 && m < 6)) {
+        break;
+      }
+      const monthStr = `${y}-${String(m).padStart(2, '0')}`;
+      options.push(monthStr);
+    }
+    return options;
+  };
+
+  const monthOptions = getMonthOptions();
+  const [selectedMonth, setSelectedMonth] = useState<string>(monthOptions[0] || "2026-07");
+
+  const loadActivity = async (month: string) => {
     setLoading(true);
     setError(null);
     try {
-      const res = await apiClient.get<ApiResponse<GitActivity[]>>("/admin/git/activity");
+      const res = await apiClient.get<ApiResponse<GitActivity[]>>("/admin/git/activity", {
+        params: { month }
+      });
       if (res.data?.data) {
         setActivities(res.data.data);
       }
@@ -33,10 +63,10 @@ export default function GitContributionGraph() {
   };
 
   useEffect(() => {
-    loadActivity();
-  }, []);
+    loadActivity(selectedMonth);
+  }, [selectedMonth]);
 
-  // 计算本月总提交次数
+  // 计算所选月份总提交次数
   const totalCommits = activities.reduce((acc, curr) => acc + curr.count, 0);
 
   // 点击日期格子触发全局事件联动唤起 Git 监视器并带上过滤日期
@@ -70,7 +100,7 @@ export default function GitContributionGraph() {
     return (
       <div className="bg-white dark:bg-zinc-900 border border-zinc-200/50 dark:border-zinc-850 p-5 rounded-2xl shadow-[0_1px_3px_rgba(0,0,0,0.01),0_10px_20px_-5px_rgba(0,0,0,0.025)] dark:shadow-[0_8px_30px_rgba(0,0,0,0.2)] flex flex-col items-center justify-center h-full min-h-[220px] text-rose-500 text-xs">
         <span>无法加载活跃度，请检查 Git 环境</span>
-        <button onClick={loadActivity} className="mt-2.5 px-2.5 py-1 bg-emerald-500 text-white font-bold rounded-lg hover:opacity-90 active:scale-95 text-[10px]">
+        <button onClick={() => loadActivity(selectedMonth)} className="mt-2.5 px-2.5 py-1 bg-emerald-500 text-white font-bold rounded-lg hover:opacity-90 active:scale-95 text-[10px]">
           重新加载
         </button>
       </div>
@@ -79,18 +109,21 @@ export default function GitContributionGraph() {
 
   return (
     <div className="bg-white dark:bg-zinc-900 border border-zinc-200/50 dark:border-zinc-850 p-5 rounded-2xl shadow-[0_1px_3px_rgba(0,0,0,0.01),0_10px_20px_-5px_rgba(0,0,0,0.025)] dark:shadow-[0_8px_30px_rgba(0,0,0,0.2)] flex flex-col justify-between h-full gap-4 text-left">
-      {/* 头部信息 */}
-      <div className="flex items-center justify-between border-b border-zinc-100 dark:border-zinc-800 pb-3">
-        <div className="flex flex-col gap-0.5">
-          <h3 className="text-sm font-bold text-zinc-800 dark:text-zinc-200 flex items-center gap-1.5">
-            <span className="w-1 h-3.5 bg-emerald-500 rounded-full" />
-            Git Activity / 代码活跃度
+      {/* 头部信息：极简双端两极排版 */}
+      <div className="flex items-center justify-between border-b border-zinc-100 dark:border-zinc-800 pb-3 min-w-0">
+        <div className="flex flex-col gap-0.5 min-w-0 mr-2">
+          <h3 className="text-sm font-bold text-zinc-800 dark:text-zinc-200 flex items-center gap-1.5 whitespace-nowrap min-w-0">
+            <span className="w-1 h-3.5 bg-emerald-500 rounded-full shrink-0" />
+            <span className="truncate">代码提交活跃度</span>
           </h3>
-          <p className="text-[10px] text-zinc-400">本月本地提交次数热力分布</p>
+          <p className="text-[10px] text-zinc-400 font-mono truncate">Git Commit Heatmap</p>
         </div>
-        <div className="flex items-center gap-1 bg-emerald-500/10 text-emerald-600 dark:text-emerald-400 font-extrabold px-2.5 py-1 rounded-xl text-[10.5px] font-mono shadow-3xs">
+        
+        {/* 右侧：提交计数标牌 */}
+        <div className="flex items-center gap-1 bg-emerald-500/10 text-emerald-600 dark:text-emerald-400 font-extrabold px-2.5 h-7 rounded-lg text-[10.5px] font-mono shadow-3xs shrink-0">
           <GitPullRequest size={11} />
-          {totalCommits} COMMITS
+          <span>{totalCommits}</span>
+          <span className="text-[9px] font-semibold opacity-80">COMMITS</span>
         </div>
       </div>
 
@@ -98,7 +131,7 @@ export default function GitContributionGraph() {
       <div className="flex-1 flex flex-col justify-center">
         {activities.length > 0 ? (
           <div className="grid grid-cols-7 gap-2 max-w-[280px] mx-auto py-1">
-            {activities.map((item, idx) => {
+            {activities.map((item) => {
               // 提起日期号数，例如 "2026-07-01" -> 1
               const dayNum = new Date(item.date).getDate();
 
@@ -130,9 +163,38 @@ export default function GitContributionGraph() {
         )}
       </div>
 
-      {/* 底部 Legend 图例 */}
-      <div className="flex items-center justify-between text-[9px] text-zinc-400 dark:text-zinc-550 border-t border-zinc-100 dark:border-zinc-800 pt-3 select-none">
-        <span className="font-mono">THIS MONTH</span>
+      {/* 底部 Legend 图例与时间轴控制器（美学对偶） */}
+      <div className="flex items-center justify-between text-[9px] text-zinc-400 dark:text-zinc-550 border-t border-zinc-100 dark:border-zinc-800 pt-2.5 select-none">
+        {/* 左侧：微型极简月份选择胶囊 (h-6, text-10px) */}
+        <Select
+          selectedKey={selectedMonth}
+          onSelectionChange={(key) => {
+            if (key) setSelectedMonth(key as string);
+          }}
+          aria-label="选择月份"
+          className="w-24 shrink-0"
+        >
+          <Select.Trigger className="h-6 px-1.5 rounded-md border-none bg-transparent hover:bg-zinc-100 dark:hover:bg-zinc-800 text-zinc-600 hover:text-zinc-900 dark:text-zinc-400 dark:hover:text-zinc-100 text-[10px] font-mono font-bold shadow-none flex items-center justify-between cursor-pointer transition-colors">
+            <Select.Value />
+            <Select.Indicator className="text-zinc-400 opacity-60 scale-75 ml-1" />
+          </Select.Trigger>
+          <Select.Popover className="bg-white dark:bg-zinc-900 border border-zinc-200/80 dark:border-zinc-800 rounded-xl shadow-xl z-50 p-1 min-w-[100px]">
+            <ListBox>
+              {monthOptions.map((m) => (
+                <ListBox.Item
+                  key={m}
+                  id={m}
+                  textValue={m}
+                  className="text-[10px] font-mono px-2.5 py-1 rounded-lg hover:bg-emerald-50 dark:hover:bg-emerald-950/40 hover:text-emerald-600 dark:hover:text-emerald-400 cursor-pointer transition-colors"
+                >
+                  {m}
+                </ListBox.Item>
+              ))}
+            </ListBox>
+          </Select.Popover>
+        </Select>
+
+        {/* 右侧：热力关照图例 */}
         <div className="flex items-center gap-1">
           <span>Less</span>
           <span className="w-2.5 h-2.5 rounded-xs bg-zinc-100 dark:bg-zinc-850 border border-zinc-200/10" />

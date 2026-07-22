@@ -25,6 +25,7 @@ import {
 import { Spinner } from '@heroui/react'
 import Navbar from '@/components/common/Navbar'
 import SidebarWidget from '@/components/common/SidebarWidget'
+import Footer from '@/components/common/Footer'
 import { fetchPublicNotes } from '@/lib/note-api'
 import { fetchProfile } from '@/lib/profile'
 import { resolveImageUrl } from '@/lib/image-url'
@@ -248,12 +249,14 @@ export default function NotesFragmentsPage() {
   // ==================== 渲染 ====================
 
   return (
-    <main className="relative min-h-screen w-full bg-transparent text-zinc-900 dark:text-zinc-50 font-body selection:bg-[#727BBA]/20 transition-colors duration-200 flex flex-col items-center">
-      <Navbar profile={profile} />
-      <SidebarWidget />
+    <main className="relative min-h-screen w-full bg-transparent text-zinc-900 dark:text-zinc-50 font-body selection:bg-[#727BBA]/20 transition-colors duration-200 flex flex-col justify-between items-center">
+      {/* 100vh 独立正文视口隔离层（确保首屏纯净绝无 Footer 露出） */}
+      <div className="w-full flex-1 flex flex-col items-center min-h-screen pb-16">
+        <Navbar profile={profile} />
+        <SidebarWidget />
 
-      {/* ========== 页头：错位叙事标题区 ========== */}
-      <header className="relative w-full max-w-5xl px-4 pt-24 pb-14 text-center flex flex-col items-center select-none">
+        {/* ========== 页头：错位叙事标题区 ========== */}
+        <header className="relative w-full max-w-5xl px-4 pt-24 pb-14 text-center flex flex-col items-center select-none">
         <div className="relative inline-block">
           {/* 标题主体 */}
           <h1 className="animate-header-item opacity-0 text-2xl md:text-3xl font-serif font-semibold text-zinc-900 dark:text-zinc-50 tracking-[0.25em] indent-[0.25em]">
@@ -585,6 +588,10 @@ export default function NotesFragmentsPage() {
           </>
         )}
       </section>
+      </div>
+
+      {/* 放置于 100vh 正文视口之外的底部统一页脚 */}
+      <Footer />
     </main>
   )
 }

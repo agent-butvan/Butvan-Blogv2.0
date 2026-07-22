@@ -18,6 +18,7 @@ import {
 import { toast } from '@heroui/react'
 import Navbar from '@/components/common/Navbar'
 import SidebarWidget from '@/components/common/SidebarWidget'
+import Footer from '@/components/common/Footer'
 import HtmlRenderer from '@/components/common/HtmlRenderer'
 import CommentSection from '@/components/comment/CommentSection'
 import ScrollProgress from '@/components/detail/ScrollProgress'
@@ -552,6 +553,9 @@ export default function ArticleDetailPage() {
 
       {/* 扫码赞赏模态浮层 */}
       <RewardModal open={rewardOpen} onClose={() => setRewardOpen(false)} />
+      
+      {/* 全站统一页脚 */}
+      <Footer />
     </main>
   )
 }

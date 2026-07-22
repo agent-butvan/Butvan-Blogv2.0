@@ -5,6 +5,7 @@ import Link from 'next/link'
 import { ArrowUpRight, Users, Plus } from 'lucide-react'
 import Navbar from '@/components/common/Navbar'
 import SidebarWidget from '@/components/common/SidebarWidget'
+import Footer from '@/components/common/Footer'
 import { Spinner } from '@heroui/react'
 import { fetchFriendLinks } from '@/lib/friend-api'
 import { fetchProfile } from '@/lib/profile'
@@ -92,17 +93,19 @@ export default function FriendPage() {
     : categoryOrder.filter((c) => groupedFriends[c]?.length > 0)
 
   return (
-    <div className="min-h-screen flex flex-col bg-transparent font-body text-zinc-900 dark:text-zinc-50 transition-colors">
-      <Navbar profile={profile} />
+    <div className="min-h-screen flex flex-col justify-between bg-transparent font-body text-zinc-900 dark:text-zinc-50 transition-colors">
+      {/* 100vh 独立正文视口隔离层（确保首屏纯净绝无 Footer 露出） */}
+      <div className="w-full flex-1 flex flex-col items-center min-h-screen pb-16">
+        <Navbar profile={profile} />
 
-      {/* 左侧悬浮侧挂导航 */}
-      <SidebarWidget />
+        {/* 左侧悬浮侧挂导航 */}
+        <SidebarWidget />
 
-      {/* 页头 —— 简洁居中排版 */}
-      <header
-        className="w-full max-w-3xl mx-auto px-4 pt-16 pb-6 text-center transition-opacity duration-500"
-        style={{ opacity: visible ? 1 : 0 }}
-      >
+        {/* 页头 —— 简洁居中排版 */}
+        <header
+          className="w-full max-w-3xl mx-auto px-4 pt-16 pb-6 text-center transition-opacity duration-500"
+          style={{ opacity: visible ? 1 : 0 }}
+        >
         <div className="flex items-center justify-center gap-3">
           <Users size={17} className="text-[#727BBA]/70" />
           <h1 className="text-xl md:text-2xl font-heading font-bold text-zinc-900 dark:text-zinc-50 tracking-tight">
@@ -294,13 +297,10 @@ export default function FriendPage() {
           </div>
         </div>
       </section>
+      </div>
 
-      {/* Footer */}
-      <footer className="py-8 text-center border-t border-zinc-200/40 dark:border-zinc-900/50">
-        <span className="text-xs text-zinc-400 dark:text-zinc-500">
-          2026 Butvan Blog
-        </span>
-      </footer>
+      {/* 全站统一页脚 (放置在 100vh 视口之外的最下方) */}
+      <Footer />
     </div>
   )
 }

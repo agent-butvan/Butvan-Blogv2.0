@@ -51,3 +51,11 @@ blog:
         label: "独立页面"
         category: "动态路由"
         dynamic: true
+
+  # GitHub 远程仓库 API 联动配置
+  github:
+    enabled: true
+    owner: 18755120710
+    repo: Butvan-Blogv2.0
+    token: ${GITHUB_TOKEN:}
+

@@ -19,6 +19,7 @@ import {
 } from 'lucide-react'
 import Navbar from '@/components/common/Navbar'
 import SidebarWidget from '@/components/common/SidebarWidget'
+import Footer from '@/components/common/Footer'
 import { toast, Avatar, Button, Spinner, Tooltip, cn } from '@heroui/react'
 import { fetchProfile } from '@/lib/profile'
 import { applyFriendLink, uploadPublicImage, fetchWebMeta } from '@/lib/friend-api'
@@ -302,14 +303,16 @@ export default function FriendApplyPage() {
 
   // 表单主视图
   return (
-    <div className="min-h-screen bg-transparent font-body text-zinc-900 dark:text-zinc-50 transition-colors">
-      <Navbar profile={profile} />
+    <div className="min-h-screen flex flex-col justify-between bg-transparent font-body text-zinc-900 dark:text-zinc-50 transition-colors">
+      {/* 100vh 独立正文视口隔离层（确保首屏纯净绝无 Footer 露出） */}
+      <div className="w-full flex-1 flex flex-col items-center min-h-screen pb-16">
+        <Navbar profile={profile} />
 
-      {/* 左侧悬浮侧挂导航 */}
-      <SidebarWidget />
+        {/* 左侧悬浮侧挂导航 */}
+        <SidebarWidget />
 
-      {/* Hero 区域：与友链目录页统一节奏 */}
-      <section className="apply-hero pt-16 md:pt-20 pb-5 px-4">
+        {/* Hero 区域：与友链目录页统一节奏 */}
+        <section className="apply-hero pt-16 md:pt-20 pb-5 px-4 w-full">
         <div className="max-w-5xl mx-auto">
           <Link
             href="/friend"
@@ -714,14 +717,10 @@ export default function FriendApplyPage() {
           </aside>
         </div>
       </section>
+      </div>
 
-      {/* Footer：与友链目录页统一 */}
-      <footer className="py-6 text-center border-t border-zinc-200/50 dark:border-zinc-900/60">
-        <div className="flex items-center justify-center gap-1.5 text-zinc-400 dark:text-zinc-500 text-xs">
-          <ArrowLeft size={10} />
-          <span>2026 Butvan Blog. All rights reserved.</span>
-        </div>
-      </footer>
+      {/* 全站统一页脚 (放置在 100vh 视口之外的最下方) */}
+      <Footer />
     </div>
   )
 }
