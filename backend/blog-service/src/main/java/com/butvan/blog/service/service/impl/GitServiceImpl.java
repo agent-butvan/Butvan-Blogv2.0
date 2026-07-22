@@ -21,6 +21,7 @@ import java.io.File;
 import java.io.InputStreamReader;
 import java.nio.charset.StandardCharsets;
 import java.time.LocalDate;
+import java.time.YearMonth;
 import java.util.ArrayList;
 import java.util.HashMap;
 import java.util.List;
@@ -85,24 +86,34 @@ public class GitServiceImpl implements GitService {
     }
 
     @Override
-    public List<GitActivityVO> getGitActivity(String branch) {
-        // 1. 本地探查：若处于本地开发环境（存在物理 .git 目录），优先本地计算
-        if (isGitAvailable()) {
-            return getLiveGitActivity(branch);
+    public List<GitActivityVO> getGitActivity(String branch, String month) {
+        YearMonth targetYearMonth;
+        if (month != null && month.matches("^\\d{4}-\\d{2}$")) {
+            try {
+                targetYearMonth = YearMonth.parse(month);
+            } catch (Exception e) {
+                targetYearMonth = YearMonth.now();
+            }
+        } else {
+            targetYearMonth = YearMonth.now();
         }
 
-        // 2. 线上探查：线上部署环境，调用 GitHub REST API 计算当月提交活跃度
-        List<GitActivityVO> gitHubActivity = getGitActivityFromGitHub(branch);
+        // 1. 本地探查：若处于本地开发环境（存在物理 .git 目录），优先本地计算
+        if (isGitAvailable()) {
+            return getLiveGitActivity(branch, targetYearMonth);
+        }
+
+        // 2. 线上探查：线上部署环境，调用 GitHub REST API 计算指定月份提交活跃度
+        List<GitActivityVO> gitHubActivity = getGitActivityFromGitHub(branch, targetYearMonth);
         if (gitHubActivity != null) {
             return gitHubActivity;
         }
 
-        // 3. 若均无法获取，返回空计数的当月日期列表
-        LocalDate now = LocalDate.now();
+        // 3. 若均无法获取，返回空计数的指定月份日期列表
         List<GitActivityVO> activities = new ArrayList<>();
-        int lengthOfCurrentMonth = now.lengthOfMonth();
-        for (int i = 1; i <= lengthOfCurrentMonth; i++) {
-            LocalDate date = now.withDayOfMonth(i);
+        int lengthOfMonth = targetYearMonth.lengthOfMonth();
+        for (int i = 1; i <= lengthOfMonth; i++) {
+            LocalDate date = targetYearMonth.atDay(i);
             activities.add(GitActivityVO.builder()
                     .date(date.toString())
                     .count(0)
@@ -179,28 +190,27 @@ public class GitServiceImpl implements GitService {
     }
 
     /**
-     * 实时从 GitHub REST API 获取当月提交活跃度
+     * 实时从 GitHub REST API 获取指定月份提交活跃度
      */
-    private List<GitActivityVO> getGitActivityFromGitHub(String branch) {
+    private List<GitActivityVO> getGitActivityFromGitHub(String branch, YearMonth yearMonth) {
         GitInfoVO gitInfo = getGitInfoFromGitHub(branch);
         if (gitInfo == null || gitInfo.getCommits() == null) {
             return null;
         }
 
-        LocalDate now = LocalDate.now();
-        String currentMonthPrefix = String.format("%04d-%02d-", now.getYear(), now.getMonthValue());
+        String monthPrefix = yearMonth.toString() + "-";
 
         List<String> dates = new ArrayList<>();
         for (GitCommitVO commit : gitInfo.getCommits()) {
             if (commit.getDate() != null && commit.getDate().length() >= 10) {
                 String dayStr = commit.getDate().substring(0, 10);
-                if (dayStr.startsWith(currentMonthPrefix)) {
+                if (dayStr.startsWith(monthPrefix)) {
                     dates.add(dayStr);
                 }
             }
         }
 
-        return buildActivityListFromDates(dates, now);
+        return buildActivityListFromDates(dates, yearMonth);
     }
 
     /**
@@ -315,9 +325,9 @@ public class GitServiceImpl implements GitService {
     /**
      * 实时获取 Git 提交活跃度（本地开发环境）
      */
-    private List<GitActivityVO> getLiveGitActivity(String branch) {
-        LocalDate now = LocalDate.now();
-        String firstDayOfMonth = now.withDayOfMonth(1).toString();
+    private List<GitActivityVO> getLiveGitActivity(String branch, YearMonth yearMonth) {
+        LocalDate firstDay = yearMonth.atDay(1);
+        LocalDate lastDay = yearMonth.atEndOfMonth();
 
         List<String> cmd = new ArrayList<>();
         cmd.add("git");
@@ -325,13 +335,14 @@ public class GitServiceImpl implements GitService {
         if (branch != null && !branch.trim().isEmpty() && !"HEAD".equalsIgnoreCase(branch)) {
             cmd.add(branch);
         }
-        cmd.add("--since=" + firstDayOfMonth);
+        cmd.add("--since=" + firstDay.toString());
+        cmd.add("--until=" + lastDay.toString() + " 23:59:59");
         cmd.add("--pretty=format:%ad");
         cmd.add("--date=format:%Y-%m-%d");
 
         List<String> datesOut = executeCommand(cmd.toArray(new String[0]));
 
-        return buildActivityListFromDates(datesOut, now);
+        return buildActivityListFromDates(datesOut, yearMonth);
     }
 
     /**
@@ -357,9 +368,9 @@ public class GitServiceImpl implements GitService {
     }
 
     /**
-     * 通用：根据日期列表生成当月的 30/31 天提交频次序列
+     * 通用：根据日期列表生成指定月份的 28~31 天提交频次序列
      */
-    private List<GitActivityVO> buildActivityListFromDates(List<String> dates, LocalDate now) {
+    private List<GitActivityVO> buildActivityListFromDates(List<String> dates, YearMonth yearMonth) {
         Map<String, Integer> commitCounts = new HashMap<>();
         for (String d : dates) {
             if (d == null || d.trim().isEmpty()) {
@@ -370,9 +381,9 @@ public class GitServiceImpl implements GitService {
         }
 
         List<GitActivityVO> activities = new ArrayList<>();
-        int lengthOfCurrentMonth = now.lengthOfMonth();
-        for (int i = 1; i <= lengthOfCurrentMonth; i++) {
-            LocalDate date = now.withDayOfMonth(i);
+        int lengthOfMonth = yearMonth.lengthOfMonth();
+        for (int i = 1; i <= lengthOfMonth; i++) {
+            LocalDate date = yearMonth.atDay(i);
             String dayStr = date.toString();
             Integer count = commitCounts.getOrDefault(dayStr, 0);
             activities.add(GitActivityVO.builder()

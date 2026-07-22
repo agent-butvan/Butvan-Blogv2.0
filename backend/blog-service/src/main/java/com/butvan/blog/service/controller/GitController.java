@@ -40,16 +40,19 @@ public class GitController {
     }
 
     /**
-     * 获取 Git 本月代码活跃度
+     * 获取 Git 指定月份代码活跃度
      *
      * @param branch 指定分支名称，若为空则默认 HEAD
+     * @param month  指定月份（如 2026-06），若为空则默认当月
      * @return 每日代码提交次数列表 VO
      */
     @GetMapping("/git/activity")
-    @TrackApi("获取Git本月提交活跃度")
-    public Result<List<GitActivityVO>> getGitActivity(@RequestParam(required = false) String branch) {
-        log.info("获取 Git 本月代码活跃度 API 请求，分支: {}", branch);
-        List<GitActivityVO> activity = gitService.getGitActivity(branch);
+    @TrackApi("获取Git指定月份提交活跃度")
+    public Result<List<GitActivityVO>> getGitActivity(
+            @RequestParam(required = false) String branch,
+            @RequestParam(required = false) String month) {
+        log.info("获取 Git 代码活跃度 API 请求，分支: {}, 月份: {}", branch, month);
+        List<GitActivityVO> activity = gitService.getGitActivity(branch, month);
         return Result.success(activity);
     }
 }

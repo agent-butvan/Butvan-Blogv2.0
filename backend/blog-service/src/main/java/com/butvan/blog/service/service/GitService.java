@@ -18,10 +18,11 @@ public interface GitService {
     GitInfoVO getGitInfo(String branch);
 
     /**
-     * 获取本月份的代码提交活跃度统计数据
+     * 获取指定月份的代码提交活跃度统计数据
      *
      * @param branch 指定分支名称，若为空则默认 HEAD
+     * @param month  指定月份（格式：yyyy-MM），若为空则默认当月
      * @return 每日代码提交次数列表
      */
-    List<GitActivityVO> getGitActivity(String branch);
+    List<GitActivityVO> getGitActivity(String branch, String month);
 }
