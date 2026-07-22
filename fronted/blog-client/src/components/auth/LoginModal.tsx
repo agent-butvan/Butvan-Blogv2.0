@@ -286,7 +286,9 @@ export default function LoginModal({ isOpen, onClose }: LoginModalProps) {
       setTimeout(() => wsDisconnect(), 300)
       onClose()
       if (loggedUser) {
-        authLogin(loggedUser)
+        setTimeout(() => {
+          authLogin(loggedUser!)
+        }, 0)
       }
     } catch (err) {
       console.error('[微信登录] Token 交换失败:', err)
@@ -383,7 +385,9 @@ export default function LoginModal({ isOpen, onClose }: LoginModalProps) {
         codeExpiryTimerRef.current = null
       }
       onClose()
-      authLogin(loggedUser)
+      setTimeout(() => {
+        authLogin(loggedUser)
+      }, 0)
     } catch (err) {
       setLoginError(err instanceof AppError ? err.message : '网络连接失败，请稍后重试')
     } finally {
