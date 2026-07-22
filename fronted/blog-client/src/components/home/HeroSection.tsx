@@ -227,18 +227,18 @@ export default function HeroSection({ profile, loading }: HeroSectionProps) {
           </h1>
 
           {/* Bio / Tech Stack */}
-          <div className="bio-signature text-base sm:text-lg md:text-xl text-zinc-700 dark:text-zinc-200 font-mono tracking-wide leading-relaxed font-medium opacity-0">
-            {profile?.bio || 'JAVA/Agent/VibeCoding开发者'}
+          <div className="bio-signature text-base sm:text-lg md:text-xl text-zinc-400 dark:text-zinc-500 font-mono tracking-wide leading-relaxed font-normal opacity-0">
+            {profile?.bio || 'Java/Kotlin + JavaScript/Typescript 全栈开发者 // 正在努力学习前端基建和架构设计'}
           </div>
         </div>
       </div>
 
       {/* ===== 下半部分：详细介绍与社交链接 ===== */}
-      <div className="w-full flex flex-col gap-8 text-zinc-800 dark:text-zinc-100 font-body text-lg sm:text-xl md:text-[22px] leading-relaxed">
+      <div className="w-full flex flex-col gap-8 text-zinc-700 dark:text-zinc-300 font-body text-lg sm:text-xl md:text-[22px] leading-relaxed">
         {/* Detailed Intro Lines */}
         <div className="flex flex-col gap-5 max-w-4xl font-normal">
-          <p className="intro-item font-bold text-zinc-900 dark:text-zinc-50 opacity-0">{introLine1}</p>
-          <p className="intro-item text-zinc-700 dark:text-zinc-200 font-medium opacity-0">{introLine2}</p>
+          <p className="intro-item font-semibold text-zinc-800 dark:text-zinc-100 opacity-0">{introLine1}</p>
+          <p className="intro-item text-zinc-650 dark:text-zinc-450 opacity-0">{introLine2}</p>
         </div>
 
         {/* Links */}
@@ -248,18 +248,18 @@ export default function HeroSection({ profile, loading }: HeroSectionProps) {
             href={githubUrl}
             target="_blank"
             rel="noopener noreferrer"
-            className="social-link-item flex items-center gap-2 text-zinc-700 dark:text-zinc-200 hover:text-primary dark:hover:text-primary text-base md:text-[17px] font-heading font-medium tracking-wide transition-colors group opacity-0"
+            className="social-link-item flex items-center gap-2 text-zinc-500 hover:text-zinc-850 dark:hover:text-zinc-200 text-base md:text-[17px] font-heading font-medium tracking-wide transition-colors group opacity-0"
           >
-            <GitFork className="w-4.5 h-4.5 text-[#727BBA] group-hover:scale-110 transition-transform" />
+            <GitFork className="w-4.5 h-4.5 text-zinc-400 group-hover:text-zinc-700 dark:group-hover:text-zinc-300 transition-colors" />
             GitHub
           </a>
 
           {/* Email Link */}
           <a
             href={emailUrl}
-            className="social-link-item flex items-center gap-2 text-zinc-700 dark:text-zinc-200 hover:text-primary dark:hover:text-primary text-base md:text-[17px] font-heading font-medium tracking-wide transition-colors group opacity-0"
+            className="social-link-item flex items-center gap-2 text-zinc-500 hover:text-zinc-850 dark:hover:text-zinc-200 text-base md:text-[17px] font-heading font-medium tracking-wide transition-colors group opacity-0"
           >
-            <Mail className="w-4.5 h-4.5 text-[#727BBA] group-hover:scale-110 transition-transform" />
+            <Mail className="w-4.5 h-4.5 text-zinc-400 group-hover:text-zinc-700 dark:group-hover:text-zinc-300 transition-colors" />
             Email
           </a>
 
@@ -268,9 +268,9 @@ export default function HeroSection({ profile, loading }: HeroSectionProps) {
             href={rssUrl}
             target="_blank"
             rel="noopener noreferrer"
-            className="social-link-item flex items-center gap-2 text-zinc-700 dark:text-zinc-200 hover:text-primary dark:hover:text-primary text-base md:text-[17px] font-heading font-medium tracking-wide transition-colors group opacity-0"
+            className="social-link-item flex items-center gap-2 text-zinc-500 hover:text-zinc-850 dark:hover:text-zinc-200 text-base md:text-[17px] font-heading font-medium tracking-wide transition-colors group opacity-0"
           >
-            <Rss className="w-4.5 h-4.5 text-[#727BBA] group-hover:scale-110 transition-transform" />
+            <Rss className="w-4.5 h-4.5 text-zinc-400 group-hover:text-zinc-700 dark:group-hover:text-zinc-300 transition-colors" />
             RSS
           </a>
         </div>
