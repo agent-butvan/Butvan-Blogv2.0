@@ -8,7 +8,6 @@ import com.fasterxml.jackson.databind.JsonNode;
 import com.fasterxml.jackson.databind.ObjectMapper;
 import lombok.extern.slf4j.Slf4j;
 import org.springframework.beans.factory.annotation.Value;
-import org.springframework.core.io.ClassPathResource;
 import org.springframework.http.HttpEntity;
 import org.springframework.http.HttpHeaders;
 import org.springframework.http.HttpMethod;
@@ -18,7 +17,6 @@ import org.springframework.web.client.RestTemplate;
 
 import java.io.BufferedReader;
 import java.io.File;
-import java.io.InputStream;
 import java.io.InputStreamReader;
 import java.nio.charset.StandardCharsets;
 import java.time.LocalDate;
@@ -29,7 +27,7 @@ import java.util.Map;
 
 /**
  * Git 详细信息服务实现类
- * 具备【本地动态 .git】->【GitHub REST API 实时】->【打包期 Classpath 固化】->【离线 Mock 演示】四重降级防御机制
+ * 双重纯净机制：【优先】GitHub REST API 实时拉取 -> 【备选】本地物理 .git 命令行
  */
 @Service
 @Slf4j
@@ -52,51 +50,61 @@ public class GitServiceImpl implements GitService {
 
     @Override
     public GitInfoVO getGitInfo(String branch) {
-        // 1. 本地动态探查：如果本地具有 .git 目录且 system git 可用（本地开发环境）
-        if (isGitAvailable()) {
-            return getLiveGitInfo(branch);
-        }
-
-        // 2. GitHub REST API 探查：在线模式下尝试从 GitHub 远程拉取最新提交与分支
+        // 1. 优先：尝试从 GitHub REST API 实时获取远程最新提交与分支列表
         GitInfoVO gitHubGitInfo = getGitInfoFromGitHub(branch);
         if (gitHubGitInfo != null) {
-            log.info("成功从 GitHub REST API 实时装载仓库最新提交历史 (owner={}, repo={})", githubOwner, githubRepo);
+            log.info("【Git服务】成功从 GitHub API 实时装载仓库最新提交历史 (owner={}, repo={})", githubOwner, githubRepo);
             return gitHubGitInfo;
         }
 
-        // 3. 线上固化探查：尝试从 Jar 包 classpath 读取打包期固化的 git-history.txt
-        GitInfoVO classpathGitInfo = getGitInfoFromClasspath(branch);
-        if (classpathGitInfo != null) {
-            log.info("侦测到线上编译固化的 Git 提交日志 (classpath:git-history.txt)，已装载线上固化历史信息");
-            return classpathGitInfo;
+        // 2. 备选：尝试从本地物理 .git 目录和命令行获取
+        if (isGitAvailable()) {
+            log.info("【Git服务】已降级切换为从本地物理 .git 仓库提取版本信息");
+            return getLiveGitInfo(branch);
         }
 
-        // 4. 兜底离线模式：既无 .git 环境、也无法访问 GitHub API，且无 classpath 资源文件，切入 Mock 降级
-        log.warn("当前运行环境未侦测到 .git 仓库、GitHub API 或 Classpath 资源，已自动切换为【离线 Mock 模式】");
-        return getOfflineGitInfo(branch);
+        // 3. 若均无法获取，返回干净的空结构（无任何硬编码 Mock 数据）
+        log.warn("【Git服务】无法从 GitHub API 或本地 .git 仓库获取版本信息");
+        String current = (branch != null && !branch.trim().isEmpty() && !"HEAD".equalsIgnoreCase(branch)) ? branch : "main";
+        List<String> branches = new ArrayList<>();
+        branches.add(current);
+        return GitInfoVO.builder()
+                .currentBranch(current)
+                .branches(branches)
+                .commits(new ArrayList<>())
+                .isOffline(true)
+                .build();
     }
 
     @Override
     public List<GitActivityVO> getGitActivity(String branch) {
-        if (isGitAvailable()) {
-            return getLiveGitActivity(branch);
-        }
-
+        // 1. 优先：尝试从 GitHub REST API 实时获取计算当月提交活跃度
         List<GitActivityVO> gitHubActivity = getGitActivityFromGitHub(branch);
         if (gitHubActivity != null) {
             return gitHubActivity;
         }
 
-        List<GitActivityVO> classpathActivity = getGitActivityFromClasspath();
-        if (classpathActivity != null) {
-            return classpathActivity;
+        // 2. 备选：尝试从本地物理 .git 命令行计算
+        if (isGitAvailable()) {
+            return getLiveGitActivity(branch);
         }
 
-        return getOfflineGitActivity(branch);
+        // 3. 若均无法获取，返回空计数的当月日期列表
+        LocalDate now = LocalDate.now();
+        List<GitActivityVO> activities = new ArrayList<>();
+        int lengthOfCurrentMonth = now.lengthOfMonth();
+        for (int i = 1; i <= lengthOfCurrentMonth; i++) {
+            LocalDate date = now.withDayOfMonth(i);
+            activities.add(GitActivityVO.builder()
+                    .date(date.toString())
+                    .count(0)
+                    .build());
+        }
+        return activities;
     }
 
     /**
-     * 实时从 GitHub REST API 获取最新提交与分支列表（线上在线模式）
+     * 实时从 GitHub REST API 获取最新提交与分支列表
      */
     private GitInfoVO getGitInfoFromGitHub(String branch) {
         if (!githubEnabled || githubOwner == null || githubOwner.trim().isEmpty() || githubRepo == null || githubRepo.trim().isEmpty()) {
@@ -153,7 +161,7 @@ public class GitServiceImpl implements GitService {
     }
 
     /**
-     * 实时从 GitHub REST API 获取当月提交活跃度（线上在线模式）
+     * 实时从 GitHub REST API 获取当月提交活跃度
      */
     private List<GitActivityVO> getGitActivityFromGitHub(String branch) {
         GitInfoVO gitInfo = getGitInfoFromGitHub(branch);
@@ -309,62 +317,6 @@ public class GitServiceImpl implements GitService {
     }
 
     /**
-     * 从 Classpath 资源读取打包期固化的真实 Git 提交信息（线上运行环境）
-     */
-    private GitInfoVO getGitInfoFromClasspath(String branch) {
-        List<String> lines = readLinesFromClasspath("git-history.txt");
-        if (lines.isEmpty()) {
-            return null;
-        }
-
-        String targetBranch = branch;
-        if (targetBranch == null || targetBranch.trim().isEmpty() || "HEAD".equalsIgnoreCase(targetBranch)) {
-            List<String> branchLines = readLinesFromClasspath("git-branch.txt");
-            targetBranch = branchLines.isEmpty() ? "main" : branchLines.get(0).trim();
-        }
-
-        List<GitCommitVO> commits = parseCommitsFromLines(lines);
-        List<String> branches = new ArrayList<>();
-        branches.add(targetBranch);
-
-        return GitInfoVO.builder()
-                .currentBranch(targetBranch)
-                .branches(branches)
-                .commits(commits)
-                .isOffline(false)
-                .build();
-    }
-
-    /**
-     * 从 Classpath 资源计算打包期固化的当月提交活跃度（线上运行环境）
-     */
-    private List<GitActivityVO> getGitActivityFromClasspath() {
-        List<String> lines = readLinesFromClasspath("git-history.txt");
-        if (lines.isEmpty()) {
-            return null;
-        }
-
-        LocalDate now = LocalDate.now();
-        String currentMonthPrefix = String.format("%04d-%02d-", now.getYear(), now.getMonthValue());
-
-        List<String> dates = new ArrayList<>();
-        for (String line : lines) {
-            String[] parts = line.split("###", 4);
-            if (parts.length >= 3) {
-                String dateStr = parts[2].trim();
-                if (dateStr.length() >= 10) {
-                    String dayStr = dateStr.substring(0, 10);
-                    if (dayStr.startsWith(currentMonthPrefix)) {
-                        dates.add(dayStr);
-                    }
-                }
-            }
-        }
-
-        return buildActivityListFromDates(dates, now);
-    }
-
-    /**
      * 通用：将带有 ### 分隔符的行列表解析为 GitCommitVO 列表
      */
     private List<GitCommitVO> parseCommitsFromLines(List<String> lines) {
@@ -414,31 +366,6 @@ public class GitServiceImpl implements GitService {
     }
 
     /**
-     * 安全地读取 Classpath 资源文本行
-     */
-    private List<String> readLinesFromClasspath(String resourceName) {
-        List<String> lines = new ArrayList<>();
-        try {
-            ClassPathResource resource = new ClassPathResource(resourceName);
-            if (!resource.exists()) {
-                return lines;
-            }
-            try (InputStream is = resource.getInputStream();
-                 BufferedReader reader = new BufferedReader(new InputStreamReader(is, StandardCharsets.UTF_8))) {
-                String line;
-                while ((line = reader.readLine()) != null) {
-                    if (!line.trim().isEmpty()) {
-                        lines.add(line.trim());
-                    }
-                }
-            }
-        } catch (Exception e) {
-            log.debug("读取 Classpath 资源 {} 失败: {}", resourceName, e.getMessage());
-        }
-        return lines;
-    }
-
-    /**
      * 优雅探测当前运行环境是否支持 Git 操作
      */
     private boolean isGitAvailable() {
@@ -454,81 +381,6 @@ public class GitServiceImpl implements GitService {
         } catch (Exception e) {
             return false;
         }
-    }
-
-    /**
-     * 获取离线 Mock 的 Git 信息（保底方案）
-     */
-    private GitInfoVO getOfflineGitInfo(String branch) {
-        String current = (branch != null && !branch.trim().isEmpty()) ? branch : "main";
-        
-        List<String> branches = new ArrayList<>();
-        branches.add("main");
-        branches.add("release");
-        branches.add("feat/git-dashboard");
-        branches.add("fix/timeout-issue");
-
-        List<GitCommitVO> commits = new ArrayList<>();
-        commits.add(new GitCommitVO("c88ffbf", "antigravity", "2026-07-20 15:34:11", "feat(git): 支持顶部栏查看git信息与工作台代码活跃度热力图"));
-        commits.add(new GitCommitVO("b911a33", "antigravity", "2026-07-20 15:18:31", "feat(ui): 工作台支持5秒轮询实现指标数据实时更新并移除快捷键配置"));
-        commits.add(new GitCommitVO("54bc005", "antigravity", "2026-07-20 15:10:34", "fix(api): 采用异步有界线程池推送控制台日志防止线程卡死"));
-        
-        if (!"fix/timeout-issue".equals(branch)) {
-            commits.add(new GitCommitVO("fbc1278", "butvan", "2026-07-17 10:42:00", "feat(db): 新增系统日志菜单及权限结构"));
-            commits.add(new GitCommitVO("d3b4512", "butvan", "2026-07-16 21:10:05", "style(ui): 紧凑工作台首屏布局消除多余留白"));
-            commits.add(new GitCommitVO("a11204b", "butvan", "2026-07-16 19:00:00", "init(project): VB个人博客2.0基础框架搭建就绪"));
-        }
-
-        if ("fix/timeout-issue".equals(branch)) {
-            commits.remove(0);
-            commits.remove(0);
-        } else if ("feat/git-dashboard".equals(branch)) {
-            commits.remove(2);
-        }
-
-        return GitInfoVO.builder()
-                .currentBranch(current)
-                .branches(branches)
-                .commits(commits)
-                .isOffline(true)
-                .build();
-    }
-
-    /**
-     * 获取离线 Mock 的代码提交活跃度（保底方案）
-     */
-    private List<GitActivityVO> getOfflineGitActivity(String branch) {
-        LocalDate now = LocalDate.now();
-        List<GitActivityVO> activities = new ArrayList<>();
-        int lengthOfCurrentMonth = now.lengthOfMonth();
-
-        int activeDay20 = 3;
-        int activeDay17 = 1;
-        int activeDay16 = 2;
-
-        if ("fix/timeout-issue".equals(branch)) {
-            activeDay20 = 1;
-            activeDay17 = 0;
-        } else if ("feat/git-dashboard".equals(branch)) {
-            activeDay20 = 2;
-            activeDay16 = 0;
-        }
-
-        for (int i = 1; i <= lengthOfCurrentMonth; i++) {
-            LocalDate date = now.withDayOfMonth(i);
-            String dayStr = date.toString();
-            int count = 0;
-            if (i == 20) count = activeDay20;
-            else if (i == 17) count = activeDay17;
-            else if (i == 16) count = activeDay16;
-
-            activities.add(GitActivityVO.builder()
-                    .date(dayStr)
-                    .count(count)
-                    .build());
-        }
-
-        return activities;
     }
 
     /**
