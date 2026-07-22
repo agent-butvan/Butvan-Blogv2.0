@@ -143,14 +143,24 @@ public class GitServiceImpl implements GitService {
                 targetBranch = branches.contains("main") ? "main" : branches.get(0);
             }
 
-            // 2. 请求 GitHub 仓库指定分支的 Commit 列表
-            String commitUrl = String.format("https://api.github.com/repos/%s/%s/commits?sha=%s&per_page=100", githubOwner, githubRepo, targetBranch);
-            String commitJson = executeGitHubRequest(commitUrl);
-            if (commitJson == null) {
-                return null;
+            // 2. 循环翻页请求 GitHub 仓库指定分支的 Commit 列表 (最多拉取 10 页 1000 条记录)
+            List<GitCommitVO> commits = new ArrayList<>();
+            for (int page = 1; page <= 10; page++) {
+                String commitUrl = String.format("https://api.github.com/repos/%s/%s/commits?sha=%s&per_page=100&page=%d", githubOwner, githubRepo, targetBranch, page);
+                String commitJson = executeGitHubRequest(commitUrl);
+                if (commitJson == null) {
+                    break;
+                }
+                List<GitCommitVO> pageCommits = parseGitHubCommits(commitJson);
+                if (pageCommits.isEmpty()) {
+                    break;
+                }
+                commits.addAll(pageCommits);
+                if (pageCommits.size() < 100) {
+                    break;
+                }
             }
 
-            List<GitCommitVO> commits = parseGitHubCommits(commitJson);
             if (commits.isEmpty()) {
                 return null;
             }
@@ -287,7 +297,7 @@ public class GitServiceImpl implements GitService {
             cmd.add(branch);
         }
         cmd.add("-n");
-        cmd.add("100");
+        cmd.add("2000");
         cmd.add("--pretty=format:%h###%an###%ad###%s");
         cmd.add("--date=format:%Y-%m-%d %H:%M:%S");
 
