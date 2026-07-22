@@ -109,51 +109,21 @@ export default function GitContributionGraph() {
 
   return (
     <div className="bg-white dark:bg-zinc-900 border border-zinc-200/50 dark:border-zinc-850 p-5 rounded-2xl shadow-[0_1px_3px_rgba(0,0,0,0.01),0_10px_20px_-5px_rgba(0,0,0,0.025)] dark:shadow-[0_8px_30px_rgba(0,0,0,0.2)] flex flex-col justify-between h-full gap-4 text-left">
-      {/* 头部信息与月份选择器 */}
+      {/* 头部信息：极简双端两极排版 */}
       <div className="flex items-center justify-between border-b border-zinc-100 dark:border-zinc-800 pb-3 min-w-0">
         <div className="flex flex-col gap-0.5 min-w-0 mr-2">
           <h3 className="text-sm font-bold text-zinc-800 dark:text-zinc-200 flex items-center gap-1.5 whitespace-nowrap min-w-0">
             <span className="w-1 h-3.5 bg-emerald-500 rounded-full shrink-0" />
             <span className="truncate">代码提交活跃度</span>
           </h3>
-          <p className="text-[10px] text-zinc-400 font-mono truncate">{selectedMonth} 热力分布</p>
+          <p className="text-[10px] text-zinc-400 font-mono truncate">Git Commit Heatmap</p>
         </div>
         
-        {/* 右侧：HeroUI 月份选择下拉框 + 提交计数标牌 */}
-        <div className="flex items-center gap-2 shrink-0">
-          <Select
-            selectedKey={selectedMonth}
-            onSelectionChange={(key) => {
-              if (key) setSelectedMonth(key as string);
-            }}
-            aria-label="选择月份"
-            className="w-28"
-          >
-            <Select.Trigger className="h-7 px-2.5 rounded-lg border border-zinc-200/60 dark:border-zinc-700/60 bg-zinc-50 dark:bg-zinc-800/80 text-zinc-700 dark:text-zinc-200 text-[11px] font-mono shadow-none flex items-center justify-between cursor-pointer">
-              <Select.Value />
-              <Select.Indicator />
-            </Select.Trigger>
-            <Select.Popover className="bg-white dark:bg-zinc-900 border border-zinc-200/80 dark:border-zinc-800 rounded-xl shadow-xl z-50 p-1 min-w-[110px]">
-              <ListBox>
-                {monthOptions.map((m) => (
-                  <ListBox.Item
-                    key={m}
-                    id={m}
-                    textValue={m}
-                    className="text-[11px] font-mono px-2.5 py-1 rounded-lg hover:bg-emerald-50 dark:hover:bg-emerald-950/40 hover:text-emerald-600 dark:hover:text-emerald-400 cursor-pointer transition-colors"
-                  >
-                    {m}
-                  </ListBox.Item>
-                ))}
-              </ListBox>
-            </Select.Popover>
-          </Select>
-
-          <div className="flex items-center gap-1 bg-emerald-500/10 text-emerald-600 dark:text-emerald-400 font-extrabold px-2.5 h-7 rounded-lg text-[10.5px] font-mono shadow-3xs shrink-0">
-            <GitPullRequest size={11} />
-            <span>{totalCommits}</span>
-            <span className="text-[9px] font-semibold opacity-80">COMMITS</span>
-          </div>
+        {/* 右侧：提交计数标牌 */}
+        <div className="flex items-center gap-1 bg-emerald-500/10 text-emerald-600 dark:text-emerald-400 font-extrabold px-2.5 h-7 rounded-lg text-[10.5px] font-mono shadow-3xs shrink-0">
+          <GitPullRequest size={11} />
+          <span>{totalCommits}</span>
+          <span className="text-[9px] font-semibold opacity-80">COMMITS</span>
         </div>
       </div>
 
@@ -193,9 +163,38 @@ export default function GitContributionGraph() {
         )}
       </div>
 
-      {/* 底部 Legend 图例 */}
-      <div className="flex items-center justify-between text-[9px] text-zinc-400 dark:text-zinc-550 border-t border-zinc-100 dark:border-zinc-800 pt-3 select-none">
-        <span className="font-mono">{selectedMonth}</span>
+      {/* 底部 Legend 图例与时间轴控制器（美学对偶） */}
+      <div className="flex items-center justify-between text-[9px] text-zinc-400 dark:text-zinc-550 border-t border-zinc-100 dark:border-zinc-800 pt-2.5 select-none">
+        {/* 左侧：微型极简月份选择胶囊 (h-6, text-10px) */}
+        <Select
+          selectedKey={selectedMonth}
+          onSelectionChange={(key) => {
+            if (key) setSelectedMonth(key as string);
+          }}
+          aria-label="选择月份"
+          className="w-24 shrink-0"
+        >
+          <Select.Trigger className="h-6 px-1.5 rounded-md border-none bg-transparent hover:bg-zinc-100 dark:hover:bg-zinc-800 text-zinc-600 hover:text-zinc-900 dark:text-zinc-400 dark:hover:text-zinc-100 text-[10px] font-mono font-bold shadow-none flex items-center justify-between cursor-pointer transition-colors">
+            <Select.Value />
+            <Select.Indicator className="text-zinc-400 opacity-60 scale-75 ml-1" />
+          </Select.Trigger>
+          <Select.Popover className="bg-white dark:bg-zinc-900 border border-zinc-200/80 dark:border-zinc-800 rounded-xl shadow-xl z-50 p-1 min-w-[100px]">
+            <ListBox>
+              {monthOptions.map((m) => (
+                <ListBox.Item
+                  key={m}
+                  id={m}
+                  textValue={m}
+                  className="text-[10px] font-mono px-2.5 py-1 rounded-lg hover:bg-emerald-50 dark:hover:bg-emerald-950/40 hover:text-emerald-600 dark:hover:text-emerald-400 cursor-pointer transition-colors"
+                >
+                  {m}
+                </ListBox.Item>
+              ))}
+            </ListBox>
+          </Select.Popover>
+        </Select>
+
+        {/* 右侧：热力关照图例 */}
         <div className="flex items-center gap-1">
           <span>Less</span>
           <span className="w-2.5 h-2.5 rounded-xs bg-zinc-100 dark:bg-zinc-850 border border-zinc-200/10" />
