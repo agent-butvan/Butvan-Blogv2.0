@@ -208,7 +208,6 @@ export default function LoginModal({ isOpen, onClose }: LoginModalProps) {
   /** 监听 WebSocket 推送消息（扫码、登录成功、注册成功、异常等事件） */
   useEffect(() => {
     if (!lastMessage) return
-    console.log('[微信WS] 收到消息:', lastMessage)
 
     // 异常事件（邮箱信息异常等）
     if (lastMessage.code === 500) {

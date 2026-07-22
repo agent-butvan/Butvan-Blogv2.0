@@ -18,10 +18,7 @@ export default function BackgroundWrapper({ children }: { children: React.ReactN
     fetchSiteConfig('background_image_url')
       .then((url) => {
         if (url) {
-          console.log('[背景图] 已获取配置 →', url)
           setBgUrl(url)
-        } else {
-          console.log('[背景图] 配置为空，不渲染背景')
         }
       })
       .catch((err) => {
