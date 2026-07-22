@@ -279,17 +279,17 @@ export default function NotesFragmentsPage() {
           <div className="w-1 h-1 rounded-full bg-[#727BBA]/30" />
         </div>
 
-        {/* 心境筛选器 */}
-        <div className="animate-header-item opacity-0 mt-8 flex flex-wrap items-center justify-center gap-2 md:gap-3 text-xs select-none">
-          <span className="text-[11px] font-heading font-medium text-zinc-600 dark:text-zinc-300 mr-1">
+        {/* 心境筛选器 —— 纯文字极简高亮风格 */}
+        <div className="animate-header-item opacity-0 mt-8 flex flex-wrap items-center justify-center gap-x-5 gap-y-2 text-xs select-none">
+          <span className="text-[11px] font-heading font-medium text-zinc-400 dark:text-zinc-500 mr-2">
             心境
           </span>
           <button
             onClick={() => { setMoodFilter(''); setPage(1) }}
-            className={`px-3 py-1 rounded-full font-heading text-[11px] transition-all cursor-pointer ${
+            className={`transition-colors duration-200 cursor-pointer text-xs ${
               moodFilter === ''
-                ? 'bg-[#727BBA] text-white font-bold shadow-md shadow-[#727BBA]/20'
-                : 'bg-zinc-100/80 dark:bg-zinc-900/60 text-zinc-700 dark:text-zinc-200 hover:bg-zinc-200 dark:hover:bg-zinc-800'
+                ? 'text-[#727BBA] dark:text-[#8E97D5] font-bold underline underline-offset-4'
+                : 'text-zinc-500 hover:text-zinc-800 dark:text-zinc-400 dark:hover:text-zinc-100 font-medium'
             }`}
           >
             全部
@@ -301,13 +301,13 @@ export default function NotesFragmentsPage() {
               <button
                 key={key}
                 onClick={() => { setMoodFilter(isSelected ? '' : key); setPage(1) }}
-                className={`flex items-center gap-1.5 px-3 py-1 rounded-full font-heading text-[11px] transition-all cursor-pointer ${
+                className={`flex items-center gap-1.5 transition-colors duration-200 cursor-pointer text-xs ${
                   isSelected
-                    ? 'bg-[#727BBA] text-white font-bold shadow-md shadow-[#727BBA]/20'
-                    : 'bg-zinc-100/80 dark:bg-zinc-900/60 text-zinc-700 dark:text-zinc-200 hover:bg-zinc-200 dark:hover:bg-zinc-800'
+                    ? 'text-[#727BBA] dark:text-[#8E97D5] font-bold underline underline-offset-4'
+                    : 'text-zinc-500 hover:text-zinc-800 dark:text-zinc-400 dark:hover:text-zinc-100 font-medium'
                 }`}
               >
-                <IconComp size={12} className={isSelected ? 'text-white' : cfg.color} />
+                <IconComp size={12} className={isSelected ? 'text-[#727BBA] dark:text-[#8E97D5]' : cfg.color} />
                 <span>{cfg.label}</span>
               </button>
             )
@@ -315,8 +315,8 @@ export default function NotesFragmentsPage() {
         </div>
       </header>
 
-      {/* ========== 主体：错位栅格卡片区 ========== */}
-      <section className="w-full max-w-[1300px] px-4 md:px-8 pb-24">
+      {/* ========== 主体：错位栅格卡片区 (底部留足 pb-40 空间，确保 Footer 绝不在首屏露出) ========== */}
+      <section className="w-full max-w-[1300px] px-4 md:px-8 pt-4 pb-40 flex-1 flex flex-col justify-between">
 
         {/* 加载状态 */}
         {loading && notes.length === 0 && (
