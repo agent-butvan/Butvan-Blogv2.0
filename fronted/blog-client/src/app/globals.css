@@ -18,13 +18,17 @@
 :root {
   --background: #FAFAFA;
   --foreground: #09090B;
+  color-scheme: light !important;
 }
 
-@media (prefers-color-scheme: dark) {
-  :root {
-    --background: #09090B;
-    --foreground: #FAFAFA;
-  }
+/* 强制全天候 Light Mode：防止系统开启暗色模式时将 --background 改为黑色 #09090B */
+:root.dark,
+.dark,
+html,
+body {
+  --background: #FAFAFA !important;
+  --foreground: #09090B !important;
+  color-scheme: light !important;
 }
 
 /* ==========================================================================
@@ -550,6 +554,29 @@ h1, h2, h3, h4, h5, h6 {
 html,
 body {
   color-scheme: light !important;
+  --background: #FAFAFA !important;
+  --foreground: #09090B !important;
+  background-color: #FAFAFA !important;
+  color: #09090B !important;
+}
+
+/* 强行平抑所有组件中 dark:bg-zinc-* 的硬黑卡片底色与白字，统一为明亮卡片风格 */
+.dark [class*="dark:bg-zinc-950"],
+.dark [class*="dark:bg-zinc-900"],
+.dark [class*="dark:bg-zinc-850"] {
+  background-color: rgba(255, 255, 255, 0.8) !important;
+}
+
+.dark [class*="dark:text-zinc-50"],
+.dark [class*="dark:text-zinc-100"],
+.dark [class*="dark:text-white"] {
+  color: #09090b !important;
+}
+
+.dark [class*="dark:text-zinc-200"],
+.dark [class*="dark:text-zinc-300"],
+.dark [class*="dark:text-zinc-400"] {
+  color: #52525b !important;
 }
 
 
