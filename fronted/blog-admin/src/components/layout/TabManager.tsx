@@ -208,7 +208,7 @@ export default function TabManager() {
         </button>
 
         {menuOpen && (
-            <div className="absolute right-0 top-full mt-1.5 w-36 rounded-lg glass-panel py-1 z-50 animate-[fadeIn_0.12s_ease-out] text-left">
+          <div className="absolute right-0 top-full mt-1.5 w-36 rounded-xl bg-white dark:bg-zinc-900 border border-zinc-200/80 dark:border-zinc-800 shadow-xl py-1.5 z-50 animate-[fadeIn_0.12s_ease-out] text-left overflow-hidden">
             <button
               onClick={handleCloseOthers}
               className="flex w-full items-center gap-2 px-3 py-1.5 text-left text-[11px] font-medium text-zinc-600 dark:text-zinc-400 hover:bg-zinc-50 dark:hover:bg-zinc-800 transition-colors"
