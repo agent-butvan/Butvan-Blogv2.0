@@ -249,12 +249,14 @@ export default function NotesFragmentsPage() {
   // ==================== 渲染 ====================
 
   return (
-    <main className="relative min-h-screen w-full bg-transparent text-zinc-900 dark:text-zinc-50 font-body selection:bg-[#727BBA]/20 transition-colors duration-200 flex flex-col items-center">
-      <Navbar profile={profile} />
-      <SidebarWidget />
+    <main className="relative min-h-screen w-full bg-transparent text-zinc-900 dark:text-zinc-50 font-body selection:bg-[#727BBA]/20 transition-colors duration-200 flex flex-col justify-between items-center">
+      {/* 100vh 独立正文视口隔离层（确保首屏纯净绝无 Footer 露出） */}
+      <div className="w-full flex-1 flex flex-col items-center min-h-screen pb-16">
+        <Navbar profile={profile} />
+        <SidebarWidget />
 
-      {/* ========== 页头：错位叙事标题区 ========== */}
-      <header className="relative w-full max-w-5xl px-4 pt-24 pb-14 text-center flex flex-col items-center select-none">
+        {/* ========== 页头：错位叙事标题区 ========== */}
+        <header className="relative w-full max-w-5xl px-4 pt-24 pb-14 text-center flex flex-col items-center select-none">
         <div className="relative inline-block">
           {/* 标题主体 */}
           <h1 className="animate-header-item opacity-0 text-2xl md:text-3xl font-serif font-semibold text-zinc-900 dark:text-zinc-50 tracking-[0.25em] indent-[0.25em]">
@@ -268,7 +270,7 @@ export default function NotesFragmentsPage() {
         </div>
 
         {/* 副标题 */}
-        <p className="animate-header-item opacity-0 mt-5 font-serif text-xs md:text-sm text-zinc-600 dark:text-zinc-200 font-medium tracking-[0.2em]">
+        <p className="animate-header-item opacity-0 mt-5 font-serif text-xs md:text-sm text-zinc-400 dark:text-zinc-500 tracking-[0.2em]">
           每一行代码，都是一次对时间的装帧
         </p>
 
@@ -278,45 +280,36 @@ export default function NotesFragmentsPage() {
           <div className="w-10 h-px bg-[#727BBA]/15" />
           <div className="w-1 h-1 rounded-full bg-[#727BBA]/30" />
         </div>
+      </header>
 
-        {/* 心境筛选器 —— 纯文字极简高亮风格 */}
-        <div className="animate-header-item opacity-0 mt-8 flex flex-wrap items-center justify-center gap-x-5 gap-y-2 text-xs select-none">
-          <span className="text-[11px] font-heading font-medium text-zinc-400 dark:text-zinc-500 mr-2">
+      {/* ========== 心情筛选器 ========== */}
+      <section className="w-full max-w-5xl px-6 pb-8">
+        <div className="animate-header-item opacity-0 flex flex-wrap items-center justify-center gap-x-4 gap-y-2 select-none pb-6 border-b border-zinc-200/30 dark:border-zinc-800/30">
+          <span className="text-[10px] font-heading font-bold tracking-wider text-zinc-400 dark:text-zinc-500 uppercase mr-2">
             心境
           </span>
-          <button
-            onClick={() => { setMoodFilter(''); setPage(1) }}
-            className={`transition-colors duration-200 cursor-pointer text-xs ${
-              moodFilter === ''
-                ? 'text-[#727BBA] dark:text-[#8E97D5] font-bold underline underline-offset-4'
-                : 'text-zinc-500 hover:text-zinc-800 dark:text-zinc-400 dark:hover:text-zinc-100 font-medium'
-            }`}
-          >
-            全部
-          </button>
-          {Object.entries(MOOD_ICONS).map(([key, cfg]) => {
-            const IconComp = cfg.icon
-            const isSelected = moodFilter === key
+          {MOOD_FILTER_OPTIONS.map((opt) => {
+            const Icon = opt.icon
             return (
               <button
-                key={key}
-                onClick={() => { setMoodFilter(isSelected ? '' : key); setPage(1) }}
-                className={`flex items-center gap-1.5 transition-colors duration-200 cursor-pointer text-xs ${
-                  isSelected
-                    ? 'text-[#727BBA] dark:text-[#8E97D5] font-bold underline underline-offset-4'
-                    : 'text-zinc-500 hover:text-zinc-800 dark:text-zinc-400 dark:hover:text-zinc-100 font-medium'
+                key={opt.value || 'all'}
+                onClick={() => { setMoodFilter(opt.value); setPage(1) }}
+                className={`inline-flex items-center gap-1.5 px-3 py-2 rounded-full text-xs font-medium transition-colors duration-150 cursor-pointer min-h-[44px] ${
+                  moodFilter === opt.value
+                    ? 'text-[#727BBA] font-bold'
+                    : 'text-zinc-500 hover:text-zinc-800 dark:text-zinc-400 dark:hover:text-zinc-100'
                 }`}
               >
-                <IconComp size={12} className={isSelected ? 'text-[#727BBA] dark:text-[#8E97D5]' : cfg.color} />
-                <span>{cfg.label}</span>
+                {Icon && <Icon size={13} />}
+                {opt.label}
               </button>
             )
           })}
         </div>
-      </header>
+      </section>
 
-      {/* ========== 主体：错位栅格卡片区 (底部留足 pb-40 空间，确保 Footer 绝不在首屏露出) ========== */}
-      <section className="w-full max-w-[1300px] px-4 md:px-8 pt-4 pb-40 flex-1 flex flex-col justify-between">
+      {/* ========== 主体：错位栅格卡片区 ========== */}
+      <section className="w-full max-w-[1300px] px-4 md:px-8 pb-24">
 
         {/* 加载状态 */}
         {loading && notes.length === 0 && (
@@ -595,8 +588,9 @@ export default function NotesFragmentsPage() {
           </>
         )}
       </section>
-      
-      {/* 全站统一页脚 */}
+      </div>
+
+      {/* 放置于 100vh 正文视口之外的底部统一页脚 */}
       <Footer />
     </main>
   )
