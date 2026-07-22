@@ -299,18 +299,21 @@ export default function NotesFragmentsPage() {
             const isSelected = moodFilter === key
             return (
               <button
-                  moodFilter === opt.value
-                    ? 'text-[#727BBA] font-bold'
-                    : 'text-zinc-500 hover:text-zinc-800 dark:text-zinc-400 dark:hover:text-zinc-100'
+                key={key}
+                onClick={() => { setMoodFilter(isSelected ? '' : key); setPage(1) }}
+                className={`flex items-center gap-1.5 px-3 py-1 rounded-full font-heading text-[11px] transition-all cursor-pointer ${
+                  isSelected
+                    ? 'bg-[#727BBA] text-white font-bold shadow-md shadow-[#727BBA]/20'
+                    : 'bg-zinc-100/80 dark:bg-zinc-900/60 text-zinc-700 dark:text-zinc-200 hover:bg-zinc-200 dark:hover:bg-zinc-800'
                 }`}
               >
-                {Icon && <Icon size={13} />}
-                {opt.label}
+                <IconComp size={12} className={isSelected ? 'text-white' : cfg.color} />
+                <span>{cfg.label}</span>
               </button>
             )
           })}
         </div>
-      </section>
+      </header>
 
       {/* ========== 主体：错位栅格卡片区 ========== */}
       <section className="w-full max-w-[1300px] px-4 md:px-8 pb-24">
