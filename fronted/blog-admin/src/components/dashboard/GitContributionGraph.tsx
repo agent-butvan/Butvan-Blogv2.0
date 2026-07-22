@@ -4,7 +4,7 @@ import { useState, useEffect } from "react";
 import { Loader2, GitPullRequest, HelpCircle } from "lucide-react";
 import apiClient from "@/lib/api";
 import type { ApiResponse } from "@/types/common";
-import { cn, Tooltip } from "@heroui/react";
+import { cn, Tooltip, Select, ListBox } from "@heroui/react";
 
 interface GitActivity {
   date: string;
@@ -119,19 +119,35 @@ export default function GitContributionGraph() {
           <p className="text-[10px] text-zinc-400 font-mono truncate">{selectedMonth} 热力分布</p>
         </div>
         
-        {/* 右侧：月份选择下拉框 + 提交计数标牌 */}
+        {/* 右侧：HeroUI 月份选择下拉框 + 提交计数标牌 */}
         <div className="flex items-center gap-2 shrink-0">
-          <select
-            value={selectedMonth}
-            onChange={(e) => setSelectedMonth(e.target.value)}
-            className="bg-zinc-50 dark:bg-zinc-800/80 border border-zinc-200/60 dark:border-zinc-700/60 text-zinc-700 dark:text-zinc-200 text-[11px] font-mono rounded-lg px-2 h-7 outline-none transition-colors cursor-pointer"
+          <Select
+            selectedKey={selectedMonth}
+            onSelectionChange={(key) => {
+              if (key) setSelectedMonth(key as string);
+            }}
+            aria-label="选择月份"
+            className="w-28"
           >
-            {monthOptions.map((m) => (
-              <option key={m} value={m}>
-                {m}
-              </option>
-            ))}
-          </select>
+            <Select.Trigger className="h-7 px-2.5 rounded-lg border border-zinc-200/60 dark:border-zinc-700/60 bg-zinc-50 dark:bg-zinc-800/80 text-zinc-700 dark:text-zinc-200 text-[11px] font-mono shadow-none flex items-center justify-between cursor-pointer">
+              <Select.Value />
+              <Select.Indicator />
+            </Select.Trigger>
+            <Select.Popover className="bg-white dark:bg-zinc-900 border border-zinc-200/80 dark:border-zinc-800 rounded-xl shadow-xl z-50 p-1 min-w-[110px]">
+              <ListBox>
+                {monthOptions.map((m) => (
+                  <ListBox.Item
+                    key={m}
+                    id={m}
+                    textValue={m}
+                    className="text-[11px] font-mono px-2.5 py-1 rounded-lg hover:bg-emerald-50 dark:hover:bg-emerald-950/40 hover:text-emerald-600 dark:hover:text-emerald-400 cursor-pointer transition-colors"
+                  >
+                    {m}
+                  </ListBox.Item>
+                ))}
+              </ListBox>
+            </Select.Popover>
+          </Select>
 
           <div className="flex items-center gap-1 bg-emerald-500/10 text-emerald-600 dark:text-emerald-400 font-extrabold px-2.5 h-7 rounded-lg text-[10.5px] font-mono shadow-3xs shrink-0">
             <GitPullRequest size={11} />
