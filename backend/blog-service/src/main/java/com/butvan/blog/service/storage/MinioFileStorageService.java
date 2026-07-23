@@ -29,11 +29,16 @@ public class MinioFileStorageService implements FileStorageService {
         this.storageProperties = storageProperties;
         StorageProperties.Minio cfg = storageProperties.getMinio();
         this.minioUtils = new MinioUtils(cfg.getEndpoint(), cfg.getAccessKey(), cfg.getSecretKey());
-        this.minioUtils.ensureBucket(cfg.getBucket());
-        if (Boolean.TRUE.equals(cfg.getPublicRead())) {
-            this.minioUtils.setBucketPublicReadOnly(cfg.getBucket());
+        try {
+            this.minioUtils.ensureBucket(cfg.getBucket());
+            if (Boolean.TRUE.equals(cfg.getPublicRead())) {
+                this.minioUtils.setBucketPublicReadOnly(cfg.getBucket());
+            }
+            log.info("MinIO 文件存储已就绪，Bucket: {}", cfg.getBucket());
+        } catch (Exception e) {
+            log.warn("MinIO 初始化连通校验异常 (Endpoint: {})", cfg.getEndpoint());
+            throw new RuntimeException("MinIO 服务连接不可达: " + e.getMessage(), e);
         }
-        log.info("MinIO 文件存储已就绪，Bucket: {}", cfg.getBucket());
     }
 
     @Override

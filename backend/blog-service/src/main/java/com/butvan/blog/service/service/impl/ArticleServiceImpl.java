@@ -125,8 +125,8 @@ public class ArticleServiceImpl implements ArticleService {
 
     @Override
     @Transactional
-    public ArticleDetailVO getArticleDetail(String idOrSlug) {
-        log.info("获取文章详情并增加浏览量，标识: {}", idOrSlug);
+    public ArticleDetailVO getArticleDetail(String idOrSlug, boolean incrementView) {
+        log.info("获取文章详情 API，标识: {}, 是否增加浏览量: {}", idOrSlug, incrementView);
         Article article = null;
         try {
             Long id = Long.parseLong(idOrSlug);
@@ -149,10 +149,12 @@ public class ArticleServiceImpl implements ArticleService {
             throw new BusinessException("文章不存在或已被删除");
         }
 
-        // 增加阅读/浏览次数并持久化
-        long currentViews = article.getViewCount() == null ? 0L : article.getViewCount();
-        article.setViewCount(currentViews + 1);
-        articleRepository.save(article);
+        // 当且仅当公开端访问（incrementView为true）时，才递增阅读/浏览次数并持久化
+        if (incrementView) {
+            long currentViews = article.getViewCount() == null ? 0L : article.getViewCount();
+            article.setViewCount(currentViews + 1);
+            articleRepository.save(article);
+        }
 
         return toDetailVO(article);
     }

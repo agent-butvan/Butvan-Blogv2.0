@@ -104,8 +104,8 @@ public class NoteServiceImpl implements NoteService {
 
     @Override
     @Transactional
-    public NoteDetailVO getNoteDetail(String idOrSlug) {
-        log.info("获取手记详情并增加浏览量，标识: {}", idOrSlug);
+    public NoteDetailVO getNoteDetail(String idOrSlug, boolean incrementView) {
+        log.info("获取手记详情 API，标识: {}, 是否增加浏览量: {}", idOrSlug, incrementView);
         Note note = null;
         try {
             Long id = Long.parseLong(idOrSlug);
@@ -128,10 +128,12 @@ public class NoteServiceImpl implements NoteService {
             throw new BusinessException("手记不存在或已被删除");
         }
 
-        // 增加阅读/浏览次数并持久化
-        long currentViews = note.getViewCount() == null ? 0L : note.getViewCount();
-        note.setViewCount(currentViews + 1);
-        noteRepository.save(note);
+        // 当且仅当公开端访问（incrementView为true）时，才递增阅读/浏览次数并持久化
+        if (incrementView) {
+            long currentViews = note.getViewCount() == null ? 0L : note.getViewCount();
+            note.setViewCount(currentViews + 1);
+            noteRepository.save(note);
+        }
 
         return toDetailVO(note);
     }

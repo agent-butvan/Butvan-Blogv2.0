@@ -50,11 +50,19 @@ public class MinioUtils {
      * @param secretKey 秘密密钥
      */
     public MinioUtils(String endpoint, String accessKey, String secretKey) {
+        okhttp3.OkHttpClient httpClient = new okhttp3.OkHttpClient.Builder()
+                .connectTimeout(3, TimeUnit.SECONDS)
+                .readTimeout(5, TimeUnit.SECONDS)
+                .writeTimeout(5, TimeUnit.SECONDS)
+                .build();
+
         this.client = MinioClient.builder()
                 .endpoint(endpoint)
                 .credentials(accessKey, secretKey)
+                .httpClient(httpClient)
                 .build();
     }
+
 
     /**
      * 获取底层 MinioClient 实例（用于高级操作）
