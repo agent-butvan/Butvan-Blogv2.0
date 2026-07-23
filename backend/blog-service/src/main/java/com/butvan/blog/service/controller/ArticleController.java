@@ -61,14 +61,32 @@ public class ArticleController {
     /**
      * 【公开/管理端】获取文章完整详情信息
      *
-     * @param idOrSlug 文章唯一主键 ID 或短链接 slug
+     * @param idOrSlug      文章唯一主键 ID 或短链接 slug
+     * @param incrementView 是否增加浏览量计数（可选，默认 true；管理端编辑传 false）
      * @return 统一格式 Result 包装的文章详情 VO
      */
     @TrackApi("【公开/管理端】获取文章完整详情信息")
     @GetMapping("/articles/{idOrSlug}")
-    public Result<ArticleDetailVO> getArticleDetail(@PathVariable String idOrSlug) {
-        log.info("获取文章详情 API 请求，idOrSlug: {}", idOrSlug);
-        ArticleDetailVO detail = articleService.getArticleDetail(idOrSlug);
+    public Result<ArticleDetailVO> getArticleDetail(
+            @PathVariable String idOrSlug,
+            @RequestParam(required = false, defaultValue = "true") Boolean incrementView
+    ) {
+        log.info("获取文章详情 API 请求，idOrSlug: {}, incrementView: {}", idOrSlug, incrementView);
+        ArticleDetailVO detail = articleService.getArticleDetail(idOrSlug, Boolean.TRUE.equals(incrementView));
+        return Result.success(detail);
+    }
+
+    /**
+     * 【管理端】获取文章详情用于编辑（不增加浏览量）
+     *
+     * @param id 文章唯一主键 ID
+     * @return 统一格式 Result 包装的文章详情 VO
+     */
+    @TrackApi("【管理端】获取文章详情用于编辑（不增加浏览量）")
+    @GetMapping("/admin/articles/{id}")
+    public Result<ArticleDetailVO> getAdminArticleDetail(@PathVariable Long id) {
+        log.info("管理端获取文章编辑详情 API 请求，ID: {}", id);
+        ArticleDetailVO detail = articleService.getArticleDetail(String.valueOf(id), false);
         return Result.success(detail);
     }
 

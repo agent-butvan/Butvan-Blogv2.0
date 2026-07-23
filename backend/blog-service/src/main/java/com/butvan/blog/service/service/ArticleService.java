@@ -23,10 +23,21 @@ public interface ArticleService {
     /**
      * 根据主键 ID 或 友好 URL slug 查找文章详细信息
      *
+     * @param idOrSlug      文章唯一主键 ID 或短标识 slug
+     * @param incrementView 是否递增浏览量计数（公开端浏览传 true，管理端编辑传 false）
+     * @return 文章完整详情 VO
+     */
+    ArticleDetailVO getArticleDetail(String idOrSlug, boolean incrementView);
+
+    /**
+     * 根据主键 ID 或 友好 URL slug 查找文章详细信息（默认递增浏览量）
+     *
      * @param idOrSlug 文章唯一主键 ID 或短标识 slug
      * @return 文章完整详情 VO
      */
-    ArticleDetailVO getArticleDetail(String idOrSlug);
+    default ArticleDetailVO getArticleDetail(String idOrSlug) {
+        return getArticleDetail(idOrSlug, true);
+    }
 
     /**
      * 保存创建新文章

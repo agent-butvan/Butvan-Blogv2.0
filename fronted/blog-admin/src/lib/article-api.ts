@@ -18,13 +18,13 @@ export async function fetchArticles(
 }
 
 /**
- * 根据文章 ID 获取文章详情 (GET /articles/{id})
+ * 根据文章 ID 获取文章详情 (GET /articles/{id}?incrementView=false)
  *
  * @param id 文章唯一主键 ID
  * @returns 文章完整详情数据
  */
 export async function fetchArticleDetail(id: number | string): Promise<ArticleDetail> {
-  const res = await apiClient.get<ApiResponse<ArticleDetail>>(`/articles/${id}`);
+  const res = await apiClient.get<ApiResponse<ArticleDetail>>(`/articles/${id}?incrementView=false`);
   if (!res.data?.data) {
     throw new Error(res.data?.msg || "获取文章详情失败");
   }
