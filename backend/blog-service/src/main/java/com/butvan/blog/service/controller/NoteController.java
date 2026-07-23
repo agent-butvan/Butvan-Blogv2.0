@@ -46,16 +46,16 @@ public class NoteController {
     }
 
     /**
-     * 【管理端】获取手记完整详情信息
+     * 【管理端】获取手记完整详情信息（不增加浏览量）
      *
      * @param idOrSlug 手记唯一主键 ID 或短链接 slug
      * @return 统一格式 Result 包装的手记详情 VO
      */
-    @TrackApi("【管理端】获取手记完整详情信息")
+    @TrackApi("【管理端】获取手记完整详情信息（不增加浏览量）")
     @GetMapping("/admin/notes/{idOrSlug}")
     public Result<NoteDetailVO> getAdminNoteDetail(@PathVariable String idOrSlug) {
-        log.info("管理端获取手记详情 API 请求，idOrSlug: {}", idOrSlug);
-        NoteDetailVO detail = noteService.getNoteDetail(idOrSlug);
+        log.info("管理端获取手记详情 API 请求（不增加浏览量），idOrSlug: {}", idOrSlug);
+        NoteDetailVO detail = noteService.getNoteDetail(idOrSlug, false);
         return Result.success(detail);
     }
 
@@ -132,14 +132,18 @@ public class NoteController {
     /**
      * 【公开端】根据 slug 获取手记详情
      *
-     * @param slug 手记 URL 友好标识
+     * @param slug          手记 URL 友好标识
+     * @param incrementView 是否增加浏览量计数（可选，默认 true）
      * @return 统一格式 Result 包装的手记详情 VO
      */
     @TrackApi("【公开端】根据 slug 获取手记详情")
     @GetMapping("/notes/{slug}")
-    public Result<NoteDetailVO> getPublicNoteDetail(@PathVariable String slug) {
-        log.info("公开端获取手记详情 API 请求，slug: {}", slug);
-        NoteDetailVO detail = noteService.getNoteDetail(slug);
+    public Result<NoteDetailVO> getPublicNoteDetail(
+            @PathVariable String slug,
+            @RequestParam(required = false, defaultValue = "true") Boolean incrementView
+    ) {
+        log.info("公开端获取手记详情 API 请求，slug: {}, incrementView: {}", slug, incrementView);
+        NoteDetailVO detail = noteService.getNoteDetail(slug, Boolean.TRUE.equals(incrementView));
         return Result.success(detail);
     }
 
