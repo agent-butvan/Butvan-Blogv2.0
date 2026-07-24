@@ -167,7 +167,7 @@ h1, h2, h3, h4, h5, h6 {
 .article-content-prose {
   font-family: var(--font-serif), Georgia, serif;
   font-size: 16px;
-  line-height: 1.95;
+  line-height: 1.72;
   color: #27272a; /* zinc-800 */
 }
 
@@ -175,23 +175,23 @@ h1, h2, h3, h4, h5, h6 {
   color: #e4e4e7; /* zinc-200 */
 }
 
-/* 段落间距 */
+/* 段落间距：紧凑与舒适兼顾 */
 .article-content-prose p {
   margin-top: 0;
-  margin-bottom: 2.2rem;
-  letter-spacing: 0.015em;
+  margin-bottom: 1.25rem;
+  letter-spacing: 0.012em;
   text-align: justify;
 }
 
 /* 标题间距与样式 */
 .article-content-prose h2 {
   font-family: var(--font-serif), Georgia, serif;
-  font-size: 1.45rem;
+  font-size: 1.4rem;
   font-weight: 700;
-  margin-top: 3.6rem;
-  margin-bottom: 1.4rem;
-  padding-bottom: 0.5rem;
-  border-b: 1px solid rgba(228, 228, 231, 0.6);
+  margin-top: 2.2rem;
+  margin-bottom: 0.85rem;
+  padding-bottom: 0.4rem;
+  border-bottom: 1px solid rgba(228, 228, 231, 0.6);
   color: #09090b;
 }
 .dark .article-content-prose h2 {
@@ -201,10 +201,10 @@ h1, h2, h3, h4, h5, h6 {
 
 .article-content-prose h3 {
   font-family: var(--font-serif), Georgia, serif;
-  font-size: 1.2rem;
+  font-size: 1.18rem;
   font-weight: 700;
-  margin-top: 2.8rem;
-  margin-bottom: 1.1rem;
+  margin-top: 1.6rem;
+  margin-bottom: 0.65rem;
   color: #09090b;
 }
 .dark .article-content-prose h3 {
@@ -241,10 +241,10 @@ h1, h2, h3, h4, h5, h6 {
   margin-bottom: 0.5rem !important;
 }
 
-/* 列表样式 */
+/* 列表样式紧凑化 */
 .article-content-prose ul, .article-content-prose ol {
-  padding-left: 1.8rem;
-  margin-bottom: 1.8rem;
+  padding-left: 1.5rem;
+  margin-bottom: 1.25rem;
 }
 .article-content-prose ul {
   list-style-type: disc;
@@ -253,8 +253,8 @@ h1, h2, h3, h4, h5, h6 {
   list-style-type: decimal;
 }
 .article-content-prose li {
-  margin-bottom: 0.8rem;
-  line-height: 1.85;
+  margin-bottom: 0.4rem;
+  line-height: 1.7;
 }
 
 /* 链接样式 */
