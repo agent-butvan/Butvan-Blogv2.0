@@ -34,5 +34,6 @@ COPY --from=builder /app/blog-service/target/blog-service-*.jar app.jar
 ENV PORT=8080
 EXPOSE 8080
 
-# 生产环境运行
-ENTRYPOINT ["java", "-jar", "app.jar", "--spring.profiles.active=prod"]
+# 生产环境运行（限制最大堆内存 384M，初始堆内存 256M，防止 2C2G 服务器 OOM 假死）
+ENTRYPOINT ["java", "-Xms256m", "-Xmx384m", "-jar", "app.jar", "--spring.profiles.active=prod"]
+

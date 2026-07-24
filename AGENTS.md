@@ -38,6 +38,16 @@ Butvan Blog2.0
 - 任何需要推送到远程（`push`）、跨分支合并（`merge`）、或触发 CI/CD 流水线的操作，必须先向用户说明操作内容和目标分支，获得明确确认后方可执行。
 - 违反此规则视为严重越权操作。
 
+## 全项目语义化版本控制与发版规范
+- **AI 必须严格遵守并主动协助用户完成全项目的语义化版本管理（SemVer）与 CHANGELOG 维护。**
+- 每次完成一个阶段性功能模块、修复单元或需求迭代后，AI 必须：
+  1. **规范化确定版本号**：基于 SemVer 规则（`vMAJOR.MINOR.PATCH`）精确计算下一个版本号。
+     - 包含新功能模块 / 显著功能优化：更新 MINOR 位（如 `v2.1.0` → `v2.2.0`）。
+     - 仅包含缺陷修复 / 细节小微微调：更新 PATCH 位（如 `v2.1.0` → `v2.1.1`）。
+  2. **同步全站版本号**：同步更新 `version.json` 以及前台 `blog-client/src/config/version.ts` 与后台 `blog-admin/src/config/version.ts` 中的版本号声明。
+  3. **规范化生成 `CHANGELOG.md`**：在 `CHANGELOG.md` 顶部撰写标准的 Markdown 发版日志（包含发布日期、对比基线、通道、总结、分类变动列表、升级说明及 Commit 列表）。
+  4. **引导 GitHub Tag 发布**：提示用户通过推送 `vX.Y.Z` 标签触发 GitHub Actions 自动发布美观的 GitHub Release。
+
 ## 工作流程
 每次执行编码任务时：
 

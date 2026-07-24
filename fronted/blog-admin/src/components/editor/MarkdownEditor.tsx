@@ -12,6 +12,9 @@ import Placeholder from "@tiptap/extension-placeholder";
 import TaskList from "@tiptap/extension-task-list";
 import TaskItem from "@tiptap/extension-task-item";
 import Underline from "@tiptap/extension-underline";
+import { TextStyle } from "@tiptap/extension-text-style";
+import { Color } from "@tiptap/extension-color";
+import { Highlight } from "@tiptap/extension-highlight";
 import CodeBlockLowlight from "@tiptap/extension-code-block-lowlight";
 import { all, createLowlight } from "lowlight";
 import { cn } from "@heroui/react";
@@ -21,6 +24,7 @@ import {
   Bold,
   Italic,
   Underline as UnderlineIcon,
+  Palette,
   Heading1,
   Heading2,
   Heading3,
@@ -34,11 +38,22 @@ import {
   Image as ImageIcon,
 } from "lucide-react";
 
+import ImageNodeViewComponent from "./ImageNodeViewComponent";
 import SlashMenu, { SLASH_COMMANDS, type SlashCommand } from "./SlashMenu";
 import apiClient from "@/lib/api";
 import { resolveAssetUrl } from "@/lib/image-url";
 
 const lowlight = createLowlight(all);
+
+// 富文本/代码颜色高亮预设
+const COLOR_PRESETS = [
+  { name: "玫瑰红", color: "#e11d48", bg: "rgba(225, 29, 72, 0.12)" },
+  { name: "翡翠绿", color: "#059669", bg: "rgba(5, 150, 105, 0.12)" },
+  { name: "宝石蓝", color: "#2563eb", bg: "rgba(37, 99, 235, 0.12)" },
+  { name: "雅致紫", color: "#7c3aed", bg: "rgba(124, 58, 237, 0.12)" },
+  { name: "琥珀黄", color: "#d97706", bg: "rgba(217, 119, 6, 0.12)" },
+  { name: "石墨灰", color: "#3f3f46", bg: "rgba(63, 63, 70, 0.12)" },
+];
 
 export interface MarkdownEditorProps {
   value: string;
@@ -98,6 +113,11 @@ export default function MarkdownEditor({
   const [selectedIndex, setSelectedIndex] = useState(0);
   const [menuPosition, setMenuPosition] = useState({ top: 0, left: 0 });
   const [filteredCount, setFilteredCount] = useState(0);
+
+  // 文本与代码调色盘状态
+  const [showColorPicker, setShowColorPicker] = useState(false);
+  const [customColor, setCustomColor] = useState("#e11d48");
+  const [customBg, setCustomBg] = useState("rgba(225, 29, 72, 0.12)");
 
   const containerRef = useRef<HTMLDivElement | null>(null);
 
@@ -331,9 +351,13 @@ export default function MarkdownEditor({
           class: "text-primary hover:underline cursor-pointer",
         },
       }),
-      Image.configure({
+      Image.extend({
+        addNodeView() {
+          return ReactNodeViewRenderer(ImageNodeViewComponent);
+        },
+      }).configure({
         HTMLAttributes: {
-          class: "max-w-[280px] h-auto rounded-lg border border-zinc-200 dark:border-zinc-800 my-2 inline-block shadow-sm",
+          class: "max-w-full h-auto rounded-lg border border-zinc-200 dark:border-zinc-800 my-2 inline-block shadow-sm",
         },
       }),
       Placeholder.configure({
@@ -351,6 +375,11 @@ export default function MarkdownEditor({
         },
       }),
       Underline,
+      TextStyle,
+      Color,
+      Highlight.configure({
+        multicolor: true,
+      }),
     ],
     content: value || "",
     contentType: "markdown",
@@ -489,19 +518,42 @@ export default function MarkdownEditor({
           }
           return false;
         },
-        // 粘贴文件自动上传
+        // 粘贴文件自动上传或粘贴可访问图片 URL 链接自动渲染为图片
         paste: (view, event) => {
-          const files = event.clipboardData?.files;
+          const clipboardData = event.clipboardData;
+          if (!clipboardData) return false;
+
+          // 1. 本地图片文件粘贴
+          const files = clipboardData.files;
           if (files && files.length > 0 && files[0].type.startsWith("image/")) {
             event.preventDefault();
-            handleImageUpload(files[0]).then((url) => {
-              const { schema } = view.state;
-              const node = schema.nodes.image.create({ src: url });
-              const transaction = view.state.tr.replaceSelectionWith(node);
-              view.dispatch(transaction);
-            }).catch((err) => alert(err.message || "粘贴图片上传失败"));
+            handleImageUpload(files[0])
+              .then((url) => {
+                const { schema } = view.state;
+                const node = schema.nodes.image.create({ src: url });
+                const transaction = view.state.tr.replaceSelectionWith(node);
+                view.dispatch(transaction);
+              })
+              .catch((err) => alert(err.message || "粘贴图片上传失败"));
             return true;
           }
+
+          // 2. 粘贴可访问图片 URL 文本链接识别
+          const pastedText = clipboardData.getData("text/plain")?.trim();
+          if (pastedText && /^https?:\/\/[^\s]+$/i.test(pastedText) && !pastedText.includes("\n")) {
+            const isImageExtension = /\.(jpeg|jpg|gif|png|webp|svg|avif|bmp)(\?.*)?$/i.test(pastedText);
+            const isImageKeywords = /(image|img|photo|pic|avatar|media|oss|cos|qncdn)/i.test(pastedText);
+
+            if (isImageExtension || isImageKeywords) {
+              event.preventDefault();
+              const { schema } = view.state;
+              const node = schema.nodes.image.create({ src: pastedText });
+              const transaction = view.state.tr.replaceSelectionWith(node);
+              view.dispatch(transaction);
+              return true;
+            }
+          }
+
           return false;
         },
       },
@@ -605,6 +657,85 @@ export default function MarkdownEditor({
         >
           <UnderlineIcon size={14} />
         </button>
+
+        {/* 文本与行内代码高亮调色盘 */}
+        <div className="relative flex items-center">
+          <button
+            type="button"
+            onClick={() => setShowColorPicker(!showColorPicker)}
+            className={cn(
+              "p-1.5 rounded-lg text-zinc-500 dark:text-zinc-400 hover:bg-zinc-200 dark:hover:bg-zinc-800 transition-all cursor-pointer flex items-center gap-1",
+              (editor.isActive("textStyle") || editor.isActive("highlight") || showColorPicker) && "bg-primary/10 text-primary border-primary/20"
+            )}
+            title="字色与背景高亮调色盘"
+          >
+            <Palette size={14} />
+          </button>
+
+          {showColorPicker && (
+            <div className="absolute top-full left-0 mt-1 z-50 p-3 bg-white dark:bg-zinc-900 rounded-xl shadow-xl border border-zinc-200 dark:border-zinc-800 w-60 animate-fade-in">
+              <div className="text-xs font-semibold text-zinc-600 dark:text-zinc-300 mb-2 flex items-center justify-between">
+                <span>文本与代码着色方案</span>
+                <button
+                  type="button"
+                  onClick={() => {
+                    editor.chain().focus().unsetColor().unsetHighlight().run();
+                    setShowColorPicker(false);
+                  }}
+                  className="text-[10px] text-zinc-400 hover:text-primary underline cursor-pointer"
+                >
+                  重置/清除着色
+                </button>
+              </div>
+
+              <div className="text-[11px] text-zinc-400 mb-1.5">快捷调色组合：</div>
+              <div className="grid grid-cols-2 gap-1.5 mb-3">
+                {COLOR_PRESETS.map((preset) => (
+                  <button
+                    key={preset.name}
+                    type="button"
+                    onClick={() => {
+                      editor.chain().focus().setColor(preset.color).toggleHighlight({ color: preset.bg }).run();
+                      setShowColorPicker(false);
+                    }}
+                    className="flex items-center gap-1.5 p-1.5 rounded-lg border border-zinc-200/80 dark:border-zinc-800 hover:border-primary/50 text-[11px] cursor-pointer transition-all"
+                    style={{ backgroundColor: preset.bg, color: preset.color }}
+                  >
+                    <span className="w-2.5 h-2.5 rounded-full inline-block shrink-0" style={{ backgroundColor: preset.color }} />
+                    <span className="truncate font-mono font-medium">{preset.name}</span>
+                  </button>
+                ))}
+              </div>
+
+              <div className="pt-2 border-t border-zinc-100 dark:border-zinc-800 flex flex-col gap-1.5">
+                <div className="flex items-center justify-between text-[11px]">
+                  <span className="text-zinc-500">仅文字颜色:</span>
+                  <input
+                    type="color"
+                    value={customColor}
+                    onChange={(e) => {
+                      setCustomColor(e.target.value);
+                      editor.chain().focus().setColor(e.target.value).run();
+                    }}
+                    className="w-6 h-6 rounded cursor-pointer border-0 bg-transparent"
+                  />
+                </div>
+                <div className="flex items-center justify-between text-[11px]">
+                  <span className="text-zinc-500">仅背景高亮色:</span>
+                  <input
+                    type="color"
+                    value={customBg}
+                    onChange={(e) => {
+                      setCustomBg(e.target.value);
+                      editor.chain().focus().toggleHighlight({ color: e.target.value }).run();
+                    }}
+                    className="w-6 h-6 rounded cursor-pointer border-0 bg-transparent"
+                  />
+                </div>
+              </div>
+            </div>
+          )}
+        </div>
 
         <div className="h-4 w-px bg-zinc-200 dark:bg-zinc-800 mx-1" />
 
