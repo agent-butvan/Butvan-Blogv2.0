@@ -146,6 +146,8 @@ export function AuthProvider({ children }: { children: ReactNode }) {
       // 网络失败时忽略，仍然清除本地状态
     }
     localStorage.removeItem(USER_INFO_KEY)
+    localStorage.removeItem('client_token')
+    localStorage.removeItem('access_token')
     setUser(null)
     window.dispatchEvent(new Event('auth-change'))
   }, [])

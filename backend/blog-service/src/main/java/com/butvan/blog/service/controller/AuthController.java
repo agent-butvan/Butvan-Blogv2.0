@@ -89,8 +89,9 @@ public class AuthController {
                         loginVO.getUser().getId(),
                         loginVO.getUser().getUsername(),
                         loginVO.getUser().getRole());
-                addCookie(response, "access_token", tokens.accessToken(), 900, "/api");
-                addCookie(response, "refresh_token", tokens.refreshToken(), 604800, "/api/auth");
+                loginVO.setToken(tokens.accessToken());
+                addCookie(response, "access_token", tokens.accessToken(), 900, "/");
+                addCookie(response, "refresh_token", tokens.refreshToken(), 604800, "/");
             }
 
             return Result.success(loginVO);
@@ -119,7 +120,7 @@ public class AuthController {
             throw new BusinessException(401, "未登录或登录已过期");
         }
         String newAccessToken = tokenService.refreshAccessToken(refreshToken);
-        addCookie(response, "access_token", newAccessToken, 900, "/api");
+        addCookie(response, "access_token", newAccessToken, 900, "/");
         return Result.success();
     }
 
@@ -138,8 +139,8 @@ public class AuthController {
         if (refreshToken != null && !refreshToken.isEmpty()) {
             tokenService.revokeRefreshToken(refreshToken);
         }
-        clearCookie(response, "access_token", "/api");
-        clearCookie(response, "refresh_token", "/api/auth");
+        clearCookie(response, "access_token", "/");
+        clearCookie(response, "refresh_token", "/");
         return Result.success();
     }
 
@@ -338,8 +339,9 @@ public class AuthController {
                 : loginVO.getUser().getEmail();
         TokenPair tokens = tokenService.issueTokens(
                 loginVO.getUser().getId(), subject, loginVO.getUser().getRole());
-        addCookie(response, "access_token", tokens.accessToken(), 900, "/api");
-        addCookie(response, "refresh_token", tokens.refreshToken(), 604800, "/api/auth");
+        loginVO.setToken(tokens.accessToken());
+        addCookie(response, "access_token", tokens.accessToken(), 900, "/");
+        addCookie(response, "refresh_token", tokens.refreshToken(), 604800, "/");
 
         return Result.success(loginVO);
     }
@@ -381,8 +383,9 @@ public class AuthController {
                 : loginVO.getUser().getEmail();
         TokenPair tokens = tokenService.issueTokens(
                 loginVO.getUser().getId(), subject, loginVO.getUser().getRole());
-        addCookie(response, "access_token", tokens.accessToken(), 900, "/api");
-        addCookie(response, "refresh_token", tokens.refreshToken(), 604800, "/api/auth");
+        loginVO.setToken(tokens.accessToken());
+        addCookie(response, "access_token", tokens.accessToken(), 900, "/");
+        addCookie(response, "refresh_token", tokens.refreshToken(), 604800, "/");
 
         return Result.success(loginVO);
     }
