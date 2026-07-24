@@ -11,11 +11,14 @@ Butvan Blog2.0/                                    # 📦 项目根目录
 ├── DIRECTORY.md                                   # 项目目录结构说明（本文件）
 ├── PRODUCT.md                                     # 产品迭代需求文档（v0.1 / v0.2）
 ├── DATA_MODEL.md                                  # 数据库模型完整设计（11模块21张表）
+├── CHANGELOG.md                                   # 📝 全项目发版历史与变更日志（对标 GitHub Release）
+├── version.json                                   # 📌 全项目单一事实源版本号定义
 ├── fWdgJuAOF.jpeg                                 # 默认「Cozy Room」场景高清背景图
 ├── docker-compose.yml                             # 🐳 Docker Compose 容器编排配置文件
 ├── .github/                                       # ⚙️ GitHub 自动化配置目录
 │   └── workflows/
-│       └── deploy.yml                             #   GitHub Actions 自动化部署流水线
+│       ├── deploy.yml                             #   GitHub Actions 自动化部署流水线
+│       └── release.yml                            #   GitHub Actions 自动依据 CHANGELOG 生成美观官方 Release
 ├── .graphifyignore                                # 🔍 Graphify 本地提取忽略规则配置（剔除文档/媒体文件以实现免 LLM 提取）
 │
 ├── .agents/                                       # 🤖 智能体辅助开发配置

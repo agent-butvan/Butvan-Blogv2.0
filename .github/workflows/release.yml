@@ -1,0 +1,52 @@
+name: Release Butvan Blog 2.0
+
+on:
+  push:
+    tags:
+      - 'v*'
+
+jobs:
+  release:
+    name: Create GitHub Release
+    runs-on: ubuntu-latest
+    permissions:
+      contents: write
+
+    steps:
+      - name: Checkout Code
+        uses: actions/checkout@v4
+
+      - name: Extract Release Notes from CHANGELOG
+        id: extract_notes
+        run: |
+          TAG_NAME="${GITHUB_REF#refs/tags/}"
+          echo "Extracting release notes for tag $TAG_NAME"
+          python3 -c "
+          import re, sys
+          tag = '$TAG_NAME'
+          try:
+              with open('CHANGELOG.md', 'r', encoding='utf-8') as f:
+                  content = f.read()
+              pattern = r'##\s+' + re.escape(tag) + r'\s*\n(.*?)(?=\n##\s+v|\Z)'
+              match = re.search(pattern, content, re.DOTALL)
+              if match:
+                  notes = match.group(1).strip()
+                  with open('RELEASE_BODY.md', 'w', encoding='utf-8') as out:
+                      out.write(notes)
+              else:
+                  with open('RELEASE_BODY.md', 'w', encoding='utf-8') as out:
+                      out.write(f'# Release {tag}\n\nAutomated release for {tag}')
+          except Exception as e:
+              with open('RELEASE_BODY.md', 'w', encoding='utf-8') as out:
+                  out.write(f'# Release {tag}\n\nAutomated release for {tag}')
+          "
+
+      - name: Create GitHub Release
+        uses: softprops/action-gh-release@v2
+        with:
+          name: "Release ${{ github.ref_name }}"
+          body_path: RELEASE_BODY.md
+          draft: false
+          prerelease: false
+        env:
+          GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
