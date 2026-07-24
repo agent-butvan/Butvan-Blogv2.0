@@ -38,6 +38,7 @@ import {
   Image as ImageIcon,
 } from "lucide-react";
 
+import ImageNodeViewComponent from "./ImageNodeViewComponent";
 import SlashMenu, { SLASH_COMMANDS, type SlashCommand } from "./SlashMenu";
 import apiClient from "@/lib/api";
 import { resolveAssetUrl } from "@/lib/image-url";
@@ -350,9 +351,13 @@ export default function MarkdownEditor({
           class: "text-primary hover:underline cursor-pointer",
         },
       }),
-      Image.configure({
+      Image.extend({
+        addNodeView() {
+          return ReactNodeViewRenderer(ImageNodeViewComponent);
+        },
+      }).configure({
         HTMLAttributes: {
-          class: "max-w-[280px] h-auto rounded-lg border border-zinc-200 dark:border-zinc-800 my-2 inline-block shadow-sm",
+          class: "max-w-full h-auto rounded-lg border border-zinc-200 dark:border-zinc-800 my-2 inline-block shadow-sm",
         },
       }),
       Placeholder.configure({
@@ -513,19 +518,42 @@ export default function MarkdownEditor({
           }
           return false;
         },
-        // 粘贴文件自动上传
+        // 粘贴文件自动上传或粘贴可访问图片 URL 链接自动渲染为图片
         paste: (view, event) => {
-          const files = event.clipboardData?.files;
+          const clipboardData = event.clipboardData;
+          if (!clipboardData) return false;
+
+          // 1. 本地图片文件粘贴
+          const files = clipboardData.files;
           if (files && files.length > 0 && files[0].type.startsWith("image/")) {
             event.preventDefault();
-            handleImageUpload(files[0]).then((url) => {
-              const { schema } = view.state;
-              const node = schema.nodes.image.create({ src: url });
-              const transaction = view.state.tr.replaceSelectionWith(node);
-              view.dispatch(transaction);
-            }).catch((err) => alert(err.message || "粘贴图片上传失败"));
+            handleImageUpload(files[0])
+              .then((url) => {
+                const { schema } = view.state;
+                const node = schema.nodes.image.create({ src: url });
+                const transaction = view.state.tr.replaceSelectionWith(node);
+                view.dispatch(transaction);
+              })
+              .catch((err) => alert(err.message || "粘贴图片上传失败"));
             return true;
           }
+
+          // 2. 粘贴可访问图片 URL 文本链接识别
+          const pastedText = clipboardData.getData("text/plain")?.trim();
+          if (pastedText && /^https?:\/\/[^\s]+$/i.test(pastedText) && !pastedText.includes("\n")) {
+            const isImageExtension = /\.(jpeg|jpg|gif|png|webp|svg|avif|bmp)(\?.*)?$/i.test(pastedText);
+            const isImageKeywords = /(image|img|photo|pic|avatar|media|oss|cos|qncdn)/i.test(pastedText);
+
+            if (isImageExtension || isImageKeywords) {
+              event.preventDefault();
+              const { schema } = view.state;
+              const node = schema.nodes.image.create({ src: pastedText });
+              const transaction = view.state.tr.replaceSelectionWith(node);
+              view.dispatch(transaction);
+              return true;
+            }
+          }
+
           return false;
         },
       },

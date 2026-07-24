@@ -220,6 +220,7 @@ Butvan Blog2.0/                                    # 📦 项目根目录
 │       │   │   │   └── NotificationDrawer.tsx     #         系统通知侧滑抽屉组件 (新增)
 │       │   │   ├── editor/                        #       编辑器组件
 │       │   │   │   ├── MarkdownEditor.tsx         #         Markdown 富文本编辑器
+│       │   │   │   ├── ImageNodeViewComponent.tsx #         Tiptap 图片 React NodeView（支持破损卡片提示、URL展示、替换链接与重新上传）
 │       │   │   │   ├── InitializedMDXEditor.tsx   #         所见即所得 (WYSIWYG) 客户端编辑器组件
 │       │   │   │   ├── SceneToolbar.tsx           #         场景编辑器顶部工具栏
 │       │   │   │   ├── SceneCanvas.tsx            #         场景编辑器可视化画布
