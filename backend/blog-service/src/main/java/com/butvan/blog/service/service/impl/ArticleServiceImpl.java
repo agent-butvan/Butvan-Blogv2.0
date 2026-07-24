@@ -612,7 +612,8 @@ public class ArticleServiceImpl implements ArticleService {
             if (like.getUserId() != null) {
                 User user = userRepository.findById(like.getUserId()).orElse(null);
                 if (user != null) {
-                    userNickname = user.getNickname();
+                    userNickname = StringUtils.hasText(user.getNickname()) ? user.getNickname() 
+                            : (StringUtils.hasText(user.getUsername()) ? user.getUsername() : "注册用户");
                     userAvatar = user.getAvatarUrl();
                     userEmail = user.getEmail();
                 }
