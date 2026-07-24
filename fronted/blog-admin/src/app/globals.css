@@ -151,6 +151,15 @@ h6 {
   background-color: rgba(114, 123, 186, 0.03) !important;
 }
 
+.ProseMirror blockquote p {
+  margin-top: 0 !important;
+  margin-bottom: 0 !important;
+}
+
+.ProseMirror blockquote p:not(:last-child) {
+  margin-bottom: 0.5rem !important;
+}
+
 /* 行内代码 Inline Code 所见即所得高亮 (默认选用高品质雅致紫/浅红调和配色) */
 .ProseMirror code:not(pre code) {
   font-family: ui-monospace, SFMono-Regular, Menlo, Monaco, Consolas, "Liberation Mono", "Courier New", monospace !important;

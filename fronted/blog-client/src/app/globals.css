@@ -211,21 +211,34 @@ h1, h2, h3, h4, h5, h6 {
   color: #ffffff;
 }
 
-/* 引用样式 */
+/* 引用 Blockquote 精致排版系统 */
 .article-content-prose blockquote {
   font-style: normal;
-  border-left: 3px solid rgba(114, 123, 186, 0.85); /* 精致的主色竖线 */
-  background-color: transparent; /* 去除臃肿的卡片块状背景 */
-  padding: 0.4rem 0 0.4rem 1.25rem;
-  margin: 2.2rem 0;
-  color: #71717a; /* zinc-500 */
-  font-size: 0.98em;
-  font-weight: 500;
-  line-height: 1.8;
+  border-left: 3px solid #727BBA; /* 精致的主色竖线 */
+  background-color: rgba(114, 123, 186, 0.04); /* 极其轻微淡雅背景 */
+  padding: 0.75rem 1.25rem;
+  margin: 1.25rem 0;
+  border-radius: 0 0.5rem 0.5rem 0;
+  color: #52525b; /* zinc-600 */
+  font-size: 0.96em;
+  font-weight: 400;
+  line-height: 1.75;
 }
+
 .dark .article-content-prose blockquote {
-  border-left-color: rgba(114, 123, 186, 0.5);
+  border-left-color: rgba(114, 123, 186, 0.7);
+  background-color: rgba(114, 123, 186, 0.06);
   color: #a1a1aa; /* zinc-400 */
+}
+
+/* 消除引用块内部 p 段落边距导致的拉长与多余留白 */
+.article-content-prose blockquote p {
+  margin-top: 0 !important;
+  margin-bottom: 0 !important;
+}
+
+.article-content-prose blockquote p:not(:last-child) {
+  margin-bottom: 0.5rem !important;
 }
 
 /* 列表样式 */
