@@ -269,6 +269,13 @@ h1, h2, h3, h4, h5, h6 {
   color: #f43f5e; /* rose-500 */
 }
 
+/* 高亮背景 mark 元素 */
+.article-content-prose mark,
+mark {
+  padding: 0.12rem 0.35rem;
+  border-radius: 0.25rem;
+}
+
 /* ===== 新版通用定制化代码块样式系统 (自适应亮暗色) ===== */
 .md-codeblock {
   font-family: ui-monospace, SFMono-Regular, Menlo, Monaco, Consolas, "Liberation Mono", "Courier New", monospace;

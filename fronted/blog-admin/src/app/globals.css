@@ -170,6 +170,13 @@ h6 {
   border-color: rgba(205, 189, 232, 0.25) !important;
 }
 
+/* 高亮背景 mark 元素样式 */
+.ProseMirror mark,
+mark {
+  padding: 0.12rem 0.35rem !important;
+  border-radius: 0.25rem !important;
+}
+
 
 /* ============================================================================
  * 语法高亮代码块 (自适应明暗模式高品质配色)
