@@ -15,6 +15,8 @@ import com.butvan.blog.service.service.ArticleService;
 import jakarta.servlet.http.HttpServletRequest;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
+import org.springframework.security.core.Authentication;
+import org.springframework.security.core.context.SecurityContextHolder;
 import org.springframework.web.bind.annotation.*;
 import java.security.Principal;
 import java.util.List;
@@ -150,8 +152,7 @@ public class ArticleController {
         
         // 尝试从 Security 上下文中提取当前登录用户信息
         Long userId = null;
-        org.springframework.security.core.Authentication auth = 
-                org.springframework.security.core.context.SecurityContextHolder.getContext().getAuthentication();
+        Authentication auth = SecurityContextHolder.getContext().getAuthentication();
         if (auth != null && auth.isAuthenticated() && !"anonymousUser".equals(auth.getPrincipal())) {
             String username = auth.getName();
             com.butvan.blog.pojo.entity.User user = userRepository.findByUsername(username)

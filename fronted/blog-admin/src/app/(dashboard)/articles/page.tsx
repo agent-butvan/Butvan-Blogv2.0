@@ -115,6 +115,14 @@ export default function ArticlesPage() {
       // 1. 获取完整详情以确保数据完整，绕过 DTO 非空校验限制
       const fullDetail = await fetchArticleDetail(item.id);
       if (fullDetail) {
+        const nextStatus = fields.status !== undefined ? fields.status : fullDetail.status;
+        let nextVisibility = fullDetail.visibility;
+        if (fields.status === "DRAFT") {
+          nextVisibility = "PRIVATE";
+        } else if (fields.status === "PUBLISHED" && fullDetail.visibility === "PRIVATE") {
+          nextVisibility = "PUBLIC";
+        }
+
         // 2. 合并修改后的属性
         const updatedData = {
           title: fullDetail.title,
@@ -124,8 +132,8 @@ export default function ArticlesPage() {
           coverImageUrl: fullDetail.coverImageUrl,
           categoryId: fullDetail.categoryId,
           tagIds: fullDetail.tagIds,
-          status: fields.status !== undefined ? fields.status : fullDetail.status,
-          visibility: fullDetail.visibility,
+          status: nextStatus,
+          visibility: nextVisibility,
           password: fullDetail.password,
           isPinned: fields.isPinned !== undefined ? fields.isPinned : fullDetail.isPinned,
           isFeatured: fields.isFeatured !== undefined ? fields.isFeatured : fullDetail.isFeatured,

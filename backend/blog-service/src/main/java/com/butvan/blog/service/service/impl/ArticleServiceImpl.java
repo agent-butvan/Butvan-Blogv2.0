@@ -33,6 +33,8 @@ import org.springframework.context.ApplicationEventPublisher;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 import org.springframework.util.StringUtils;
+import org.springframework.security.core.Authentication;
+import org.springframework.security.core.context.SecurityContextHolder;
 import java.time.LocalDateTime;
 import java.util.*;
 import java.util.stream.Collectors;
@@ -53,6 +55,21 @@ public class ArticleServiceImpl implements ArticleService {
     private final DailyStatsRepository dailyStatsRepository;
     private final ApplicationEventPublisher eventPublisher;
 
+    /**
+     * 判断当前请求是否来源于具备管理员角色的认证用户
+     *
+     * @return true-是管理员，false-否
+     */
+    private boolean isAdminUser() {
+        Authentication auth = SecurityContextHolder.getContext().getAuthentication();
+        if (auth == null || !auth.isAuthenticated() || "anonymousUser".equals(auth.getPrincipal())) {
+            return false;
+        }
+        return auth.getAuthorities().stream()
+                .anyMatch(grantedAuthority -> "ROLE_ADMIN".equalsIgnoreCase(grantedAuthority.getAuthority())
+                        || "ADMIN".equalsIgnoreCase(grantedAuthority.getAuthority()));
+    }
+
     @Override
     public PageResult pageArticles(ArticleQueryDTO queryDTO) {
         log.info("分页检索文章列表，参数: {}", queryDTO);
@@ -71,8 +88,23 @@ public class ArticleServiceImpl implements ArticleService {
         Pageable pageable = PageRequest.of(pageIndex, pageSize, sort);
         
         // 3. 动态构建查询 Specification
+        boolean isAdmin = isAdminUser();
         Specification<Article> spec = (root, query, cb) -> {
             List<Predicate> predicates = new ArrayList<>();
+            
+            // 基础约束：过滤被逻辑删除的文章
+            predicates.add(cb.isNull(root.get("deletedAt")));
+
+            // 权限过滤：非管理员强制约束仅能查询 status = 'PUBLISHED' 且 visibility != 'PRIVATE' 的文章
+            if (!isAdmin) {
+                predicates.add(cb.equal(root.get("status"), "PUBLISHED"));
+                predicates.add(cb.notEqual(root.get("visibility"), "PRIVATE"));
+            } else {
+                // 管理员模式：根据 queryDTO 提供的 status 动态筛选
+                if (StringUtils.hasText(queryDTO.getStatus())) {
+                    predicates.add(cb.equal(root.get("status"), queryDTO.getStatus()));
+                }
+            }
             
             // 关键词模糊查询（匹配标题、摘要或正文）
             if (StringUtils.hasText(queryDTO.getKeyword())) {
@@ -82,11 +114,6 @@ public class ArticleServiceImpl implements ArticleService {
                         cb.like(root.get("summary"), likeKeyword),
                         cb.like(root.get("content"), likeKeyword)
                 ));
-            }
-            
-            // 发布状态筛选
-            if (StringUtils.hasText(queryDTO.getStatus())) {
-                predicates.add(cb.equal(root.get("status"), queryDTO.getStatus()));
             }
             
             // 分类筛选
@@ -149,6 +176,20 @@ public class ArticleServiceImpl implements ArticleService {
             throw new BusinessException("文章不存在或已被删除");
         }
 
+        // 访问权限与状态校验：非管理员视角下拦截已逻辑删除、非已发布状态 (如草稿) 及私密权限的文章
+        boolean isAdmin = isAdminUser();
+        if (!isAdmin) {
+            if (article.getDeletedAt() != null) {
+                throw new BusinessException("文章不存在或已被删除");
+            }
+            if (!"PUBLISHED".equalsIgnoreCase(article.getStatus())) {
+                throw new BusinessException("文章不存在或已被删除");
+            }
+            if ("PRIVATE".equalsIgnoreCase(article.getVisibility())) {
+                throw new BusinessException("文章不存在或已被删除");
+            }
+        }
+
         // 当且仅当公开端访问（incrementView为true）时，才递增阅读/浏览次数并持久化
         if (incrementView) {
             long currentViews = article.getViewCount() == null ? 0L : article.getViewCount();
@@ -168,6 +209,15 @@ public class ArticleServiceImpl implements ArticleService {
         User author = userRepository.findByUsername(username)
                 .orElseThrow(() -> new BusinessException("当前操作的账户信息不存在"));
         
+        // 草稿状态下自动强制联动设置访问权限为 PRIVATE
+        String targetStatus = StringUtils.hasText(dto.getStatus()) ? dto.getStatus() : "DRAFT";
+        String targetVisibility = dto.getVisibility();
+        if ("DRAFT".equalsIgnoreCase(targetStatus)) {
+            targetVisibility = "PRIVATE";
+        } else if (!StringUtils.hasText(targetVisibility)) {
+            targetVisibility = "PUBLIC";
+        }
+
         // 2. 构造文章实体并填充基本字段
         Article article = Article.builder()
                 .title(dto.getTitle())
@@ -175,8 +225,8 @@ public class ArticleServiceImpl implements ArticleService {
                 .content(dto.getContent())
                 .contentHtml(dto.getContent()) // 极简处理：contentHtml 直接先保存 Markdown，由前端渲染
                 .coverImageUrl(dto.getCoverImageUrl())
-                .status(dto.getStatus())
-                .visibility(dto.getVisibility())
+                .status(targetStatus)
+                .visibility(targetVisibility)
                 .password(dto.getPassword())
                 .isPinned(dto.getIsPinned())
                 .isFeatured(dto.getIsFeatured())
@@ -224,14 +274,28 @@ public class ArticleServiceImpl implements ArticleService {
         Article article = articleRepository.findById(id)
                 .orElseThrow(() -> new BusinessException("文章不存在或已被删除"));
         
+        // 草稿状态下自动强制联动设置访问权限为 PRIVATE
+        String targetStatus = StringUtils.hasText(dto.getStatus()) ? dto.getStatus() : article.getStatus();
+        String targetVisibility = dto.getVisibility();
+        if ("DRAFT".equalsIgnoreCase(targetStatus)) {
+            targetVisibility = "PRIVATE";
+        } else if ("PUBLISHED".equalsIgnoreCase(targetStatus) && "PRIVATE".equalsIgnoreCase(article.getVisibility())) {
+            if (!StringUtils.hasText(targetVisibility) || "PRIVATE".equalsIgnoreCase(targetVisibility)) {
+                targetVisibility = "PUBLIC";
+            }
+        }
+        if (!StringUtils.hasText(targetVisibility)) {
+            targetVisibility = "PUBLIC";
+        }
+
         // 1. 覆盖基础属性
         article.setTitle(dto.getTitle());
         article.setSummary(dto.getSummary());
         article.setContent(dto.getContent());
         article.setContentHtml(dto.getContent());
         article.setCoverImageUrl(dto.getCoverImageUrl());
-        article.setStatus(dto.getStatus());
-        article.setVisibility(dto.getVisibility());
+        article.setStatus(targetStatus);
+        article.setVisibility(targetVisibility);
         article.setPassword(dto.getPassword());
         article.setIsPinned(dto.getIsPinned());
         article.setIsFeatured(dto.getIsFeatured());
@@ -292,7 +356,10 @@ public class ArticleServiceImpl implements ArticleService {
     public List<ArticleItemVO> listSimpleArticles() {
         log.info("查询全部已发布文章极简列表");
         // 获取所有未删除且状态为已发布的文章
-        Specification<Article> spec = (root, query, cb) -> cb.equal(root.get("status"), "PUBLISHED");
+        Specification<Article> spec = (root, query, cb) -> cb.and(
+                cb.isNull(root.get("deletedAt")),
+                cb.equal(root.get("status"), "PUBLISHED")
+        );
         List<Article> list = articleRepository.findAll(spec);
         return list.stream()
                 .map(this::toItemVO)
