@@ -2,6 +2,24 @@
 
 本文档记录 **Butvan Blog 2.0** 的全部版本更新明细与发版履历，遵循 [Semantic Versioning 2.0.0](https://semver.org/lang/zh-CN/) 版本规范。
 
+## v2.0.1
+
+- **发布日期 (UTC)**：2026-07-24
+- **对比基线**：v2.0.0...v2.0.1
+- **发布通道**：Stable
+
+针对低配置服务器（2C2G）进行容器内存配额控制与 JVM/Node 堆内存优化，根治生产环境服务器容易因物理内存耗尽（OOM）引发系统假死、SSH 断连及 MinIO / 网站不可访问的严重问题。
+
+### 性能优化与生产部署
+
+- **JVM 堆内存限制**：在 `backend/Dockerfile` 中显式指定 `-Xms256m -Xmx384m` 参数，防止 Java 21 无约束挤占宿主机物理内存。
+- **Node.js 运行限制**：在前后台 Dockerfile 中注入 `NODE_OPTIONS="--max-old-space-size=256"` 环境变量，将前后台独立 SSR 渲染进程的最大旧生代内存限制为 256MB。
+- **Docker 容器内存限制**：在 `docker-compose.yml` 中为 PostgreSQL (256M)、Redis (64M)、SpringBoot (512M) 及前后台容器 (256M) 配置显式 `mem_limit` 保护配额。
+
+### Commits
+
+- perf(deploy): 优化容器与JVM内存限制防止服务器假死 ( 766a245 )
+
 ---
 
 ## v2.0.0
