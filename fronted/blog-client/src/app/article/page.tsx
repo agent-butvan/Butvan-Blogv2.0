@@ -451,8 +451,8 @@ export default function ArticleListPage() {
                       className="group relative flex flex-col gap-3.5 px-6 py-6 sm:px-8 sm:py-7 border-b border-zinc-200/30 dark:border-zinc-800/30 last:border-0 w-full outline-none"
                     >
                       {/* 标题 */}
-                      <h2 className="font-serif text-lg sm:text-xl md:text-2xl font-medium text-zinc-900 dark:text-zinc-100 group-hover:text-[#727BBA] transition-colors duration-200 flex items-center gap-2">
-                        <span>{article.title}</span>
+                      <h2 className="font-serif text-lg sm:text-xl md:text-2xl font-medium text-zinc-900 dark:text-zinc-100 group-hover:text-[#727BBA] transition-colors duration-200 flex items-center gap-2 min-w-0">
+                        <span className="truncate min-w-0" title={article.title}>{article.title}</span>
                         <div className="flex gap-1 shrink-0 items-center">
                           {article.isPinned && (
                             <span className="inline-flex shrink-0 items-center gap-0.5 ml-1.5 align-middle px-1 py-px text-[9px] font-mono font-normal tracking-wider text-[#727BBA]">

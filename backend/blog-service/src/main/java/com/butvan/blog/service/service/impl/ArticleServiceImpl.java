@@ -605,14 +605,16 @@ public class ArticleServiceImpl implements ArticleService {
                 articleSlug = article.getSlug();
             }
             
-            // 获取点赞用户昵称和头像
+            // 获取点赞用户昵称、头像与邮箱
             String userNickname = "游客";
             String userAvatar = null;
+            String userEmail = null;
             if (like.getUserId() != null) {
                 User user = userRepository.findById(like.getUserId()).orElse(null);
                 if (user != null) {
                     userNickname = user.getNickname();
                     userAvatar = user.getAvatarUrl();
+                    userEmail = user.getEmail();
                 }
             }
             
@@ -626,6 +628,7 @@ public class ArticleServiceImpl implements ArticleService {
                     .userId(like.getUserId())
                     .userNickname(userNickname)
                     .userAvatar(userAvatar)
+                    .userEmail(userEmail)
                     .createdAt(like.getCreatedAt())
                     .build();
         }).collect(Collectors.toList());

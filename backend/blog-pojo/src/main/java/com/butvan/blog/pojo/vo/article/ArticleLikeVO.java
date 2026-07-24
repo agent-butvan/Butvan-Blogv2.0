@@ -33,5 +33,7 @@ public class ArticleLikeVO {
 
     private String userAvatar; // 点赞用户头像 URL
 
+    private String userEmail; // 点赞用户邮箱
+
     private LocalDateTime createdAt; // 点赞时间
 }
