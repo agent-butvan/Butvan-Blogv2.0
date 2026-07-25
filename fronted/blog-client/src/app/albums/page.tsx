@@ -113,9 +113,9 @@ export default function AlbumsPage() {
       const waveY = Math.sin(progress * Math.PI * 2) * 50
       track.style.transform = `translateX(-${progress * maxTrackMove}px) translateY(${waveY}px)`
 
-      // 背景文字视差（增强滚动感）
-      setBgOffset1(-progress * 1200)  // 向左移动更远
-      setBgOffset2(progress * 800)    // 向右移动更远
+      // 背景文字视差（增强滚动感与对向流动）
+      setBgOffset1(progress * 400)    // 向右缓慢平移
+      setBgOffset2(-progress * 400)   // 向左缓慢平移
 
       // 各簇独立缩放（越靠近中心越大）
       const clusters = track.querySelectorAll<HTMLElement>('.photo-cluster')
@@ -161,13 +161,13 @@ export default function AlbumsPage() {
       <SidebarWidget />
 
       {/* ========== 背景装饰层 ========== */}
-      <div className="fixed inset-0 z-[-1] pointer-events-none overflow-hidden" style={{ perspective: '1000px' }}>
-        {/* 巨型视差文字 (低调幽暗微透，绝不抢戏) */}
+      <div className="fixed inset-0 z-0 pointer-events-none overflow-hidden" style={{ perspective: '1000px' }}>
+        {/* 巨型视差文字 (低调沉浸艺术水印) */}
         <span
-          className="absolute text-[60vw] font-extrabold text-zinc-200/40 dark:text-white/[0.015] whitespace-nowrap leading-none select-none pointer-events-none"
+          className="absolute text-[55vw] font-black uppercase text-zinc-900/[0.035] dark:text-white/[0.03] whitespace-nowrap leading-none select-none pointer-events-none font-heading"
           style={{
-            top: '10%',
-            left: '-10%',
+            top: '6%',
+            left: '-5%',
             transform: `translateX(${bgOffset1}px) translateZ(-100px)`,
             transition: 'transform 0.1s linear',
           }}
@@ -175,11 +175,10 @@ export default function AlbumsPage() {
           butvan
         </span>
         <span
-          className="absolute text-[60vw] font-extrabold whitespace-nowrap leading-none select-none pointer-events-none"
+          className="absolute text-[55vw] font-black uppercase text-[#3dc1d3]/[0.05] dark:text-[#3dc1d3]/[0.04] whitespace-nowrap leading-none select-none pointer-events-none font-heading"
           style={{
-            bottom: '5%',
+            bottom: '6%',
             right: '-5%',
-            color: 'rgba(61, 193, 211, 0.015)',
             transform: `translateX(${bgOffset2}px) translateZ(-200px)`,
             transition: 'transform 0.1s linear',
           }}
@@ -187,13 +186,13 @@ export default function AlbumsPage() {
           albums
         </span>
 
-        {/* 透视网格线 */}
+        {/* 3D 透视网格线 */}
         <div
-          className="absolute inset-0 opacity-[0.04] dark:opacity-[0.02]"
+          className="absolute inset-0 opacity-60 dark:opacity-30 pointer-events-none"
           style={{
             backgroundImage:
-              'linear-gradient(rgba(255, 255, 255, 0.08) 1px, transparent 1px), linear-gradient(90deg, rgba(255, 255, 255, 0.08) 1px, transparent 1px)',
-            backgroundSize: '50px 50px',
+              'linear-gradient(rgba(114, 123, 186, 0.08) 1px, transparent 1px), linear-gradient(90deg, rgba(114, 123, 186, 0.08) 1px, transparent 1px)',
+            backgroundSize: '60px 60px',
             transform: 'rotateX(60deg)',
           }}
         />
