@@ -113,9 +113,9 @@ export default function AlbumsPage() {
       const waveY = Math.sin(progress * Math.PI * 2) * 50
       track.style.transform = `translateX(-${progress * maxTrackMove}px) translateY(${waveY}px)`
 
-      // 背景文字视差（增强滚动感）
-      setBgOffset1(-progress * 1200)  // 向左移动更远
-      setBgOffset2(progress * 800)    // 向右移动更远
+      // 背景文字视差（平滑水流感流动平移）
+      setBgOffset1(progress * 300)    // 缓缓向右平移
+      setBgOffset2(-progress * 350)   // 缓缓向左平移
 
       // 各簇独立缩放（越靠近中心越大）
       const clusters = track.querySelectorAll<HTMLElement>('.photo-cluster')
@@ -161,39 +161,49 @@ export default function AlbumsPage() {
       <SidebarWidget />
 
       {/* ========== 背景装饰层 ========== */}
-      <div className="fixed inset-0 z-[-1] pointer-events-none overflow-hidden" style={{ perspective: '1000px' }}>
-        {/* 巨型视差文字 (低调幽暗微透，绝不抢戏) */}
+      <div
+        className="fixed inset-0 z-0 pointer-events-none overflow-hidden select-none"
+        style={{
+          perspective: '1000px',
+          maskImage: 'linear-gradient(to bottom, transparent 0%, black 12%, black 88%, transparent 100%)',
+          WebkitMaskImage: 'linear-gradient(to bottom, transparent 0%, black 12%, black 88%, transparent 100%)',
+        }}
+      >
+        {/* 巨型空心视差文字 (空灵线稿描边，艺术画廊质感) */}
         <span
-          className="absolute text-[60vw] font-extrabold text-zinc-200/40 dark:text-white/[0.015] whitespace-nowrap leading-none select-none pointer-events-none"
+          className="absolute text-[50vw] font-extrabold uppercase tracking-tight whitespace-nowrap leading-none pointer-events-none font-heading"
           style={{
-            top: '10%',
-            left: '-10%',
-            transform: `translateX(${bgOffset1}px) translateZ(-100px)`,
-            transition: 'transform 0.1s linear',
+            top: '8%',
+            left: '-2%',
+            WebkitTextStroke: '1.5px rgba(24, 24, 27, 0.07)',
+            color: 'rgba(24, 24, 27, 0.015)',
+            transform: `translateX(${bgOffset1}px) rotate(-1.5deg) translateZ(-80px)`,
+            transition: 'transform 0.5s cubic-bezier(0.16, 1, 0.3, 1)',
           }}
         >
           butvan
         </span>
         <span
-          className="absolute text-[60vw] font-extrabold whitespace-nowrap leading-none select-none pointer-events-none"
+          className="absolute text-[50vw] font-extrabold uppercase tracking-tight whitespace-nowrap leading-none pointer-events-none font-heading"
           style={{
-            bottom: '5%',
-            right: '-5%',
-            color: 'rgba(61, 193, 211, 0.015)',
-            transform: `translateX(${bgOffset2}px) translateZ(-200px)`,
-            transition: 'transform 0.1s linear',
+            bottom: '8%',
+            right: '-2%',
+            WebkitTextStroke: '1.5px rgba(61, 193, 211, 0.1)',
+            color: 'rgba(61, 193, 211, 0.02)',
+            transform: `translateX(${bgOffset2}px) rotate(1deg) translateZ(-150px)`,
+            transition: 'transform 0.5s cubic-bezier(0.16, 1, 0.3, 1)',
           }}
         >
           albums
         </span>
 
-        {/* 透视网格线 */}
+        {/* 3D 极简透视网格线 (柔和融于背景) */}
         <div
-          className="absolute inset-0 opacity-[0.04] dark:opacity-[0.02]"
+          className="absolute inset-0 opacity-40 dark:opacity-20 pointer-events-none"
           style={{
             backgroundImage:
-              'linear-gradient(rgba(255, 255, 255, 0.08) 1px, transparent 1px), linear-gradient(90deg, rgba(255, 255, 255, 0.08) 1px, transparent 1px)',
-            backgroundSize: '50px 50px',
+              'linear-gradient(rgba(114, 123, 186, 0.06) 1px, transparent 1px), linear-gradient(90deg, rgba(114, 123, 186, 0.06) 1px, transparent 1px)',
+            backgroundSize: '80px 80px',
             transform: 'rotateX(60deg)',
           }}
         />

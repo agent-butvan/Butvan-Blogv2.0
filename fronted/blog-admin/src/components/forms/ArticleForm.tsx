@@ -248,7 +248,10 @@ export default function ArticleForm({ initialData, onSave, saving = false }: Art
           <div className="flex h-9 items-center bg-zinc-100 dark:bg-zinc-950 p-1 rounded-xl border border-zinc-200/30 dark:border-zinc-900/30">
             <button
               type="button"
-              onClick={() => setStatus("DRAFT")}
+              onClick={() => {
+                setStatus("DRAFT");
+                setVisibility("PRIVATE");
+              }}
               className={cn(
                 "h-7 px-3 text-[11px] font-bold rounded-lg transition-all cursor-pointer flex items-center justify-center",
                 status === "DRAFT"
@@ -260,7 +263,12 @@ export default function ArticleForm({ initialData, onSave, saving = false }: Art
             </button>
             <button
               type="button"
-              onClick={() => setStatus("PUBLISHED")}
+              onClick={() => {
+                setStatus("PUBLISHED");
+                if (visibility === "PRIVATE") {
+                  setVisibility("PUBLIC");
+                }
+              }}
               className={cn(
                 "h-7 px-3 text-[11px] font-bold rounded-lg transition-all cursor-pointer flex items-center justify-center",
                 status === "PUBLISHED"
@@ -498,8 +506,11 @@ export default function ArticleForm({ initialData, onSave, saving = false }: Art
 
               {/* 可见性选择 */}
               <div className="space-y-2 pt-3 border-t border-zinc-200/50 dark:border-zinc-900/60">
-                <label className="block text-[10px] font-bold text-zinc-400 dark:text-zinc-500 uppercase tracking-widest">
-                  文章可见性
+                <label className="block text-[10px] font-bold text-zinc-400 dark:text-zinc-500 uppercase tracking-widest flex items-center justify-between">
+                  <span>文章可见性</span>
+                  {status === "DRAFT" && (
+                    <span className="text-[10px] text-amber-500 font-normal lowercase">草稿固定为私密</span>
+                  )}
                 </label>
                 <div className="grid grid-cols-3 gap-1 bg-zinc-100 dark:bg-zinc-950 p-1 rounded-xl">
                   {[

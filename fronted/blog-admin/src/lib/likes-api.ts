@@ -11,6 +11,7 @@ export interface LikeItem {
   userId: number | null;
   userNickname: string;
   userAvatar: string | null;
+  userEmail?: string | null;
   createdAt: string;
 }
 

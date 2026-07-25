@@ -196,6 +196,10 @@ export async function request<T = unknown>(
     if (realIp) {
       headers['X-Client-Real-IP'] = realIp
     }
+    const clientToken = localStorage.getItem('client_token') || localStorage.getItem('access_token')
+    if (clientToken && !headers['Authorization']) {
+      headers['Authorization'] = `Bearer ${clientToken}`
+    }
   }
 
   // Cookie 模式下无需手动注入 Authorization，浏览器自动携带 httpOnly Cookie

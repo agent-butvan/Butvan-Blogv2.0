@@ -15,6 +15,9 @@ import com.butvan.blog.service.service.ArticleService;
 import jakarta.servlet.http.HttpServletRequest;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
+import com.butvan.blog.pojo.entity.User;
+import org.springframework.security.core.Authentication;
+import org.springframework.security.core.context.SecurityContextHolder;
 import org.springframework.web.bind.annotation.*;
 import java.security.Principal;
 import java.util.List;
@@ -150,19 +153,34 @@ public class ArticleController {
         
         // 尝试从 Security 上下文中提取当前登录用户信息
         Long userId = null;
-        org.springframework.security.core.Authentication auth = 
-                org.springframework.security.core.context.SecurityContextHolder.getContext().getAuthentication();
+        Authentication auth = SecurityContextHolder.getContext().getAuthentication();
         if (auth != null && auth.isAuthenticated() && !"anonymousUser".equals(auth.getPrincipal())) {
-            String username = auth.getName();
-            com.butvan.blog.pojo.entity.User user = userRepository.findByUsername(username)
-                    .or(() -> userRepository.findByEmail(username))
-                    .orElse(null);
-            if (user != null) {
-                // 校验登录用户账号是否被禁用
-                if ("DISABLED".equalsIgnoreCase(user.getStatus())) {
+            // 1. 优先从 auth.getDetails() 的 Map 中提取 JwtAuthFilter 放置的 userId
+            if (auth.getDetails() instanceof java.util.Map) {
+                java.util.Map<?, ?> details = (java.util.Map<?, ?>) auth.getDetails();
+                Object uidObj = details.get("userId");
+                if (uidObj instanceof Number) {
+                    userId = ((Number) uidObj).longValue();
+                }
+            }
+
+            // 2. 若 Details 中未提取到，尝试按 username / email 查找 User 实体
+            if (userId == null) {
+                String username = auth.getName();
+                User user = userRepository.findByUsername(username)
+                        .or(() -> userRepository.findByEmail(username))
+                        .orElse(null);
+                if (user != null) {
+                    userId = user.getId();
+                }
+            }
+
+            // 3. 校验账号状态
+            if (userId != null) {
+                User user = userRepository.findById(userId).orElse(null);
+                if (user != null && "DISABLED".equalsIgnoreCase(user.getStatus())) {
                     throw new BusinessException("您的账号已被禁用，无法进行点赞操作");
                 }
-                userId = user.getId();
             }
         }
         

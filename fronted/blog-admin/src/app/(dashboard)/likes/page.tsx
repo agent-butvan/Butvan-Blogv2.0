@@ -206,6 +206,41 @@ export default function LikesPage() {
     toast.success("当前页数据导出成功");
   };
 
+  const totalPages = Math.ceil(total / size) || 1;
+
+  // 数字分页按钮渲染 - 与文章管理完全统一
+  const renderPaginationButtons = () => {
+    const buttons = [];
+    for (let i = 1; i <= totalPages; i++) {
+      if (i === 1 || i === totalPages || (i >= page - 2 && i <= page + 2)) {
+        buttons.push(
+          <button
+            key={i}
+            onClick={() => setPage(i)}
+            className={cn(
+              "w-8 h-8 rounded-xl text-xs font-bold font-mono transition-all cursor-pointer outline-none border-0",
+              page === i
+                ? "bg-primary text-white shadow-sm"
+                : "text-zinc-650 dark:text-zinc-350 hover:bg-zinc-150/60 dark:hover:bg-zinc-800"
+            )}
+          >
+            {i}
+          </button>
+        );
+      } else if (
+        (i === page - 3 && i > 1) ||
+        (i === page + 3 && i < totalPages)
+      ) {
+        buttons.push(
+          <span key={i} className="px-1 text-zinc-400 font-mono select-none">
+            ...
+          </span>
+        );
+      }
+    }
+    return buttons;
+  };
+
   return (
     <div className="space-y-4">
       {/* 页面标题 - 与其他页面高度统一 */}
@@ -296,13 +331,13 @@ export default function LikesPage() {
           <div className="flex-1">
             <table className="w-full text-left border-collapse table-auto select-none">
               <thead>
-                <tr className="border-b border-zinc-200/50 dark:border-zinc-800/40 text-[10px] font-bold text-zinc-400 dark:text-zinc-500 bg-zinc-50/70 dark:bg-zinc-900/40 uppercase tracking-widest">
+                <tr className="border-b border-zinc-200/50 dark:border-zinc-800/40 text-[10px] font-bold text-zinc-400 dark:text-zinc-500 bg-zinc-50/70 dark:bg-zinc-900/40 uppercase tracking-widest whitespace-nowrap">
                   <th className="px-4 py-3.5 w-10"></th>
                   <th className="px-4 py-3">点赞对象/文章</th>
                   <th className="px-4 py-3">点赞人/来源</th>
-                  <th className="px-4 py-3 w-32">IP 地址</th>
+                  <th className="px-4 py-3 w-36">IP 地址</th>
                   <th className="px-4 py-3 w-40">设备环境</th>
-                  <th className="px-4 py-3 w-44">点赞时间</th>
+                  <th className="px-4 py-3 w-44 whitespace-nowrap">点赞时间</th>
                 </tr>
               </thead>
               <tbody>
@@ -319,21 +354,21 @@ export default function LikesPage() {
                     </td>
                     <td className="px-4 py-3">
                       <div className="flex items-center gap-2">
-                        <div className="w-6 h-6 bg-zinc-100 dark:bg-zinc-800 rounded-full"></div>
-                        <div className="flex flex-col gap-1 w-24">
+                        <div className="w-7 h-7 bg-zinc-100 dark:bg-zinc-800 rounded-full"></div>
+                        <div className="flex flex-col gap-1 w-28">
                           <div className="h-3 bg-zinc-100 dark:bg-zinc-800 rounded-[3px] w-full"></div>
-                          <div className="h-2 bg-zinc-100 dark:bg-zinc-800 rounded-[3px] w-2/3"></div>
+                          <div className="h-2.5 bg-zinc-100 dark:bg-zinc-800 rounded-[3px] w-3/4"></div>
                         </div>
                       </div>
-                    </td>
-                    <td className="px-4 py-3">
-                      <div className="h-5 bg-zinc-100 dark:bg-zinc-800 rounded-[3px] w-20"></div>
                     </td>
                     <td className="px-4 py-3">
                       <div className="h-5 bg-zinc-100 dark:bg-zinc-800 rounded-[3px] w-24"></div>
                     </td>
                     <td className="px-4 py-3">
-                      <div className="h-3 bg-zinc-100 dark:bg-zinc-800 rounded-[3px] w-28"></div>
+                      <div className="h-5 bg-zinc-100 dark:bg-zinc-800 rounded-[3px] w-24"></div>
+                    </td>
+                    <td className="px-4 py-3">
+                      <div className="h-3.5 bg-zinc-100 dark:bg-zinc-800 rounded-[3px] w-32"></div>
                     </td>
                   </tr>
                 ))}
@@ -351,7 +386,7 @@ export default function LikesPage() {
           <div className="flex-1 overflow-x-auto custom-scrollbar">
             <table className="w-full text-left border-collapse table-auto select-none">
               <thead>
-                <tr className="border-b border-zinc-200/50 dark:border-zinc-800 bg-zinc-50/70 dark:bg-zinc-900/40 text-[10px] font-bold text-zinc-400 dark:text-zinc-500 uppercase tracking-widest">
+                <tr className="border-b border-zinc-200/50 dark:border-zinc-800 bg-zinc-50/70 dark:bg-zinc-900/40 text-[10px] font-bold text-zinc-400 dark:text-zinc-500 uppercase tracking-widest whitespace-nowrap">
                   <th className="px-4 py-3.5 w-10">
                     <button onClick={handleSelectAll} className="text-zinc-400 hover:text-zinc-600 transition-colors cursor-pointer border-0 bg-transparent">
                       {selectedIds.length === likes.length ? (
@@ -363,9 +398,9 @@ export default function LikesPage() {
                   </th>
                   <th className="px-4 py-3.5">点赞对象/文章</th>
                   <th className="px-4 py-3.5">点赞人/来源</th>
-                  <th className="px-4 py-3.5 w-32">IP 地址</th>
+                  <th className="px-4 py-3.5 w-36">IP 地址</th>
                   <th className="px-4 py-3.5 w-40">设备环境</th>
-                  <th className="px-4 py-3.5 w-44">点赞时间</th>
+                  <th className="px-4 py-3.5 w-44 whitespace-nowrap">点赞时间</th>
                 </tr>
               </thead>
               <tbody className="text-xs text-zinc-600 dark:text-zinc-350 divide-y divide-zinc-100 dark:divide-zinc-800/50">
@@ -415,55 +450,75 @@ export default function LikesPage() {
                         </div>
                       </td>
 
-                      {/* 点赞人/来源 */}
+                      {/* 点赞人/来源 (详细头像、昵称、邮箱/UID) */}
                       <td className="px-4 py-2.5">
                         {item.userId ? (
-                          <div className="flex items-center gap-2">
+                          <div className="flex items-center gap-2.5">
                             {item.userAvatar ? (
                               <img
                                 src={resolveAvatarUrl(item.userAvatar)}
                                 alt={item.userNickname}
-                                className="w-6 h-6 rounded-full border border-zinc-200/60 dark:border-zinc-800/60 object-cover"
+                                className="w-7 h-7 rounded-full border border-zinc-200/60 dark:border-zinc-800/60 object-cover shrink-0"
                               />
                             ) : (
-                              <div className="w-6 h-6 rounded-full bg-rose-500/10 text-rose-500 flex items-center justify-center text-[10px] font-bold uppercase border border-rose-500/10">
+                              <div className="w-7 h-7 rounded-full bg-rose-500/10 text-rose-500 flex items-center justify-center text-[10px] font-bold uppercase border border-rose-500/10 shrink-0">
                                 {item.userNickname.charAt(0)}
                               </div>
                             )}
-                            <div className="flex flex-col select-text">
-                              <span className="text-zinc-800 dark:text-zinc-200 font-bold truncate max-w-[110px] leading-tight text-[11px]">
-                                {item.userNickname}
-                              </span>
-                              <span className="text-[9px] text-zinc-400 dark:text-zinc-500 font-mono mt-0.5">UID: {item.userId}</span>
+                            <div className="flex flex-col select-text min-w-0">
+                              <div className="flex items-center gap-1.5">
+                                <span className="text-zinc-800 dark:text-zinc-200 font-bold truncate max-w-[120px] leading-tight text-[11px]" title={item.userNickname}>
+                                  {item.userNickname}
+                                </span>
+                                <span className="inline-flex items-center px-1 py-0.2 rounded-[3px] text-[8px] font-bold bg-rose-500/10 text-rose-500 uppercase border border-rose-500/20 shrink-0">
+                                  会员
+                                </span>
+                              </div>
+                              {item.userEmail ? (
+                                <span className="text-[10px] text-zinc-400 dark:text-zinc-500 font-mono truncate max-w-[160px] leading-snug" title={item.userEmail}>
+                                  {item.userEmail}
+                                </span>
+                              ) : (
+                                <span className="text-[9px] text-zinc-400 dark:text-zinc-500 font-mono leading-tight">
+                                  UID: {item.userId}
+                                </span>
+                              )}
                             </div>
-                            <span className="inline-flex items-center px-1.5 py-0.5 rounded-[3px] text-[9px] font-bold bg-rose-500/10 text-rose-500 uppercase border border-rose-500/20 scale-90 origin-left">
-                              会员
-                            </span>
                           </div>
                         ) : (
-                          <div className="flex items-center gap-2">
-                            <div className="w-6 h-6 rounded-full bg-zinc-100 dark:bg-zinc-800 flex items-center justify-center border border-zinc-200/40 dark:border-zinc-700/50 text-zinc-400 dark:text-zinc-550 shrink-0">
-                              <User size={11} />
+                          <div className="flex items-center gap-2.5">
+                            <div className="w-7 h-7 rounded-full bg-zinc-100 dark:bg-zinc-800 flex items-center justify-center border border-zinc-200/40 dark:border-zinc-700/50 text-zinc-400 dark:text-zinc-550 shrink-0">
+                              <User size={12} />
                             </div>
                             <div className="flex flex-col select-text">
-                              <span className="text-zinc-700 dark:text-zinc-400 font-bold leading-tight text-[11px]">游客</span>
-                              <span className="text-[9px] text-zinc-450 dark:text-zinc-500 font-mono mt-0.5" title={item.ipAddress}>
+                              <div className="flex items-center gap-1.5">
+                                <span className="text-zinc-700 dark:text-zinc-400 font-bold leading-tight text-[11px]">游客</span>
+                                <span className="inline-flex items-center px-1 py-0.2 rounded-[3px] text-[8px] font-bold bg-zinc-100 dark:bg-zinc-800 text-zinc-500 uppercase border border-zinc-200/50 dark:border-zinc-700/45 shrink-0">
+                                  访客
+                                </span>
+                              </div>
+                              <span className="text-[9px] text-zinc-450 dark:text-zinc-500 font-mono leading-tight" title={item.ipAddress}>
                                 {item.ipAddress === "0:0:0:0:0:0:0:1" || item.ipAddress === "::1" ? "127.0.0.1" : item.ipAddress.split('.').slice(0, 2).join('.') + '.*.*'}
                               </span>
                             </div>
-                            <span className="inline-flex items-center px-1.5 py-0.5 rounded-[3px] text-[9px] font-bold bg-zinc-100 dark:bg-zinc-800 text-zinc-500 uppercase border border-zinc-200/50 dark:border-zinc-700/45 scale-90 origin-left">
-                              访客
-                            </span>
                           </div>
                         )}
                       </td>
 
-                      {/* IP 地址 */}
-                      <td className="px-4 py-2.5 select-text">
-                        <div className="inline-flex items-center gap-1.5 px-2 py-0.75 font-mono text-[10px] font-semibold bg-zinc-50 dark:bg-zinc-950/40 border border-zinc-200/50 dark:border-zinc-800 rounded-[3px] text-zinc-500 dark:text-zinc-400">
-                          <Globe size={10} className="text-zinc-400 dark:text-zinc-500 shrink-0" />
-                          <span>{item.ipAddress === "0:0:0:0:0:0:0:1" || item.ipAddress === "::1" ? "127.0.0.1" : item.ipAddress}</span>
-                        </div>
+                      {/* IP 地址 (限定最大宽度截断，移入鼠标展示完整 IP) */}
+                      <td className="px-4 py-2.5 select-text whitespace-nowrap">
+                        {(() => {
+                          const rawIp = item.ipAddress === "0:0:0:0:0:0:0:1" || item.ipAddress === "::1" ? "127.0.0.1" : item.ipAddress;
+                          return (
+                            <div 
+                              className="inline-flex items-center gap-1.5 px-2 py-0.75 font-mono text-[10px] font-semibold bg-zinc-50 dark:bg-zinc-950/40 border border-zinc-200/50 dark:border-zinc-800 rounded-[3px] text-zinc-500 dark:text-zinc-400 max-w-[130px] truncate cursor-help"
+                              title={`完整 IP 地址: ${rawIp}`}
+                            >
+                              <Globe size={10} className="text-zinc-400 dark:text-zinc-500 shrink-0" />
+                              <span className="truncate">{rawIp}</span>
+                            </div>
+                          );
+                        })()}
                       </td>
 
                       {/* 设备环境 */}
@@ -495,9 +550,9 @@ export default function LikesPage() {
                         </div>
                       </td>
 
-                      {/* 点赞时间 */}
-                      <td className="px-4 py-2.5">
-                        <div className="inline-flex items-center gap-1 text-[10px] font-mono text-zinc-450 dark:text-zinc-500">
+                      {/* 点赞时间 (强制单行不缩窄) */}
+                      <td className="px-4 py-2.5 whitespace-nowrap w-44">
+                        <div className="inline-flex items-center gap-1 text-[10px] font-mono text-zinc-450 dark:text-zinc-500 whitespace-nowrap">
                           <Calendar size={10.5} className="shrink-0 text-zinc-400 dark:text-zinc-600" />
                           <span>{formatTime(item.createdAt)}</span>
                         </div>
@@ -509,36 +564,41 @@ export default function LikesPage() {
             </table>
           </div>
         )}
-
-        {/* 底部简明分页栏 - 样式对齐全站 */}
-        {!loading && total > 0 && (
-          <div className="flex items-center justify-between px-5 py-3.5 bg-zinc-50/50 dark:bg-zinc-950/20 border-t border-zinc-200/50 dark:border-zinc-800/40 text-xs">
-            <span className="text-zinc-500 dark:text-zinc-450 font-medium font-mono">
-              SHOWING PAGE {page} OF {Math.ceil(total / size) || 1} ({total} ITEMS)
-            </span>
-            <div className="flex items-center gap-1.5 font-bold select-none">
-              <Button
-                isDisabled={page <= 1}
-                onPress={() => setPage(p => p - 1)}
-                variant="outline"
-                size="sm"
-                className="rounded-xl px-3 py-1.5 text-xs font-bold"
-              >
-                上一页
-              </Button>
-              <Button
-                isDisabled={page * size >= total}
-                onPress={() => setPage(p => p + 1)}
-                variant="outline"
-                size="sm"
-                className="rounded-xl px-3 py-1.5 text-xs font-bold"
-              >
-                下一页
-              </Button>
-            </div>
-          </div>
-        )}
       </div>
+
+      {/* 统一高保真数字页码分页器 - 位于表格卡片外部 */}
+      {!loading && totalPages > 1 && (
+        <div className="flex items-center justify-between text-xs pt-2">
+          <span className="text-zinc-500 dark:text-zinc-450 font-medium font-mono select-none">
+            共 {total} 条记录，第 {page} / {totalPages} 页
+          </span>
+          <div className="flex items-center gap-1.5 font-medium select-none">
+            <Button
+              isDisabled={page <= 1}
+              onPress={() => setPage((p) => Math.max(1, p - 1))}
+              variant="outline"
+              size="sm"
+              className="rounded-xl px-3 py-1.5 text-xs font-bold"
+            >
+              上一页
+            </Button>
+
+            <div className="flex items-center gap-1">
+              {renderPaginationButtons()}
+            </div>
+
+            <Button
+              isDisabled={page >= totalPages}
+              onPress={() => setPage((p) => Math.min(totalPages, p + 1))}
+              variant="outline"
+              size="sm"
+              className="rounded-xl px-3 py-1.5 text-xs font-bold"
+            >
+              下一页
+            </Button>
+          </div>
+        </div>
+      )}
 
       {/* 确认物理删除的模态窗 */}
       <ConfirmModal

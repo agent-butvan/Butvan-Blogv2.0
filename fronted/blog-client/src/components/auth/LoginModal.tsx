@@ -255,7 +255,11 @@ export default function LoginModal({ isOpen, onClose }: LoginModalProps) {
       let loggedUser: { nickname: string; avatarUrl?: string | null; username?: string | null; email?: string | null } | null = null
       const exchangeCode = data?.exchangeCode as string | undefined
       if (exchangeCode) {
-        const { user } = await wechatExchange(exchangeCode)
+        const res = await wechatExchange(exchangeCode)
+        if (res.token) {
+          localStorage.setItem('client_token', res.token)
+        }
+        const user = res.user
         loggedUser = {
           nickname: user.nickname || user.email || '用户',
           avatarUrl: user.avatarUrl || null,
@@ -367,7 +371,11 @@ export default function LoginModal({ isOpen, onClose }: LoginModalProps) {
     setLoginSubmitting(true)
     setLoginError('')
     try {
-      const { user } = await loginByEmailCode(emailInput.trim(), codeInput.trim())
+      const res = await loginByEmailCode(emailInput.trim(), codeInput.trim())
+      if (res.token) {
+        localStorage.setItem('client_token', res.token)
+      }
+      const user = res.user
       const loggedUser = {
         nickname: user.nickname || user.email || '用户',
         avatarUrl: user.avatarUrl || null,

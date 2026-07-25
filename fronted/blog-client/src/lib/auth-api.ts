@@ -28,6 +28,8 @@ export interface WechatQRCodeData {
 
 /** 邮箱登录响应数据（对应后端 LoginVO） */
 export interface LoginData {
+  /** 访问 Token（可选下发，用于 Header 授权补强） */
+  token?: string | null
   /** 当前登录用户基本信息 */
   user: LoginUserInfo
 }
