@@ -113,9 +113,9 @@ export default function AlbumsPage() {
       const waveY = Math.sin(progress * Math.PI * 2) * 50
       track.style.transform = `translateX(-${progress * maxTrackMove}px) translateY(${waveY}px)`
 
-      // 背景文字视差（增强滚动感与对向流动）
-      setBgOffset1(progress * 400)    // 向右缓慢平移
-      setBgOffset2(-progress * 400)   // 向左缓慢平移
+      // 2. 背景文字多重视差 (完全对齐设计稿 HTML 视差公式)
+      setBgOffset1(-progress * 500)
+      setBgOffset2(progress * 300)
 
       // 各簇独立缩放（越靠近中心越大）
       const clusters = track.querySelectorAll<HTMLElement>('.photo-cluster')
@@ -160,39 +160,40 @@ export default function AlbumsPage() {
       <Navbar profile={profile} />
       <SidebarWidget />
 
-      {/* ========== 背景装饰层 ========== */}
+      {/* ========== 背景装饰层 - 极限纵深感 (1:1 还原设计稿) ========== */}
       <div className="fixed inset-0 z-0 pointer-events-none overflow-hidden" style={{ perspective: '1000px' }}>
-        {/* 巨型视差文字 (低调沉浸艺术水印) */}
+        {/* 巨型视差文字 GALLERY */}
         <span
-          className="absolute text-[55vw] font-black uppercase text-zinc-900/[0.035] dark:text-white/[0.03] whitespace-nowrap leading-none select-none pointer-events-none font-heading"
+          className="absolute text-[35vw] font-extrabold text-[#f2f2f2] dark:text-zinc-800/40 whitespace-nowrap leading-none select-none pointer-events-none"
           style={{
-            top: '6%',
-            left: '-5%',
+            top: '10%',
+            left: '-10%',
             transform: `translateX(${bgOffset1}px) translateZ(-100px)`,
             transition: 'transform 0.1s linear',
           }}
         >
-          butvan
+          GALLERY
         </span>
+        {/* 巨型视差文字 BEYOND */}
         <span
-          className="absolute text-[55vw] font-black uppercase text-[#3dc1d3]/[0.05] dark:text-[#3dc1d3]/[0.04] whitespace-nowrap leading-none select-none pointer-events-none font-heading"
+          className="absolute text-[35vw] font-extrabold text-[#f2f2f2] opacity-50 dark:text-zinc-800/30 dark:opacity-100 whitespace-nowrap leading-none select-none pointer-events-none"
           style={{
-            bottom: '6%',
+            bottom: '5%',
             right: '-5%',
             transform: `translateX(${bgOffset2}px) translateZ(-200px)`,
             transition: 'transform 0.1s linear',
           }}
         >
-          albums
+          BEYOND
         </span>
 
         {/* 3D 透视网格线 */}
         <div
-          className="absolute inset-0 opacity-60 dark:opacity-30 pointer-events-none"
+          className="absolute inset-0 opacity-30 dark:opacity-10 pointer-events-none"
           style={{
             backgroundImage:
-              'linear-gradient(rgba(114, 123, 186, 0.08) 1px, transparent 1px), linear-gradient(90deg, rgba(114, 123, 186, 0.08) 1px, transparent 1px)',
-            backgroundSize: '60px 60px',
+              'linear-gradient(#f0f0f0 1px, transparent 1px), linear-gradient(90deg, #f0f0f0 1px, transparent 1px)',
+            backgroundSize: '50px 50px',
             transform: 'rotateX(60deg)',
           }}
         />
@@ -298,23 +299,23 @@ function PhotoClusterCard({
     <section
       className={`photo-cluster flex-shrink-0 relative group photo-cluster-${cluster.dayKey}`}
       style={{
-        width: '280px',
-        height: '350px',
-        marginRight: '40vw',
+        width: '360px',
+        height: '460px',
+        marginRight: '45vw',
         transformStyle: 'preserve-3d',
       }}
     >
       {/* 簇元信息 */}
       <div
-        className={`absolute -top-20 left-0 opacity-50 transition-all duration-700 select-none cm-${cluster.dayKey}`}
+        className={`absolute -top-24 left-0 opacity-50 transition-all duration-700 select-none cm-${cluster.dayKey}`}
         style={{
           transitionTimingFunction: 'cubic-bezier(0.19, 1, 0.22, 1)',
         }}
       >
-        <span className="text-[0.7rem] tracking-[5px] text-[#3dc1d3] font-heading">
+        <span className="text-[0.7rem] tracking-[5px] text-[#3dc1d3] font-heading font-medium">
           CHAPTER.{String(cluster.chapterNum).padStart(2, '0')}
         </span>
-        <h3 className="font-heading text-[2rem] tracking-[-1px] leading-tight mt-1 text-zinc-900 dark:text-zinc-100">
+        <h3 className="font-serif text-[2.5rem] tracking-[-1px] leading-tight mt-1 text-zinc-900 dark:text-zinc-100">
           {cluster.dayLabel}
         </h3>
       </div>
@@ -326,7 +327,7 @@ function PhotoClusterCard({
         return (
           <div
             key={photo.id}
-            className={`art-card ac-${cluster.dayKey} absolute inset-0 bg-white dark:bg-zinc-900 p-1.5 shadow-lg cursor-pointer overflow-hidden`}
+            className={`art-card ac-${cluster.dayKey} absolute inset-0 bg-white dark:bg-zinc-900 p-2 shadow-lg cursor-pointer overflow-hidden`}
             style={{
               boxShadow: '0 10px 30px rgba(0,0,0,0.05)',
               transition: 'all 0.8s cubic-bezier(0.68, -0.6, 0.32, 1.6)',
@@ -338,28 +339,28 @@ function PhotoClusterCard({
             <img
               src={resolveImageUrl(photo.fileUrl)}
               alt={photo.caption || photo.albumTitle}
-              className="w-full h-full object-cover"
+              className="w-full h-full object-cover grayscale group-hover:grayscale-0 transition-all duration-1000 ease-[cubic-bezier(0.19,1,0.22,1)]"
               loading="lazy"
             />
           </div>
         )
       })}
 
-      {/* CSS hover 爆发效果 */}
+      {/* CSS hover 爆发效果 (1:1 还原设计稿参数) */}
       <style dangerouslySetInnerHTML={{
         __html: `
           .photo-cluster-${cluster.dayKey}:hover .ac-${cluster.dayKey}:nth-child(1) {
-            transform: translate(-150px, -70px) rotate(-12deg) scale(1.08) !important;
+            transform: translate(-220px, -100px) rotate(-12deg) scale(1.1) !important;
           }
           .photo-cluster-${cluster.dayKey}:hover .ac-${cluster.dayKey}:nth-child(2) {
-            transform: translate(125px, -105px) rotate(8deg) scale(0.9) !important;
+            transform: translate(180px, -150px) rotate(8deg) scale(0.9) !important;
           }
           .photo-cluster-${cluster.dayKey}:hover .ac-${cluster.dayKey}:nth-child(3) {
-            transform: translate(35px, 125px) rotate(-5deg) scale(1.03) !important;
+            transform: translate(50px, 180px) rotate(-5deg) scale(1.05) !important;
           }
           .photo-cluster-${cluster.dayKey}:hover .ac-${cluster.dayKey}:nth-child(4) {
             opacity: 1 !important;
-            transform: translate(-70px, 140px) rotate(5deg) !important;
+            transform: translate(-100px, 200px) rotate(5deg) !important;
           }
           .photo-cluster-${cluster.dayKey}:hover .cm-${cluster.dayKey} {
             opacity: 1 !important;
