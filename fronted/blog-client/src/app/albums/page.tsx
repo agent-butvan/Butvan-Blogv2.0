@@ -113,9 +113,9 @@ export default function AlbumsPage() {
       const waveY = Math.sin(progress * Math.PI * 2) * 50
       track.style.transform = `translateX(-${progress * maxTrackMove}px) translateY(${waveY}px)`
 
-      // 2. 背景文字多重视差 (完全对齐设计稿 HTML 视差公式)
-      setBgOffset1(-progress * 500)
-      setBgOffset2(progress * 300)
+      // 背景文字视差（平滑水流感流动平移）
+      setBgOffset1(progress * 300)    // 缓缓向右平移
+      setBgOffset2(-progress * 350)   // 缓缓向左平移
 
       // 各簇独立缩放（越靠近中心越大）
       const clusters = track.querySelectorAll<HTMLElement>('.photo-cluster')
@@ -160,40 +160,50 @@ export default function AlbumsPage() {
       <Navbar profile={profile} />
       <SidebarWidget />
 
-      {/* ========== 背景装饰层 - 极限纵深感 (1:1 还原设计稿) ========== */}
-      <div className="fixed inset-0 z-0 pointer-events-none overflow-hidden" style={{ perspective: '1000px' }}>
-        {/* 巨型视差文字 GALLERY */}
+      {/* ========== 背景装饰层 ========== */}
+      <div
+        className="fixed inset-0 z-0 pointer-events-none overflow-hidden select-none"
+        style={{
+          perspective: '1000px',
+          maskImage: 'linear-gradient(to bottom, transparent 0%, black 12%, black 88%, transparent 100%)',
+          WebkitMaskImage: 'linear-gradient(to bottom, transparent 0%, black 12%, black 88%, transparent 100%)',
+        }}
+      >
+        {/* 巨型空心视差文字 (空灵线稿描边，艺术画廊质感) */}
         <span
-          className="absolute text-[35vw] font-extrabold text-[#f2f2f2] dark:text-zinc-800/40 whitespace-nowrap leading-none select-none pointer-events-none"
+          className="absolute text-[50vw] font-extrabold uppercase tracking-tight whitespace-nowrap leading-none pointer-events-none font-heading"
           style={{
-            top: '10%',
-            left: '-10%',
-            transform: `translateX(${bgOffset1}px) translateZ(-100px)`,
-            transition: 'transform 0.1s linear',
+            top: '8%',
+            left: '-2%',
+            WebkitTextStroke: '1.5px rgba(24, 24, 27, 0.07)',
+            color: 'rgba(24, 24, 27, 0.015)',
+            transform: `translateX(${bgOffset1}px) rotate(-1.5deg) translateZ(-80px)`,
+            transition: 'transform 0.5s cubic-bezier(0.16, 1, 0.3, 1)',
           }}
         >
-          GALLERY
+          butvan
         </span>
-        {/* 巨型视差文字 BEYOND */}
         <span
-          className="absolute text-[35vw] font-extrabold text-[#f2f2f2] opacity-50 dark:text-zinc-800/30 dark:opacity-100 whitespace-nowrap leading-none select-none pointer-events-none"
+          className="absolute text-[50vw] font-extrabold uppercase tracking-tight whitespace-nowrap leading-none pointer-events-none font-heading"
           style={{
-            bottom: '5%',
-            right: '-5%',
-            transform: `translateX(${bgOffset2}px) translateZ(-200px)`,
-            transition: 'transform 0.1s linear',
+            bottom: '8%',
+            right: '-2%',
+            WebkitTextStroke: '1.5px rgba(61, 193, 211, 0.1)',
+            color: 'rgba(61, 193, 211, 0.02)',
+            transform: `translateX(${bgOffset2}px) rotate(1deg) translateZ(-150px)`,
+            transition: 'transform 0.5s cubic-bezier(0.16, 1, 0.3, 1)',
           }}
         >
-          BEYOND
+          albums
         </span>
 
-        {/* 3D 透视网格线 */}
+        {/* 3D 极简透视网格线 (柔和融于背景) */}
         <div
-          className="absolute inset-0 opacity-30 dark:opacity-10 pointer-events-none"
+          className="absolute inset-0 opacity-40 dark:opacity-20 pointer-events-none"
           style={{
             backgroundImage:
-              'linear-gradient(#f0f0f0 1px, transparent 1px), linear-gradient(90deg, #f0f0f0 1px, transparent 1px)',
-            backgroundSize: '50px 50px',
+              'linear-gradient(rgba(114, 123, 186, 0.06) 1px, transparent 1px), linear-gradient(90deg, rgba(114, 123, 186, 0.06) 1px, transparent 1px)',
+            backgroundSize: '80px 80px',
             transform: 'rotateX(60deg)',
           }}
         />
@@ -299,23 +309,23 @@ function PhotoClusterCard({
     <section
       className={`photo-cluster flex-shrink-0 relative group photo-cluster-${cluster.dayKey}`}
       style={{
-        width: '360px',
-        height: '460px',
-        marginRight: '45vw',
+        width: '280px',
+        height: '350px',
+        marginRight: '40vw',
         transformStyle: 'preserve-3d',
       }}
     >
       {/* 簇元信息 */}
       <div
-        className={`absolute -top-24 left-0 opacity-50 transition-all duration-700 select-none cm-${cluster.dayKey}`}
+        className={`absolute -top-20 left-0 opacity-50 transition-all duration-700 select-none cm-${cluster.dayKey}`}
         style={{
           transitionTimingFunction: 'cubic-bezier(0.19, 1, 0.22, 1)',
         }}
       >
-        <span className="text-[0.7rem] tracking-[5px] text-[#3dc1d3] font-heading font-medium">
+        <span className="text-[0.7rem] tracking-[5px] text-[#3dc1d3] font-heading">
           CHAPTER.{String(cluster.chapterNum).padStart(2, '0')}
         </span>
-        <h3 className="font-serif text-[2.5rem] tracking-[-1px] leading-tight mt-1 text-zinc-900 dark:text-zinc-100">
+        <h3 className="font-heading text-[2rem] tracking-[-1px] leading-tight mt-1 text-zinc-900 dark:text-zinc-100">
           {cluster.dayLabel}
         </h3>
       </div>
@@ -327,7 +337,7 @@ function PhotoClusterCard({
         return (
           <div
             key={photo.id}
-            className={`art-card ac-${cluster.dayKey} absolute inset-0 bg-white dark:bg-zinc-900 p-2 shadow-lg cursor-pointer overflow-hidden`}
+            className={`art-card ac-${cluster.dayKey} absolute inset-0 bg-white dark:bg-zinc-900 p-1.5 shadow-lg cursor-pointer overflow-hidden`}
             style={{
               boxShadow: '0 10px 30px rgba(0,0,0,0.05)',
               transition: 'all 0.8s cubic-bezier(0.68, -0.6, 0.32, 1.6)',
@@ -339,28 +349,28 @@ function PhotoClusterCard({
             <img
               src={resolveImageUrl(photo.fileUrl)}
               alt={photo.caption || photo.albumTitle}
-              className="w-full h-full object-cover grayscale group-hover:grayscale-0 transition-all duration-1000 ease-[cubic-bezier(0.19,1,0.22,1)]"
+              className="w-full h-full object-cover"
               loading="lazy"
             />
           </div>
         )
       })}
 
-      {/* CSS hover 爆发效果 (1:1 还原设计稿参数) */}
+      {/* CSS hover 爆发效果 */}
       <style dangerouslySetInnerHTML={{
         __html: `
           .photo-cluster-${cluster.dayKey}:hover .ac-${cluster.dayKey}:nth-child(1) {
-            transform: translate(-220px, -100px) rotate(-12deg) scale(1.1) !important;
+            transform: translate(-150px, -70px) rotate(-12deg) scale(1.08) !important;
           }
           .photo-cluster-${cluster.dayKey}:hover .ac-${cluster.dayKey}:nth-child(2) {
-            transform: translate(180px, -150px) rotate(8deg) scale(0.9) !important;
+            transform: translate(125px, -105px) rotate(8deg) scale(0.9) !important;
           }
           .photo-cluster-${cluster.dayKey}:hover .ac-${cluster.dayKey}:nth-child(3) {
-            transform: translate(50px, 180px) rotate(-5deg) scale(1.05) !important;
+            transform: translate(35px, 125px) rotate(-5deg) scale(1.03) !important;
           }
           .photo-cluster-${cluster.dayKey}:hover .ac-${cluster.dayKey}:nth-child(4) {
             opacity: 1 !important;
-            transform: translate(-100px, 200px) rotate(5deg) !important;
+            transform: translate(-70px, 140px) rotate(5deg) !important;
           }
           .photo-cluster-${cluster.dayKey}:hover .cm-${cluster.dayKey} {
             opacity: 1 !important;
