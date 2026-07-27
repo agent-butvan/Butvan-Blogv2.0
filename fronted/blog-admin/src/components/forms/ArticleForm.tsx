@@ -306,7 +306,7 @@ export default function ArticleForm({ initialData, onSave, saving = false }: Art
 
       {/* 主面板写作区：内置实时预览切换与字数信息常驻 */}
       <main className="flex-1 min-h-0 relative">
-        <div className="relative h-full w-full rounded-xl border border-zinc-200/50 dark:border-zinc-850 bg-white dark:bg-zinc-950">
+        <div className="relative h-full w-full rounded-xl overflow-hidden border border-zinc-200/50 dark:border-zinc-850 bg-white dark:bg-zinc-950">
           <MarkdownEditor
             value={content}
             onChange={setContent}
