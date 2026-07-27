@@ -2,6 +2,41 @@
 
 本文档记录 **Butvan Blog 2.0** 的全部版本更新明细与发版履历，遵循 [Semantic Versioning 2.0.0](https://semver.org/lang/zh-CN/) 版本规范。
 
+## v2.1.0
+
+- **发布日期 (UTC)**：2026-07-27
+- **对比基线**：v2.0.2...v2.1.0
+- **发布通道**：Stable
+
+本次更新重磅推出了后台文章编辑器大纲目录（TOC）实时解析与大厂极简树轨展示、文章编辑器独立滚动外壳锁定、前后台全屏高保真图片 Lightbox 放大手势预览以及全站 SEO Metadata / Favicon 品牌图标升级。
+
+### 功能新增与体验重构
+
+- **后台编辑器大纲目录（TOC）**：支持富文本正文实时解析 H1~H6 标题，具备大厂极简树轨高亮与跟随正文平滑自动滚动的 Active Indicator 指示器。
+- **文章工作台固定视口**：锁定编辑器外壳与页头，中间正文独立平滑滚动，四周工具栏与大纲粘性固定。
+- **全站 DOM 卷动冒泡防护**：重构大纲定位为相对 `scrollTop`，彻底解决 `scrollIntoView` 导致最外层 `AdminLayout` 误向上卷动露白的系统级 Bug。
+- **前后台图片全屏 Lightbox 弹窗**：支持前后台文章图片点击放大全屏预览、毛玻璃遮罩、90°旋转、滚轮实时缩放、鼠标拖拽平移及 `createPortal` 突破 CSS Transform 截断防护。
+- **全站 SEO 与 Favicon 品牌更新**：更新根布局 OpenGraph Metadata、图片代理与全局 Icon，替换前后台页签与友链卡片 MinIO 头像图标。
+
+### Commits
+
+- style(icon): 全量更新前后台浏览器页签 Favicon 显式图标
+- feat(seo): 更新全站 HTML 爬虫 Metadata 图标与申请友链互贴元数据
+- fix(client): 前台 ImagePreviewModal 接入 createPortal 突破 transform 层级截断
+- fix(client): 重构前台 HtmlRenderer 图片预览为事件代理与正规 URL 解析
+- feat(ui): 支持前后台文章图片点击放大查看详情与交互手势
+- fix(admin): 修复 scrollIntoView 导致最外层 AdminLayout 误卷露白 Bug
+- style(admin): 锁定文章编辑视口外壳，实现中间正文独立滚动与四周固定
+- style(admin): 还原原生沉浸式编辑器页头与高保真大纲侧边栏
+- fix(admin): 移除工具栏阴影并彻底修复大纲目录视口 Sticky 粘性吸顶
+- style(admin): 重构为现代 Floating 悬浮吸顶格式控制条与右侧 Sticky 大纲
+- fix(admin): 修正编辑器工具栏样式与大纲双栏平滑滚动
+- style(admin): 实现后台大纲目录与工具栏 Sticky 吸顶固定展示
+- style(admin): 重新设计后台编辑器大纲目录为大厂极简风格
+- feat(admin): 后台文章编辑器新增实时大纲目录展示
+
+---
+
 ## v2.0.2
 
 - **发布日期 (UTC)**：2026-07-24
