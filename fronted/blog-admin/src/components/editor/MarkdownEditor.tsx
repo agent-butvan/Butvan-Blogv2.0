@@ -599,13 +599,13 @@ export default function MarkdownEditor({
     <div
       ref={containerRef}
       className={cn(
-        "relative w-full flex flex-col rounded-xl overflow-hidden border border-zinc-200/60 dark:border-zinc-850 bg-white dark:bg-zinc-950 transition-all duration-200",
+        "relative w-full h-full flex flex-col rounded-xl overflow-hidden border border-zinc-200/60 dark:border-zinc-850 bg-white dark:bg-zinc-950 transition-all duration-200",
         colorMode === "dark" ? "dark" : ""
       )}
       style={{ minHeight: `${height}px` }}
     >
-      {/* 顶部富文本排版工具栏 - 原生沉浸式卡片页头 */}
-      <div className="flex flex-wrap items-center gap-1.5 p-2 bg-zinc-50/50 dark:bg-zinc-900/40 border-b border-zinc-200/60 dark:border-zinc-800/60 select-none">
+      {/* 顶部富文本排版工具栏 - 固定在卡片最顶端 */}
+      <div className="shrink-0 flex flex-wrap items-center gap-1.5 p-2 bg-zinc-50/80 dark:bg-zinc-900/80 border-b border-zinc-200/60 dark:border-zinc-800/60 select-none z-10">
         <button
           type="button"
           onClick={() => editor.chain().focus().undo().run()}
@@ -905,10 +905,10 @@ export default function MarkdownEditor({
       </div>
 
       {/* 编辑器核心内容区域 + 右侧大纲面板 */}
-      <div className="flex-1 w-full flex flex-row min-h-0 overflow-hidden bg-white dark:bg-zinc-950">
-        {/* 左侧正文编辑区 */}
+      <div className="flex-1 w-full flex flex-row min-h-0 overflow-hidden bg-white dark:bg-zinc-950 relative">
+        {/* 左侧/中央正文编辑区（唯一的独立滚动区域） */}
         <div
-          className="flex-1 min-w-0 overflow-y-auto h-full"
+          className="flex-1 min-w-0 h-full overflow-y-auto custom-scrollbar p-4 relative"
           onScroll={() => setMenuOpen(false)}
         >
           <EditorContent editor={editor} />
