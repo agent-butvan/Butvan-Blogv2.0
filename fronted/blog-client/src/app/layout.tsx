@@ -33,6 +33,8 @@ export default function RootLayout({
   return (
     <html lang="zh" className="h-full light" suppressHydrationWarning>
       <head>
+        <link rel="icon" href="https://minio.server.butvan.top/blog2/USER_AVATAR/20260721/fbc00155-a6f0-4685-9067-fa1ab1c7356f.png" />
+        <link rel="apple-touch-icon" href="https://minio.server.butvan.top/blog2/USER_AVATAR/20260721/fbc00155-a6f0-4685-9067-fa1ab1c7356f.png" />
         <script
           dangerouslySetInnerHTML={{
             __html: `
