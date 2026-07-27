@@ -132,7 +132,7 @@ export default function EditorToc({
   return (
     <aside
       className={cn(
-        "w-52 shrink-0 flex flex-col border-l border-zinc-100 dark:border-zinc-850/80 bg-transparent select-none transition-all duration-200 h-full overflow-hidden py-3 px-3",
+        "w-52 shrink-0 flex flex-col border-l border-zinc-100 dark:border-zinc-850/80 bg-transparent select-none transition-all duration-200 sticky top-16 max-h-[calc(100vh-120px)] overflow-hidden py-3 px-3 self-start z-10",
         className
       )}
     >
