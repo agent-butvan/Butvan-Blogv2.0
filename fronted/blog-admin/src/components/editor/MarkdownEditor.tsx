@@ -604,8 +604,8 @@ export default function MarkdownEditor({
       )}
       style={{ minHeight: `${height}px` }}
     >
-      {/* 顶部富文本排版工具栏 - 大厂 Floating 悬浮吸顶胶囊控制栏 */}
-      <div className="sticky top-2 z-20 mx-2 mt-2 mb-1 p-1.5 rounded-xl border border-zinc-200/80 dark:border-zinc-800/80 bg-white/90 dark:bg-zinc-900/90 backdrop-blur-md shadow-sm transition-all flex flex-wrap items-center gap-1.5 select-none">
+      {/* 顶部富文本排版工具栏 - 大厂 Floating 悬浮吸顶胶囊控制栏（无阴影版） */}
+      <div className="sticky top-2 z-20 mx-2 mt-2 mb-1 p-1.5 rounded-xl border border-zinc-200/80 dark:border-zinc-800/80 bg-white/95 dark:bg-zinc-950/95 backdrop-blur-md transition-all flex flex-wrap items-center gap-1.5 select-none">
         <button
           type="button"
           onClick={() => editor.chain().focus().undo().run()}
@@ -905,10 +905,10 @@ export default function MarkdownEditor({
       </div>
 
       {/* 编辑器核心内容区域 + 右侧大纲面板 */}
-      <div className="flex-1 w-full flex flex-row min-h-0 overflow-hidden bg-white dark:bg-zinc-950">
+      <div className="flex-1 w-full flex flex-row items-start min-h-0 bg-white dark:bg-zinc-950 relative">
         {/* 左侧正文编辑区 */}
         <div
-          className="flex-1 min-w-0 overflow-y-auto h-full"
+          className="flex-1 min-w-0"
           onScroll={() => setMenuOpen(false)}
         >
           <EditorContent editor={editor} />
