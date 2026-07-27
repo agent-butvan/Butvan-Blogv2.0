@@ -36,10 +36,12 @@ import {
   Minus,
   Link as LinkIcon,
   Image as ImageIcon,
+  ListTree,
 } from "lucide-react";
 
 import ImageNodeViewComponent from "./ImageNodeViewComponent";
 import SlashMenu, { SLASH_COMMANDS, type SlashCommand } from "./SlashMenu";
+import EditorToc from "./EditorToc";
 import apiClient from "@/lib/api";
 import { resolveAssetUrl } from "@/lib/image-url";
 
@@ -81,6 +83,7 @@ export default function MarkdownEditor({
   preview = "edit",
 }: MarkdownEditorProps) {
   const [colorMode, setColorMode] = useState<"light" | "dark">("light");
+  const [showToc, setShowToc] = useState(true);
 
   // 保持最新 onImageChange 引用，避免 useEditor 闭包陷阱
   const onImageChangeRef = useRef(onImageChange);
@@ -883,14 +886,42 @@ export default function MarkdownEditor({
         >
           <ImageIcon size={14} />
         </button>
+
+        <div className="h-4 w-px bg-zinc-200 dark:bg-zinc-800 mx-1" />
+
+        {/* 目录大纲切换显隐控制按钮 */}
+        <button
+          type="button"
+          onClick={() => setShowToc((prev) => !prev)}
+          className={cn(
+            "p-1.5 rounded-lg text-zinc-500 dark:text-zinc-400 hover:bg-zinc-200 dark:hover:bg-zinc-800 transition-all cursor-pointer flex items-center gap-1 text-xs font-bold",
+            showToc && "bg-primary/10 text-primary border-primary/20"
+          )}
+          title={showToc ? "隐藏文章大纲目录" : "展开文章大纲目录"}
+        >
+          <ListTree size={14} />
+          <span className="hidden sm:inline text-[11px]">目录</span>
+        </button>
       </div>
 
-      {/* 编辑器核心内容区域 */}
-      <div 
-        className="flex-1 w-full bg-white dark:bg-zinc-950 overflow-y-auto"
-        onScroll={() => setMenuOpen(false)}
-      >
-        <EditorContent editor={editor} />
+      {/* 编辑器核心内容区域 + 右侧大纲面板 */}
+      <div className="flex-1 w-full flex flex-row min-h-0 overflow-hidden bg-white dark:bg-zinc-950">
+        {/* 左侧正文编辑区 */}
+        <div
+          className="flex-1 min-w-0 overflow-y-auto h-full"
+          onScroll={() => setMenuOpen(false)}
+        >
+          <EditorContent editor={editor} />
+        </div>
+
+        {/* 右侧大纲实时目录 */}
+        {showToc && (
+          <EditorToc
+            editor={editor}
+            collapsed={false}
+            onToggleCollapse={() => setShowToc(false)}
+          />
+        )}
       </div>
 
       {/* 斜杠指令浮动菜单 */}
