@@ -12,16 +12,18 @@ import {
   Copy,
   X,
   ImageIcon,
+  Maximize2,
 } from "lucide-react";
 import Portal from "../common/Portal";
+import ImagePreviewModal from "../common/ImagePreviewModal";
 import apiClient from "@/lib/api";
 import { resolveAssetUrl } from "@/lib/image-url";
 
 /**
  * Tiptap 自定义 Image React NodeView 组件
- * - 鼠标移入图片右上角显示“编辑”图标
- * - 点击图标弹窗（Modal）配置图片 URL、图片描述，并支持删除图片
- * - 自动检测图片加载失败，并展示友好的警告信息
+ * - 鼠标移入图片右上角显示“查看大图”与“编辑”图标
+ * - 支持点击图片全屏放大预览大图（Lightbox）
+ * - 支持弹窗配置图片 URL、描述及上传替换
  */
 export default function ImageNodeViewComponent(props: NodeViewProps) {
   const { node, updateAttributes, deleteNode, selected } = props;
@@ -30,6 +32,7 @@ export default function ImageNodeViewComponent(props: NodeViewProps) {
 
   const [hasError, setHasError] = useState(false);
   const [modalOpen, setModalOpen] = useState(false);
+  const [previewOpen, setPreviewOpen] = useState(false);
   const [inputUrl, setInputUrl] = useState(src);
   const [inputAlt, setInputAlt] = useState(alt);
   const [copied, setCopied] = useState(false);
@@ -137,7 +140,7 @@ export default function ImageNodeViewComponent(props: NodeViewProps) {
           </div>
         </div>
       ) : (
-        /* ================= 正常渲染图片（Hover 提示编辑图标） ================= */
+        /* ================= 正常渲染图片（支持点击与悬浮按钮大图预览） ================= */
         <div
           className={`relative group inline-block rounded-xl overflow-hidden border transition-all duration-200 ${
             selected
@@ -150,23 +153,43 @@ export default function ImageNodeViewComponent(props: NodeViewProps) {
             alt={alt}
             onError={() => setHasError(true)}
             onLoad={() => setHasError(false)}
-            className="max-w-[480px] max-h-[420px] w-auto h-auto object-cover rounded-lg block"
+            onClick={() => setPreviewOpen(true)}
+            className="max-w-[480px] max-h-[420px] w-auto h-auto object-cover rounded-lg block cursor-pointer transition-transform hover:scale-[1.005]"
+            title="点击查看全屏大图"
           />
 
-          {/* 鼠标移入右上角显示的“编辑”图标 */}
-          <div className="absolute top-2.5 right-2.5 opacity-0 group-hover:opacity-100 transition-all duration-200 transform translate-y-1 group-hover:translate-y-0 z-10">
+          {/* 鼠标移入右上角显示的操作卡片：查看大图 / 编辑 */}
+          <div className="absolute top-2.5 right-2.5 opacity-0 group-hover:opacity-100 transition-all duration-200 transform translate-y-1 group-hover:translate-y-0 z-10 flex items-center gap-1.5">
+            <button
+              type="button"
+              onClick={() => setPreviewOpen(true)}
+              className="px-2.5 py-1.5 bg-zinc-900/80 hover:bg-zinc-900 text-white rounded-lg backdrop-blur-md border border-white/20 shadow-lg transition-transform hover:scale-105 cursor-pointer flex items-center gap-1 text-xs font-medium"
+              title="全屏大图查看"
+            >
+              <Maximize2 size={13} />
+              <span>查看大图</span>
+            </button>
+
             <button
               type="button"
               onClick={handleOpenModal}
-              className="px-2.5 py-1.5 bg-zinc-900/80 hover:bg-zinc-900 text-white rounded-lg backdrop-blur-md border border-white/20 shadow-lg transition-transform hover:scale-105 cursor-pointer flex items-center gap-1.5 text-xs font-medium"
+              className="px-2.5 py-1.5 bg-zinc-900/80 hover:bg-zinc-900 text-white rounded-lg backdrop-blur-md border border-white/20 shadow-lg transition-transform hover:scale-105 cursor-pointer flex items-center gap-1 text-xs font-medium"
               title="配置 / 编辑此图片"
             >
               <Settings size={13} />
-              <span>编辑图片</span>
+              <span>编辑</span>
             </button>
           </div>
         </div>
       )}
+
+      {/* 点击图片全屏 Lightbox 大图预览 */}
+      <ImagePreviewModal
+        isOpen={previewOpen}
+        src={src}
+        alt={alt}
+        onClose={() => setPreviewOpen(false)}
+      />
 
       {/* 2. Portal 样式的 Modal 图片配置弹窗 */}
       {modalOpen && (
