@@ -1,6 +1,7 @@
 'use client'
 
 import React, { useState, useEffect, useRef } from 'react'
+import { createPortal } from 'react-dom'
 import {
   ZoomIn,
   ZoomOut,
@@ -8,7 +9,6 @@ import {
   RefreshCw,
   X,
   ExternalLink,
-  Download
 } from 'lucide-react'
 
 export interface ImagePreviewModalProps {
@@ -20,6 +20,7 @@ export interface ImagePreviewModalProps {
 
 /**
  * 前台全屏高保真图片放大查看 Modal (Image Lightbox)
+ * - 使用 createPortal 挂载至 document.body 彻底脱离层级限制
  * - 支持 滚轮/按钮 缩放、拖拽平移、顺时针旋转、原图查看与键盘 Esc 快捷键关闭
  * - 沉浸式毛玻璃半透明遮罩背景
  */
@@ -29,6 +30,7 @@ export default function ImagePreviewModal({
   alt = '',
   onClose,
 }: ImagePreviewModalProps) {
+  const [mounted, setMounted] = useState(false)
   const [scale, setScale] = useState(1)
   const [rotation, setRotation] = useState(0)
   const [position, setPosition] = useState({ x: 0, y: 0 })
@@ -36,6 +38,10 @@ export default function ImagePreviewModal({
   const [dragStart, setDragStart] = useState({ x: 0, y: 0 })
 
   const imgRef = useRef<HTMLImageElement>(null)
+
+  useEffect(() => {
+    setMounted(true)
+  }, [])
 
   // 当弹窗状态重置时，还原缩放、角度和平移位移
   useEffect(() => {
@@ -57,7 +63,7 @@ export default function ImagePreviewModal({
     return () => window.removeEventListener('keydown', handleKeyDown)
   }, [isOpen, onClose])
 
-  if (!isOpen || !src) return null
+  if (!mounted || !isOpen || !src) return null
 
   // 缩放增减
   const handleZoomIn = () => setScale((prev) => Math.min(prev + 0.25, 4))
@@ -105,9 +111,9 @@ export default function ImagePreviewModal({
     setIsDragging(false)
   }
 
-  return (
+  return createPortal(
     <div
-      className="fixed inset-0 z-50 flex flex-col items-center justify-between bg-black/85 backdrop-blur-md select-none animate-fade-in transition-all duration-300"
+      className="fixed inset-0 z-[9999] flex flex-col items-center justify-between bg-black/85 backdrop-blur-md select-none animate-fade-in transition-all duration-300"
       onWheel={handleWheel}
       onMouseUp={handleMouseUp}
     >
@@ -205,6 +211,7 @@ export default function ImagePreviewModal({
       <footer className="py-3 text-[11px] font-mono text-white/40 z-10 select-none">
         按 Esc 退出 | 滚轮可缩放 | 放大后可鼠标拖拽位移
       </footer>
-    </div>
+    </div>,
+    document.body
   )
 }
