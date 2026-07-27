@@ -86,31 +86,46 @@ export default function EditorToc({
   }, [editor, updateToc]);
 
   /**
-   * 点击大纲条目：定位光标与滚动
+   * 点击大纲条目：定位光标与只滚动内层编辑器容器，绝不上移外层 Dashboard 布局
    */
   const handleItemClick = (item: TocItem) => {
     if (!editor || editor.isDestroyed) return;
 
-    editor.chain().focus().setTextSelection(item.pos).run();
+    // 1. 设置选区
+    editor.chain().setTextSelection(item.pos).run();
     setActivePos(item.pos);
 
-    try {
-      const domNode = editor.view.nodeDOM(item.pos) as HTMLElement | null;
-      if (domNode && typeof domNode.scrollIntoView === "function") {
-        domNode.scrollIntoView({ behavior: "smooth", block: "center" });
-      } else {
-        const editorEl = editor.view.dom as HTMLElement;
-        const headings = editorEl.querySelectorAll("h1, h2, h3, h4, h5, h6");
-        const matchingHeading = Array.from(headings).find(
-          (h) => (h.textContent || "").trim() === item.text
-        );
-        if (matchingHeading) {
-          matchingHeading.scrollIntoView({ behavior: "smooth", block: "center" });
-        }
+    // 2. 找到内层可滚动编辑区容器
+    const editorDom = editor.view.dom as HTMLElement;
+    const scrollContainer =
+      (editorDom.closest(".overflow-y-auto") as HTMLElement) || editorDom.parentElement;
+
+    if (scrollContainer) {
+      const headings = editorDom.querySelectorAll("h1, h2, h3, h4, h5, h6");
+      const targetHeading = Array.from(headings).find(
+        (h) => (h.textContent || "").trim() === item.text
+      ) as HTMLElement;
+
+      if (targetHeading) {
+        const containerRect = scrollContainer.getBoundingClientRect();
+        const headingRect = targetHeading.getBoundingClientRect();
+        const targetScrollTop =
+          scrollContainer.scrollTop + (headingRect.top - containerRect.top) - 16;
+
+        scrollContainer.scrollTo({
+          top: Math.max(0, targetScrollTop),
+          behavior: "smooth",
+        });
       }
-    } catch (e) {
-      console.warn("滚动定位失败:", e);
     }
+
+    // 3. 兜底防护：防止浏览器原生聚焦把最外层 AdminLayout 视口上推露白
+    requestAnimationFrame(() => {
+      const adminMain = document.querySelector("main.overflow-y-auto") as HTMLElement;
+      if (adminMain && adminMain.scrollTop > 0) {
+        adminMain.scrollTop = 0;
+      }
+    });
   };
 
   // 折叠最小化状态
