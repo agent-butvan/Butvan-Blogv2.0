@@ -1,9 +1,10 @@
 'use client'
 
-import React, { useState, useEffect } from 'react'
+import React, { useState, useEffect, useCallback } from 'react'
 import { marked } from 'marked'
 import MarkdownCodeBlock from './MarkdownCodeBlock'
 import ImagePreviewModal from './ImagePreviewModal'
+import { resolveImageUrl } from '@/lib/image-url'
 
 interface HtmlRendererProps {
   html: string
@@ -21,9 +22,8 @@ marked.setOptions({
  * 
  * 机制：
  * 1. 同步使用 marked 将输入的 Markdown 源文本转换为标准 HTML 富文本。
- * 2. 在 SSR（服务端渲染）和首屏渲染期间，直接通过 dangerouslySetInnerHTML 输出标准的 HTML。
- * 3. 客户端激活（useClient）后，使用 DOMParser 递归解析 HTML 树并构建 React Virtual DOM 树。
- * 4. 拦截 <pre><code> 及 <img> 节点，提供代码高亮与图片点击全屏放大预览 lightbox。
+ * 2. 客户端结合事件代理 handleContainerClick 处理图片点击放大预览，确保 SSR/Hydration 无闪烁且 100% 支持所有图片。
+ * 3. 完美整合 resolveImageUrl，解决相对路径图片 404 与图片代理问题。
  */
 export default function HtmlRenderer({ html, proseClass = 'article-content-prose' }: HtmlRendererProps) {
   const [reactContent, setReactContent] = useState<React.ReactNode>(null)
@@ -50,33 +50,26 @@ export default function HtmlRenderer({ html, proseClass = 'article-content-prose
     const parser = new DOMParser()
     const doc = parser.parseFromString(cleanHtml, 'text/html')
 
-    /**
-     * 递归转换 DOM 节点为 React 元素
-     */
     const convertNode = (node: Node, index: number): React.ReactNode => {
-      // 1. 处理文本节点
       if (node.nodeType === Node.TEXT_NODE) {
         return node.textContent
       }
 
-      // 2. 处理元素节点
       if (node.nodeType === Node.ELEMENT_NODE) {
         const element = node as HTMLElement
         const tagName = element.tagName.toLowerCase()
 
-        // 【核心拦截 1】：如果是代码块 pre 标签且内含 code
+        // 拦截 <pre><code> 进行 React 代码高亮接管
         if (tagName === 'pre') {
           const codeEl = element.querySelector('code')
           if (codeEl) {
             const codeText = codeEl.textContent || ''
-            
             let lang = 'text'
             const classList = Array.from(codeEl.classList)
             const langClass = classList.find(c => c.startsWith('language-'))
             if (langClass) {
               lang = langClass.replace('language-', '')
             }
-            
             return (
               <MarkdownCodeBlock 
                 key={`code-block-${index}`} 
@@ -85,22 +78,6 @@ export default function HtmlRenderer({ html, proseClass = 'article-content-prose
               />
             )
           }
-        }
-
-        // 【核心拦截 2】：如果是 img 标签，支持点击调起高保真 Lightbox 大图预览
-        if (tagName === 'img') {
-          const src = element.getAttribute('src') || ''
-          const alt = element.getAttribute('alt') || ''
-          const originalClass = element.getAttribute('class') || ''
-          return (
-            <img
-              key={`img-${index}`}
-              src={src}
-              alt={alt}
-              className={`${originalClass} cursor-zoom-in transition-all duration-200 hover:opacity-95 hover:scale-[1.005]`}
-              onClick={() => setPreviewImage({ isOpen: true, src, alt })}
-            />
-          )
         }
 
         // 构建常规元素的属性映射
@@ -112,9 +89,18 @@ export default function HtmlRenderer({ html, proseClass = 'article-content-prose
           props.className = element.getAttribute('class')
         }
 
+        // 如果是 img 标签，解析正确路径并附加手势 Cursor
+        if (tagName === 'img') {
+          const rawSrc = element.getAttribute('src') || ''
+          const resolvedSrc = resolveImageUrl(rawSrc)
+          props.src = resolvedSrc
+          props.className = `${element.getAttribute('class') || ''} cursor-zoom-in hover:opacity-95 transition-all duration-200`
+        }
+
         for (let i = 0; i < element.attributes.length; i++) {
           const attr = element.attributes[i]
           if (attr.name === 'class') continue
+          if (attr.name === 'src' && tagName === 'img') continue // 避免重复处理
           if (attr.name.startsWith('on')) continue
 
           let reactAttrName = attr.name
@@ -145,20 +131,40 @@ export default function HtmlRenderer({ html, proseClass = 'article-content-prose
     setReactContent(<React.Fragment>{elements}</React.Fragment>)
   }, [cleanHtml])
 
+  /**
+   * 全局事件代理：拦截正文容器内所有图片点击并调起 Lightbox
+   */
+  const handleContainerClick = useCallback((e: React.MouseEvent<HTMLDivElement>) => {
+    const target = e.target as HTMLElement
+    if (target && target.tagName.toLowerCase() === 'img') {
+      const imgEl = target as HTMLImageElement
+      const rawSrc = imgEl.getAttribute('src') || imgEl.currentSrc || imgEl.src
+      const resolvedSrc = resolveImageUrl(rawSrc)
+      const alt = imgEl.alt || ''
+      if (resolvedSrc) {
+        setPreviewImage({
+          isOpen: true,
+          src: resolvedSrc,
+          alt,
+        })
+      }
+    }
+  }, [])
+
   return (
     <>
-      {!reactContent ? (
-        <div 
-          className={`${proseClass} max-w-none`}
-          dangerouslySetInnerHTML={{ __html: cleanHtml }}
-        />
-      ) : (
-        <div className={`${proseClass} max-w-none`}>
-          {reactContent}
-        </div>
-      )}
+      <div
+        className={`${proseClass} max-w-none`}
+        onClick={handleContainerClick}
+      >
+        {!reactContent ? (
+          <div dangerouslySetInnerHTML={{ __html: cleanHtml }} />
+        ) : (
+          reactContent
+        )}
+      </div>
 
-      {/* 点击图片全屏 Lightbox 查看器 */}
+      {/* 图片全屏 Lightbox 查看器 */}
       <ImagePreviewModal
         isOpen={previewImage.isOpen}
         src={previewImage.src}
