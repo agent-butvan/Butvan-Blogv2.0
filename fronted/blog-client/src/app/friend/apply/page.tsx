@@ -138,9 +138,10 @@ export default function FriendApplyPage() {
   // 复制本站友链信息到剪贴板
   const handleCopySiteInfo = async () => {
     const text = [
-      `博客名称：${profile?.nickname || 'Butvan Blog'}`,
+      `博客名称：${profile?.nickname || '可梵的个人博客'}`,
       `博客地址：${siteOrigin}`,
-      `博客简介：${profile?.bio || '但行好事，莫问前程。'}`,
+      `博客头像：https://minio.server.butvan.top/blog2/USER_AVATAR/20260721/fbc00155-a6f0-4685-9067-fa1ab1c7356f.png`,
+      `博客简介：${profile?.bio || '但行好事，莫问前程。专注于 Web 全栈开发、AI 架构探秘与后端高并发实践，记录技术思考与生活感悟。'}`,
     ].join('\n')
     try {
       await navigator.clipboard.writeText(text)
@@ -681,8 +682,8 @@ export default function FriendApplyPage() {
               <dl className="space-y-1.5 text-xs">
                 <div className="flex gap-2">
                   <dt className="text-zinc-400 dark:text-zinc-500 shrink-0 w-16">名称</dt>
-                  <dd className="text-zinc-700 dark:text-zinc-300 truncate">
-                    {profile?.nickname || 'Butvan Blog'}
+                  <dd className="text-zinc-700 dark:text-zinc-300 truncate font-medium">
+                    {profile?.nickname || '可梵的个人博客'}
                   </dd>
                 </div>
                 <div className="flex gap-2">
@@ -692,9 +693,15 @@ export default function FriendApplyPage() {
                   </dd>
                 </div>
                 <div className="flex gap-2">
+                  <dt className="text-zinc-400 dark:text-zinc-500 shrink-0 w-16">头像</dt>
+                  <dd className="text-zinc-700 dark:text-zinc-300 truncate font-mono text-[11px]">
+                    https://minio.server.butvan.top/blog2/USER_AVATAR/...
+                  </dd>
+                </div>
+                <div className="flex gap-2">
                   <dt className="text-zinc-400 dark:text-zinc-500 shrink-0 w-16">简介</dt>
                   <dd className="text-zinc-700 dark:text-zinc-300 line-clamp-2">
-                    {profile?.bio || '但行好事，莫问前程。'}
+                    {profile?.bio || '但行好事，莫问前程。专注于 Web 全栈开发、AI 架构探秘与后端高并发实践，记录技术思考与生活感悟。'}
                   </dd>
                 </div>
               </dl>

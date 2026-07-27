@@ -1,6 +1,6 @@
 "use client";
 
-import { useEffect, useState } from "react";
+import { useEffect, useState, useRef } from "react";
 import { usePathname } from "next/navigation";
 import Sidebar from "./Sidebar";
 import TopBar from "./TopBar";
@@ -30,10 +30,15 @@ export default function AdminLayout({ children }: { children: React.ReactNode })
     return () => window.removeEventListener("resize", handleResize);
   }, []);
 
-  // 监听路由变化，跳转时自动收起移动端侧栏
+  const mainRef = useRef<HTMLElement | null>(null);
+
+  // 监听路由变化，跳转时自动收起移动端侧栏与重置主视口滚动位置
   useEffect(() => {
     setTimeout(() => {
       setMobileSlide(null);
+      if (mainRef.current) {
+        mainRef.current.scrollTop = 0;
+      }
     }, 0);
   }, [pathname]);
 
@@ -100,6 +105,7 @@ export default function AdminLayout({ children }: { children: React.ReactNode })
 
         {/* 主内容视口：Docked 直角纯色，去除玻璃卡片感 */}
         <main
+          ref={mainRef}
           className={cn(
             "flex-1 overflow-y-auto custom-scrollbar relative",
             isMobile

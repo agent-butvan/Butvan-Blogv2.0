@@ -192,10 +192,10 @@ export default function ArticleForm({ initialData, onSave, saving = false }: Art
   };
 
   return (
-    <form onSubmit={handleSubmit} className="flex flex-col h-full w-full bg-transparent min-h-[calc(100vh-140px)]">
+    <form onSubmit={handleSubmit} className="flex flex-col h-[calc(100vh-125px)] w-full bg-transparent overflow-hidden">
       
       {/* 顶栏 Header：集成标题与所有核心工作流控制 */}
-      <header className="bg-background/80 backdrop-blur-md border-b border-zinc-200/50 dark:border-zinc-900/60 py-3 mb-5 flex flex-col gap-4 sm:flex-row sm:items-center sm:justify-between z-20 select-none">
+      <header className="shrink-0 bg-background/80 backdrop-blur-md border-b border-zinc-200/50 dark:border-zinc-900/60 py-3 mb-4 flex flex-col gap-4 sm:flex-row sm:items-center sm:justify-between z-20 select-none">
         
         {/* 左侧：返回列表与无框扁平大标题输入 */}
         <div className="flex flex-1 items-center gap-3">
@@ -305,8 +305,8 @@ export default function ArticleForm({ initialData, onSave, saving = false }: Art
       </header>
 
       {/* 主面板写作区：内置实时预览切换与字数信息常驻 */}
-      <main className="flex-1 min-h-0 relative">
-        <div className="relative h-full w-full rounded-xl overflow-hidden border border-zinc-200/50 dark:border-zinc-850 bg-white dark:bg-zinc-950">
+      <main className="flex-1 min-h-0 relative h-full overflow-hidden">
+        <div className="relative h-full w-full rounded-xl overflow-hidden border border-zinc-200/50 dark:border-zinc-850 bg-white dark:bg-zinc-950 flex flex-col">
           <MarkdownEditor
             value={content}
             onChange={setContent}
