@@ -599,13 +599,13 @@ export default function MarkdownEditor({
     <div
       ref={containerRef}
       className={cn(
-        "relative w-full flex flex-col rounded-xl overflow-hidden border border-zinc-200/60 dark:border-zinc-850 bg-white dark:bg-zinc-950 transition-all duration-200",
+        "relative w-full flex flex-col rounded-xl border border-zinc-200/60 dark:border-zinc-850 bg-white dark:bg-zinc-950 transition-all duration-200",
         colorMode === "dark" ? "dark" : ""
       )}
       style={{ minHeight: `${height}px` }}
     >
-      {/* 顶部富文本排版工具栏 */}
-      <div className="flex flex-wrap items-center gap-1.5 p-2 bg-zinc-50/80 dark:bg-zinc-900/80 border-b border-zinc-200/60 dark:border-zinc-800/60 select-none">
+      {/* 顶部富文本排版工具栏 - 大厂 Floating 悬浮吸顶胶囊控制栏 */}
+      <div className="sticky top-2 z-20 mx-2 mt-2 mb-1 p-1.5 rounded-xl border border-zinc-200/80 dark:border-zinc-800/80 bg-white/90 dark:bg-zinc-900/90 backdrop-blur-md shadow-sm transition-all flex flex-wrap items-center gap-1.5 select-none">
         <button
           type="button"
           onClick={() => editor.chain().focus().undo().run()}
