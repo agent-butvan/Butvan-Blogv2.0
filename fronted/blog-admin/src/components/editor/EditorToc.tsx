@@ -1,7 +1,7 @@
 "use client";
 
 import React, { useState, useEffect, useCallback } from "react";
-import { ListTree, ChevronRight, Hash } from "lucide-react";
+import { ChevronRight, PanelRightClose, PanelRightOpen, AlignLeft } from "lucide-react";
 import { cn } from "@heroui/react";
 
 export interface TocItem {
@@ -13,17 +13,16 @@ export interface TocItem {
 
 interface EditorTocProps {
   editor: any;
-  /** 是否折叠展开大纲面板 */
   collapsed?: boolean;
   onToggleCollapse?: () => void;
   className?: string;
 }
 
 /**
- * 后台编辑器实时大纲/目录（TOC）组件
- * - 实时提取 Tiptap 编辑器内所有 Heading 标题（H1 - H6）
- * - 参考前台博客详情页样式呈现多级缩进与高亮
- * - 点击条目可精确定位光标并滚动编辑器至目标位置
+ * 后台编辑器大厂极简风格大纲/目录 (TOC) 组件
+ * - 参考 语雀 / Notion / Vercel 简约设计风格
+ * - 无边框冗余，全景透光融入编辑器主体
+ * - 动态树轨高亮 (Active Track Line) 与渐进缩进
  */
 export default function EditorToc({
   editor,
@@ -35,7 +34,7 @@ export default function EditorToc({
   const [activePos, setActivePos] = useState<number | null>(null);
 
   /**
-   * 从 Tiptap/ProseMirror doc 提取所有标题节点
+   * 从 Tiptap/ProseMirror 文档中动态提取所有 Heading 标题
    */
   const updateToc = useCallback(() => {
     if (!editor || editor.isDestroyed) {
@@ -61,7 +60,6 @@ export default function EditorToc({
             pos,
           });
 
-          // 计算离当前光标最近的上方标题作为激活态
           if (pos <= currentCursorPos) {
             closestHeadingPos = pos;
           }
@@ -73,7 +71,6 @@ export default function EditorToc({
     setActivePos(closestHeadingPos ?? (items.length > 0 ? items[0].pos : null));
   }, [editor]);
 
-  // 监听编辑器更新和选区/光标移动
   useEffect(() => {
     if (!editor) return;
 
@@ -89,22 +86,19 @@ export default function EditorToc({
   }, [editor, updateToc]);
 
   /**
-   * 点击大纲项：跳转光标并平滑滚动
+   * 点击大纲条目：定位光标与滚动
    */
   const handleItemClick = (item: TocItem) => {
     if (!editor || editor.isDestroyed) return;
 
-    // 1. 设置光标与选区到目标 position
     editor.chain().focus().setTextSelection(item.pos).run();
     setActivePos(item.pos);
 
-    // 2. 获取目标 Node DOM 并平滑滚动
     try {
       const domNode = editor.view.nodeDOM(item.pos) as HTMLElement | null;
       if (domNode && typeof domNode.scrollIntoView === "function") {
         domNode.scrollIntoView({ behavior: "smooth", block: "center" });
       } else {
-        // 退化处理：查询选择器
         const editorEl = editor.view.dom as HTMLElement;
         const headings = editorEl.querySelectorAll("h1, h2, h3, h4, h5, h6");
         const matchingHeading = Array.from(headings).find(
@@ -115,20 +109,21 @@ export default function EditorToc({
         }
       }
     } catch (e) {
-      console.warn("滚动定位至标题失败:", e);
+      console.warn("滚动定位失败:", e);
     }
   };
 
+  // 折叠最小化状态
   if (collapsed) {
     return (
-      <div className={cn("flex flex-col items-center py-3 px-1 border-l border-zinc-200/50 dark:border-zinc-800/60 bg-zinc-50/50 dark:bg-zinc-900/30 select-none", className)}>
+      <div className={cn("flex flex-col items-center py-4 px-1.5 border-l border-zinc-100 dark:border-zinc-850 select-none shrink-0", className)}>
         <button
           type="button"
           onClick={onToggleCollapse}
-          className="p-1.5 rounded-lg text-zinc-400 hover:text-primary hover:bg-zinc-200/60 dark:hover:bg-zinc-800 transition-all cursor-pointer"
-          title="展开文章目录"
+          className="p-1.5 rounded-lg text-zinc-400 hover:text-zinc-700 dark:hover:text-zinc-200 hover:bg-zinc-100 dark:hover:bg-zinc-800/60 transition-all cursor-pointer"
+          title="展开大纲目录"
         >
-          <ListTree size={16} />
+          <PanelRightOpen size={16} />
         </button>
       </div>
     );
@@ -137,18 +132,18 @@ export default function EditorToc({
   return (
     <aside
       className={cn(
-        "w-56 shrink-0 flex flex-col border-l border-zinc-200/50 dark:border-zinc-850 bg-zinc-50/40 dark:bg-zinc-900/20 select-none transition-all duration-200 h-full overflow-hidden",
+        "w-52 shrink-0 flex flex-col border-l border-zinc-100 dark:border-zinc-850/80 bg-transparent select-none transition-all duration-200 h-full overflow-hidden py-3 px-3",
         className
       )}
     >
-      {/* 头部标题与控制按钮 */}
-      <div className="flex items-center justify-between px-3.5 py-2.5 border-b border-zinc-200/40 dark:border-zinc-800/40 shrink-0">
-        <div className="flex items-center gap-1.5 text-xs font-bold font-heading text-zinc-600 dark:text-zinc-300">
-          <ListTree size={14} className="text-primary" />
-          <span>文章目录</span>
+      {/* 极简顶栏 Header */}
+      <div className="flex items-center justify-between pb-2.5 mb-2 border-b border-zinc-100 dark:border-zinc-850/60 shrink-0">
+        <div className="flex items-center gap-1.5 text-[11px] font-semibold tracking-wider text-zinc-400 dark:text-zinc-500 uppercase">
+          <AlignLeft size={13} className="text-zinc-400 dark:text-zinc-500" />
+          <span>目录大纲</span>
           {tocItems.length > 0 && (
-            <span className="text-[10px] font-mono px-1.5 py-0.2 rounded-full bg-zinc-200/60 dark:bg-zinc-800 text-zinc-500 dark:text-zinc-400 font-normal">
-              {tocItems.length}
+            <span className="text-[10px] font-mono text-zinc-350 dark:text-zinc-600">
+              ({tocItems.length})
             </span>
           )}
         </div>
@@ -156,57 +151,59 @@ export default function EditorToc({
           <button
             type="button"
             onClick={onToggleCollapse}
-            className="p-1 rounded text-zinc-400 hover:text-zinc-600 dark:hover:text-zinc-200 hover:bg-zinc-200/60 dark:hover:bg-zinc-800 transition-all cursor-pointer"
+            className="p-1 rounded-md text-zinc-400 hover:text-zinc-600 dark:hover:text-zinc-200 hover:bg-zinc-100 dark:hover:bg-zinc-800/60 transition-all cursor-pointer"
             title="收起目录"
           >
-            <ChevronRight size={14} />
+            <PanelRightClose size={14} />
           </button>
         )}
       </div>
 
-      {/* 目录列表核心区域 */}
-      <div className="flex-1 overflow-y-auto p-2.5 space-y-1 custom-scrollbar">
+      {/* 极简树状轨道列表 */}
+      <div className="flex-1 overflow-y-auto pr-1 space-y-0.5 custom-scrollbar text-xs">
         {tocItems.length > 0 ? (
-          tocItems.map((item) => {
-            const isActive = activePos === item.pos;
+          <div className="relative border-l border-zinc-200/50 dark:border-zinc-800/50 ml-1.5 pl-0.5 space-y-1">
+            {tocItems.map((item) => {
+              const isActive = activePos === item.pos;
 
-            // 根据 level 计算级联左边距与缩进视觉
-            const indentClass =
-              item.level === 1
-                ? "pl-2 font-bold text-zinc-800 dark:text-zinc-200"
-                : item.level === 2
-                ? "pl-4 font-semibold text-zinc-700 dark:text-zinc-300"
-                : item.level === 3
-                ? "pl-6 font-normal text-zinc-600 dark:text-zinc-400 text-[11px]"
-                : "pl-8 font-normal text-zinc-500 dark:text-zinc-500 text-[11px]";
+              // 根据层级计算紧凑微缩进
+              const paddingLeft =
+                item.level === 1
+                  ? "pl-2.5 font-medium"
+                  : item.level === 2
+                  ? "pl-4 text-zinc-600 dark:text-zinc-400"
+                  : item.level === 3
+                  ? "pl-6 text-zinc-500 dark:text-zinc-500 text-[11px]"
+                  : "pl-8 text-zinc-400 dark:text-zinc-500 text-[11px]";
 
-            return (
-              <button
-                key={item.id}
-                type="button"
-                onClick={() => handleItemClick(item)}
-                className={cn(
-                  "w-full text-left py-1.5 px-2 rounded-lg text-xs leading-relaxed transition-all duration-150 flex items-center gap-1.5 group cursor-pointer truncate",
-                  indentClass,
-                  isActive
-                    ? "bg-primary/10 text-primary font-bold dark:bg-primary/15 dark:text-primary shadow-xs border-l-2 border-primary"
-                    : "hover:bg-zinc-200/50 dark:hover:bg-zinc-800/50 hover:text-primary"
-                )}
-                title={`Level ${item.level}: ${item.text}`}
-              >
-                <span className="text-[10px] opacity-40 group-hover:opacity-100 transition-opacity font-mono shrink-0">
-                  H{item.level}
-                </span>
-                <span className="truncate">{item.text}</span>
-              </button>
-            );
-          })
+              return (
+                <button
+                  key={item.id}
+                  type="button"
+                  onClick={() => handleItemClick(item)}
+                  className={cn(
+                    "relative w-full text-left py-1 text-xs leading-relaxed transition-all duration-150 rounded-r-md block truncate cursor-pointer group",
+                    paddingLeft,
+                    isActive
+                      ? "text-primary font-semibold translate-x-0.5 dark:text-primary"
+                      : "text-zinc-500 dark:text-zinc-400 hover:text-zinc-900 dark:hover:text-zinc-100 hover:translate-x-0.5"
+                  )}
+                  title={item.text}
+                >
+                  {/* 当前激活项的精细靠左指示轨 */}
+                  {isActive && (
+                    <span className="absolute -left-[3px] top-1/2 -translate-y-1/2 w-[3px] h-4 bg-primary rounded-full transition-all" />
+                  )}
+                  <span className="truncate block">{item.text}</span>
+                </button>
+              );
+            })}
+          </div>
         ) : (
-          <div className="py-8 flex flex-col items-center justify-center text-center gap-2 text-zinc-400 dark:text-zinc-600">
-            <Hash size={20} className="opacity-40" />
-            <p className="text-[11px] font-mono">正文中未包含标题</p>
-            <p className="text-[10px] text-zinc-450 dark:text-zinc-500">
-              提示：使用 # + 空格 可快速添加标题
+          <div className="py-12 flex flex-col items-center justify-center text-center gap-1.5 text-zinc-400 dark:text-zinc-600">
+            <p className="text-[11px] font-mono">暂无目录</p>
+            <p className="text-[10px] text-zinc-350 dark:text-zinc-600 scale-95">
+              输入 # 标题 即可自动生成
             </p>
           </div>
         )}
