@@ -210,7 +210,7 @@ Butvan Blog2.0/                                    # 📦 项目根目录
 │       │   │   ├── globals.css                    #         全局样式与自定义配色
 │       │   │   └── providers.tsx                  #         HeroUI v3 兼容包装器
 │       │   ├── components/                        #     🧩 组件层
-│       │   │   ├── common/                        #       通用原子组件（Table、Form、Modal、Portal、Upload 等）
+│       │   │   ├── common/                        #       通用原子组件（Table、Form、Modal、Portal、Upload、ImagePreviewModal 全屏大图预览等）
 │       │   │   ├── layout/                        #       后台布局组件
 │       │   │   │   ├── AdminLayout.tsx            #         后台整体布局壳（侧边栏+页签栏+内容区）
 │       │   │   │   ├── Sidebar.tsx                #         可折叠侧边栏菜单
@@ -222,8 +222,9 @@ Butvan Blog2.0/                                    # 📦 项目根目录
 │       │   │   ├── dashboard/                     #       仪表盘与消息通知组件
 │       │   │   │   └── NotificationDrawer.tsx     #         系统通知侧滑抽屉组件 (新增)
 │       │   │   ├── editor/                        #       编辑器组件
-│       │   │   │   ├── MarkdownEditor.tsx         #         Markdown 富文本编辑器
-│       │   │   │   ├── ImageNodeViewComponent.tsx #         Tiptap 图片 React NodeView（支持破损卡片提示、URL展示、替换链接与重新上传）
+│       │   │   │   ├── MarkdownEditor.tsx         #         Markdown 富文本编辑器（含 Sticky 外壳与独立滚动区）
+│       │   │   │   ├── EditorToc.tsx              #         文章大纲/目录实时解析与极简树轨 Active 高亮指示器组件 (新增)
+│       │   │   │   ├── ImageNodeViewComponent.tsx #         Tiptap 图片 React NodeView（支持全屏查看大图、破损卡片提示、URL展示、替换链接与重新上传）
 │       │   │   │   ├── InitializedMDXEditor.tsx   #         所见即所得 (WYSIWYG) 客户端编辑器组件
 │       │   │   │   ├── SceneToolbar.tsx           #         场景编辑器顶部工具栏
 │       │   │   │   ├── SceneCanvas.tsx            #         场景编辑器可视化画布
