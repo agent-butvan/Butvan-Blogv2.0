@@ -101,8 +101,14 @@ export default function HtmlRenderer({ html, proseClass = 'article-content-prose
         if (tagName === 'iframe') {
           const rawSrc = element.getAttribute('src') || ''
           const resolvedSrc = resolveImageUrl(rawSrc)
-          const title = element.getAttribute('title') || element.getAttribute('name') || rawSrc.split('/').pop() || '嵌入 HTML 页面'
-          const cleanTitle = title.endsWith('.html') || title.endsWith('.htm') ? title : `${title}`
+          const rawTitle = element.getAttribute('title') || element.getAttribute('name')
+          let cleanTitle = 'HTML 页面预览'
+          if (rawTitle && rawTitle !== '嵌入 HTML 页面') {
+            cleanTitle = rawTitle
+          } else if (rawSrc) {
+            const filename = rawSrc.split('/').pop() || ''
+            cleanTitle = filename.replace(/\.(html|htm)$/i, '') || 'HTML 页面预览'
+          }
 
           return (
             <div 
