@@ -94,6 +94,24 @@ const IframeExtension = Node.create({
     return ["iframe", mergeAttributes(HTMLAttributes)];
   },
 
+  addStorage() {
+    return {
+      markdown: {
+        serialize(state: any, node: any) {
+          const { src, title, width, height, style } = node.attrs;
+          if (!src) return;
+          const safeTitle = title || "嵌入 HTML 页面";
+          const safeWidth = width || "100%";
+          const safeHeight = height || "450px";
+          const safeStyle = style || "width: 100%; height: 450px; border: none; border-radius: 12px; overflow: hidden;";
+          state.write(
+            `\n<iframe src="${src}" title="${safeTitle}" width="${safeWidth}" height="${safeHeight}" style="${safeStyle}" allowfullscreen></iframe>\n\n`
+          );
+        },
+      },
+    };
+  },
+
   addNodeView() {
     return ReactNodeViewRenderer(HtmlEmbedNodeView);
   },
@@ -345,18 +363,11 @@ export default function MarkdownEditor({
             try {
               const url = await handleHtmlUpload(file);
               const fileName = file.name || "嵌入页面.html";
+              const iframeHtml = `\n<iframe src="${url}" title="${fileName}" width="100%" height="450px" style="width: 100%; height: 450px; border: none; border-radius: 12px; overflow: hidden;" allowfullscreen></iframe>\n\n`;
               activeEditor
                 .chain()
                 .focus()
-                .insertContent({
-                  type: "iframe",
-                  attrs: {
-                    src: url,
-                    title: fileName,
-                    width: "100%",
-                    height: "450px",
-                  },
-                })
+                .insertContent(iframeHtml)
                 .run();
             } catch (err: any) {
               alert(err.message || "上传 HTML 文件失败");
