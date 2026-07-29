@@ -14,9 +14,9 @@ import lombok.extern.slf4j.Slf4j;
 import org.springframework.stereotype.Service;
 
 import java.time.LocalDateTime;
-import java.time.LocalTime;
 import java.time.format.DateTimeFormatter;
 import java.util.HashMap;
+import java.util.List;
 import java.util.Map;
 
 @Slf4j
@@ -41,6 +41,31 @@ public class WeiXinSendTemplateMessageServiceImpl implements WeiXinSendTemplateM
 
     /** 用户账号绑定成功通知 */
     private static final String WECHAT_BING_NOTIFICATION_ID = "Tj_0UtaH5PF1oAv1o3Q4KFxn7OFcAiJa87A7HUnTH_Q";
+
+    /** 文章更新通知 **/
+    private static final String ARTICLE_UPDATE_TEMPLATE_ID = "NxvXYDPP4geHz8ueyZ_N2W1iUyFR7CJOu8j1qc3-YLI";
+
+    @Override
+    public String sendArticleUpdateMessage(List<String> openIds, String articleTitle,
+                                           String articleCategory, LocalDateTime articleTime,
+                                           String articleSummary, String openUrl) {
+
+        String formattedTime = articleTime != null 
+                ? articleTime.format(DateTimeFormatter.ofPattern("yyyy-MM-dd HH:mm:ss")) 
+                : "";
+
+        HashMap<String, TemplateData> data = new HashMap<>();
+        data.put("title", TemplateData.of(articleTitle));
+        data.put("category", TemplateData.of(articleCategory != null ? articleCategory : "默认分类"));
+        data.put("time", TemplateData.of(formattedTime));
+        data.put("summary", TemplateData.of(articleSummary != null ? articleSummary : ""));
+
+        for (String openId : openIds) {
+            sendTemplateMessage(openId, openUrl, ARTICLE_UPDATE_TEMPLATE_ID, data);
+        }
+
+        return "success";
+    }
 
     /**
      * 用户扫码登录成功后，发送模板消息通知

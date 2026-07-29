@@ -1,9 +1,26 @@
 package com.butvan.blog.service.weixin.service;
 
+import java.time.LocalDateTime;
+import java.util.List;
+
 /**
  * 发送微信模版消息
  */
 public interface WeiXinSendTemplateMessageService {
+
+    /**
+     * 博客文章更新，发送模版消息
+     * @param openIds 本站中所有关注微信公众号用户的 openId，也就是 blog_wechat_user 中所有openId
+     * @param articleTitle 更新的文章标题
+     * @param articleCategory 更新文章的分类
+     * @param articleTime 文章更新的时间
+     * @param articleSummary 更新文章的摘要
+     * @param openUrl 更新文章可打开的 url 链接（用户之后点击，就会打开此链接）
+     * @return
+     */
+    String sendArticleUpdateMessage(List<String> openIds, String articleTitle,
+                                    String articleCategory, LocalDateTime articleTime,
+                                    String articleSummary, String openUrl);
 
     /**
      * 用户登录成功，发送模版消息

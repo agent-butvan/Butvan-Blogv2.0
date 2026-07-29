@@ -13,6 +13,7 @@ import com.butvan.blog.pojo.entity.User;
 import com.butvan.blog.pojo.vo.article.ArticleDetailVO;
 import com.butvan.blog.pojo.vo.article.ArticleItemVO;
 import com.butvan.blog.pojo.vo.article.ArticleLikeVO;
+import com.butvan.blog.service.event.NotificationEvents.ArticlePublishedEvent;
 import com.butvan.blog.service.repository.ArticleLikeRepository;
 import com.butvan.blog.service.repository.ArticleRepository;
 import com.butvan.blog.service.repository.CategoryRepository;
@@ -263,6 +264,20 @@ public class ArticleServiceImpl implements ArticleService {
         
         // 6. 更新分类与标签中的已发布文章冗余计数
         refreshCounters();
+
+        // 7. 当文章状态为 PUBLISHED 且公开访问时，触发发布 ArticlePublishedEvent 事件发送微信模板消息
+        if ("PUBLISHED".equalsIgnoreCase(saved.getStatus()) && "PUBLIC".equalsIgnoreCase(saved.getVisibility())) {
+            String categoryName = saved.getCategory() != null ? saved.getCategory().getName() : "默认分类";
+            eventPublisher.publishEvent(new ArticlePublishedEvent(
+                    this,
+                    saved.getId(),
+                    saved.getTitle(),
+                    categoryName,
+                    saved.getCreatedAt() != null ? saved.getCreatedAt() : LocalDateTime.now(),
+                    saved.getSummary(),
+                    saved.getSlug()
+            ));
+        }
         
         return toDetailVO(saved);
     }
@@ -334,6 +349,20 @@ public class ArticleServiceImpl implements ArticleService {
         // 4. 更新分类与标签计数
         refreshCounters();
         
+        // 5. 若更新后的文章状态为 PUBLISHED 且公开访问，触发发布 ArticlePublishedEvent 事件发送微信模板消息
+        if ("PUBLISHED".equalsIgnoreCase(updated.getStatus()) && "PUBLIC".equalsIgnoreCase(updated.getVisibility())) {
+            String categoryName = updated.getCategory() != null ? updated.getCategory().getName() : "默认分类";
+            eventPublisher.publishEvent(new ArticlePublishedEvent(
+                    this,
+                    updated.getId(),
+                    updated.getTitle(),
+                    categoryName,
+                    updated.getUpdatedAt() != null ? updated.getUpdatedAt() : LocalDateTime.now(),
+                    updated.getSummary(),
+                    updated.getSlug()
+            ));
+        }
+
         return toDetailVO(updated);
     }
 
