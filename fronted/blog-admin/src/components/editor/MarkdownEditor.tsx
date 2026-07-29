@@ -387,9 +387,7 @@ export default function MarkdownEditor({
             const file = fileInput.files[0];
             try {
               const url = await handleHtmlUpload(file);
-              const defaultTitle = (file.name || "嵌入页面.html").replace(/\.(html|htm)$/i, "");
-              const userTitle = prompt("请输入 HTML 页面预览区域的标题：", defaultTitle);
-              const title = userTitle !== null && userTitle.trim() !== "" ? userTitle.trim() : defaultTitle;
+              const title = (file.name || "嵌入页面.html").replace(/\.(html|htm)$/i, "");
               const iframeHtml = `\n<iframe src="${url}" title="${title}" width="100%" height="450px" style="width: 100%; height: 450px; border: none; border-radius: 12px; overflow: hidden;" allowfullscreen></iframe>\n\n`;
               activeEditor
                 .chain()
