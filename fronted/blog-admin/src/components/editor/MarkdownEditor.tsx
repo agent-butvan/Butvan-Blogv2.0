@@ -108,6 +108,17 @@ const IframeExtension = Node.create({
     return ["iframe", mergeAttributes(HTMLAttributes)];
   },
 
+  // 支持 @tiptap/markdown 官方扩展框架的节点序列化钩子
+  renderMarkdown(node: any) {
+    const { src, title, width, height, style } = node?.attrs || {};
+    if (!src) return "";
+    const safeTitle = title || "嵌入 HTML 页面";
+    const safeWidth = width || "100%";
+    const safeHeight = height || "450px";
+    const safeStyle = style || "width: 100%; height: 450px; border: none; border-radius: 12px; overflow: hidden;";
+    return `\n<iframe src="${src}" title="${safeTitle}" width="${safeWidth}" height="${safeHeight}" style="${safeStyle}" allowfullscreen></iframe>\n\n`;
+  },
+
   addStorage() {
     return {
       markdown: {
