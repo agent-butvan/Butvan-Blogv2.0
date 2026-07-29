@@ -184,11 +184,11 @@ export default function CommentForm({
         </div>
       )}
 
-      {/* 游客个人信息或登录信息展示 */}
+      {/* 登录用户邮箱信息展示：直角边框、透明背景、无阴影 */}
       {isLoggedIn && user ? (
-        <div className="flex items-center gap-2 py-2 px-3 bg-[#F5F6FB] dark:bg-[#1E2035] rounded-xl border border-[#C4C8E6]/40 dark:border-[#727BBA]/15 w-fit select-none shadow-sm">
+        <div className="flex items-center gap-2 py-2 px-3 bg-transparent rounded-none border border-zinc-200 dark:border-zinc-800 w-fit select-none shadow-none">
           <Mail size={13} className="text-[#727BBA] dark:text-[#8E97D5]" />
-          <span className="text-xs text-zinc-500 dark:text-zinc-450">
+          <span className="text-xs text-zinc-500 dark:text-zinc-400">
             已登录邮箱：<strong className="text-zinc-700 dark:text-zinc-300 font-mono font-semibold">{user.email}</strong>
           </span>
         </div>
