@@ -27,11 +27,23 @@ import DetailErrorState from '@/components/detail/DetailErrorState'
 import Copyright from '@/components/detail/Copyright'
 import RewardModal from '@/components/detail/RewardModal'
 import { fetchProfile } from '@/lib/profile'
+import { resolveImageUrl } from '@/lib/image-url'
 import { post, get } from '@/lib/http-client'
 import type { ProfileVO } from '@/types/profile'
 import gsap from 'gsap'
 
 // ==================== 本地类型定义 ====================
+
+interface RelatedArticleItem {
+  id: number
+  title: string
+  slug: string
+  summary?: string
+  coverImageUrl?: string
+  categoryName?: string
+  publishedAt?: string
+  readTime?: number
+}
 
 interface ArticleDetail {
   id: number
@@ -51,6 +63,7 @@ interface ArticleDetail {
   readTime: number
   isAllowComment?: boolean
   likeCount?: number
+  relatedArticles?: RelatedArticleItem[]
 }
 
 interface TocItem {
@@ -502,15 +515,57 @@ export default function ArticleDetailPage() {
                 <Copyright authorName={profile?.nickname || '可梵'} />
               </div>
 
-              {/* 4. 上一篇/下一篇（暂不实现，保留布局占位） */}
-              <nav className="animate-detail-item opacity-0 grid grid-cols-1 sm:grid-cols-2 gap-4 mt-8 pt-8 border-t border-zinc-200/50 dark:border-zinc-900/60 select-none">
-                <div className="p-5 rounded-2xl border border-zinc-200/20 dark:border-zinc-800/20 bg-zinc-150/10 dark:bg-zinc-900/5 flex items-center justify-center text-[10px] text-zinc-450 dark:text-zinc-600 font-serif italic select-none">
-                  无前一篇思考了
+              {/* 4. 相关推荐 / 延伸阅读 (动态展示 2 篇相关文章) */}
+              {article.relatedArticles && article.relatedArticles.length > 0 && (
+                <div className="animate-detail-item opacity-0 mt-10 pt-8 border-t border-zinc-200/50 dark:border-zinc-800/60 select-none">
+                  <div className="flex items-center gap-2 mb-4">
+                    <span className="w-1.5 h-1.5 rounded-full bg-primary" />
+                    <h3 className="text-xs font-bold uppercase tracking-widest text-zinc-400 dark:text-zinc-500 font-mono">
+                      延伸阅读 / RECOMMENDED READS
+                    </h3>
+                  </div>
+                  <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
+                    {article.relatedArticles.slice(0, 2).map((rel) => (
+                      <Link
+                        key={rel.id}
+                        href={`/article/${rel.slug}`}
+                        className="group relative flex flex-col justify-between p-4 rounded-2xl border border-zinc-200/60 dark:border-zinc-800/60 bg-white/50 dark:bg-zinc-900/30 hover:bg-white dark:hover:bg-zinc-900 hover:border-primary/40 dark:hover:border-primary/40 transition-all duration-300 hover:shadow-lg hover:-translate-y-0.5 overflow-hidden"
+                      >
+                        <div className="flex items-start gap-3">
+                          {rel.coverImageUrl && (
+                            <div className="w-16 h-16 rounded-xl overflow-hidden shrink-0 border border-zinc-200/50 dark:border-zinc-800/50 bg-zinc-100 dark:bg-zinc-800">
+                              <img
+                                src={resolveImageUrl(rel.coverImageUrl)}
+                                alt={rel.title}
+                                className="w-full h-full object-cover group-hover:scale-105 transition-transform duration-500"
+                              />
+                            </div>
+                          )}
+                          <div className="flex-1 min-w-0">
+                            {rel.categoryName && (
+                              <span className="inline-block px-1.5 py-0.5 text-[9px] font-medium text-primary bg-primary/10 rounded mb-1">
+                                {rel.categoryName}
+                              </span>
+                            )}
+                            <h4 className="text-xs font-bold text-zinc-850 dark:text-zinc-150 group-hover:text-primary transition-colors line-clamp-2 leading-snug">
+                              {rel.title}
+                            </h4>
+                          </div>
+                        </div>
+                        {rel.summary && (
+                          <p className="text-[11px] text-zinc-400 dark:text-zinc-500 line-clamp-2 mt-2 font-serif leading-relaxed">
+                            {rel.summary}
+                          </p>
+                        )}
+                        <div className="flex items-center justify-between mt-3 pt-2 border-t border-zinc-100 dark:border-zinc-800/40 text-[10px] text-zinc-400 font-mono">
+                          <span>{rel.publishedAt ? new Date(rel.publishedAt).toLocaleDateString('zh-CN') : '推荐文章'}</span>
+                          <span className="group-hover:translate-x-0.5 transition-transform text-primary font-sans font-bold">阅读全文 →</span>
+                        </div>
+                      </Link>
+                    ))}
+                  </div>
                 </div>
-                <div className="p-5 rounded-2xl border border-zinc-200/20 dark:border-zinc-800/20 bg-zinc-150/10 dark:bg-zinc-900/5 flex items-center justify-center text-[10px] text-zinc-450 dark:text-zinc-600 font-serif italic select-none">
-                  文字已至尽头
-                </div>
-              </nav>
+              )}
 
               {/* 5. 评论区交流讨论 */}
               <CommentSection articleId={article.id} isAllowComment={article.isAllowComment ?? true} />

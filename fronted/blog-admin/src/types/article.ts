@@ -41,6 +41,7 @@ export interface ArticleDetail extends ArticleItem {
   seoDescription?: string;
   seoKeywords?: string;
   template?: string;
+  relatedArticleIds?: number[];
   extra?: Record<string, unknown>;
   deletedAt?: string;
 }
@@ -56,6 +57,7 @@ export interface ArticleSaveDTO {
   coverImageUrls?: string[];
   categoryId?: number;
   tagIds?: number[];
+  relatedArticleIds?: number[];
   status: ArticleStatus;
   visibility?: ArticleVisibility;
   password?: string;

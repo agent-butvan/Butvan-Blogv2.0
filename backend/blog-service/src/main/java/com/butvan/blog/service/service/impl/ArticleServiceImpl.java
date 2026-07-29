@@ -236,6 +236,9 @@ public class ArticleServiceImpl implements ArticleService {
                 .seoTitle(dto.getSeoTitle())
                 .seoDescription(dto.getSeoDescription())
                 .seoKeywords(dto.getSeoKeywords())
+                .relatedArticleIds(dto.getRelatedArticleIds() != null && !dto.getRelatedArticleIds().isEmpty()
+                        ? dto.getRelatedArticleIds().stream().map(String::valueOf).collect(Collectors.joining(","))
+                        : null)
                 .author(author)
                 .build();
         
@@ -305,6 +308,9 @@ public class ArticleServiceImpl implements ArticleService {
         article.setSeoTitle(dto.getSeoTitle());
         article.setSeoDescription(dto.getSeoDescription());
         article.setSeoKeywords(dto.getSeoKeywords());
+        article.setRelatedArticleIds(dto.getRelatedArticleIds() != null && !dto.getRelatedArticleIds().isEmpty()
+                ? dto.getRelatedArticleIds().stream().map(String::valueOf).collect(Collectors.joining(","))
+                : null);
         
         if (StringUtils.hasText(dto.getSlug())) {
             article.setSlug(dto.getSlug());
@@ -404,6 +410,15 @@ public class ArticleServiceImpl implements ArticleService {
             }
         }
         
+        List<Long> relatedArticleIds = new ArrayList<>();
+        if (StringUtils.hasText(article.getRelatedArticleIds())) {
+            for (String s : article.getRelatedArticleIds().split(",")) {
+                try {
+                    relatedArticleIds.add(Long.parseLong(s.trim()));
+                } catch (NumberFormatException ignored) {}
+            }
+        }
+
         return ArticleDetailVO.builder()
                 .id(article.getId())
                 .title(article.getTitle())
@@ -436,8 +451,65 @@ public class ArticleServiceImpl implements ArticleService {
                 .seoDescription(article.getSeoDescription())
                 .seoKeywords(article.getSeoKeywords())
                 .template(article.getTemplate())
+                .relatedArticleIds(relatedArticleIds)
+                .relatedArticles(buildRelatedArticles(article))
                 .deletedAt(article.getDeletedAt())
                 .build();
+    }
+
+    /**
+     * 智能构建当前文章的相关推荐/延伸阅读文章列表（固定返回 2 篇）
+     */
+    private List<ArticleItemVO> buildRelatedArticles(Article currentArticle) {
+        List<Article> resultList = new ArrayList<>();
+        Set<Long> loadedIds = new HashSet<>();
+        loadedIds.add(currentArticle.getId());
+
+        // 1. 优先加载手选关联推荐的文章
+        if (StringUtils.hasText(currentArticle.getRelatedArticleIds())) {
+            String[] ids = currentArticle.getRelatedArticleIds().split(",");
+            for (String idStr : ids) {
+                try {
+                    Long id = Long.parseLong(idStr.trim());
+                    if (!loadedIds.contains(id)) {
+                        articleRepository.findById(id).ifPresent(relArticle -> {
+                            if ("PUBLISHED".equalsIgnoreCase(relArticle.getStatus()) && relArticle.getDeletedAt() == null) {
+                                resultList.add(relArticle);
+                                loadedIds.add(relArticle.getId());
+                            }
+                        });
+                    }
+                } catch (NumberFormatException ignored) {}
+                if (resultList.size() >= 2) break;
+            }
+        }
+
+        // 2. 若关联不足 2 篇，自动推选同分类/最新发布的已公开文章补全
+        if (resultList.size() < 2) {
+            List<Article> candidates = articleRepository.findAll().stream()
+                    .filter(a -> "PUBLISHED".equalsIgnoreCase(a.getStatus()))
+                    .filter(a -> a.getDeletedAt() == null)
+                    .filter(a -> !loadedIds.contains(a.getId()))
+                    .sorted((a1, a2) -> {
+                        boolean a1SameCat = currentArticle.getCategory() != null && a1.getCategory() != null && currentArticle.getCategory().getId().equals(a1.getCategory().getId());
+                        boolean a2SameCat = currentArticle.getCategory() != null && a2.getCategory() != null && currentArticle.getCategory().getId().equals(a2.getCategory().getId());
+                        if (a1SameCat && !a2SameCat) return -1;
+                        if (!a1SameCat && a2SameCat) return 1;
+                        LocalDateTime t1 = a1.getPublishedAt() != null ? a1.getPublishedAt() : a1.getCreatedAt();
+                        LocalDateTime t2 = a2.getPublishedAt() != null ? a2.getPublishedAt() : a2.getCreatedAt();
+                        return t2.compareTo(t1);
+                    })
+                    .collect(Collectors.toList());
+
+            for (Article candidate : candidates) {
+                if (resultList.size() >= 2) break;
+                resultList.add(candidate);
+                loadedIds.add(candidate.getId());
+            }
+        }
+
+        // 3. 转为 ArticleItemVO 载荷
+        return resultList.stream().map(this::toItemVO).collect(Collectors.toList());
     }
 
     /**

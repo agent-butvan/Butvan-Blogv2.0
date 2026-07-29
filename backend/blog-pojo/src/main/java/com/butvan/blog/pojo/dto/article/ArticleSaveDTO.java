@@ -52,5 +52,7 @@ public class ArticleSaveDTO {
 
     private String seoKeywords; // 自定义 SEO 关键字，用逗号分隔
 
+    private List<Long> relatedArticleIds; // 关联推荐文章 ID 集合（如 [12, 18]）
+
     private Map<String, Object> extra; // 扩展参数 JSON 字典
 }

@@ -47,6 +47,10 @@ public class ArticleDetailVO extends ArticleItemVO {
 
     private String template; // 前台渲染使用的特色自定义模板名
 
+    private List<Long> relatedArticleIds; // 绑定的关联推荐文章 ID 列表（编辑端用）
+
+    private List<ArticleItemVO> relatedArticles; // 推荐关联文章列表（前台阅读端用，固定 2 篇）
+
     private Map<String, Object> extra; // 扩展附加 JSON 数据
 
     private LocalDateTime deletedAt; // 软删除时间戳（不为空说明已入回收站）
