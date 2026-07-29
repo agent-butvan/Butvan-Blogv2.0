@@ -15,6 +15,8 @@ import {
   ShieldCheck,
   Smartphone,
   User,
+  QrCode,
+  Upload,
 } from "lucide-react";
 import { cn, Button } from "@heroui/react";
 import QRCode from "qrcode";
@@ -40,6 +42,7 @@ interface ProfileFormState {
   email: string;
   avatarUrl: string;
   bio: string;
+  rewardCodeUrl: string;
 }
 
 interface PasswordFormState {
@@ -53,6 +56,7 @@ const DEFAULT_PROFILE_FORM: ProfileFormState = {
   email: "",
   avatarUrl: "",
   bio: "",
+  rewardCodeUrl: "",
 };
 
 const DEFAULT_PASSWORD_FORM: PasswordFormState = {
@@ -108,6 +112,7 @@ function toProfileForm(user: CurrentUser): ProfileFormState {
     email: user.email || "",
     avatarUrl: user.avatarUrl || "",
     bio: user.bio || "",
+    rewardCodeUrl: user.rewardCodeUrl || (user.socialLinks?.rewardCodeUrl as string) || "",
   };
 }
 
@@ -116,6 +121,7 @@ function toProfileForm(user: CurrentUser): ProfileFormState {
  */
 export default function ProfilePage() {
   const fileInputRef = useRef<HTMLInputElement>(null);
+  const rewardFileInputRef = useRef<HTMLInputElement>(null);
   const [activeTab, setActiveTab] = useState<ProfileTab>("profile");
   const [currentUser, setCurrentUser] = useState<CurrentUser | null>(null);
   const [initialForm, setInitialForm] = useState<ProfileFormState>(DEFAULT_PROFILE_FORM);
@@ -125,6 +131,7 @@ export default function ProfilePage() {
   const [savingProfile, setSavingProfile] = useState(false);
   const [changingPassword, setChangingPassword] = useState(false);
   const [uploadingAvatar, setUploadingAvatar] = useState(false);
+  const [uploadingRewardCode, setUploadingRewardCode] = useState(false);
 
   // 模拟 GitHub 绑定弹窗状态
   const [showGithubModal, setShowGithubModal] = useState(false);
@@ -171,7 +178,8 @@ export default function ProfilePage() {
       profileForm.nickname !== initialForm.nickname ||
       profileForm.email !== initialForm.email ||
       profileForm.avatarUrl !== initialForm.avatarUrl ||
-      profileForm.bio !== initialForm.bio
+      profileForm.bio !== initialForm.bio ||
+      profileForm.rewardCodeUrl !== initialForm.rewardCodeUrl
     );
   }, [initialForm, profileForm]);
 
@@ -232,6 +240,42 @@ export default function ProfilePage() {
   };
 
   /**
+   * 上传赞赏/收款码图片
+   */
+  const handleRewardCodeChange = async (event: ChangeEvent<HTMLInputElement>) => {
+    const file = event.target.files?.[0];
+    if (!file) return;
+    if (!file.type.startsWith("image/")) {
+      toast.warning("请选择图片格式的赞赏码文件");
+      return;
+    }
+
+    setUploadingRewardCode(true);
+    try {
+      const formData = new FormData();
+      formData.append("file", file);
+      formData.append("sourceType", "REWARD_CODE");
+      formData.append("sourceDetail", "赞赏收款二维码");
+      const res = await apiClient.post("/admin/media/upload", formData, {
+        headers: { "Content-Type": "multipart/form-data" },
+      });
+      const fileUrl = res.data?.data?.fileUrl;
+      if (!fileUrl) {
+        toast.error(res.data?.msg || "赞赏码上传失败");
+        return;
+      }
+      updateProfileField("rewardCodeUrl", fileUrl);
+      toast.success("赞赏收款码已上传，请保存资料后生效");
+    } catch (error) {
+      console.error("赞赏码上传失败", error);
+      toast.error("赞赏码上传失败，请确认媒体服务是否可用");
+    } finally {
+      setUploadingRewardCode(false);
+      event.target.value = "";
+    }
+  };
+
+  /**
    * 保存个人资料
    */
   const handleSaveProfile = async (event?: FormEvent) => {
@@ -248,6 +292,7 @@ export default function ProfilePage() {
         email: profileForm.email.trim() || undefined,
         avatarUrl: profileForm.avatarUrl.trim() || undefined,
         bio: profileForm.bio.trim() || undefined,
+        rewardCodeUrl: profileForm.rewardCodeUrl.trim() || undefined,
       });
       const nextForm = toProfileForm(updatedUser);
       setCurrentUser(updatedUser);
@@ -509,10 +554,75 @@ export default function ProfilePage() {
                 <textarea
                   value={profileForm.bio}
                   onChange={(event) => updateProfileField("bio", event.target.value)}
-                  className="min-h-28 resize-y rounded-lg border border-zinc-200 bg-white px-3 py-2 text-sm leading-6 outline-none transition focus:border-primary dark:border-zinc-800 dark:bg-zinc-900"
+                  className="min-h-24 resize-y rounded-lg border border-zinc-200 bg-white px-3 py-2 text-sm leading-6 outline-none transition focus:border-primary dark:border-zinc-800 dark:bg-zinc-900"
                   placeholder="写一段会展示在账号资料中的简介"
                   maxLength={500}
                 />
+              </Field>
+
+              {/* 赞赏/收款二维码设置 */}
+              <Field label="赞赏收款码（前台文章赞赏弹窗展示）">
+                <div className="flex flex-col sm:flex-row items-start sm:items-center gap-4 rounded-xl border border-zinc-200 dark:border-zinc-800 bg-zinc-50/50 dark:bg-zinc-900/50 p-4">
+                  <div className="relative flex h-24 w-24 shrink-0 items-center justify-center overflow-hidden rounded-xl border border-dashed border-zinc-300 dark:border-zinc-700 bg-white dark:bg-zinc-950">
+                    {profileForm.rewardCodeUrl ? (
+                      <img
+                        src={resolveAvatarUrl(profileForm.rewardCodeUrl)}
+                        alt="赞赏收款码"
+                        className="h-full w-full object-contain p-1"
+                      />
+                    ) : (
+                      <div className="flex flex-col items-center justify-center gap-1 text-zinc-400 text-xs select-none">
+                        <QrCode size={22} className="text-zinc-400" />
+                        <span className="text-[10px]">未设置</span>
+                      </div>
+                    )}
+                  </div>
+
+                  <div className="flex flex-col gap-2.5 flex-1 w-full min-w-0">
+                    <div className="flex items-center gap-2">
+                      <input
+                        ref={rewardFileInputRef}
+                        type="file"
+                        accept="image/*"
+                        onChange={handleRewardCodeChange}
+                        className="hidden"
+                      />
+                      <Button
+                        type="button"
+                        size="sm"
+                        variant="tertiary"
+                        onClick={() => rewardFileInputRef.current?.click()}
+                        isDisabled={uploadingRewardCode}
+                        className="h-8 gap-1.5 rounded-lg text-xs font-medium bg-primary/10 text-primary hover:bg-primary/20"
+                      >
+                        {uploadingRewardCode ? <Loader2 size={13} className="animate-spin" /> : <Upload size={13} />}
+                        上传赞赏码图片
+                      </Button>
+                      {profileForm.rewardCodeUrl && (
+                        <Button
+                          type="button"
+                          size="sm"
+                          variant="danger-soft"
+                          onClick={() => updateProfileField("rewardCodeUrl", "")}
+                          className="h-8 px-2 text-xs"
+                        >
+                          清除图片
+                        </Button>
+                      )}
+                    </div>
+
+                    <input
+                      type="text"
+                      value={profileForm.rewardCodeUrl}
+                      onChange={(event) => updateProfileField("rewardCodeUrl", event.target.value)}
+                      className="h-9 w-full rounded-lg border border-zinc-200 bg-white px-3 text-xs outline-none transition focus:border-primary dark:border-zinc-800 dark:bg-zinc-900"
+                      placeholder="或直接输入赞赏码图片 URL 地址 (https://...)"
+                    />
+                    <p className="text-[11px] text-zinc-400">
+                      上传你的微信/支付宝赞赏收款二维码，读者点击前台文章“赞赏”按钮时将直接展示该图片。
+                    </p>
+                  </div>
+                </div>
               </Field>
               <div className="flex items-center justify-between border-t border-zinc-200 pt-4 dark:border-zinc-800">
                 <span className={cn("text-xs", isProfileDirty ? "text-amber-600 dark:text-amber-300" : "text-zinc-400")}>

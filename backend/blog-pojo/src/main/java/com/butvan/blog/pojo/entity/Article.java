@@ -99,6 +99,9 @@ public class Article {
     @Column(name = "template", length = 50)
     private String template; // 前台渲染使用的特色自定义模板名
 
+    @Column(name = "related_article_ids", length = 200)
+    private String relatedArticleIds; // 关联推荐文章 ID 列表（逗号分隔字符串，例如 "12,18"）
+
     @Column(name = "content_type", nullable = false, length = 20)
     private String contentType; // 资源分类：ARTICLE（长文）| NOTE（随笔）| GALLERY（照片墙）| PROJECT（项目作品）
 

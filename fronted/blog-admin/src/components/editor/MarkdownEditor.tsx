@@ -39,11 +39,108 @@ import {
   ListTree,
 } from "lucide-react";
 
+import { Node, mergeAttributes } from "@tiptap/core";
 import ImageNodeViewComponent from "./ImageNodeViewComponent";
+import HtmlEmbedNodeView from "./HtmlEmbedNodeView";
 import SlashMenu, { SLASH_COMMANDS, type SlashCommand } from "./SlashMenu";
 import EditorToc from "./EditorToc";
 import apiClient from "@/lib/api";
 import { resolveAssetUrl } from "@/lib/image-url";
+
+/**
+ * Tiptap 核心概念：自定义 iframe 页面节点扩展
+ * 支持在 Markdown 中嵌入与解析 <iframe src="..."></iframe>
+ */
+const IframeExtension = Node.create({
+  name: "iframe",
+  group: "block",
+  atom: true,
+
+  addAttributes() {
+    return {
+      src: {
+        default: null,
+      },
+      title: {
+        default: "嵌入 HTML 页面",
+      },
+      width: {
+        default: "100%",
+      },
+      height: {
+        default: "450px",
+      },
+      frameborder: {
+        default: "0",
+      },
+      style: {
+        default: "width: 100%; height: 450px; border: none; border-radius: 12px; overflow: hidden;",
+      },
+      allowfullscreen: {
+        default: "true",
+      },
+    };
+  },
+
+  parseHTML() {
+    return [
+      {
+        tag: "iframe",
+        getAttrs: (element) => {
+          if (typeof element === "string") return false;
+          const dom = element as HTMLElement;
+          const src = dom.getAttribute("src");
+          if (!src) return false;
+          return {
+            src: src,
+            title: dom.getAttribute("title") || "嵌入 HTML 页面",
+            width: dom.getAttribute("width") || "100%",
+            height: dom.getAttribute("height") || "450px",
+            style: dom.getAttribute("style") || "width: 100%; height: 450px; border: none; border-radius: 12px; overflow: hidden;",
+            allowfullscreen: dom.getAttribute("allowfullscreen") || "true",
+          };
+        },
+      },
+    ];
+  },
+
+  renderHTML({ HTMLAttributes }: { HTMLAttributes: Record<string, any> }) {
+    return ["iframe", mergeAttributes(HTMLAttributes)];
+  },
+
+  // 支持 @tiptap/markdown 官方扩展框架的节点序列化钩子
+  renderMarkdown(node: any) {
+    const { src, title, width, height, style } = node?.attrs || {};
+    if (!src) return "";
+    const safeTitle = title || "嵌入 HTML 页面";
+    const safeWidth = width || "100%";
+    const safeHeight = height || "450px";
+    const safeStyle = style || "width: 100%; height: 450px; border: none; border-radius: 12px; overflow: hidden;";
+    return `\n<iframe src="${src}" title="${safeTitle}" width="${safeWidth}" height="${safeHeight}" style="${safeStyle}" allowfullscreen></iframe>\n\n`;
+  },
+
+  addStorage() {
+    return {
+      markdown: {
+        serialize(state: any, node: any) {
+          const { src, title, width, height, style } = node.attrs;
+          if (!src) return;
+          const safeTitle = title || "嵌入 HTML 页面";
+          const safeWidth = width || "100%";
+          const safeHeight = height || "450px";
+          const safeStyle = style || "width: 100%; height: 450px; border: none; border-radius: 12px; overflow: hidden;";
+          state.write(
+            `\n<iframe src="${src}" title="${safeTitle}" width="${safeWidth}" height="${safeHeight}" style="${safeStyle}" allowfullscreen></iframe>\n\n`
+          );
+        },
+      },
+    };
+  },
+
+  addNodeView() {
+    return ReactNodeViewRenderer(HtmlEmbedNodeView);
+  },
+});
 
 const lowlight = createLowlight(all);
 
@@ -200,6 +297,25 @@ export default function MarkdownEditor({
     throw new Error(res.data.msg || "图片上传失败");
   };
 
+  // 上传 HTML 页面文件处理，对接 `/admin/media/upload` 接口
+  const handleHtmlUpload = async (file: File): Promise<string> => {
+    const formData = new FormData();
+    formData.append("file", file);
+    formData.append("sourceType", "ARTICLE_EMBED");
+    formData.append("sourceDetail", "文章正文嵌入 HTML 页面");
+    const res = await apiClient.post("/admin/media/upload", formData, {
+      headers: { "Content-Type": "multipart/form-data" },
+    });
+    if (res.data.code === 200 || res.data.code === 0) {
+      let url = res.data.data.fileUrl;
+      if (url.startsWith("/")) {
+        url = resolveAssetUrl(url);
+      }
+      return url;
+    }
+    throw new Error(res.data.msg || "HTML 页面文件上传失败");
+  };
+
   // 执行斜杠快捷命令
   const executeCommand = useCallback((cmd: SlashCommand) => {
     const activeEditor = editorRef.current;
@@ -258,6 +374,28 @@ export default function MarkdownEditor({
               activeEditor.chain().focus().setImage({ src: url }).run();
             } catch (err: any) {
               alert(err.message || "上传失败");
+            }
+          }
+        };
+        fileInput.click();
+      } else if (cmd.id === "html-file") {
+        const fileInput = document.createElement("input");
+        fileInput.type = "file";
+        fileInput.accept = ".html,.htm";
+        fileInput.onchange = async () => {
+          if (fileInput.files && fileInput.files[0]) {
+            const file = fileInput.files[0];
+            try {
+              const url = await handleHtmlUpload(file);
+              const title = (file.name || "嵌入页面.html").replace(/\.(html|htm)$/i, "");
+              const iframeHtml = `\n<iframe src="${url}" title="${title}" width="100%" height="450px" style="width: 100%; height: 450px; border: none; border-radius: 12px; overflow: hidden;" allowfullscreen></iframe>\n\n`;
+              activeEditor
+                .chain()
+                .focus()
+                .insertContent(iframeHtml)
+                .run();
+            } catch (err: any) {
+              alert(err.message || "上传 HTML 文件失败");
             }
           }
         };
@@ -363,6 +501,7 @@ export default function MarkdownEditor({
           class: "max-w-full h-auto rounded-lg border border-zinc-200 dark:border-zinc-800 my-2 inline-block shadow-sm",
         },
       }),
+      IframeExtension,
       Placeholder.configure({
         placeholder: placeholder,
       }),
@@ -587,6 +726,20 @@ export default function MarkdownEditor({
         editor.commands.setContent(value || "", {
           contentType: "markdown",
         });
+
+        // 100% 绝对防丢失双通道校验：若原始 value 中包含 <iframe 标签，但 markdown 模式未能解析出 iframe 节点，
+        // 则立即回退使用原生 HTML 解析器，确保刷新页面加载时 100% 渲染 iframe 交互节点！
+        if (value.includes("<iframe") || value.includes("<IFRAME")) {
+          let hasIframeNode = false;
+          editor.state.doc.descendants((node: any) => {
+            if (node.type.name === "iframe") {
+              hasIframeNode = true;
+            }
+          });
+          if (!hasIframeNode) {
+            editor.commands.setContent(value || "");
+          }
+        }
       }
       // 初始加载或外部数据变化时，也提取图片 URL
       extractImagesFromDoc(editor);

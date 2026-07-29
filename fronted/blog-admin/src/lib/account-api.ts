@@ -6,6 +6,8 @@ import type { ApiResponse } from "@/types/common";
 export interface CurrentUser extends AuthUser {
   email?: string;
   bio?: string;
+  rewardCodeUrl?: string;
+  socialLinks?: Record<string, any>;
   status: "ACTIVE" | "DISABLED";
   lastLoginAt?: string;
   createdAt: string;
@@ -18,6 +20,8 @@ export interface CurrentUserUpdatePayload {
   email?: string;
   avatarUrl?: string;
   bio?: string;
+  rewardCodeUrl?: string;
+  socialLinks?: Record<string, any>;
 }
 
 /** 当前账号密码修改入参 */

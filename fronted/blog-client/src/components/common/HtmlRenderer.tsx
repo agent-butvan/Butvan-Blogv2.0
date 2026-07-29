@@ -97,16 +97,100 @@ export default function HtmlRenderer({ html, proseClass = 'article-content-prose
           props.className = `${element.getAttribute('class') || ''} cursor-zoom-in hover:opacity-95 transition-all duration-200`
         }
 
+        // 如果是 iframe 网页嵌入标签，解析正确绝对路径并配置无阴影、带明确 HTML 预览区标识边框的组件卡片
+        if (tagName === 'iframe') {
+          const rawSrc = element.getAttribute('src') || ''
+          const resolvedSrc = resolveImageUrl(rawSrc)
+          const rawTitle = element.getAttribute('title') || element.getAttribute('name')
+          let cleanTitle = 'HTML 页面预览'
+          if (rawTitle && rawTitle !== '嵌入 HTML 页面') {
+            cleanTitle = rawTitle
+          } else if (rawSrc) {
+            const filename = rawSrc.split('/').pop() || ''
+            cleanTitle = filename.replace(/\.(html|htm)$/i, '') || 'HTML 页面预览'
+          }
+
+          return (
+            <div 
+              key={`iframe-card-${index}`} 
+              className="my-6 not-prose rounded-xl border border-zinc-200 dark:border-zinc-800 bg-white dark:bg-zinc-950 overflow-hidden transition-all duration-200"
+            >
+              {/* 顶部 HTML 预览区专属标识与交互 Bar */}
+              <div className="flex items-center justify-between px-3.5 py-2 bg-zinc-50 dark:bg-zinc-900/90 border-b border-zinc-200 dark:border-zinc-800 text-xs select-none">
+                {/* 左侧：Mac 窗体点缀 + 页面文件名 */}
+                <div className="flex items-center gap-2.5 min-w-0">
+                  <div className="flex items-center gap-1.5 shrink-0">
+                    <span className="w-2.5 h-2.5 rounded-full bg-red-400/80 inline-block" />
+                    <span className="w-2.5 h-2.5 rounded-full bg-amber-400/80 inline-block" />
+                    <span className="w-2.5 h-2.5 rounded-full bg-emerald-400/80 inline-block" />
+                  </div>
+                  <div className="flex items-center gap-1.5 min-w-0 font-mono text-[11px] text-zinc-600 dark:text-zinc-300 font-medium">
+                    <svg className="w-3.5 h-3.5 text-emerald-500 shrink-0" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                      <path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2" d="M10 20l4-16m4 4l4 4-4 4M6 16l-4-4 4-4" />
+                    </svg>
+                    <span className="truncate max-w-[240px] sm:max-w-[360px]">{cleanTitle}</span>
+                  </div>
+                </div>
+
+                {/* 右侧：HTML 预览区标识 Tag */}
+                <div className="flex items-center gap-2 shrink-0">
+                  <span className="inline-flex items-center gap-1 px-2 py-0.5 rounded-md bg-emerald-500/10 text-emerald-600 dark:text-emerald-400 border border-emerald-500/20 text-[10px] font-medium">
+                    HTML 页面预览区
+                  </span>
+                  {resolvedSrc && (
+                    <a
+                      href={resolvedSrc}
+                      target="_blank"
+                      rel="noopener noreferrer"
+                      title="在新标签页独立打开预览"
+                      className="p-1 rounded text-zinc-400 hover:text-zinc-600 dark:hover:text-zinc-200 hover:bg-zinc-200/50 dark:hover:bg-zinc-800 transition-colors"
+                    >
+                      <svg className="w-3.5 h-3.5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                        <path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2" d="M10 6H6a2 2 0 00-2 2v10a2 2 0 002 2h10a2 2 0 002-2v-4M14 4h6m0 0v6m0-6L10 14" />
+                      </svg>
+                    </a>
+                  )}
+                </div>
+              </div>
+
+              {/* iframe 真正嵌入区 */}
+              <iframe
+                src={resolvedSrc}
+                title={cleanTitle}
+                className="w-full min-h-[460px] border-none bg-white block"
+                allowFullScreen
+              />
+            </div>
+          )
+        }
+
         for (let i = 0; i < element.attributes.length; i++) {
           const attr = element.attributes[i]
           if (attr.name === 'class') continue
-          if (attr.name === 'src' && tagName === 'img') continue // 避免重复处理
+          if ((attr.name === 'src' && tagName === 'img') || (attr.name === 'src' && tagName === 'iframe')) continue // 避免重复处理
           if (attr.name.startsWith('on')) continue
 
+          // 转换 React 专属 CamelCase 驼峰属性
           let reactAttrName = attr.name
           if (attr.name === 'colspan') reactAttrName = 'colSpan'
           if (attr.name === 'rowspan') reactAttrName = 'rowSpan'
           if (attr.name === 'autocomplete') reactAttrName = 'autoComplete'
+          if (attr.name === 'allowfullscreen') reactAttrName = 'allowFullScreen'
+          if (attr.name === 'frameborder') reactAttrName = 'frameBorder'
+
+          // 对原生 style 字符串属性转为 React 对象格式
+          if (attr.name === 'style') {
+            const styleObj: Record<string, string> = {}
+            attr.value.split(';').forEach(rule => {
+              const [k, v] = rule.split(':')
+              if (k && v) {
+                const camelKey = k.trim().replace(/-([a-z])/g, (_, letter) => letter.toUpperCase())
+                styleObj[camelKey] = v.trim()
+              }
+            })
+            props.style = styleObj
+            continue
+          }
 
           props[reactAttrName] = attr.value
         }

@@ -18,10 +18,11 @@ import {
   Tag,
   BookOpen,
   Layout,
-  MessageSquare
+  MessageSquare,
+  Link2
 } from "lucide-react";
 import MarkdownEditor from "@/components/editor/MarkdownEditor";
-import { fetchCategoriesSimple, fetchTags, fetchTagsSimple } from "@/lib/article-api";
+import { fetchCategoriesSimple, fetchTags, fetchTagsSimple, fetchArticles } from "@/lib/article-api";
 import type { ArticleSaveDTO } from "@/types/article";
 
 export interface ArticleFormProps {
@@ -114,11 +115,23 @@ export default function ArticleForm({ initialData, onSave, saving = false }: Art
   const [seoDescription, setSeoDescription] = useState(initialData?.seoDescription || "");
   const [seoKeywords, setSeoKeywords] = useState(initialData?.seoKeywords || "");
 
+  // 手动关联推荐文章 (最多选择 2 篇)
+  const [relatedArticleIds, setRelatedArticleIds] = useState<number[]>(initialData?.relatedArticleIds || []);
+  const [candidateArticles, setCandidateArticles] = useState<any[]>([]);
+
   // 3. 接口拉取与 Mock 数据源
   const [categories, setCategories] = useState<any[]>([]);
   const [tags, setTags] = useState<any[]>([]);
 
   useEffect(() => {
+    // 拉取全部候选文章列表
+    fetchArticles({ page: 1, size: 100 })
+      .then((res: any) => {
+        const list = res?.records || (Array.isArray(res) ? res : []);
+        setCandidateArticles(list.filter((item: any) => item.id !== (initialData as any)?.id));
+      })
+      .catch(() => {});
+
     // 拉取分类
     fetchCategoriesSimple()
       .then((data) => {
@@ -183,6 +196,7 @@ export default function ArticleForm({ initialData, onSave, saving = false }: Art
       seoTitle: seoTitle || undefined,
       seoDescription: seoDescription || undefined,
       seoKeywords: seoKeywords || undefined,
+      relatedArticleIds: relatedArticleIds.length > 0 ? relatedArticleIds : undefined,
     };
     onSave(data);
   };
@@ -674,12 +688,62 @@ export default function ArticleForm({ initialData, onSave, saving = false }: Art
                       type="text"
                       value={seoKeywords}
                       onChange={(e) => setSeoKeywords(e.target.value)}
-                      placeholder="react, nextjs"
+                      placeholder="Vue3, Vite, 前端"
                       className="w-full rounded-lg border border-zinc-200 dark:border-zinc-800 bg-white dark:bg-zinc-900 px-2.5 py-1.5 text-xs text-zinc-850 dark:text-zinc-250 outline-none"
                     />
                   </div>
                 </div>
               </details>
+
+              {/* 关联推荐文章设置卡片 */}
+              <div className="space-y-2 pt-2 border-t border-zinc-200/50 dark:border-zinc-800/60">
+                <div className="flex items-center justify-between">
+                  <label className="text-[10px] font-bold text-zinc-400 dark:text-zinc-500 uppercase tracking-widest flex items-center gap-1.5">
+                    <Link2 size={11} />
+                    <span>关联推荐文章 (最多 2 篇)</span>
+                  </label>
+                  <span className="text-[10px] font-mono text-zinc-400">
+                    已选 {relatedArticleIds.length}/2 篇
+                  </span>
+                </div>
+                <div className="max-h-44 overflow-y-auto space-y-1 rounded-xl border border-zinc-200/60 dark:border-zinc-800 bg-white dark:bg-zinc-900 p-2 text-xs">
+                  {candidateArticles.length > 0 ? (
+                    candidateArticles.map((art: any) => {
+                      const isSelected = relatedArticleIds.includes(art.id);
+                      return (
+                        <div
+                          key={art.id}
+                          onClick={() => {
+                            if (isSelected) {
+                              setRelatedArticleIds((prev) => prev.filter((id) => id !== art.id));
+                            } else {
+                              if (relatedArticleIds.length >= 2) {
+                                alert("最多只能手动关联 2 篇推荐文章");
+                                return;
+                              }
+                              setRelatedArticleIds((prev) => [...prev, art.id]);
+                            }
+                          }}
+                          className={cn(
+                            "flex items-center justify-between gap-2 p-2 rounded-lg cursor-pointer transition-all border",
+                            isSelected
+                              ? "bg-primary/10 border-primary/30 text-primary font-medium"
+                              : "border-transparent hover:bg-zinc-100 dark:hover:bg-zinc-800/60 text-zinc-700 dark:text-zinc-300"
+                          )}
+                        >
+                          <span className="truncate flex-1 text-xs">{art.title}</span>
+                          {isSelected && <span className="text-[10px] bg-primary text-white px-1.5 py-0.5 rounded font-bold">已关联</span>}
+                        </div>
+                      );
+                    })
+                  ) : (
+                    <p className="text-[10px] text-zinc-400 p-2 text-center">暂无其它可关联文章</p>
+                  )}
+                </div>
+                <p className="text-[10px] text-zinc-400">
+                  前台文章详情页底部将优先展示此处勾选的 2 篇文章；若未设置或不足 2 篇，系统将自动基于分类或时间推荐补全。
+                </p>
+              </div>
 
             </div>
           </div>
