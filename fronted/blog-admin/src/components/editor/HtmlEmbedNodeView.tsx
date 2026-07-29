@@ -38,7 +38,7 @@ export default function HtmlEmbedNodeView(props: any) {
     <NodeViewWrapper className="my-6 not-prose select-none group/embed">
       <div
         className={cn(
-          "rounded-2xl border border-zinc-200/80 dark:border-zinc-800/80 bg-zinc-900 shadow-xl overflow-hidden transition-all duration-300",
+          "rounded-2xl border border-zinc-200 dark:border-zinc-800 bg-zinc-900 shadow-none overflow-hidden transition-all duration-300",
           isExpanded ? "fixed inset-4 z-50 my-0 rounded-xl" : "relative w-full"
         )}
       >
