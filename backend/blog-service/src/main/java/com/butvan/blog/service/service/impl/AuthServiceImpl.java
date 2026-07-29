@@ -239,6 +239,23 @@ public class AuthServiceImpl implements AuthService {
         user.setAvatarUrl(normalizeBlank(dto.getAvatarUrl()));
         user.setBio(normalizeBlank(dto.getBio()));
 
+        Map<String, Object> socialLinks = user.getSocialLinks();
+        if (socialLinks == null) {
+            socialLinks = new java.util.HashMap<>();
+        }
+        if (dto.getRewardCodeUrl() != null) {
+            String url = dto.getRewardCodeUrl().trim();
+            if (url.isEmpty()) {
+                socialLinks.remove("rewardCodeUrl");
+            } else {
+                socialLinks.put("rewardCodeUrl", url);
+            }
+        }
+        if (dto.getSocialLinks() != null) {
+            socialLinks.putAll(dto.getSocialLinks());
+        }
+        user.setSocialLinks(socialLinks);
+
         User savedUser = userRepository.save(user);
         log.info("用户 [{}] 已更新个人中心基础资料", username);
         return toCurrentUserVO(savedUser);
@@ -301,6 +318,11 @@ public class AuthServiceImpl implements AuthService {
      * @return 当前账号资料视图对象
      */
     private CurrentUserVO toCurrentUserVO(User user) {
+        String rewardCodeUrl = null;
+        if (user.getSocialLinks() != null && user.getSocialLinks().get("rewardCodeUrl") != null) {
+            rewardCodeUrl = String.valueOf(user.getSocialLinks().get("rewardCodeUrl"));
+        }
+
         return CurrentUserVO.builder()
                 .id(user.getId())
                 .username(user.getUsername())
@@ -308,6 +330,8 @@ public class AuthServiceImpl implements AuthService {
                 .email(user.getEmail())
                 .avatarUrl(user.getAvatarUrl())
                 .bio(user.getBio())
+                .rewardCodeUrl(rewardCodeUrl)
+                .socialLinks(user.getSocialLinks())
                 .githubUsername(user.getGithubUsername())
                 .twoFactorEnabled(user.getTwoFactorEnabled())
                 .role(user.getRole())

@@ -6,6 +6,7 @@ import lombok.Data;
 import lombok.NoArgsConstructor;
 import java.io.Serializable;
 import java.time.LocalDateTime;
+import java.util.Map;
 
 /**
  * 当前登录账号个人中心视图对象
@@ -26,6 +27,8 @@ public class CurrentUserVO implements Serializable {
     private Boolean twoFactorEnabled; // 是否开启了双重验证
     private String role; // 用户角色
     private String status; // 账号状态
+    private String rewardCodeUrl; // 赞赏/收款二维码图片 URL
+    private Map<String, Object> socialLinks; // 社交链接及扩展配置
     private LocalDateTime lastLoginAt; // 最近登录时间
     private LocalDateTime createdAt; // 注册时间
     private LocalDateTime updatedAt; // 最近更新时间
