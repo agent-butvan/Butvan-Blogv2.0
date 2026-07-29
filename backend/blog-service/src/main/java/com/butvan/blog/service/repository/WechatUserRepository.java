@@ -2,8 +2,10 @@ package com.butvan.blog.service.repository;
 
 import com.butvan.blog.pojo.entity.WechatUser;
 import org.springframework.data.jpa.repository.JpaRepository;
+import org.springframework.data.jpa.repository.Query;
 import org.springframework.stereotype.Repository;
 
+import java.util.List;
 import java.util.Optional;
 
 /**
@@ -11,6 +13,14 @@ import java.util.Optional;
  */
 @Repository
 public interface WechatUserRepository extends JpaRepository<WechatUser, Long> {
+
+    /**
+     * 查询所有状态为已关注的微信公众号用户的 openId 列表
+     *
+     * @return 已关注用户的 openId 列表
+     */
+    @Query("SELECT w.openId FROM WechatUser w WHERE w.status = 1")
+    List<String> findAllFollowedOpenIds();
 
     /**
      * 根据微信 openid 查询关联记录
