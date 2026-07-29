@@ -225,6 +225,7 @@ Butvan Blog2.0/                                    # 📦 项目根目录
 │       │   │   │   ├── MarkdownEditor.tsx         #         Markdown 富文本编辑器（含 Sticky 外壳与独立滚动区）
 │       │   │   │   ├── EditorToc.tsx              #         文章大纲/目录实时解析与极简树轨 Active 高亮指示器组件 (新增)
 │       │   │   │   ├── ImageNodeViewComponent.tsx #         Tiptap 图片 React NodeView（支持全屏查看大图、破损卡片提示、URL展示、替换链接与重新上传）
+│       │   │   │   ├── HtmlEmbedNodeView.tsx      #         Tiptap 嵌入 HTML 网页 NodeView 组件（Mac 浏览器风格外壳、文件标题、全屏/还原与嵌入沙盒渲染） (新增)
 │       │   │   │   ├── InitializedMDXEditor.tsx   #         所见即所得 (WYSIWYG) 客户端编辑器组件
 │       │   │   │   ├── SceneToolbar.tsx           #         场景编辑器顶部工具栏
 │       │   │   │   ├── SceneCanvas.tsx            #         场景编辑器可视化画布

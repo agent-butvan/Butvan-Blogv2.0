@@ -15,6 +15,7 @@ import {
   Table,
   Link,
   Image,
+  Globe,
 } from "lucide-react";
 
 export interface SlashCommand {
@@ -159,6 +160,19 @@ export const SLASH_COMMANDS: SlashCommand[] = [
       return {
         replaceText: `${base}![图片描述](imageUrl)`,
         cursorOffset: base.length + 9, // 定位到 imageUrl 首字母
+      };
+    },
+  },
+  {
+    id: "html-file",
+    label: "嵌入 HTML 页面",
+    description: "选择上传 .html 网页并在编辑器内直接渲染",
+    icon: Globe,
+    markdown: (line) => {
+      const base = line.replace(/\/.*$/, "");
+      return {
+        replaceText: base,
+        cursorOffset: base.length,
       };
     },
   },

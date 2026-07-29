@@ -97,16 +97,41 @@ export default function HtmlRenderer({ html, proseClass = 'article-content-prose
           props.className = `${element.getAttribute('class') || ''} cursor-zoom-in hover:opacity-95 transition-all duration-200`
         }
 
+        // 如果是 iframe 网页嵌入标签，解析正确绝对路径并配置极具质感的样式
+        if (tagName === 'iframe') {
+          const rawSrc = element.getAttribute('src') || ''
+          const resolvedSrc = resolveImageUrl(rawSrc)
+          props.src = resolvedSrc
+          props.className = `${element.getAttribute('class') || ''} w-full min-h-[460px] rounded-2xl border border-zinc-200/80 dark:border-zinc-800/80 bg-white dark:bg-zinc-950 shadow-lg my-6 overflow-hidden block`
+        }
+
         for (let i = 0; i < element.attributes.length; i++) {
           const attr = element.attributes[i]
           if (attr.name === 'class') continue
-          if (attr.name === 'src' && tagName === 'img') continue // 避免重复处理
+          if ((attr.name === 'src' && tagName === 'img') || (attr.name === 'src' && tagName === 'iframe')) continue // 避免重复处理
           if (attr.name.startsWith('on')) continue
 
+          // 转换 React 专属 CamelCase 驼峰属性
           let reactAttrName = attr.name
           if (attr.name === 'colspan') reactAttrName = 'colSpan'
           if (attr.name === 'rowspan') reactAttrName = 'rowSpan'
           if (attr.name === 'autocomplete') reactAttrName = 'autoComplete'
+          if (attr.name === 'allowfullscreen') reactAttrName = 'allowFullScreen'
+          if (attr.name === 'frameborder') reactAttrName = 'frameBorder'
+
+          // 对原生 style 字符串属性转为 React 对象格式
+          if (attr.name === 'style') {
+            const styleObj: Record<string, string> = {}
+            attr.value.split(';').forEach(rule => {
+              const [k, v] = rule.split(':')
+              if (k && v) {
+                const camelKey = k.trim().replace(/-([a-z])/g, (_, letter) => letter.toUpperCase())
+                styleObj[camelKey] = v.trim()
+              }
+            })
+            props.style = styleObj
+            continue
+          }
 
           props[reactAttrName] = attr.value
         }
