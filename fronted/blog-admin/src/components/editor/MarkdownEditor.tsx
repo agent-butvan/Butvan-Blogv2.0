@@ -86,6 +86,20 @@ const IframeExtension = Node.create({
     return [
       {
         tag: "iframe",
+        getAttrs: (element) => {
+          if (typeof element === "string") return false;
+          const dom = element as HTMLElement;
+          const src = dom.getAttribute("src");
+          if (!src) return false;
+          return {
+            src: src,
+            title: dom.getAttribute("title") || "嵌入 HTML 页面",
+            width: dom.getAttribute("width") || "100%",
+            height: dom.getAttribute("height") || "450px",
+            style: dom.getAttribute("style") || "width: 100%; height: 450px; border: none; border-radius: 12px; overflow: hidden;",
+            allowfullscreen: dom.getAttribute("allowfullscreen") || "true",
+          };
+        },
       },
     ];
   },
@@ -701,6 +715,20 @@ export default function MarkdownEditor({
         editor.commands.setContent(value || "", {
           contentType: "markdown",
         });
+
+        // 100% 绝对防丢失双通道校验：若原始 value 中包含 <iframe 标签，但 markdown 模式未能解析出 iframe 节点，
+        // 则立即回退使用原生 HTML 解析器，确保刷新页面加载时 100% 渲染 iframe 交互节点！
+        if (value.includes("<iframe") || value.includes("<IFRAME")) {
+          let hasIframeNode = false;
+          editor.state.doc.descendants((node: any) => {
+            if (node.type.name === "iframe") {
+              hasIframeNode = true;
+            }
+          });
+          if (!hasIframeNode) {
+            editor.commands.setContent(value || "");
+          }
+        }
       }
       // 初始加载或外部数据变化时，也提取图片 URL
       extractImagesFromDoc(editor);
