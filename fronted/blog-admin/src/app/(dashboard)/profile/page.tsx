@@ -178,7 +178,8 @@ export default function ProfilePage() {
       profileForm.nickname !== initialForm.nickname ||
       profileForm.email !== initialForm.email ||
       profileForm.avatarUrl !== initialForm.avatarUrl ||
-      profileForm.bio !== initialForm.bio
+      profileForm.bio !== initialForm.bio ||
+      profileForm.rewardCodeUrl !== initialForm.rewardCodeUrl
     );
   }, [initialForm, profileForm]);
 
