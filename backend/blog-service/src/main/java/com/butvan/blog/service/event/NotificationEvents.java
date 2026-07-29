@@ -3,10 +3,37 @@ package com.butvan.blog.service.event;
 import lombok.Getter;
 import org.springframework.context.ApplicationEvent;
 
+import java.time.LocalDateTime;
+
 /**
  * 集中管理系统通知相关的 Spring 业务事件总线
  */
 public class NotificationEvents {
+
+    /**
+     * 文章发布/更新发布事件
+     */
+    @Getter
+    public static class ArticlePublishedEvent extends ApplicationEvent {
+        private final Long articleId;          // 文章 ID
+        private final String articleTitle;      // 文章标题
+        private final String categoryName;      // 分类名称
+        private final LocalDateTime articleTime;// 发布/更新时间
+        private final String articleSummary;    // 文章摘要
+        private final String slug;              // URL 友好别名
+
+        public ArticlePublishedEvent(Object source, Long articleId, String articleTitle,
+                                     String categoryName, LocalDateTime articleTime,
+                                     String articleSummary, String slug) {
+            super(source);
+            this.articleId = articleId;
+            this.articleTitle = articleTitle;
+            this.categoryName = categoryName;
+            this.articleTime = articleTime;
+            this.articleSummary = articleSummary;
+            this.slug = slug;
+        }
+    }
 
     /**
      * 新增评论事件

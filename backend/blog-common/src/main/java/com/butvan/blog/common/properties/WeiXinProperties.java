@@ -19,4 +19,7 @@ public class WeiXinProperties {
 
     /** 微信公众号 AppSecret */
     private String appsecret;
+
+    /** 博客前台基础访问 URL，用于生成模板消息的卡片跳转链接 */
+    private String clientBaseUrl = "http://localhost:3000";
 }

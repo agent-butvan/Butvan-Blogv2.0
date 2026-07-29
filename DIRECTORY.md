@@ -430,7 +430,11 @@ Butvan Blog2.0/                                    # 📦 项目根目录
             │   │   │   └── service/
             │   │   │       ├── WeiXinAuthLoginService.java
             │   │   │       └── impl/
-            │   │   │           └── WeiXinAuthLoginServiceImpl.java
+            │   │   ├── event/                      #       📢 事件驱动总线
+            │   │   │   └── NotificationEvents.java  #         集中管理系统通知及文章发布(ArticlePublishedEvent)事件总线
+            │   │   ├── listener/                   #       👂 事件监听处理器
+            │   │   │   ├── NotificationListener.java#         系统通知事件异步监听与 WebSocket 实时广播
+            │   │   │   └── WechatNotificationListener.java #    微信模板消息通知监听器（事务提交后异步向关注用户批量推送）
             │   │   ├── scheduler/                  #       ⏰ 定时任务模块
             │   │   │   └── TrafficSyncScheduler.java#         每日流量访问（PV/UV）Redis 缓存数据定时同步回刷数据库调度器
             │   └── resources/                      #       配置文件与 Flyway 数据库迁移
