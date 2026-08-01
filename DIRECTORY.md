@@ -41,6 +41,7 @@ Butvan Blog2.0/                                    # 📦 项目根目录
 ├── docx/                                          # 📝 项目文档与资料
 │   ├── COLORS.md                                  #   配色参考方案（9 种冷暖主题色）
 │   ├── THINKING.md                                #   产品最初构想与「沉浸式房间」跳转逻辑
+│   ├── wechat_login_sealed_record_refactor.md     #   微信扫码登录 Java 17/21 sealed + record 架构重构指南
 │   ├── reviews/                                   #   Code Review 审查记录
 │   │   └── auth-profile-code-review.md            #     个人中心（feat/auth）代码审查报告：问题清单、测试缺口、修复优先级
 │   └── database/
@@ -513,6 +514,7 @@ Butvan Blog2.0/                                    # 📦 项目根目录
 | `docx/database/migration-v0.6.sql` | 数据库 | PostgreSQL v0.6 迁移脚本（安全插入后台评论管理侧边栏菜单） |
 | `docx/database/migration-v0.7.sql` | 数据库 | PostgreSQL v0.7 迁移脚本（安全插入后台“资源管理 -> 媒体内容管理”菜单） |
 | `docx/database/migration-v0.9.sql` | 数据库 | PostgreSQL v0.9 迁移脚本（实现 GitHub 和 2FA 安全绑定与双重认证） |
+| `docx/wechat_login_sealed_record_refactor.md` | 项目文档 | 微信扫码登录 Java 17/21 sealed + record 架构重构详细指南 |
 | `fronted/blog-admin/src/lib/article-api.ts` | 后台-工具 | 统一封装文章、分类、标签相关 API 请求方法 |
 | `fronted/blog-client/src/app/page.tsx` | 前台-首页 | 房间场景：从 API 获取激活场景，PNG 图层叠层绝对百分比渲染、hover 物理悬空、发光避光阴影及缩放过渡 |
 | `fronted/blog-client/src/components/home/RoomScene.tsx` | 前台-组件 | 多图层渲染容器，背景图+PNG物品百分比定位叠加 |
