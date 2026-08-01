@@ -20,25 +20,39 @@ export function Providers({ children }: { children: React.ReactNode }) {
     const observer = new MutationObserver(enforceLight)
     observer.observe(document.documentElement, { attributes: true, attributeFilter: ['class'] })
 
+    const isTransitionAbortError = (reason: any) => {
+      if (!reason) return false
+      const msg = typeof reason === 'string' ? reason : (reason.message || '')
+      const name = reason.name || ''
+      const digest = reason.digest || ''
+      return (
+        name === 'AbortError' ||
+        name === 'InvalidStateError' ||
+        msg.includes('Transition was skipped') ||
+        msg.includes('Transition was aborted') ||
+        msg.includes('invalid state') ||
+        digest.includes('NEXT_REDIRECT')
+      )
+    }
+
     const handleUnhandledRejection = (event: PromiseRejectionEvent) => {
-      const reason = event.reason
-      // 拦截并过滤浏览器原生 View Transitions / Modal 动画在组件卸载或快速切换时抛出的预期 AbortError 与 InvalidStateError
-      if (
-        reason &&
-        (reason.name === 'AbortError' || reason.name === 'InvalidStateError') &&
-        typeof reason.message === 'string' &&
-        (reason.message.includes('Transition was skipped') ||
-         reason.message.includes('Transition was aborted') ||
-         reason.message.includes('invalid state'))
-      ) {
+      if (isTransitionAbortError(event.reason)) {
+        event.preventDefault()
+      }
+    }
+
+    const handleError = (event: ErrorEvent) => {
+      if (isTransitionAbortError(event.error) || isTransitionAbortError(event.message)) {
         event.preventDefault()
       }
     }
 
     window.addEventListener('unhandledrejection', handleUnhandledRejection)
+    window.addEventListener('error', handleError)
     return () => {
       observer.disconnect()
       window.removeEventListener('unhandledrejection', handleUnhandledRejection)
+      window.removeEventListener('error', handleError)
     }
   }, [])
 
