@@ -5,7 +5,6 @@ import com.butvan.blog.common.exception.BusinessException;
 import com.butvan.blog.common.utils.EmailUtils;
 import com.butvan.blog.common.utils.FieldPrinterUtil;
 import com.butvan.blog.common.utils.RedisUtils;
-import com.butvan.blog.pojo.dto.common.WebSocketMessageBase;
 import com.butvan.blog.pojo.dto.common.WsNotice;
 import com.butvan.blog.pojo.entity.User;
 import com.butvan.blog.pojo.entity.WechatUser;
@@ -23,8 +22,6 @@ import lombok.extern.slf4j.Slf4j;
 import org.springframework.stereotype.Service;
 
 import java.time.LocalDateTime;
-import java.util.HashMap;
-import java.util.Map;
 import java.util.UUID;
 import java.util.concurrent.TimeUnit;
 

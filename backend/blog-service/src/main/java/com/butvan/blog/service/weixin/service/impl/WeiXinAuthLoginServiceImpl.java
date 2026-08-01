@@ -63,10 +63,7 @@ public class WeiXinAuthLoginServiceImpl implements WeiXinAuthLoginService {
             String redis_key = WeiXinRedisKeyPrefix.REDIS_QRCODE_TICKET_WS_ID_KEY + qrCodeTicket;
             redisUtils.set(redis_key, ws_id, 120, TimeUnit.SECONDS);
 
-            AuthLoginDto dto = AuthLoginDto.builder()
-                    .qrUrl(accessUrl)
-                    .wsId(ws_id)
-                    .build();
+            AuthLoginDto dto = new AuthLoginDto(accessUrl, ws_id);
 
             return dto;
         } catch (IOException e) {
