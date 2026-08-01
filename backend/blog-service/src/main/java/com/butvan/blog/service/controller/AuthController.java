@@ -106,22 +106,32 @@ public class AuthController {
 
     /**
      * 刷新 Access Token（静默续期）
-     * <p>前端 http-client 在收到 401 时自动调用此接口，用 refresh_token Cookie 换取新 access_token Cookie</p>
+     * <p>支持从 httpOnly Cookie 或 Header (X-Refresh-Token / Authorization) 提取 Refresh Token，
+     * 同时写入 access_token Cookie 并返回新的 accessToken 字符串于 JSON 体中</p>
      *
-     * @param request  HTTP 请求（读取 refresh_token Cookie）
+     * @param request  HTTP 请求（读取 refresh_token Cookie 或 Header）
      * @param response HTTP 响应（写入新 access_token Cookie）
-     * @return 统一成功响应
+     * @return 统一成功响应，包含新 accessToken 字典
      */
     @TrackApi("刷新 Access Token（静默续期）")
     @PostMapping("/refresh")
-    public Result<Void> refresh(HttpServletRequest request, HttpServletResponse response) {
+    public Result<Map<String, String>> refresh(HttpServletRequest request, HttpServletResponse response) {
         String refreshToken = getCookieValue(request, "refresh_token");
+        if (refreshToken == null || refreshToken.isEmpty()) {
+            refreshToken = request.getHeader("X-Refresh-Token");
+        }
+        if (refreshToken == null || refreshToken.isEmpty()) {
+            String authHeader = request.getHeader("Authorization");
+            if (authHeader != null && authHeader.startsWith("Bearer ")) {
+                refreshToken = authHeader.substring(7);
+            }
+        }
         if (refreshToken == null || refreshToken.isEmpty()) {
             throw new BusinessException(401, "未登录或登录已过期");
         }
         String newAccessToken = tokenService.refreshAccessToken(refreshToken);
         addCookie(response, "access_token", newAccessToken, 900, "/");
-        return Result.success();
+        return Result.success(Map.of("accessToken", newAccessToken));
     }
 
     /**
