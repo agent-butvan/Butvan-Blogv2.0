@@ -6,9 +6,12 @@ import com.butvan.blog.common.utils.EmailUtils;
 import com.butvan.blog.common.utils.FieldPrinterUtil;
 import com.butvan.blog.common.utils.RedisUtils;
 import com.butvan.blog.pojo.dto.common.WebSocketMessageBase;
+import com.butvan.blog.pojo.dto.common.WsNotice;
 import com.butvan.blog.pojo.entity.User;
 import com.butvan.blog.pojo.entity.WechatUser;
 import com.butvan.blog.pojo.weixin.EventXmlData;
+import com.butvan.blog.pojo.weixin.QrLoginResult;
+import com.butvan.blog.pojo.weixin.WechatEvent;
 import com.butvan.blog.service.repository.UserRepository;
 import com.butvan.blog.service.repository.WechatUserRepository;
 import com.butvan.blog.service.websocket.WebSocketServer;
@@ -22,7 +25,6 @@ import org.springframework.stereotype.Service;
 import java.time.LocalDateTime;
 import java.util.HashMap;
 import java.util.Map;
-import java.util.Optional;
 import java.util.UUID;
 import java.util.concurrent.TimeUnit;
 
@@ -39,74 +41,62 @@ public class WeiXinEventServiceImpl implements WeiXinEventService {
     private final WechatUserRepository wechatUserRepository;
     private final UserRepository userRepository;
 
-
     @Override
     public String weiXinServerPost(String xmlData) {
         log.info(xmlData);
-        // 解析XML并自动打印所有带 @FieldLabel 注解的字段
-        EventXmlData eventXmlData = FieldPrinterUtil.xmlToBean(xmlData, EventXmlData.class);
 
-        /**
-         * 根据 msgType event 进行决策
-         * 1. 扫码后，未关注 + 关注后 + 发送邮箱信息 -> 登录成功
-         * 2. 扫码后，已关注 + 判断邮箱信息是否存在 -> 不存在，发送信息
-         *                                      -> 存在，登录成功
-         *
-         * 1. 第一种情况：
-         * MsgType: event(事件)
-         * event: subscribe(关注)
-         * 发送邮箱信息
-         * MsgType: text(文本)
-         * event: null
-         * content: 消息内容
-         *
-         * 2. 第二张情况
-         * MsgType: event
-         * Event: SCAN(用户已关注时事件推送)
-         */
-        handleEvent(eventXmlData);
+        // 1. 将 xml 解析为具体的 WechatEvent 对象
+        WechatEvent wechatEvent = parseXmlToWechatEvent(xmlData);
 
+        // 2. 无须处理或未定义的微信事件，直接返回 success 告知微信服务器
+        if (wechatEvent == null) {
+            return "success";
+        }
+
+        // 3. 模式匹配
+        handleEvent(wechatEvent);
 
         return "success";
     }
 
-    private void handleEvent(EventXmlData eventXmlData) {
-        if (eventXmlData.getMsgType().equals("event") && eventXmlData.getEvent().equals("subscribe")) {
-            // 用户首次扫码，关注后
-            // 1. 通知前端展示：已扫码关注
-            // 2. 判断用户是否是第一次注册，依据是否存在历史的：用户openid
-            // -> 1. 不存在：微信发送模版消息通知用户，发送邮箱信息 && 通知前端展示：发送邮箱信息给该公众号
-            // -> 2. 存在：说明该用户之前关注过该公众号但是又取消关注了
-            //      -> 1. 查询邮箱信息是否还存在，若存在：登录成功
-            //      -> 2. 若邮箱信息不存在：重新通知该用户发送邮箱信息，登录成功
-            userFirstRegister(eventXmlData);
+    private WechatEvent parseXmlToWechatEvent(String xmlData) {
+        EventXmlData raw = FieldPrinterUtil.xmlToBean(xmlData, EventXmlData.class);
+        if ("event".equals(raw.getMsgType())) {
+            if ("subscribe".equals(raw.getEvent())) {
+                return new WechatEvent.Subscribe(raw.getFromUserName(), raw.getToUserName(), raw.getCreateTime(),
+                        raw.getTicket(), raw.getEventKey());
+            } else if ("SCAN".equals(raw.getEvent())) {
+                return new WechatEvent.Scan(raw.getFromUserName(), raw.getToUserName(), raw.getCreateTime(),
+                        raw.getTicket(), raw.getEventKey());
+            } else if ("unsubscribe".equals(raw.getEvent())) {
+                return new WechatEvent.Unsubscribe(raw.getFromUserName(), raw.getToUserName(), raw.getCreateTime());
+            } else if ("TEMPLATESENDJOBFINISH".equals(raw.getEvent())) {
+                // 忽略模板消息发送结果送达事件
+                log.info("接收到微信模板消息送达结果通知, msgId={}", raw.getMsgId());
+                return null;
+            }
+        } else if ("text".equals(raw.getMsgType())) {
+            return new WechatEvent.TextMessage(raw.getFromUserName(), raw.getToUserName(), raw.getCreateTime(),
+                    raw.getContent(), raw.getMsgId());
+        }
+        log.warn("收到未定义的微信推送消息, msgType={}, event={}", raw.getMsgType(), raw.getEvent());
+        return null;
+    }
 
-
-        } else if (eventXmlData.getMsgType().equals("event") && eventXmlData.getEvent().equals("SCAN")) {
-            // 用户已关注，扫码后
-            // 1. 通知前端展示：已扫码
-            // 2. 判断该用户邮箱信息是否存在
-            // -> 1. 若不存在：通知前端展示：发送邮箱信息给该公众号 && 微信发送模版消息通知该用户，重新发送邮箱信息
-            // -> 2. 若存在：登录成功
-            userLogin(eventXmlData);
-        } else if (eventXmlData.getMsgType().equals("text")) {
-            /**
-             * 文本消息事件
-             * 用户发送邮箱信息
-             */
-            userText(eventXmlData);
-        } else if (eventXmlData.getMsgType().equals("event") && eventXmlData.getEvent().equals("unsubscribe")) {
-            // 用户取消关注
-            userUnSubscribe(eventXmlData);
+    private void handleEvent(WechatEvent wechatEvent) {
+        switch (wechatEvent) {
+            case WechatEvent.Subscribe subscribe -> userFirstRegister(subscribe);
+            case WechatEvent.Scan scan -> userLogin(scan);
+            case WechatEvent.TextMessage textMessage -> userText(textMessage);
+            case WechatEvent.Unsubscribe unsubscribe -> userUnSubscribe(unsubscribe);
         }
     }
 
     /**
      * 用户取消关注
-     * @param eventXmlData
      */
-    private void userUnSubscribe(EventXmlData eventXmlData) {
-        String open_id = eventXmlData.getFromUserName();
+    private void userUnSubscribe(WechatEvent.Unsubscribe unsubscribe) {
+        String open_id = unsubscribe.fromUserName();
         // 将 微信用户表中的状态字段设置为 0 即可
         WechatUser wechatUser = wechatUserRepository.findByOpenId(open_id).orElse(null);
         if (wechatUser != null && wechatUser.getStatus() == 1) {
@@ -117,20 +107,20 @@ public class WeiXinEventServiceImpl implements WeiXinEventService {
 
     /**
      * 用户发送文本消息
-     * <p>从文本中提取邮箱地址，完成用户创建/绑定流程：</p>
+     * <p>
+     * 从文本中提取邮箱地址，完成用户创建/绑定流程：
+     * </p>
      * <ol>
-     *   <li>正则提取邮箱并校验</li>
-     *   <li>查找或创建 WechatUser 记录</li>
-     *   <li>查找或创建 User 记录（仅用 email）</li>
-     *   <li>关联 WechatUser.userId → User.id</li>
+     * <li>正则提取邮箱并校验</li>
+     * <li>查找或创建 WechatUser 记录</li>
+     * <li>查找或创建 User 记录（仅用 email）</li>
+     * <li>关联 WechatUser.userId → User.id</li>
      * </ol>
-     *
-     * @param eventXmlData 微信消息事件数据
      */
-    private void userText(EventXmlData eventXmlData) {
+    private void userText(WechatEvent.TextMessage textMessage) {
         // 获取用户发送的文本信息内容
-        String content = eventXmlData.getContent();
-        String openId = eventXmlData.getFromUserName();
+        String content = textMessage.content();
+        String openId = textMessage.fromUserName();
         log.info("用户文本消息, openId={}, content={}", openId, content);
 
         // 1. 从文本中提取邮箱并校验格式
@@ -151,7 +141,6 @@ public class WeiXinEventServiceImpl implements WeiXinEventService {
                     .build();
             wechatUser = wechatUserRepository.save(wechatUser);
             log.info("创建 WechatUser 记录, openId={}, id={}", openId, wechatUser.getId());
-
 
             String redis_key = WeiXinRedisKeyPrefix.REDIS_FIRST_REGISTER_OPEN_ID_BING_TICKET + openId;
             String ticket = redisUtils.get(redis_key);
@@ -226,17 +215,16 @@ public class WeiXinEventServiceImpl implements WeiXinEventService {
 
     /**
      * 用户首次注册
-     * @param eventXmlData
      */
-    private void userFirstRegister(EventXmlData eventXmlData) {
+    private void userFirstRegister(WechatEvent.Subscribe subscribe) {
         /**
          * 此时需要判断，用户是通过二维码扫码关注的，还是微信搜索关注的
          * 根据ticket来判断
          * ticket存在则说明是通过扫码关注的
          * 不存在，则不是，也不需要进行任何通知的操作
          */
-        String ticket = eventXmlData.getTicket();
-        String open_id = eventXmlData.getFromUserName();
+        String ticket = subscribe.ticket();
+        String open_id = subscribe.fromUserName();
 
         // 微信用户限定名额：20名
         long activeCount = wechatUserRepository.countByStatus(WechatUser.STATUS_FOLLOWED);
@@ -283,12 +271,12 @@ public class WeiXinEventServiceImpl implements WeiXinEventService {
 
     /**
      * 用户扫码登录
-     * @param eventXmlData
      */
-    private void userLogin(EventXmlData eventXmlData) {
+    private void userLogin(WechatEvent.Scan scan) {
         // 1. 通知前端，用户已经扫码
         // 获取对应二维码的 ticket
-        String qr_ticket = eventXmlData.getTicket();
+        String qr_ticket = scan.ticket();
+        String open_id = scan.fromUserName();
         // 构建 redis key 获取 ws 建立的id
         String redis_key = WeiXinRedisKeyPrefix.REDIS_QRCODE_TICKET_WS_ID_KEY + qr_ticket;
         String ws_id = redisUtils.get(redis_key);
@@ -297,30 +285,54 @@ public class WeiXinEventServiceImpl implements WeiXinEventService {
             scanQrCode(ws_id);
         }
 
-        // 2. 判断用户的邮箱信息是否存在
-        // 获取用户的 open_id
-        String open_id = eventXmlData.getFromUserName();
-        WechatUser wechat_user_info = wechatUserRepository.findByOpenId(open_id).orElse(null);
-        if (wechat_user_info == null || wechat_user_info.getUserId() == null) {
-            throw new BusinessException("微信扫码登录失败，请尝试重新注册，请尝试重新注册");
+        // 2. 校验并获取登录处理结果
+        QrLoginResult result = calculateLoginResult(open_id);
+
+        // 3. 使用 Java 21 switch 模式匹配分发后续动作
+        switch (result) {
+            case QrLoginResult.Success(Long userId, String code) -> {
+                userLoginSuccess(ws_id, code);
+                weiXinSendTemplateMessageService.sendLoginSuccessMessage(open_id);
+            }
+            case QrLoginResult.EmailMissing(String id) -> {
+                userEmailException(ws_id);
+            }
+            case QrLoginResult.UserNotFound(String id) -> {
+                throw new BusinessException("微信扫码登录失败，请尝试重新注册");
+            }
+            default -> log.warn("微信扫码未预期的结果, openId={}", open_id);
         }
-        User blog_user_info = userRepository.findById(wechat_user_info.getUserId()).orElse(null);
-        String user_email = blog_user_info.getEmail();
-        if (user_email == null) {
-            // 用户邮箱信息不存在了，通知客户端
-            userEmailException(ws_id);
-        } else {
-            // 3. 用户邮箱信息正常是，则正常登录
-            // 更新用户的登录时间
-            blog_user_info.setLastLoginAt(LocalDateTime.now());
-            userRepository.save(blog_user_info);
+    }
 
-            // 4. 生成交换码并通知前端登录成功
-            String exchangeCode = generateExchangeCode(blog_user_info.getId());
-            userLoginSuccess(ws_id, exchangeCode);
+    private QrLoginResult calculateLoginResult(String openId) {
+        WechatUser wechatUser = wechatUserRepository.findByOpenId(openId).orElse(null);
+        if (wechatUser == null || wechatUser.getUserId() == null) {
+            return new QrLoginResult.UserNotFound(openId);
+        }
 
-            // 5. 发送模版消息通知前端用户
-            weiXinSendTemplateMessageService.sendLoginSuccessMessage(open_id);
+        User blogUser = userRepository.findById(wechatUser.getUserId()).orElse(null);
+        if (blogUser == null || blogUser.getEmail() == null) {
+            return new QrLoginResult.EmailMissing(openId);
+
+        }
+
+        blogUser.setLastLoginAt(LocalDateTime.now());
+        userRepository.save(blogUser);
+
+        String exchangeCode = generateExchangeCode(blogUser.getId());
+        return new QrLoginResult.Success(blogUser.getId(), exchangeCode);
+    }
+
+    /**
+     * 统一发送 WsNotice 消息方法
+     * 
+     * @param wsId
+     * @param notice
+     */
+    private void sendWsNotice(String wsId, WsNotice notice) {
+        System.out.println("##### notice:" + JSONUtil.toJsonStr(notice) + "#####");
+        if (wsId != null) {
+            webSocketServer.sendMessage(wsId, JSONUtil.toJsonStr(notice));
         }
     }
 
@@ -331,17 +343,7 @@ public class WeiXinEventServiceImpl implements WeiXinEventService {
      * @param exchangeCode Token 交换码
      */
     private void userFirstRegisterSuccess(String wsId, String exchangeCode) {
-        Map<String, Object> data = new HashMap<>();
-        data.put("exchangeCode", exchangeCode);
-
-        WebSocketMessageBase webSocketMessageBase = WebSocketMessageBase.builder()
-                .code(200)
-                .event("login")
-                .message("注册成功! 欢迎加入可梵博客!")
-                .data(data)
-                .build();
-
-        webSocketServer.sendMessage(wsId, JSONUtil.toJsonStr(webSocketMessageBase));
+        sendWsNotice(wsId, WsNotice.LoginSuccess.of("注册成功！欢迎加入可梵博客！", exchangeCode));
     }
 
     /**
@@ -351,33 +353,16 @@ public class WeiXinEventServiceImpl implements WeiXinEventService {
      * @param exchangeCode Token 交换码
      */
     private void userLoginSuccess(String wsId, String exchangeCode) {
-        Map<String, Object> data = new HashMap<>();
-        data.put("exchangeCode", exchangeCode);
-
-        WebSocketMessageBase webSocketMessageBase = WebSocketMessageBase.builder()
-                .code(200)
-                .event("login")
-                .message("登录成功！")
-                .data(data)
-                .build();
-
-        webSocketServer.sendMessage(wsId, JSONUtil.toJsonStr(webSocketMessageBase));
+        sendWsNotice(wsId, WsNotice.LoginSuccess.of("登录成功！", exchangeCode));
     }
 
     /**
      * 用户邮箱信息 异常的时候发送通知
+     * 
      * @param wsId
      */
     private void userEmailException(String wsId) {
-        WebSocketMessageBase webSocketMessageBase = WebSocketMessageBase.builder()
-                .code(500)
-                .event("login")
-                .message("邮箱信息异常或已过期,请尝试重新发送邮箱信息至公众号")
-                .build();
-
-        String jsonStr = JSONUtil.toJsonStr(webSocketMessageBase);
-
-        webSocketServer.sendMessage(wsId, jsonStr);
+        sendWsNotice(wsId, new WsNotice.EmailException());
     }
 
     /**
@@ -386,18 +371,14 @@ public class WeiXinEventServiceImpl implements WeiXinEventService {
      * @param wsId WebSocket 连接 ID
      */
     private void scanQrCode(String wsId) {
-        WebSocketMessageBase webSocketMessageBase = WebSocketMessageBase.builder()
-                .code(200)
-                .event("weixin")
-                .message("二维码被扫描")
-                .build();
-
-        webSocketServer.sendMessage(wsId, JSONUtil.toJsonStr(webSocketMessageBase));
+        sendWsNotice(wsId, new WsNotice.QrScanned());
     }
 
     /**
      * 生成微信登录交换码并存入 Redis
-     * <p>前端通过 WS 收到此码后，调用 HTTP 接口换取 httpOnly Cookie</p>
+     * <p>
+     * 前端通过 WS 收到此码后，调用 HTTP 接口换取 httpOnly Cookie
+     * </p>
      *
      * @param userId 用户 ID
      * @return 一次性交换码（UUID，60 秒过期）

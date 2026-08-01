@@ -120,37 +120,39 @@ public class WeiXinSendTemplateMessageServiceImpl implements WeiXinSendTemplateM
      * @return 微信 API 原始响应 JSON 字符串
      */
     private String sendTemplateMessage(String openId, String template_url, String templateId, Map<String, TemplateData> data) {
-        // 1. 获取 access_token
-        String accessToken = weiXinBaseService.getAccessToken(weiXinProperties.getAppid(), weiXinProperties.getAppsecret());
-        String url = TEMPLATE_SEND_URL + accessToken;
+        try {
+            // 1. 获取 access_token
+            String accessToken = weiXinBaseService.getAccessToken(weiXinProperties.getAppid(), weiXinProperties.getAppsecret());
+            String url = TEMPLATE_SEND_URL + accessToken;
 
-        // 2. 构建请求体
-        TemplateMessageDto message = TemplateMessageDto.builder()
-                .touser(openId)
-                .url(template_url)
-                .template_id(templateId)
-                .data(data)
-                .build();
-        String jsonBody = JSONUtil.toJsonStr(message);
+            // 2. 构建请求体
+            TemplateMessageDto message = TemplateMessageDto.builder()
+                    .touser(openId)
+                    .url(template_url)
+                    .template_id(templateId)
+                    .data(data)
+                    .build();
+            String jsonBody = JSONUtil.toJsonStr(message);
 
-        log.info("[微信模板消息] 发送给 openId={}, templateId={}", openId, templateId);
+            log.info("[微信模板消息] 发送给 openId={}, templateId={}", openId, templateId);
+            log.info("jsonbody:{}", jsonBody);
 
-        log.info("jsonbody:{}", jsonBody);
+            // 3. 发送请求
+            HttpDto httpDto = HttpDto.builder()
+                    .url(url)
+                    .body(jsonBody)
+                    .build();
+            HttpVo result = HttpUtils.post(httpDto);
 
-        // 3. 发送请求
-        HttpDto httpDto = HttpDto.builder()
-                .url(url)
-                .body(jsonBody)
-                .build();
-        HttpVo result = HttpUtils.post(httpDto);
+            log.info("[微信模板消息] 响应: {}", result.getMap());
 
-        log.info("[微信模板消息] 响应: {}", result.getMap());
-
-        String errmsg = result.getMap().get("errmsg").toString();
-
-        if (errmsg != null && errmsg.equals("ok")) {
-            return "success";
-        } else {
+            if (result != null && result.getMap() != null && "ok".equals(result.getMap().get("errmsg"))) {
+                return "success";
+            } else {
+                return "error";
+            }
+        } catch (Exception e) {
+            log.error("[微信模板消息] 发送异常 (SSL/网络波动), openId={}, templateId={}, cause={}", openId, templateId, e.getMessage());
             return "error";
         }
     }
