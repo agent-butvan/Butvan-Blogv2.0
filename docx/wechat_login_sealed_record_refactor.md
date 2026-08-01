@@ -1,117 +1,37 @@
-# 微信扫码登录 Java 17/21 `sealed` + `record` 现代语法重构指南
+# 微信扫码登录 Java 17/21 `sealed` + `record` 现代语法重构指南 (微信官方协议对齐版)
 
-## 1. 重构背景与目标
+## 1. 重构背景与官方规范对齐
 
-在当前后端架构中，微信扫码登录涉及**微信推送事件解析**、**多分支状态决策**、**WebSocket 消息通知**及**交换码生成**等核心链路。
+根据微信官方开发文档：
+- **[接收普通消息 (Receiving standard messages)](https://developers.weixin.qq.com/doc/service/guide/product/message/Receiving_standard_messages.html)**：`MsgType` 为 `text`、`image` 等。特点是**包含 `MsgId`（64位整型）**，微信建议使用 `MsgId` 进行排重；不包含 `Event`、`EventKey`、`Ticket`。
+- **[接收事件推送 (Receiving event pushes)](https://developers.weixin.qq.com/doc/service/guide/product/message/Receiving_event_pushes.html)**：`MsgType` 固定为 `event`。特点是**不包含 `MsgId`**，微信推荐使用 `FromUserName + CreateTime` 进行排重。主要包括：
+  1. **直接关注 (`subscribe`)**：用户搜索公众号关注，**无 `EventKey` 和 `Ticket`**。
+  2. **带参数二维码扫码关注 (`subscribe`)**：用户未关注时扫码，`EventKey` 带 **`qrscene_` 前缀**，包含 `Ticket`。
+  3. **带参数二维码扫码事件 (`SCAN`)**：用户已关注时扫码，`EventKey` **不带前缀（直接为场景值）**，包含 `Ticket`。
+  4. **取消关注 (`unsubscribe`)**：无 `EventKey` 和 `Ticket`。
 
-在传统的 Java 8 模式下，事件通常由单体大 POJO 表达，通过大量的 `if-else` 和字符串比对进行分支路由，存在以下问题：
-1. **多余字段为 null**：例如文本消息包含 `content` 但缺失 `ticket`；关注事件包含 `ticket` 但缺失 `content`。
-2. **缺乏编译期约束**：如果新增事件类型，无法在编译期检查处理逻辑是否全覆盖。
-3. **DTO 代码臃肿**：频繁使用 Lombok `@Data` / `@Builder` 维护不可变或只读数据载体。
-
-借助 **Java 17 / Java 21** 引入的三大核心新特性：
-- **`record`（不可变数据载体）**：自动提供不可变性、`equals` / `hashCode` / `toString`。
-- **`sealed interface/class`（密封类/接口）**：严格约束实现继承树，提供封闭类型域。
-- **`Pattern Matching for switch`（模式匹配）**：实现解构提取与编译期穷举检查（Exhaustiveness check）。
-
-本文档为手动重构此场景提供清晰、规范、分步的实施指南。
+为了完全符合微信官方协议规范，并充分发挥 Java 17/21 `sealed` + `record` 的优雅特性，我们将推送模型抽象为顶层密封树 `WechatPush`。
 
 ---
 
 ## 2. 核心改造点详解
 
-### 改造点一：微信推送事件模型重构 (`WechatEvent`)
+### 改造点一：微信消息与事件推送模型重构 (`WechatPush`)
 
-#### 现状
-原有 `com.butvan.blog.pojo.weixin.EventXmlData` 是一个单体 POJO，集成了 `subscribe`、`SCAN`、`text`、`unsubscribe` 等所有可能字段，造成大量字段值为 `null`，可读性与安全性差。
-
-#### 重构设计
-定义 `sealed interface WechatEvent` 密封接口，下面通过 `record` 实现具体的事件类型。
+#### 微信官方对齐的 Sealed 继承树
+定义顶层密封接口 `WechatPush`，分立 **普通消息 (`WechatMessage`)** 与 **事件推送 (`WechatEvent`)**：
 
 ```java
 package com.butvan.blog.pojo.weixin;
 
 /**
- * 微信推送事件密封接口
- * <p>限制仅允许以下四种具体的 record 事件实现</p>
+ * 微信推送根密封接口（包含普通消息与事件推送）
  */
-public sealed interface WechatEvent permits 
-        WechatEvent.Subscribe, 
-        WechatEvent.Scan, 
-        WechatEvent.TextMessage, 
-        WechatEvent.Unsubscribe {
+public sealed interface WechatPush permits WechatMessage, WechatEvent {
 
-    /**
-     * 发送方账号（OpenID）
-     */
-    String fromUserName();
-
-    /**
-     * 开发者微信号
-     */
+    /** 开发者微信号 */
     String toUserName();
 
-    /**
-     * 消息创建时间
-     */
-    int createTime();
-
-    /**
-     * 首次扫码关注事件
-     */
-    record Subscribe(
-        String fromUserName,
-        String toUserName,
-        int createTime,
-        String ticket,
-        String eventKey
-    ) implements WechatEvent {}
-
-    /**
-     * 已关注扫码事件
-     */
-    record Scan(
-        String fromUserName,
-        String toUserName,
-        int createTime,
-        String ticket,
-        String eventKey
-    ) implements WechatEvent {}
-
-    /**
-     * 用户发送文本消息（如发送邮箱地址）
-     */
-    record TextMessage(
-        String fromUserName,
-        String toUserName,
-        int createTime,
-        String content,
-        long msgId
-    ) implements WechatEvent {}
-
-    /**
-     * 取消关注事件
-     */
-    record Unsubscribe(
-        String fromUserName,
-        String toUserName,
-        int createTime
-    ) implements WechatEvent {}
-}
-```
-
----
-
-### 改造点二：事件路由分发重构 (`switch` 模式匹配)
-
-#### 现状
-在 `WeiXinEventServiceImpl.java` 中，事件分支依靠繁琐的字符串 `equals` 校验：
-```java
-if (eventXmlData.getMsgType().equals("event") && eventXmlData.getEvent().equals("subscribe")) { ... }
-else if (eventXmlData.getMsgType().equals("event") && eventXmlData.getEvent().equals("SCAN")) { ... }
-else if (eventXmlData.getMsgType().equals("text")) { ... }
-else if (eventXmlData.getMsgType().equals("event") && eventXmlData.getEvent().equals("unsubscribe")) { ... }
-```
 
 #### 重构设计
 工厂或转换工具将 XML 转为 `WechatEvent` 之后，在 `handleEvent` 中使用 Java 21 `switch` 模式匹配：
