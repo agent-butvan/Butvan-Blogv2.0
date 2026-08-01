@@ -1,4 +1,4 @@
 weixin:
   appid: ${WEIXIN_APPID:wx_placeholder_appid}
   appsecret: ${WEIXIN_APPSECRET:wx_placeholder_appsecret}
-  client-base-url: ${WEIXIN_CLIENT_BASE_URL:http://localhost:3000}
+  client-base-url: ${WEIXIN_CLIENT_BASE_URL:https://www.butvan.top}
