@@ -58,8 +58,6 @@ services:
       MAIL_PASSWORD: ${MAIL_PASSWORD}
       JWT_SECRET: ${JWT_SECRET}
       STORAGE_MINIO_CUSTOM_DOMAIN: ${STORAGE_MINIO_CUSTOM_DOMAIN}
-    ports:
-      - "8080:8080"
     volumes:
       - ./uploads:/app/uploads
     networks:
@@ -71,8 +69,6 @@ services:
     container_name: blog-admin
     restart: always
     mem_limit: 256m
-    ports:
-      - "3001:3000" # 宿主机 3001 映射容器内 3000 端口
     environment:
       NEXT_PUBLIC_API_URL: http://blog-service:8080
       BACKEND_URL: http://blog-service:8080
@@ -85,13 +81,35 @@ services:
     container_name: blog-client
     restart: always
     mem_limit: 256m
-    ports:
-      - "3000:3000" # 宿主机 3000 映射容器内 3000 端口
     environment:
       NEXT_PUBLIC_API_URL: http://blog-service:8080
       BACKEND_URL: http://blog-service:8080
     networks:
       - blog-network
+
+  # 6. Caddy 反向代理网关（自动申请 SSL 证书与域名绑定）
+  caddy:
+    image: caddy:2-alpine
+    container_name: blog-caddy
+    restart: always
+    ports:
+      - "80:80"
+      - "443:443"
+      - "443:443/udp"
+    environment:
+      CLIENT_DOMAIN: ${CLIENT_DOMAIN:-localhost}
+      ADMIN_DOMAIN: ${ADMIN_DOMAIN:-localhost}
+      API_DOMAIN: ${API_DOMAIN:-localhost}
+    volumes:
+      - ./Caddyfile:/etc/caddy/Caddyfile
+      - ./data/caddy_data:/data
+      - ./data/caddy_config:/config
+    networks:
+      - blog-network
+    depends_on:
+      - blog-client
+      - blog-admin
+      - blog-service
 
 networks:
   blog-network:

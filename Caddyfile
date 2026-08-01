@@ -1,0 +1,30 @@
+# ==============================================================================
+# Butvan Blog 2.0 - Caddy 自动域名解析与 SSL 证书管理配置
+# ==============================================================================
+
+# 1. 博客前台前端 (blog-client)
+{$CLIENT_DOMAIN:localhost} {
+    # 启用 Gzip 和 Zstd 压缩
+    encode gzip zstd
+
+    # 反向代理到 Docker 内网前端容器
+    reverse_proxy blog-client:3000
+}
+
+# 2. 博客后台管理前端 (blog-admin)
+{$ADMIN_DOMAIN:localhost} {
+    # 启用 Gzip 和 Zstd 压缩
+    encode gzip zstd
+
+    # 反向代理到 Docker 内网后台容器
+    reverse_proxy blog-admin:3000
+}
+
+# 3. 博客后端 API 服务 (blog-service) - 可选
+{$API_DOMAIN:localhost} {
+    # 启用 Gzip 和 Zstd 压缩
+    encode gzip zstd
+
+    # 反向代理到 Docker 内网 Spring Boot 后端容器
+    reverse_proxy blog-service:8080
+}
