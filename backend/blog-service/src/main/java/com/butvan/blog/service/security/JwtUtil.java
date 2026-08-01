@@ -156,6 +156,15 @@ public class JwtUtil {
     }
 
     /**
+     * 获取 Access Token 有效期（秒）
+     *
+     * @return access token 有效期（秒）
+     */
+    public Long getAccessExpiration() {
+        return accessExpiration;
+    }
+
+    /**
      * 获取 Refresh Token 有效期（秒），用于 Redis 黑名单 TTL 设置
      *
      * @return refresh token 有效期（秒）

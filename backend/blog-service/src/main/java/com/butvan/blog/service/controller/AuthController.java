@@ -41,6 +41,7 @@ public class AuthController {
     private final AuthService authService;
     private final LoginRateLimiter loginRateLimiter;
     private final TokenService tokenService;
+    private final JwtUtil jwtUtil;
 
     /**
      * 管理后台账号注册接口
@@ -106,22 +107,22 @@ public class AuthController {
 
     /**
      * 刷新 Access Token（静默续期）
-     * <p>前端 http-client 在收到 401 时自动调用此接口，用 refresh_token Cookie 换取新 access_token Cookie</p>
+     * <p>前端 http-client 或 admin 拦截器在收到 401 时自动调用此接口，用 refresh_token Cookie 换取新 access_token</p>
      *
      * @param request  HTTP 请求（读取 refresh_token Cookie）
      * @param response HTTP 响应（写入新 access_token Cookie）
-     * @return 统一成功响应
+     * @return 新生成的 Access Token 字符串
      */
     @TrackApi("刷新 Access Token（静默续期）")
     @PostMapping("/refresh")
-    public Result<Void> refresh(HttpServletRequest request, HttpServletResponse response) {
+    public Result<String> refresh(HttpServletRequest request, HttpServletResponse response) {
         String refreshToken = getCookieValue(request, "refresh_token");
         if (refreshToken == null || refreshToken.isEmpty()) {
             throw new BusinessException(401, "未登录或登录已过期");
         }
         String newAccessToken = tokenService.refreshAccessToken(refreshToken);
-        addCookie(response, "access_token", newAccessToken, 900, "/");
-        return Result.success();
+        addCookie(response, "access_token", newAccessToken, jwtUtil.getAccessExpiration().intValue(), "/");
+        return Result.success(newAccessToken);
     }
 
     /**

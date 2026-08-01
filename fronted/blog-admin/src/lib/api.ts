@@ -12,6 +12,7 @@ const BASE_URL = process.env.NEXT_PUBLIC_API_BASE_URL || "/api";
 const apiClient: AxiosInstance = axios.create({
   baseURL: BASE_URL,
   timeout: 15000,
+  withCredentials: true, // 开启跨域携带 Cookie (包含 refresh_token)
   headers: {
     "Content-Type": "application/json",
   },
@@ -61,26 +62,42 @@ apiClient.interceptors.request.use(
   (error) => Promise.reject(error)
 );
 
+// 控制并发无感刷新的状态与队列
+let isRefreshing = false;
+let failedQueue: Array<{
+  resolve: (value?: unknown) => void;
+  reject: (reason?: any) => void;
+}> = [];
+
+const processQueue = (error: any = null) => {
+  failedQueue.forEach((prom) => {
+    if (error) {
+      prom.reject(error);
+    } else {
+      prom.resolve();
+    }
+  });
+  failedQueue = [];
+};
+
+const handleUnauthorizedLogout = () => {
+  if (typeof window !== "undefined") {
+    localStorage.removeItem("access_token");
+    localStorage.removeItem("user_info");
+    if (!window.location.pathname.includes("/login")) {
+      window.location.href = "/login";
+    }
+  }
+};
+
 /**
- * 响应拦截器 — 统一处理 401 未认证
+ * 响应拦截器 — 统一处理 401 无感刷新与重试
  */
 apiClient.interceptors.response.use(
   (response) => {
-    // 校验后端统一响应体的状态码
     const resData = response.data;
     if (resData && typeof resData === "object" && "code" in resData) {
-      if (resData.code !== 200) {
-        // 如果业务 code 为 401，清除本地存储并跳转登录页
-        if (resData.code === 401) {
-          if (typeof window !== "undefined") {
-            localStorage.removeItem("access_token");
-            localStorage.removeItem("user_info");
-            if (!window.location.pathname.includes("/login")) {
-              window.location.href = "/login";
-            }
-          }
-        }
-        // 如果业务 code 不是 200，说明业务出错，抛出异常，进入 catch 块
+      if (resData.code !== 200 && resData.code !== 401) {
         return Promise.reject({
           response: {
             status: resData.code,
@@ -92,18 +109,46 @@ apiClient.interceptors.response.use(
     }
     return response;
   },
-  (error: AxiosError) => {
-    if (error.response?.status === 401) {
-      // Token 过期或无效，清除本地存储并跳转登录页
-      if (typeof window !== "undefined") {
-        localStorage.removeItem("access_token");
-        localStorage.removeItem("user_info");
-        // 避免在登录页死循环
-        if (!window.location.pathname.includes("/login")) {
-          window.location.href = "/login";
+  async (error: AxiosError) => {
+    const originalRequest = error.config as any;
+
+    if (error.response?.status === 401 && originalRequest && !originalRequest._retry) {
+      // 如果触发 401 的本身就是 /auth/refresh 刷新接口，说明长 Token 也已失效，直接登出
+      if (originalRequest.url?.includes("/auth/refresh")) {
+        handleUnauthorizedLogout();
+        return Promise.reject(error);
+      }
+
+      if (isRefreshing) {
+        return new Promise((resolve, reject) => {
+          failedQueue.push({ resolve, reject });
+        })
+          .then(() => apiClient(originalRequest))
+          .catch((err) => Promise.reject(err));
+      }
+
+      originalRequest._retry = true;
+      isRefreshing = true;
+
+      try {
+        // 请求后端换取新 Access Token
+        const res = await apiClient.post("/auth/refresh");
+        const newAccessToken = res.data?.data;
+        if (newAccessToken && typeof window !== "undefined") {
+          localStorage.setItem("access_token", newAccessToken);
+          originalRequest.headers.Authorization = `Bearer ${newAccessToken}`;
         }
+        processQueue(null);
+        return apiClient(originalRequest);
+      } catch (refreshErr) {
+        processQueue(refreshErr);
+        handleUnauthorizedLogout();
+        return Promise.reject(refreshErr);
+      } finally {
+        isRefreshing = false;
       }
     }
+
     return Promise.reject(error);
   }
 );
