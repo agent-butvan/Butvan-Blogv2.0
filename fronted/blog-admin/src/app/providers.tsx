@@ -1,5 +1,6 @@
 "use client";
 
+import React, { useEffect } from "react";
 import { ToastContainer } from "@/components/common/Toast";
 
 /**
@@ -8,7 +9,7 @@ import { ToastContainer } from "@/components/common/Toast";
  * 此组件保留作为未来扩展点（如 React Query、主题等）
  */
 export function Providers({ children }: { children: React.ReactNode }) {
-  React.useEffect(() => {
+  useEffect(() => {
     const isTransitionAbortError = (reason: any) => {
       if (!reason) return false;
       const msg = typeof reason === "string" ? reason : (reason.message || "");
